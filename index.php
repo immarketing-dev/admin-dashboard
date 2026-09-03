@@ -152,64 +152,64 @@ if (isset($_GET['ajax_widget'])) {
         try { $portal_ms_comments = $pdo->query("SELECT mc.id, mc.message, mc.author_name, tm.title AS ms_title, t.title AS task_title, c.name AS client_name FROM milestone_comments mc JOIN task_milestones tm ON mc.milestone_id = tm.id JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE mc.author = 'client' AND mc.admin_seen = 0 ORDER BY mc.created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC); } catch (PDOException $e) {}
         ?>
         <div class="col-md-3">
-            <h6 class="small fw-bold text-muted mb-2" style="font-size:11px;border-bottom:1px solid #eee;padding-bottom:5px;">UPLOADS</h6>
+            <h6 class="section-label">Uploads</h6>
             <?php if(count($portal_uploads) > 0): foreach($portal_uploads as $u): ?>
-            <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left:4px solid var(--color-primary) !important;">
+            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                 <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="upload"><input type="hidden" name="activity_id" value="<?=$u['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
                 <a href="tasks?q=<?=urlencode($u['task_title'])?>" class="text-decoration-none d-block pe-3">
                     <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size:9px;letter-spacing:.5px;">DATEI</span>
-                    <div class="fw-bold text-dark text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($u['file_name'])?></div>
+                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($u['file_name'])?></div>
                     <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($u['client_name'])?></div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-2 bg-light rounded text-center border mt-2"><i class="bi bi-file-earmark-check d-block mb-1" style="font-size:1.2rem;color:#ced4da;"></i><span style="font-size:10px;">Keine Uploads</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-file-earmark-check d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Keine Uploads</span></div>
             <?php endif; ?>
         </div>
         <div class="col-md-3">
-            <h6 class="small fw-bold text-muted mb-2" style="font-size:11px;border-bottom:1px solid #eee;padding-bottom:5px;">ABSEGNUNGEN</h6>
+            <h6 class="section-label">Absegnungen</h6>
             <?php if(count($portal_approvals) > 0): foreach($portal_approvals as $a): ?>
-            <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left:4px solid #28a745 !important;">
+            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                 <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="approval"><input type="hidden" name="activity_id" value="<?=$a['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
                 <a href="tasks?q=<?=urlencode($a['task_title'])?>" class="text-decoration-none d-block pe-3">
                     <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size:9px;letter-spacing:.5px;">BESTÄTIGT</span>
-                    <div class="fw-bold text-dark text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($a['title'])?></div>
+                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($a['title'])?></div>
                     <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($a['client_name'])?></div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-2 bg-light rounded text-center border mt-2"><i class="bi bi-check-circle d-block mb-1" style="font-size:1.2rem;color:#ced4da;"></i><span style="font-size:10px;">Keine Absegnungen</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-check-circle d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Keine Absegnungen</span></div>
             <?php endif; ?>
         </div>
         <div class="col-md-3">
-            <h6 class="small fw-bold text-muted mb-2" style="font-size:11px;border-bottom:1px solid #eee;padding-bottom:5px;">FEEDBACK</h6>
+            <h6 class="section-label">Feedback</h6>
             <?php if(count($portal_feedbacks) > 0): foreach($portal_feedbacks as $f): ?>
-            <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left:4px solid #ffc107 !important;">
+            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                 <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="feedback"><input type="hidden" name="activity_id" value="<?=$f['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
                 <a href="tasks?q=<?=urlencode($f['title'])?>" class="text-decoration-none d-block pe-3">
                     <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size:9px;letter-spacing:.5px;">NEUES FEEDBACK</span>
-                    <div class="fw-bold text-dark text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($f['title'])?></div>
+                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($f['title'])?></div>
                     <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars($f['client_feedback'])?>"</div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-2 bg-light rounded text-center border mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:#ced4da;"></i><span style="font-size:10px;">Kein neues Feedback</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Kein neues Feedback</span></div>
             <?php endif; ?>
         </div>
         <div class="col-md-3">
-            <h6 class="small fw-bold text-muted mb-2" style="font-size:11px;border-bottom:1px solid #eee;padding-bottom:5px;">KOMMENTARE</h6>
+            <h6 class="section-label">Kommentare</h6>
             <?php if(count($portal_ms_comments) > 0): foreach($portal_ms_comments as $mc): ?>
-            <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left:4px solid #6f42c1 !important;">
+            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                 <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="ms_comment"><input type="hidden" name="activity_id" value="<?=$mc['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
                 <a href="tasks?q=<?=urlencode($mc['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge mb-2" style="background:#6f42c122;color:#6f42c1;font-size:9px;letter-spacing:.5px;">KOMMENTAR</span>
-                    <div class="fw-bold text-dark text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
+                    <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;">KOMMENTAR</span>
+                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
                     <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars(mb_strimwidth($mc['message'],0,60,'…'))?>"</div>
                     <div class="text-muted small mt-1 text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($mc['client_name'])?></div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-2 bg-light rounded text-center border mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:#ced4da;"></i><span style="font-size:10px;">Keine Kommentare</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Keine Kommentare</span></div>
             <?php endif; ?>
         </div>
         <?php
@@ -230,9 +230,9 @@ if (isset($_GET['ajax_widget'])) {
                     else { $dot_class = 'bg-online'; $status_text = "Online"; }
                 } elseif ($status['code'] == 0) { $status_text = "Timeout/DNS"; }
         ?>
-            <div class="uptime-item shadow-sm">
+            <div class="uptime-item">
                 <div class="uptime-header">
-                    <div class="text-truncate fw-bold text-dark d-flex align-items-center" style="font-size:13px;">
+                    <div class="text-truncate fw-bold text-strong-c d-flex align-items-center" style="font-size:13px;">
                         <span class="status-dot <?=$dot_class?>"></span><?=htmlspecialchars($url['url_name'])?>
                     </div>
                     <button type="button" class="trash-btn" onclick="triggerDeleteMonitor(<?=$url['id']?>)"><i class="bi bi-trash"></i></button>
@@ -243,8 +243,8 @@ if (isset($_GET['ajax_widget'])) {
                 </div>
             </div>
         <?php endforeach; else: ?>
-            <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                <i class="bi bi-server d-block mb-1" style="font-size:1.5rem;color:#ced4da;"></i>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                <i class="bi bi-server d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
                 Keine URLs im Monitor.
             </div>
         <?php endif;
@@ -369,58 +369,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
       <div class="d-flex align-items-center gap-3">
         <span id="live_indicator" title="Daten werden automatisch aktualisiert"
-              style="font-size:11px;color:#6c757d;display:flex;align-items:center;gap:5px;opacity:.7;">
-          <span id="live_dot" style="width:7px;height:7px;border-radius:50%;background:#28a745;display:inline-block;"></span>
+              style="font-size:var(--text-2xs);color:var(--text-muted);display:flex;align-items:center;gap:5px;">
+          <span id="live_dot" style="width:7px;height:7px;border-radius:50%;background:var(--accent-success);display:inline-block;"></span>
           <span id="live_label">Live</span>
         </span>
         <a href="tasks" class="btn btn-outline-primary btn-sm shadow-sm fw-bold"><i class="bi bi-card-list"></i> Zu den Projekten</a>
       </div>';
 $extra_head = <<<'CSS'
-  <style>
-      /* Toast Container Positionierung */
-      .toast-container-dash {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          z-index: 1060;
-      }
-      
-      /* Neue Projektkarten-Optik & Hover Effekte */
-      .dash-project-card {
-          background: #fff;
-          border-radius: 12px;
-          padding: 20px;
-          border: 1px solid #e9ecef;
-          border-left: 4px solid var(--color-primary);
-          transition: all 0.3s ease;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-      }
-      .dash-project-card:hover {
-          box-shadow: 0 8px 25px rgba(0,0,0,0.06) !important;
-          transform: translateY(-3px);
-      }
-      
-      /* Portal Item Hover */
-      .portal-item-hover:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 15px rgba(0,0,0,0.05) !important;
-      }
-
-      /* KPI Mini-Cards (Projekte / CRM) */
-      .kpi-mini-card { padding: 1rem 0.5rem; }
-      .kpi-icon { width: 36px; height: 36px; }
-      .kpi-number { font-size: 1.8rem; }
-      .kpi-label { font-size: 10px; }
-
-      @media (max-width: 767.98px) {
-        .kpi-mini-card { padding: 0.6rem 0.25rem; }
-        .kpi-icon { width: 28px; height: 28px; font-size: 0.9rem !important; }
-        .kpi-number { font-size: 1.3rem; }
-        .kpi-label { font-size: 9px; letter-spacing: 0 !important; }
-      }
-  </style>
 CSS;
 
 require 'includes/head.php';
@@ -477,7 +432,7 @@ require 'includes/layout_start.php';
       <?php endif; ?>
 
       <?php if($count_ms_comments > 0): ?>
-      <div class="toast align-items-center border-0 mb-2 shadow-lg" style="background:#6f42c1;color:#fff;" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="9500">
+      <div class="toast align-items-center border-0 mb-2 shadow-lg" style="background:var(--color-primary);color:var(--text-invert);" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="9500">
           <div class="d-flex">
               <div class="toast-body fw-bold">
                   <i class="bi bi-chat-dots-fill me-2 fs-5 align-middle"></i>
@@ -506,10 +461,10 @@ require 'includes/layout_start.php';
       <!-- Projekte KPI -->
       <div class="col-6 col-xl-2">
         <a href="tasks" class="text-decoration-none d-flex h-100">
-          <div class="widget-box w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card" style="border-left:4px solid var(--color-primary);">
-            <div class="rounded-2 d-flex align-items-center justify-content-center kpi-icon mb-2" style="background:var(--color-primary);color:#fff;font-size:1.1rem;"><i class="bi bi-briefcase"></i></div>
-            <div class="fw-bold lh-1 mb-1 kpi-number" id="kpi_open_tasks" style="color:var(--color-primary);"><?=$open_tasks?></div>
-            <div class="text-muted kpi-label" style="text-transform:uppercase;letter-spacing:.5px;">Projekte</div>
+          <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
+            <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-briefcase"></i></div>
+            <div class="kpi-number mb-1" id="kpi_open_tasks"><?=$open_tasks?></div>
+            <div class="kpi-label">Projekte</div>
             <div class="small text-muted d-none d-md-block">offene Aufgaben</div>
           </div>
         </a>
@@ -518,10 +473,10 @@ require 'includes/layout_start.php';
       <!-- CRM KPI -->
       <div class="col-6 col-xl-2">
         <a href="contacts" class="text-decoration-none d-flex h-100">
-          <div class="widget-box w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card" style="border-left:4px solid #28a745;">
-            <div class="rounded-2 d-flex align-items-center justify-content-center kpi-icon mb-2" style="background:#28a745;color:#fff;font-size:1.1rem;"><i class="bi bi-people"></i></div>
-            <div class="fw-bold lh-1 mb-1 kpi-number" id="kpi_total_contacts" style="color:#28a745;"><?=$total_contacts?></div>
-            <div class="text-muted kpi-label" style="text-transform:uppercase;letter-spacing:.5px;">CRM</div>
+          <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
+            <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-people"></i></div>
+            <div class="kpi-number mb-1" id="kpi_total_contacts"><?=$total_contacts?></div>
+            <div class="kpi-label">Kontakte</div>
             <div class="small text-muted d-none d-md-block">Kontakte</div>
           </div>
         </a>
@@ -529,8 +484,11 @@ require 'includes/layout_start.php';
 
       <!-- Website-Anfragen -->
       <div class="col-12 col-md-6 col-xl-4">
-        <div class="widget-box h-100" style="border-left: 4px solid #ffc107;">
-           <div class="widget-title"><span><i class="bi bi-envelope-paper-fill text-warning me-2"></i> Neue Website-Anfragen</span></div>
+        <div class="widget-box widget-accent-left h-100">
+           <div class="widget-title">
+               <span><i class="bi bi-envelope-paper-fill"></i> Neue Website-Anfragen</span>
+               <span class="widget-count<?= count($leads) > 0 ? ' widget-count-warning' : '' ?>" id="leads_count"><?= count($leads) ?></span>
+           </div>
            
            <div id="leads_widget_body">
            <?php if(count($leads) > 0): ?>
@@ -538,7 +496,7 @@ require 'includes/layout_start.php';
                  <?php foreach($leads as $lead): ?>
                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 lead-item" onclick='openLeadModal(<?=json_encode($lead, JSON_HEX_TAG|JSON_HEX_APOS)?>)'>
                      <div class="flex-grow-1 pe-3">
-                       <h6 class="mb-1 fw-bold fs-6 text-dark"><?php echo htmlspecialchars($lead['name']); ?></h6>
+                       <h6 class="mb-1 fw-bold fs-6 text-strong-c"><?php echo htmlspecialchars($lead['name']); ?></h6>
                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px; max-width: 200px;"><?php echo htmlspecialchars($lead['subject']); ?></p>
                      </div>
                      <div class="d-flex gap-2">
@@ -548,8 +506,8 @@ require 'includes/layout_start.php';
                  <?php endforeach; ?>
                </div>
            <?php else: ?>
-               <div class="text-muted small p-2 bg-light rounded text-center border">
-                   <i class="bi bi-inbox d-block mb-1" style="font-size: 1.5rem; color: #ced4da;"></i>
+               <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c">
+                   <i class="bi bi-inbox d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
                    Keine neuen Anfragen über die Website.
                </div>
            <?php endif; ?>
@@ -558,10 +516,13 @@ require 'includes/layout_start.php';
       </div>
 
       <div class="col-12 col-md-6 col-xl-4">
-        <div class="widget-box h-100" style="border-left: 4px solid #dc3545;">
+        <div class="widget-box widget-accent-left h-100">
            <div class="widget-title">
-               <span><i class="bi bi-life-preserver text-danger me-2"></i> Offene Support-Tickets</span>
-               <a href="tickets" class="btn btn-sm btn-link p-0 text-muted"><i class="bi bi-arrow-right"></i></a>
+               <span><i class="bi bi-life-preserver"></i> Offene Support-Tickets</span>
+               <span class="d-flex align-items-center gap-2">
+                   <span class="widget-count<?= count($tickets) > 0 ? ' widget-count-danger' : '' ?>" id="tickets_count"><?= count($tickets) ?></span>
+                   <a href="tickets" class="btn btn-sm btn-link p-0 text-muted" aria-label="Alle Tickets öffnen"><i class="bi bi-arrow-right"></i></a>
+               </span>
            </div>
            
            <div id="tickets_widget_body">
@@ -570,7 +531,7 @@ require 'includes/layout_start.php';
                  <?php foreach($tickets as $tick): ?>
                    <a href="tickets" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 border-0 border-bottom">
                      <div class="flex-grow-1 pe-3">
-                       <h6 class="mb-1 fw-bold fs-6 text-dark"><?php echo htmlspecialchars($tick['contact_name']); ?></h6>
+                       <h6 class="mb-1 fw-bold fs-6 text-strong-c"><?php echo htmlspecialchars($tick['contact_name']); ?></h6>
                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px; max-width: 200px;"><?php echo htmlspecialchars($tick['subject']); ?></p>
                      </div>
                      <div>
@@ -580,8 +541,8 @@ require 'includes/layout_start.php';
                  <?php endforeach; ?>
                </div>
            <?php else: ?>
-               <div class="text-muted small p-2 bg-light rounded text-center border">
-                   <i class="bi bi-check2-all d-block mb-1" style="font-size: 1.5rem; color: #ced4da;"></i>
+               <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c">
+                   <i class="bi bi-check2-all d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
                    Keine offenen Support-Anfragen.
                </div>
            <?php endif; ?>
@@ -592,17 +553,17 @@ require 'includes/layout_start.php';
 
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
-            <div class="widget-box" style="border-left: 4px solid var(--color-primary);">
-                <div class="widget-title"><span><i class="bi bi-magic text-primary me-2"></i> Portal Aktivitäten</span></div>
+            <div class="widget-box widget-accent-left">
+                <div class="widget-title"><span><i class="bi bi-magic"></i> Portal Aktivitäten</span></div>
                 
                 <div class="scroll-container">
                     <div class="row g-3 w-100" id="portal_activity_body">
                         
                         <div class="col-md-3">
-                            <h6 class="small fw-bold text-muted mb-2 uppercase" style="font-size:11px; border-bottom: 1px solid #eee; padding-bottom: 5px;">UPLOADS</h6>
+                            <h6 class="section-label">Uploads</h6>
                             <?php if(count($portal_uploads) > 0): ?>
                                 <?php foreach($portal_uploads as $u): ?>
-                                    <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left: 4px solid var(--color-primary) !important;">
+                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                                         <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="upload">
@@ -611,24 +572,24 @@ require 'includes/layout_start.php';
                                         </form>
                                         <a href="tasks?q=<?=urlencode($u['task_title'])?>" class="text-decoration-none d-block pe-3">
                                             <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 9px; letter-spacing: 0.5px;">DATEI</span>
-                                            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($u['file_name'])?></div>
+                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($u['file_name'])?></div>
                                             <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($u['client_name'])?></div>
                                         </a>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                                    <i class="bi bi-file-earmark-check d-block mb-1" style="font-size: 1.2rem; color: #ced4da;"></i>
+                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                                    <i class="bi bi-file-earmark-check d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
                                     <span style="font-size:10px;">Keine Uploads</span>
                                 </div>
                             <?php endif; ?>
                         </div>
 
                         <div class="col-md-3">
-                            <h6 class="small fw-bold text-muted mb-2 uppercase" style="font-size:11px; border-bottom: 1px solid #eee; padding-bottom: 5px;">ABSEGNUNGEN</h6>
+                            <h6 class="section-label">Absegnungen</h6>
                             <?php if(count($portal_approvals) > 0): ?>
                                 <?php foreach($portal_approvals as $a): ?>
-                                    <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left: 4px solid #28a745 !important;">
+                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                                         <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="approval">
@@ -637,24 +598,24 @@ require 'includes/layout_start.php';
                                         </form>
                                         <a href="tasks?q=<?=urlencode($a['task_title'])?>" class="text-decoration-none d-block pe-3">
                                             <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size: 9px; letter-spacing: 0.5px;">BESTÄTIGT</span>
-                                            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($a['title'])?></div>
+                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($a['title'])?></div>
                                             <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($a['client_name'])?></div>
                                         </a>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                                    <i class="bi bi-check-circle d-block mb-1" style="font-size: 1.2rem; color: #ced4da;"></i>
+                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                                    <i class="bi bi-check-circle d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
                                     <span style="font-size:10px;">Keine Absegnungen</span>
                                 </div>
                             <?php endif; ?>
                         </div>
 
                         <div class="col-md-3">
-                            <h6 class="small fw-bold text-muted mb-2 uppercase" style="font-size:11px; border-bottom: 1px solid #eee; padding-bottom: 5px;">FEEDBACK</h6>
+                            <h6 class="section-label">Feedback</h6>
                             <?php if(count($portal_feedbacks) > 0): ?>
                                 <?php foreach($portal_feedbacks as $f): ?>
-                                    <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left: 4px solid #ffc107 !important;">
+                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                                         <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="feedback">
@@ -663,24 +624,24 @@ require 'includes/layout_start.php';
                                         </form>
                                         <a href="tasks?q=<?=urlencode($f['title'])?>" class="text-decoration-none d-block pe-3">
                                             <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size: 9px; letter-spacing: 0.5px;">NEUES FEEDBACK</span>
-                                            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($f['title'])?></div>
+                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($f['title'])?></div>
                                             <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars($f['client_feedback'])?>"</div>
                                         </a>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                                    <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color: #ced4da;"></i>
+                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                                    <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
                                     <span style="font-size:10px;">Kein neues Feedback</span>
                                 </div>
                             <?php endif; ?>
                         </div>
 
                         <div class="col-md-3">
-                            <h6 class="small fw-bold text-muted mb-2 uppercase" style="font-size:11px; border-bottom: 1px solid #eee; padding-bottom: 5px;">KOMMENTARE</h6>
+                            <h6 class="section-label">Kommentare</h6>
                             <?php if(count($portal_ms_comments) > 0): ?>
                                 <?php foreach($portal_ms_comments as $mc): ?>
-                                    <div class="position-relative bg-white border rounded-3 p-3 mb-2 shadow-sm portal-item-hover" style="border-left: 4px solid #6f42c1 !important;">
+                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
                                         <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="ms_comment">
@@ -688,16 +649,16 @@ require 'includes/layout_start.php';
                                             <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="Ausblenden"></button>
                                         </form>
                                         <a href="tasks?q=<?=urlencode($mc['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge mb-2" style="background:#6f42c122;color:#6f42c1;font-size:9px;letter-spacing:0.5px;">KOMMENTAR</span>
-                                            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
+                                            <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;">KOMMENTAR</span>
+                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
                                             <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars(mb_strimwidth($mc['message'],0,60,'…'))?>"</div>
                                             <div class="text-muted small mt-1 text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($mc['client_name'])?></div>
                                         </a>
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                                    <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color: #ced4da;"></i>
+                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                                    <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
                                     <span style="font-size:10px;">Keine Kommentare</span>
                                 </div>
                             <?php endif; ?>
@@ -709,10 +670,10 @@ require 'includes/layout_start.php';
         </div>
 
         <div class="col-lg-4">
-            <div class="widget-box" style="border-top: 4px solid #28a745;">
+            <div class="widget-box widget-accent-left">
                 <div class="widget-title">
-                    <span><i class="bi bi-hdd-network text-success me-2"></i> System-Monitor</span>
-                    <button class="btn btn-sm btn-link p-0 text-success" data-bs-toggle="modal" data-bs-target="#addMonitorModal"><i class="bi bi-plus-circle"></i></button>
+                    <span><i class="bi bi-hdd-network"></i> System-Monitor</span>
+                    <button class="btn btn-sm btn-link p-0 text-muted" data-bs-toggle="modal" data-bs-target="#addMonitorModal" aria-label="URL zum Monitor hinzufügen"><i class="bi bi-plus-circle"></i></button>
                 </div>
                 
                 <div class="scroll-container" id="monitor_widget_body">
@@ -736,9 +697,9 @@ require 'includes/layout_start.php';
                                 $status_text = "Timeout/DNS";
                             }
                     ?>
-                            <div class="uptime-item shadow-sm">
+                            <div class="uptime-item">
                                 <div class="uptime-header">
-                                    <div class="text-truncate fw-bold text-dark d-flex align-items-center" style="font-size:13px;">
+                                    <div class="text-truncate fw-bold text-strong-c d-flex align-items-center" style="font-size:13px;">
                                         <span class="status-dot <?=$dot_class?>"></span>
                                         <?=$url['url_name']?>
                                     </div>
@@ -758,8 +719,8 @@ require 'includes/layout_start.php';
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                            <i class="bi bi-server d-block mb-1" style="font-size: 1.5rem; color: #ced4da;"></i>
+                        <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                            <i class="bi bi-server d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
                             Keine URLs im Monitor.
                         </div>
                     <?php endif; ?>
@@ -772,15 +733,13 @@ require 'includes/layout_start.php';
 
       <!-- Deadlines -->
       <div class="col">
-        <div class="widget-box" style="border-top:4px solid #fd7e14;">
+        <div class="widget-box widget-accent-left">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="d-flex align-items-center gap-2">
-              <div class="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px;background:#fd7e1420;color:#fd7e14;">
-                <i class="bi bi-alarm"></i>
-              </div>
+              <div class="icon-tile icon-tile-primary"><i class="bi bi-alarm"></i></div>
               <div>
                 <div class="label-xs">Deadlines</div>
-                <div class="fw-bold fs-5 lh-1" id="kpi_deadlines" style="color:#fd7e14;"><?=count($upcoming_deadlines)?></div>
+                <div class="fw-bold fs-5 lh-1 text-strong-c" id="kpi_deadlines"><?=count($upcoming_deadlines)?></div>
               </div>
             </div>
             <a href="calendar" class="text-muted"><i class="bi bi-arrow-right-short fs-5"></i></a>
@@ -788,16 +747,17 @@ require 'includes/layout_start.php';
           <div id="deadlines_list_body">
           <?php foreach(array_slice($upcoming_deadlines, 0, 2) as $dl):
             $d2 = (int)$dl['days_left'];
-            $c2 = $d2 < 0 ? '#dc3545' : ($d2 === 0 ? '#fd7e14' : ($d2 <= 3 ? '#ffc107' : '#6c757d'));
+            // Farbe = Dringlichkeit. Ohne Dringlichkeit bleibt der Chip neutral.
+            $k2 = $d2 < 0 ? 'due-overdue' : ($d2 === 0 ? 'due-today' : ($d2 <= 3 ? 'due-soon' : ''));
             $l2 = $d2 < 0 ? 'Überfällig' : ($d2 === 0 ? 'Heute' : "in $d2 T.");
           ?>
-          <div class="d-flex align-items-center gap-2 pt-2 border-top">
-            <span class="badge" style="background:<?=$c2?>22;color:<?=$c2?>;font-size:9px;white-space:nowrap;"><?=$l2?></span>
-            <span class="small text-truncate text-dark" style="font-size:11px;"><?=htmlspecialchars(mb_strimwidth($dl['title'],0,20,'…'))?></span>
+          <div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
+            <span class="due-chip <?=$k2?>"><?=$l2?></span>
+            <span class="small text-truncate text-strong-c" style="font-size:var(--text-2xs);"><?=htmlspecialchars(mb_strimwidth($dl['title'],0,20,'…'))?></span>
           </div>
           <?php endforeach; ?>
           <?php if (empty($upcoming_deadlines)): ?>
-          <div class="small text-muted pt-2 border-top"><i class="bi bi-check2-circle me-1 text-success"></i>Keine Deadlines</div>
+          <div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-check2-circle me-1 text-success"></i>Keine Deadlines</div>
           <?php endif; ?>
           </div>
         </div>
@@ -806,32 +766,30 @@ require 'includes/layout_start.php';
       <!-- Termine -->
       <div class="col">
         <?php $all_apts = array_merge($today_appointments, $week_appointments); ?>
-        <div class="widget-box" style="border-top:4px solid #6f42c1;">
+        <div class="widget-box widget-accent-left">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="d-flex align-items-center gap-2">
-              <div class="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px;background:#6f42c120;color:#6f42c1;">
-                <i class="bi bi-calendar2-event"></i>
-              </div>
+              <div class="icon-tile icon-tile-primary"><i class="bi bi-calendar2-event"></i></div>
               <div>
                 <div class="label-xs">Termine</div>
-                <div class="fw-bold fs-5 lh-1" id="kpi_termine" style="color:#6f42c1;"><?=count($all_apts)?></div>
+                <div class="fw-bold fs-5 lh-1 text-strong-c" id="kpi_termine"><?=count($all_apts)?></div>
               </div>
             </div>
             <a href="calendar" class="text-muted"><i class="bi bi-arrow-right-short fs-5"></i></a>
           </div>
           <div id="termine_list_body">
           <?php foreach(array_slice($all_apts, 0, 2) as $apt):
-            $ac   = htmlspecialchars($apt['color'] ?: '#6f42c1');
+            $ac   = htmlspecialchars($apt['color'] ?: '#6c757d');
             $adys = isset($apt['event_date']) ? (int)round((strtotime($apt['event_date']) - strtotime('today')) / 86400) : 0;
             $albl = $adys === 0 ? 'Heute' : ($adys === 1 ? 'Morgen' : "in $adys T.");
           ?>
-          <div class="d-flex align-items-center gap-2 pt-2 border-top">
-            <span class="badge" style="background:<?=$ac?>22;color:<?=$ac?>;font-size:9px;white-space:nowrap;"><?=$albl?></span>
-            <span class="small text-truncate text-dark" style="font-size:11px;"><?=htmlspecialchars(mb_strimwidth($apt['title'],0,20,'…'))?></span>
+          <div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
+            <span class="due-chip"><span class="status-dot m-0" style="background:<?=$ac?>;width:8px;height:8px;"></span><?=$albl?></span>
+            <span class="small text-truncate text-strong-c" style="font-size:var(--text-2xs);"><?=htmlspecialchars(mb_strimwidth($apt['title'],0,20,'…'))?></span>
           </div>
           <?php endforeach; ?>
           <?php if (empty($all_apts)): ?>
-          <div class="small text-muted pt-2 border-top"><i class="bi bi-calendar-check me-1 text-success"></i>Keine Termine</div>
+          <div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-calendar-check me-1 text-success"></i>Keine Termine</div>
           <?php endif; ?>
           </div>
         </div>
@@ -839,15 +797,19 @@ require 'includes/layout_start.php';
 
       <!-- Webspace -->
       <div class="col">
-        <div class="widget-box d-flex align-items-start gap-3" style="border-top:4px solid #0dcaf0;">
-          <div class="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:38px;height:38px;background:#0dcaf020;color:#0dcaf0;">
-            <i class="bi bi-hdd-fill"></i>
-          </div>
+        <?php
+          // Der Balken faerbt sich erst, wenn der Platz wirklich knapp wird.
+          $ws_pct  = (float)$percent_used;
+          $ws_tile = $ws_pct >= 90 ? 'icon-tile-danger' : ($ws_pct >= 75 ? 'icon-tile-warning' : 'icon-tile-primary');
+          $ws_bar  = $ws_pct >= 90 ? 'var(--accent-danger)' : ($ws_pct >= 75 ? 'var(--accent-warning)' : 'var(--color-primary)');
+        ?>
+        <div class="widget-box widget-accent-left d-flex align-items-start gap-3">
+          <div class="icon-tile <?=$ws_tile?>"><i class="bi bi-hdd-fill"></i></div>
           <div class="w-100">
             <div class="label-xs">Webspace</div>
-            <div class="d-flex justify-content-between fw-bold small my-1"><span><?=$used_gb?> GB</span><span><?=$percent_used?>%</span></div>
-            <div class="progress mb-1" style="height:5px;"><div class="progress-bar" style="width:<?=$percent_used?>%;background:#0dcaf0;"></div></div>
-            <div class="small text-muted" style="font-size:10px;">von 200 GB belegt</div>
+            <div class="d-flex justify-content-between fw-bold small my-1 text-strong-c"><span><?=$used_gb?> GB</span><span><?=$percent_used?>%</span></div>
+            <div class="progress mb-1 bg-sunken" style="height:5px;" role="progressbar" aria-valuenow="<?=(int)$percent_used?>" aria-valuemin="0" aria-valuemax="100" aria-label="Belegter Webspace"><div class="progress-bar" style="width:<?=$percent_used?>%;background:<?=$ws_bar?>;"></div></div>
+            <div class="small text-muted" style="font-size:var(--text-xs);">von 200 GB belegt</div>
           </div>
         </div>
       </div>
@@ -882,9 +844,9 @@ require 'includes/layout_start.php';
                                      data-progress="<?=$p['progress']?>"
                                      data-created="<?=$p['id']?>">
                                     <a href="tasks?q=<?=urlencode($p['title'])?>" class="text-decoration-none">
-                                        <div class="dash-project-card shadow-sm bg-white">
+                                        <div class="dash-project-card">
                                             <div class="d-flex justify-content-between align-items-start mb-3">
-                                                <h6 class="fw-bold m-0 text-dark text-truncate pe-2" style="font-size: 15px;"><?=htmlspecialchars($p['title'])?></h6>
+                                                <h6 class="fw-bold m-0 text-strong-c text-truncate pe-2" style="font-size: 15px;"><?=htmlspecialchars($p['title'])?></h6>
                                                 <?= status_badge($p['status']) ?>
                                             </div>
                                             
@@ -913,13 +875,13 @@ require 'includes/layout_start.php';
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                        <div id="projEmpty" class="text-muted small p-2 bg-light rounded text-center border mt-2" style="display:none;">
-                            <i class="bi bi-funnel d-block mb-1" style="font-size:1.5rem;color:#ced4da;"></i>
+                        <div id="projEmpty" class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2" style="display:none;">
+                            <i class="bi bi-funnel d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
                             Kein Projekt entspricht diesem Filter.
                         </div>
                     <?php else: ?>
-                        <div class="text-muted small p-2 bg-light rounded text-center border mt-2">
-                            <i class="bi bi-clipboard-check d-block mb-1" style="font-size: 1.5rem; color: #ced4da;"></i>
+                        <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
+                            <i class="bi bi-clipboard-check d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
                             Aktuell keine laufenden Projekte.
                         </div>
                     <?php endif; ?>
@@ -934,7 +896,7 @@ require 'includes/layout_start.php';
                         <i class="bi bi-trash" style="pointer-events:none;"></i>
                     </button>
                 </div>
-                <textarea id="quickNotes" class="form-control flex-grow-1 shadow-sm border bg-light p-3" style="font-size: 14px; resize: none; min-height: 250px;" placeholder="Wird automatisch gespeichert..."></textarea>
+                <textarea id="quickNotes" class="form-control flex-grow-1 shadow-sm border bg-subtle p-3" style="font-size: 14px; resize: none; min-height: 250px;" placeholder="Wird automatisch gespeichert..."></textarea>
             </div>
         </div>
     </div>
@@ -943,43 +905,43 @@ require 'includes/layout_start.php';
       <div class="modal-dialog modal-lg">
           <div class="modal-content border-0 shadow">
               <div class="modal-header bg-warning">
-                  <h5 class="modal-title text-dark fw-bold"><i class="bi bi-envelope-open me-2"></i>Anfrage Details</h5>
+                  <h5 class="modal-title text-strong-c fw-bold"><i class="bi bi-envelope-open me-2"></i>Anfrage Details</h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4">
                   <div class="row mb-3">
                       <div class="col-md-6">
                           <label class="small text-muted fw-bold mb-1">Name</label>
-                          <div class="p-2 bg-light rounded border fw-bold text-dark" id="vl_name"></div>
+                          <div class="p-2 bg-subtle rounded border border-subtle-c fw-bold text-strong-c" id="vl_name"></div>
                       </div>
                       <div class="col-md-6 mt-3 mt-md-0">
                           <label class="small text-muted fw-bold mb-1">E-Mail</label>
-                          <div class="p-2 bg-light rounded border" id="vl_email"></div>
+                          <div class="p-2 bg-subtle rounded border" id="vl_email"></div>
                       </div>
                   </div>
                   
                   <div class="row mb-3">
                       <div class="col-md-6">
                           <label class="small text-muted fw-bold mb-1">Telefon</label>
-                          <div class="p-2 bg-light rounded border" id="vl_phone"></div>
+                          <div class="p-2 bg-subtle rounded border" id="vl_phone"></div>
                       </div>
                       <div class="col-md-6 mt-3 mt-md-0">
                           <label class="small text-muted fw-bold mb-1">Quelle</label>
-                          <div class="p-2 bg-light rounded border" id="vl_source"></div>
+                          <div class="p-2 bg-subtle rounded border" id="vl_source"></div>
                       </div>
                   </div>
 
                   <div class="mb-3">
                       <label class="small text-muted fw-bold mb-1">Betreff</label>
-                      <div class="p-2 bg-light rounded border fw-bold text-primary" id="vl_subject"></div>
+                      <div class="p-2 bg-subtle rounded border fw-bold text-primary" id="vl_subject"></div>
                   </div>
 
                   <div>
                       <label class="small text-muted fw-bold mb-1">Nachricht</label>
-                      <div class="p-3 bg-light rounded border" id="vl_message" style="min-height: 100px; white-space: pre-wrap;"></div>
+                      <div class="p-3 bg-subtle rounded border" id="vl_message" style="min-height: 100px; white-space: pre-wrap;"></div>
                   </div>
               </div>
-              <div class="modal-footer d-flex justify-content-between bg-light">
+              <div class="modal-footer d-flex justify-content-between bg-subtle">
                   <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Schließen</button>
                   <form action="index" method="POST" style="margin:0;">
                       <?= csrf_field() ?>
@@ -1002,14 +964,14 @@ require 'includes/layout_start.php';
                       <h6 class="modal-title m-0 fw-bold"><i class="bi bi-plus-circle me-2"></i>URL hinzufügen</h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-body p-4 bg-light">
+                  <div class="modal-body p-4 bg-subtle">
                       <label class="form-label small fw-bold">Projekt / Name *</label>
                       <input type="text" name="url_name" class="form-control mb-3" placeholder="Kunde XYZ" required>
                       
                       <label class="form-label small fw-bold">URL / Domain *</label>
                       <input type="text" name="url_link" class="form-control" placeholder="https://..." required>
                   </div>
-                  <div class="modal-footer bg-light p-2">
+                  <div class="modal-footer bg-subtle p-2">
                       <button type="submit" class="btn btn-primary w-100 fw-bold">Speichern</button>
                   </div>
               </form>
@@ -1031,7 +993,7 @@ require 'includes/layout_start.php';
                   <div class="modal-body text-center py-4">
                       <p class="mb-0 fw-bold">Soll diese Domain aus der Überwachung entfernt werden?</p>
                   </div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                       <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, entfernen</button>
                   </div>
@@ -1054,7 +1016,7 @@ require 'includes/layout_start.php';
                   <div class="modal-body text-center py-4">
                       <p class="mb-0 fw-bold">Die Nachricht unwiderruflich löschen?</p>
                   </div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                       <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
                   </div>
@@ -1073,7 +1035,7 @@ require 'includes/layout_start.php';
               <div class="modal-body text-center py-4">
                   <p class="mb-0 fw-bold">Möchtest du den gesamten Text im Notizblock endgültig löschen?</p>
               </div>
-              <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+              <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                   <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                   <button type="button" class="btn btn-danger btn-sm px-3 fw-bold" onclick="executeClearNotes()">Ja, leeren</button>
               </div>
@@ -1229,7 +1191,7 @@ require 'includes/layout_start.php';
             uploads:     { icon: 'bi-cloud-arrow-up-fill', bg: 'bg-info',     tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' neue Datei(en) im Portal!' },
             approvals:   { icon: 'bi-check-circle-fill',   bg: 'bg-success',  tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' abgesegnete(r) Meilenstein(e)!' },
             feedbacks:   { icon: 'bi-chat-left-text-fill', bg: 'bg-warning',  tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' neues Kunden-Feedback!' },
-            ms_comments: { icon: 'bi-chat-dots-fill',      bg: '',            tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' neue(r) Meilenstein-Kommentar(e)!', style: 'background:#6f42c1;' },
+            ms_comments: { icon: 'bi-chat-dots-fill',      bg: '',            tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' neue(r) Meilenstein-Kommentar(e)!', style: 'background:var(--color-primary);color:var(--text-invert);' },
         };
 
         function injectToast(def, count) {
@@ -1254,7 +1216,7 @@ require 'includes/layout_start.php';
             const dot   = document.getElementById('live_dot');
             const label = document.getElementById('live_label');
             if (!dot) return;
-            dot.style.background = ok ? '#28a745' : '#dc3545';
+            dot.style.background = ok ? 'var(--accent-success)' : 'var(--accent-danger)';
             if (label) label.textContent = ok ? 'Live' : 'Fehler';
         }
 
@@ -1266,24 +1228,39 @@ require 'includes/layout_start.php';
             setTimeout(() => { dot.style.transform = 'scale(1)'; }, 300);
         }
 
-        const prioColors = { Kritisch:'#dc3545', Hoch:'#fd7e14', Mittel:'#ffc107', Niedrig:'#adb5bd' };
+        // Prioritaet als vierstufige Skala aus Tokens statt vier roher Hex-Werte.
+        const prioColors = {
+            Kritisch: 'var(--accent-danger)',
+            Hoch:     'var(--accent-warning)',
+            Mittel:   'var(--color-primary)',
+            Niedrig:  'var(--text-faint)',
+        };
+
+        /** Setzt den Zaehler im Widget-Kopf. Farbe nur, wenn etwas offen ist. */
+        function setWidgetCount(id, n, variant) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = n;
+            el.className = 'widget-count' + (n > 0 ? ' ' + variant : '');
+        }
 
         function renderTicketsWidget(list) {
+            setWidgetCount('tickets_count', (list || []).length, 'widget-count-danger');
             const el = document.getElementById('tickets_widget_body');
             if (!el) return;
             if (!list || list.length === 0) {
-                el.innerHTML = '<div class="text-muted small p-2 bg-light rounded text-center border"><i class="bi bi-check2-all d-block mb-1" style="font-size:1.5rem;color:#ced4da;"></i>Keine offenen Support-Anfragen.</div>';
+                el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-check2-all d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>Keine offenen Support-Anfragen.</div>';
                 return;
             }
             const rows = list.map(t => {
                 const name    = (t.contact_name || '').replace(/</g,'&lt;');
                 const subject = (t.subject      || '').replace(/</g,'&lt;');
                 const badgeCls = t.status === 'Offen' ? 'bg-warning text-dark' : 'bg-primary';
-                const pc = prioColors[t.priority] || '#adb5bd';
+                const pc = prioColors[t.priority] || 'var(--text-faint)';
                 return `<a href="tickets" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 border-0 border-bottom">
                     <div class="flex-grow-1 pe-3 d-flex align-items-center gap-2">
                         <span style="width:8px;height:8px;border-radius:50%;background:${pc};display:inline-block;flex-shrink:0;" title="${t.priority || ''}"></span>
-                        <div><h6 class="mb-1 fw-bold fs-6 text-dark">${name}</h6>
+                        <div><h6 class="mb-1 fw-bold fs-6 text-strong-c">${name}</h6>
                         <p class="mb-0 text-muted small text-truncate" style="font-size:11px;max-width:200px;">${subject}</p></div>
                     </div>
                     <span class="badge ${badgeCls}" style="font-size:10px;">${t.status}</span>
@@ -1293,11 +1270,12 @@ require 'includes/layout_start.php';
         }
 
         function renderLeadsWidget(list) {
+            setWidgetCount('leads_count', (list || []).length, 'widget-count-warning');
             const el = document.getElementById('leads_widget_body');
             if (!el) return;
             _leadsCache = list || [];
             if (!list || list.length === 0) {
-                el.innerHTML = '<div class="text-muted small p-2 bg-light rounded text-center border"><i class="bi bi-inbox d-block mb-1" style="font-size:1.5rem;color:#ced4da;"></i>Keine neuen Anfragen über die Website.</div>';
+                el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-inbox d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>Keine neuen Anfragen über die Website.</div>';
                 return;
             }
             const rows = list.map((lead, i) => {
@@ -1305,7 +1283,7 @@ require 'includes/layout_start.php';
                 const subject = (lead.subject || '').replace(/</g,'&lt;');
                 return `<div class="list-group-item d-flex justify-content-between align-items-center py-2 lead-item" onclick="openLeadByIdx(${i})" style="cursor:pointer;">
                     <div class="flex-grow-1 pe-3">
-                        <h6 class="mb-1 fw-bold fs-6 text-dark">${name}</h6>
+                        <h6 class="mb-1 fw-bold fs-6 text-strong-c">${name}</h6>
                         <p class="mb-0 text-muted small text-truncate" style="font-size:11px;max-width:200px;">${subject}</p>
                     </div>
                     <div class="d-flex gap-2">
@@ -1322,18 +1300,18 @@ require 'includes/layout_start.php';
             if (kpiEl)  kpiEl.textContent = count;
             if (!listEl) return;
             if (!list || list.length === 0) {
-                listEl.innerHTML = '<div class="small text-muted pt-2 border-top"><i class="bi bi-check2-circle me-1 text-success"></i>Keine Deadlines</div>';
+                listEl.innerHTML = '<div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-check2-circle me-1 text-success"></i>Keine Deadlines</div>';
                 return;
             }
             listEl.innerHTML = list.slice(0, 2).map(dl => {
                 const d = parseInt(dl.days_left);
-                const c = d < 0 ? '#dc3545' : (d === 0 ? '#fd7e14' : (d <= 3 ? '#ffc107' : '#6c757d'));
+                const k = d < 0 ? 'due-overdue' : (d === 0 ? 'due-today' : (d <= 3 ? 'due-soon' : ''));
                 const l = d < 0 ? 'Überfällig' : (d === 0 ? 'Heute' : `in ${d} T.`);
                 const t = (dl.title || '').replace(/</g,'&lt;');
                 const s = t.length > 20 ? t.substring(0,20)+'…' : t;
-                return `<div class="d-flex align-items-center gap-2 pt-2 border-top">
-                    <span class="badge" style="background:${c}22;color:${c};font-size:9px;white-space:nowrap;">${l}</span>
-                    <span class="small text-truncate text-dark" style="font-size:11px;">${s}</span>
+                return `<div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
+                    <span class="due-chip ${k}">${l}</span>
+                    <span class="small text-truncate text-strong-c" style="font-size:var(--text-2xs);">${s}</span>
                 </div>`;
             }).join('');
         }
@@ -1344,18 +1322,18 @@ require 'includes/layout_start.php';
             if (kpiEl)  kpiEl.textContent = count;
             if (!listEl) return;
             if (!list || list.length === 0) {
-                listEl.innerHTML = '<div class="small text-muted pt-2 border-top"><i class="bi bi-calendar-check me-1 text-success"></i>Keine Termine</div>';
+                listEl.innerHTML = '<div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-calendar-check me-1 text-success"></i>Keine Termine</div>';
                 return;
             }
             listEl.innerHTML = list.slice(0, 2).map(apt => {
-                const ac  = (apt.color || '#6f42c1').replace(/[<>"'&]/g,'');
+                const ac  = (apt.color || '#6c757d').replace(/[<>"'&]/g,'');
                 const d   = parseInt(apt.days_left);
                 const lbl = d === 0 ? 'Heute' : (d === 1 ? 'Morgen' : `in ${d} T.`);
                 const t   = (apt.title || '').replace(/</g,'&lt;');
                 const s   = t.length > 20 ? t.substring(0,20)+'…' : t;
-                return `<div class="d-flex align-items-center gap-2 pt-2 border-top">
-                    <span class="badge" style="background:${ac}22;color:${ac};font-size:9px;white-space:nowrap;">${lbl}</span>
-                    <span class="small text-truncate text-dark" style="font-size:11px;">${s}</span>
+                return `<div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
+                    <span class="due-chip"><span class="status-dot m-0" style="background:${ac};width:8px;height:8px;"></span>${lbl}</span>
+                    <span class="small text-truncate text-strong-c" style="font-size:var(--text-2xs);">${s}</span>
                 </div>`;
             }).join('');
         }

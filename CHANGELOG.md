@@ -44,6 +44,19 @@ private history.
   installation is already set up, and instructs (never self-deletes) the
   operator to remove it after use.
 
+- The quote system (`quotes.php`) is reachable from the sidebar. It has PDF
+  output and mail dispatch, but no page linked to it, so it could only be
+  opened by typing the URL. The twelve navigation entries are now grouped
+  under four headings instead of forming one undifferentiated list.
+- Shared building blocks in `assets/css/app.css` for what the pages used to
+  express as inline styles: `.widget-accent-left`, `.widget-count`,
+  `.section-label`, `.icon-tile`, `.due-chip`, `.tint-*`, `.k-badge-*`, and
+  token-backed surface and text utilities. New tokens for tinted surfaces
+  (`--accent-soft`, `--success-soft` and siblings), a two-step elevation
+  scale (`--elev-rest`, `--elev-raised`), and a focus ring.
+- A visible keyboard focus ring on links, buttons and navigation items.
+  Bootstrap suppresses the browser default in several places and nothing
+  replaced it. `prefers-reduced-motion` is now honoured.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -64,6 +77,23 @@ private history.
   the Apache 2.2 `Order deny,allow` / `Deny from all` syntax, instead of
   only the legacy form.
 
+- Colour carries meaning again instead of decoration. Every widget used to
+  wear its own accent hue as a border — seven different ones on the
+  dashboard alone — so no colour distinguished anything from anything else.
+  The brand colour now carries the brand and the navigation; green, amber
+  and red are reserved for status. Urgency moved out of the card border and
+  into the counter beside the widget title, which stays grey until
+  something is actually open.
+- The eleven admin pages take their colours from the design tokens instead
+  of hard-coded values. 291 literal hex colours are down to 86, and every
+  one that remains is deliberate: HTML e-mail bodies (mail clients do not
+  resolve custom properties), the user-selectable appointment palette, the
+  QR code, and the hex placeholders in the colour fields. The 147
+  `bg-white`/`bg-light` utilities are gone, so the dark theme no longer has
+  to override them back at the end of the stylesheet.
+- The page-local `<style>` blocks of the dashboard and the calendar moved
+  into `assets/css/app.css`. Both defined component styles that the rest of
+  the application had no way to reuse.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.
@@ -140,3 +170,9 @@ private history.
   could be stored and served from the panel's own origin. It now runs
   through the same `validate_upload()`/`safe_filename()` checks as the
   AJAX upload path next to it.
+- The calendar ignored the dark theme. Its twelve event colours were fixed
+  pastel values with no dark counterpart, so the grid stayed bright however
+  the theme was set. They now come from the `--state-*` token pairs.
+- The finance chart drew a light grid and light axis labels onto a dark
+  background. Chart.js renders to a canvas and cannot resolve CSS custom
+  properties, so the token values are read once through `getComputedStyle`.

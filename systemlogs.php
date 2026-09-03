@@ -107,7 +107,7 @@ function getLogBadgeClass($action) {
     if (strpos($action, 'QUOTE_') !== false) return 'bg-secondary';
 
     // Kontakte
-    if (strpos($action, 'CONTACT_') !== false) return 'bg-purple';
+    if (strpos($action, 'CONTACT_') !== false) return 'log-badge-contact';
 
     // Wiki & Anhänge
     if (strpos($action, 'WIKI_') !== false) return 'bg-warning text-dark';
@@ -153,14 +153,13 @@ $header_actions = '
 $extra_head = <<<'CSS'
   <style>
       /* Spezifische Logbuch-Klassen (die nicht in der globalen design.css sind) */
-      .log-container { background: #fff; border-radius: 10px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-top: 4px solid var(--color-primary); overflow-x: auto;}
-      .log-table th { font-family: 'Poppins', sans-serif; color: #173b6c; font-weight: 600; font-size: 14px; border-bottom: 2px solid #e9ecef; padding-bottom: 15px;}
-      .log-table td { padding: 15px 10px; vertical-align: middle; border-bottom: 1px solid #f8f9fa; font-size: 14px; color: #495057;}
+      .log-container { background: var(--surface-card); border-radius: 10px; padding: 25px; box-shadow: var(--elev-rest); border-top: 3px solid var(--color-primary); overflow-x: auto;}
+      .log-table th { font-family: 'Poppins', sans-serif; color: var(--text-heading); font-weight: 600; font-size: 14px; border-bottom: 2px solid var(--border-subtle); padding-bottom: 15px;}
+      .log-table td { padding: 15px 10px; vertical-align: middle; border-bottom: 1px solid var(--border-subtle); font-size: 14px; color: var(--text-body);}
       .log-badge { padding: 5px 10px; font-weight: 600; font-size: 11px; letter-spacing: 0.5px; border-radius: 4px; color: white; }
-      .log-date { font-weight: 600; color: #050d18; }
-      .log-time { color: #a8a9b4; font-size: 12px; margin-left: 5px; }
-      .log-ip { font-family: monospace; font-size: 13px; color: #6c757d; white-space: nowrap; }
-      .bg-purple { background-color: #6f42c1; color: white; }
+      .log-date { font-weight: 600; color: var(--text-strong); }
+      .log-time { color: var(--text-muted); font-size: var(--text-sm); margin-left: 5px; }
+      .log-ip { font-family: monospace; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
   </style>
 CSS;
 
@@ -169,7 +168,7 @@ require 'includes/layout_start.php';
 ?>
 
     <!-- Filter & Suche -->
-    <form method="GET" class="bg-white rounded-3 shadow-sm border p-3 mb-3 d-flex gap-2 flex-wrap align-items-center">
+    <form method="GET" class="bg-surface rounded-3 shadow-sm border p-3 mb-3 d-flex gap-2 flex-wrap align-items-center">
       <select name="filter" class="form-select form-select-sm" style="max-width:180px;" onchange="this.form.submit()">
         <option value="">Alle Typen</option>
         <?php foreach($log_prefixes as $pre): ?>
@@ -235,7 +234,7 @@ require 'includes/layout_start.php';
                   <div class="modal-body text-center py-4">
                       <p class="mb-0 fw-bold">Möchtest du alle bisherigen Einträge wirklich unwiderruflich löschen?</p>
                   </div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                       <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, leeren</button>
                   </div>

@@ -157,9 +157,9 @@ $page_heading = 'Einstellungen';
 $current_page = basename($_SERVER['PHP_SELF']);
 $extra_head = <<<'CSS'
   <style>
-    .settings-card { background: #fff; border-radius: 10px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-top: 4px solid var(--color-primary); }
-    .settings-section-title { font-family: 'Poppins', sans-serif; font-weight: 600; color: #173b6c; font-size: 15px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; margin-bottom: 20px; }
-    .color-preview { width: 38px; height: 38px; border-radius: 6px; border: 1px solid #dee2e6; cursor: pointer; flex-shrink: 0; }
+    .settings-card { background: var(--surface-card); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--elev-rest); border-top: 3px solid var(--color-primary); }
+    .settings-section-title { font-family: 'Poppins', sans-serif; font-weight: 600; color: var(--text-heading); font-size: 15px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 20px; }
+    .color-preview { width: 38px; height: 38px; border-radius: 6px; border: 1px solid var(--border-base); cursor: pointer; flex-shrink: 0; }
     .color-preview::-webkit-color-swatch-wrapper { padding: 0; }
     .color-preview::-webkit-color-swatch { border: none; border-radius: 5px; }
     .color-row { display: flex; align-items: center; gap: 12px; }
@@ -167,8 +167,6 @@ $extra_head = <<<'CSS'
     .sidebar-preview { width: 120px; background: var(--color-sidebar); border-radius: 8px; padding: 12px 10px; transition: background 0.3s; }
     .sidebar-preview .sp-item { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.15); margin-bottom: 8px; }
     .sidebar-preview .sp-active { background: var(--color-primary); }
-    [data-theme="dark"] .settings-card { background: #1e2130; }
-    [data-theme="dark"] .settings-section-title { color: #9eb3d8; border-color: #2d3448; }
   </style>
 CSS;
 
@@ -184,7 +182,7 @@ require 'includes/layout_start.php';
     <?php endif; ?>
 
     <!-- Tab Navigation -->
-    <ul class="nav nav-tabs mb-0" style="border-radius:10px 10px 0 0; background:#fff; padding:10px 10px 0; box-shadow:0 2px 10px rgba(0,0,0,0.02);">
+    <ul class="nav nav-tabs mb-0" style="border-radius:10px 10px 0 0; background:var(--surface-card); padding:10px 10px 0; box-shadow:0 2px 10px rgba(0,0,0,0.02);">
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='design' ? 'active' : '' ?>" href="?tab=design">
           <i class="bi bi-palette me-1"></i> Darstellung
@@ -313,7 +311,7 @@ require 'includes/layout_start.php';
       <div class="row g-4 align-items-start">
         <div class="col-md-5">
           <?php if ($s_company_logo && file_exists(__DIR__ . '/' . $s_company_logo)): ?>
-            <div class="p-3 border rounded-3 bg-light text-center mb-3" style="max-width:280px;">
+            <div class="p-3 border rounded-3 bg-subtle text-center mb-3" style="max-width:280px;">
               <img src="<?= htmlspecialchars($s_company_logo) ?>?v=<?= filemtime(__DIR__ . '/' . $s_company_logo) ?>"
                    alt="Firmenlogo" style="max-height:70px; max-width:100%; object-fit:contain;">
             </div>
@@ -325,7 +323,7 @@ require 'includes/layout_start.php';
               </button>
             </form>
           <?php else: ?>
-            <div class="text-muted small p-3 border rounded-3 bg-light" style="max-width:280px;">
+            <div class="text-muted small p-3 border rounded-3 bg-subtle" style="max-width:280px;">
               <i class="bi bi-image text-muted" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
               Noch kein Logo hinterlegt. Ohne Logo erscheint nur der Firmenname auf Rechnungen.
             </div>
@@ -351,7 +349,7 @@ require 'includes/layout_start.php';
       <div class="row g-4 align-items-start">
         <div class="col-md-5">
           <?php if ($s_favicon && file_exists(__DIR__ . '/' . $s_favicon)): ?>
-            <div class="p-3 border rounded-3 bg-light text-center mb-3" style="max-width:280px;">
+            <div class="p-3 border rounded-3 bg-subtle text-center mb-3" style="max-width:280px;">
               <img src="<?= htmlspecialchars($s_favicon) ?>?v=<?= filemtime(__DIR__ . '/' . $s_favicon) ?>"
                    alt="Favicon" style="max-height:48px; max-width:96px; object-fit:contain; image-rendering:auto;">
               <div class="text-muted small mt-2"><?= htmlspecialchars(basename($s_favicon)) ?></div>
@@ -364,7 +362,7 @@ require 'includes/layout_start.php';
               </button>
             </form>
           <?php else: ?>
-            <div class="text-muted small p-3 border rounded-3 bg-light" style="max-width:280px;">
+            <div class="text-muted small p-3 border rounded-3 bg-subtle" style="max-width:280px;">
               <i class="bi bi-window text-muted" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
               Noch kein Favicon hinterlegt. Browser zeigen dann das Standard-Icon.
             </div>
