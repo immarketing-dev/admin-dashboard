@@ -22,10 +22,16 @@ Options -Indexes
 # Darunter liegen u.a. ausfuehrbare FPDF-Tutorial-Skripte; die duerfen von
 # aussen nicht aufrufbar sein. Zusaetzlich zu dieser Regel sperrt
 # vendor/.htaccess denselben Bereich unabhaengig von mod_rewrite ab.
+# tools/ enthaelt reine Entwicklungswerkzeuge, die zur Laufzeit nie aufgerufen
+# werden. Wichtiger noch: dort kann eine tools/leakscan-local.txt liegen, die
+# bewusst genau die Zeichenketten auflistet, die niemals veroeffentlicht werden
+# duerfen - Datenbankhost, -name und -benutzer der eigenen Installation. Waere
+# tools/ per URL erreichbar, gaebe ausgerechnet diese Datei sie preis.
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^includes/ - [F,L]
     RewriteRule ^vendor/   - [F,L]
+    RewriteRule ^tools/    - [F,L]
 </IfModule>
 
 # ============================================

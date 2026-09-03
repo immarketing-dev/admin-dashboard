@@ -76,6 +76,10 @@ private history.
   benefit once the entry point is gone.
 
 ### Fixed
+- `tools/` is denied at the web server level. A local `tools/leakscan-local.txt`
+  lists exactly the strings that must never be published — database host, name
+  and user of the operator’s own installation — so a reachable `tools/` would
+  have disclosed them.
 - **CSRF bypass on first run:** `csrf_check()` used `hash_equals()`
   directly on the session and POST tokens; with both empty (a fresh
   session, no cookie yet) `hash_equals('', '')` returns `true`, letting an
