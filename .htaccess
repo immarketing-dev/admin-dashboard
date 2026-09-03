@@ -70,6 +70,18 @@ Options -Indexes
     RewriteCond %{THE_REQUEST} \s/+(.+)\.php[?\s] [NC]
     RewriteRule ^ /%1 [R=301,L,QSA]
 
+    # --- 2a) Eigene Seiten haben Vorrang vor gleichnamigen Verzeichnissen
+    # Manche Hoster legen im Webspace eigene Verzeichnisse an - IONOS etwa
+    # ein geschuetztes "logs/". Die allgemeine Regel unten verlangt !-d und
+    # greift dann nicht; die Anfrage landet auf dem fremden Verzeichnis und
+    # wird mit 403 abgewiesen. Diese Regel zieht deshalb vor: existiert eine
+    # gleichnamige .php im Wurzelverzeichnis, gewinnt sie - unabhaengig
+    # davon, ob daneben ein Verzeichnis gleichen Namens liegt.
+    # Nur einteilige Pfade, damit assets/, uploads/ und vendor/ unberuehrt
+    # bleiben (dort gibt es ohnehin keine gleichnamige .php).
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^([a-z_]+)/?$ $1.php [L,QSA]
+
     # --- 2) Interne Rewrite-Regel: /xyz -> xyz.php (intern) -------------
     # Liefert im Hintergrund die passende .php-Datei aus, ohne dass sich
     # die sichtbare URL im Browser aendert (kein Redirect, kein [R]-Flag).

@@ -248,8 +248,6 @@ if (!$_is_auth) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
   <?php require_once 'includes/theme.php'; ?>
-  <link rel="stylesheet" href="assets/css/tokens.css">
-  <link rel="stylesheet" href="assets/css/app.css">
   <style>
     *{box-sizing:border-box}
     body{min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center;font-family:'Open Sans',sans-serif;padding:20px;
@@ -464,8 +462,6 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
   <?php require_once 'includes/theme.php'; ?>
-  <link rel="stylesheet" href="assets/css/tokens.css">
-  <link rel="stylesheet" href="assets/css/app.css">
   <style>
     :root {
       --portal-bg: #f4f6f9;

@@ -24,4 +24,12 @@ $page_title = $page_title ?? 'Dashboard';
 
   <?php require_once __DIR__ . '/theme.php'; ?>
   <?= $extra_head ?? '' ?>
+
+  <!-- Bootstrap-Bundle bewusst im <head> und ohne defer: die Seiten legen
+       ihre Modals beim Parsen an (new bootstrap.Modal(...)). Laedt das
+       Bundle erst am Seitenende, wirft jedes dieser Skripte
+       "bootstrap is not defined", der ganze Block bricht ab und die
+       darin definierten Funktionen existieren nie - Schaltflaechen
+       reagieren dann einfach nicht mehr. -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </head>
