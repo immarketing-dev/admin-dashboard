@@ -1,0 +1,16 @@
+# Example for tools/leakscan-local.txt (gitignored, not part of this repo).
+#
+# tools/check.sh scans the working tree for the patterns listed in
+# tools/leakscan-local.txt, if that file exists. It is meant to hold the
+# identifiers of *your* installation - database user/name, hostname, admin
+# e-mail, SMTP host, and anything else that would help an attacker reach
+# your server - so that a `git add` or a copy-pasted config snippet never
+# ends up committed.
+#
+# One extended-regex (grep -E) pattern per line. Lines starting with '#'
+# and blank lines are ignored. Copy this file to leakscan-local.txt and
+# fill in your own values; that file is gitignored and stays local.
+#
+# Examples (replace with your real values):
+mydbuser123
+my-db-host\.example\.com

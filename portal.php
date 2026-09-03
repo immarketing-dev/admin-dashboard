@@ -1,0 +1,1568 @@
+<?php
+require_once 'config.php';
+require_once 'includes/upload_helper.php';
+session_start();
+
+// Token-Prüfung
+if (!isset($_GET['token']) || strlen($_GET['token']) < 10) {
+    die("Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.");
+}
+$token = $_GET['token'];
+$stmt = $pdo->prepare("SELECT * FROM contacts WHERE portal_token = ?");
+$stmt->execute([$token]);
+$client = $stmt->fetch(PDO::FETCH_ASSOC);
+if (!$client) { die("Zugang abgelaufen oder ungültig."); }
+
+$_sess_key  = 'portal_auth_' . $client['id'];
+$_pin_error = '';
+
+// =============================================
+// POST / AJAX AKTIONEN
+// =============================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // ── PIN: Zugangscode erstmalig vergeben
+    if (isset($_POST['action']) && $_POST['action'] === 'set_portal_pin') {
+        $pin  = trim($_POST['pin'] ?? '');
+        $pin2 = trim($_POST['pin_confirm'] ?? '');
+        if (mb_strlen($pin) < 4) {
+            $_pin_error = 'Der Zugangscode muss mindestens 4 Zeichen haben.';
+        } elseif ($pin !== $pin2) {
+            $_pin_error = 'Die Zugangscodes stimmen nicht überein.';
+        } else {
+            $pdo->prepare("UPDATE contacts SET portal_pin=?, portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")
+                ->execute([password_hash($pin, PASSWORD_DEFAULT), $client['id']]);
+            $_SESSION[$_sess_key] = true;
+            header("Location: portal?token=$token"); exit();
+        }
+    }
+
+    // ── PIN: Zugangscode prüfen
+    if (isset($_POST['action']) && $_POST['action'] === 'verify_portal_pin') {
+        $stmt_fresh = $pdo->prepare("SELECT portal_pin, portal_pin_attempts, portal_pin_locked_until FROM contacts WHERE id=?");
+        $stmt_fresh->execute([$client['id']]);
+        $fresh = $stmt_fresh->fetch(PDO::FETCH_ASSOC);
+
+        if (!$fresh || empty($fresh['portal_pin'])) {
+            // Kein PIN gesetzt — kein Verify möglich (Angreifer soll keinen Hinweis erhalten)
+            $_pin_error = 'Falscher Zugangscode.';
+        } else {
+            $locked_until = $fresh['portal_pin_locked_until'];
+            if ($locked_until && strtotime($locked_until) > time()) {
+                $mins = (int)ceil((strtotime($locked_until) - time()) / 60);
+                $_pin_error = "Zu viele Fehlversuche. Bitte noch $mins Minute(n) warten.";
+            } elseif (password_verify(trim($_POST['pin'] ?? ''), $fresh['portal_pin'])) {
+                $pdo->prepare("UPDATE contacts SET portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")->execute([$client['id']]);
+                $_SESSION[$_sess_key] = true;
+                header("Location: portal?token=$token"); exit();
+            } else {
+                $attempts = (int)$fresh['portal_pin_attempts'] + 1;
+                if ($attempts >= 5) {
+                    $pdo->prepare("UPDATE contacts SET portal_pin_attempts=?, portal_pin_locked_until=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?")
+                        ->execute([$attempts, $client['id']]);
+                    $_pin_error = 'Zu viele Fehlversuche. Zugang für 30 Minuten gesperrt.';
+                } else {
+                    $pdo->prepare("UPDATE contacts SET portal_pin_attempts=? WHERE id=?")->execute([$attempts, $client['id']]);
+                    $_pin_error = 'Falscher Zugangscode. Noch ' . (5 - $attempts) . ' Versuch(e).';
+                }
+            }
+        }
+    }
+
+    // AJAX: Meilenstein-Kommentar hinzufügen
+    if (isset($_POST['action']) && $_POST['action'] === 'add_ms_comment') {
+        header('Content-Type: application/json');
+        $ms_id   = (int)($_POST['milestone_id'] ?? 0);
+        $message = trim($_POST['message'] ?? '');
+        if (!$ms_id || $message === '') { echo json_encode(['success' => false]); exit(); }
+
+        // Sicherstellen dass dieser Meilenstein zu einem Projekt dieses Kunden gehört
+        $check = $pdo->prepare("SELECT m.id FROM task_milestones m JOIN tasks t ON m.task_id = t.id WHERE m.id = ? AND t.contact_id = ?");
+        $check->execute([$ms_id, $client['id']]);
+        if (!$check->fetch()) { echo json_encode(['success' => false, 'error' => 'forbidden']); exit(); }
+
+        $pdo->prepare("INSERT INTO milestone_comments (milestone_id, author, author_name, message) VALUES (?, 'client', ?, ?)")
+            ->execute([$ms_id, $client['name'], $message]);
+        $new_id = $pdo->lastInsertId();
+
+        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_MS_COMMENT',?)")
+            ->execute(["Kunde {$client['name']} kommentierte Meilenstein #$ms_id"]);
+
+        echo json_encode([
+            'success'     => true,
+            'id'          => $new_id,
+            'author_name' => $client['name'],
+            'message'     => htmlspecialchars($message, ENT_QUOTES),
+            'time'        => date('d.m.Y H:i'),
+        ]);
+        exit();
+    }
+
+    // Profildaten aktualisieren
+    if (isset($_POST['update_profile'])) {
+        $pdo->prepare("UPDATE contacts SET name=?,company=?,email=?,phone=?,website=?,street=?,zip=?,city=?,country=? WHERE id=?")
+            ->execute([trim($_POST['name']),trim($_POST['company']),trim($_POST['email']),trim($_POST['phone']),trim($_POST['website']),trim($_POST['street']),trim($_POST['zip']),trim($_POST['city']),trim($_POST['country']),$client['id']]);
+        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_PROFILE',?)")->execute(["Kunde {$client['name']} aktualisierte Kontaktdaten."]);
+        header("Location: portal?token=$token&msg=profile_updated"); exit();
+    }
+
+    // Support-Ticket erstellen
+    if (isset($_POST['create_ticket'])) {
+        $pdo->prepare("INSERT INTO support_tickets (contact_id,subject,message) VALUES (?,?,?)")
+            ->execute([$client['id'],trim($_POST['subject']),trim($_POST['message'])]);
+        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('TICKET_CREATED',?)")->execute(["Ticket von {$client['name']}: ".mb_strimwidth($_POST['subject'],0,30,'...')]);
+        header("Location: portal?token=$token&msg=ticket_created"); exit();
+    }
+
+    // Ticket-Priorität ändern (Kunde, AJAX)
+    if (isset($_POST['action']) && $_POST['action'] === 'update_ticket_priority') {
+        header('Content-Type: application/json');
+        $tid  = (int)($_POST['ticket_id'] ?? 0);
+        $prio = in_array($_POST['priority'] ?? '', ['Niedrig','Mittel','Hoch','Kritisch']) ? $_POST['priority'] : 'Mittel';
+        $chk  = $pdo->prepare("SELECT id FROM support_tickets WHERE id=? AND contact_id=?");
+        $chk->execute([$tid, $client['id']]);
+        if (!$chk->fetch()) { echo json_encode(['ok' => false]); exit(); }
+        $pdo->prepare("UPDATE support_tickets SET priority=? WHERE id=?")->execute([$prio, $tid]);
+        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_UPDATE', ?)")
+            ->execute(["Kunde {$client['name']} änderte Priorität von Ticket #$tid auf '$prio'"]);
+        echo json_encode(['ok' => true]);
+        exit();
+    }
+
+    // Ticket als Erledigt markieren (Kunde)
+    if (isset($_POST['action']) && $_POST['action'] === 'close_ticket') {
+        $tid = (int)($_POST['ticket_id'] ?? 0);
+        $chk = $pdo->prepare("SELECT id FROM support_tickets WHERE id=? AND contact_id=?");
+        $chk->execute([$tid, $client['id']]);
+        if ($chk->fetch()) {
+            $pdo->prepare("UPDATE support_tickets SET status='Erledigt' WHERE id=?")->execute([$tid]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_CLOSE', ?)")
+                ->execute(["Kunde {$client['name']} markierte Ticket #$tid als Erledigt"]);
+        }
+        header("Location: portal?token=$token&msg=ticket_closed&open_ticket=$tid#support"); exit();
+    }
+
+    // Ticket löschen (Kunde)
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_portal_ticket') {
+        $tid = (int)($_POST['ticket_id'] ?? 0);
+        $chk = $pdo->prepare("SELECT id FROM support_tickets WHERE id=? AND contact_id=?");
+        $chk->execute([$tid, $client['id']]);
+        if ($chk->fetch()) {
+            $pdo->prepare("DELETE FROM ticket_notes WHERE ticket_id=?")->execute([$tid]);
+            $pdo->prepare("DELETE FROM support_tickets WHERE id=?")->execute([$tid]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_DELETE', ?)")
+                ->execute(["Kunde {$client['name']} löschte Ticket #$tid"]);
+        }
+        header("Location: portal?token=$token&msg=ticket_deleted#support"); exit();
+    }
+
+    // Kundenantwort auf bestehendes Ticket
+    if (isset($_POST['action']) && $_POST['action'] === 'add_ticket_reply') {
+        $tid   = (int)($_POST['ticket_id'] ?? 0);
+        $reply = trim($_POST['reply'] ?? '');
+        $chk   = $pdo->prepare("SELECT id FROM support_tickets WHERE id=? AND contact_id=?");
+        $chk->execute([$tid, $client['id']]);
+        if ($chk->fetch() && $reply !== '') {
+            $pdo->prepare("INSERT INTO ticket_notes (ticket_id, note, author, is_public) VALUES (?, ?, 'client', 1)")
+                ->execute([$tid, $reply]);
+            // Ticket reaktivieren wenn es bereits Erledigt war
+            $pdo->prepare("UPDATE support_tickets SET status='Offen' WHERE id=? AND status='Erledigt'")->execute([$tid]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_REPLY', ?)")
+                ->execute(["Kunde {$client['name']} antwortete auf Ticket #$tid"]);
+        }
+        header("Location: portal?token=$token&msg=reply_sent#support"); exit();
+    }
+
+    // Datei-Upload (AJAX)
+    if (isset($_FILES['asset_files'])) {
+        $task_id    = (int)$_POST['task_id'];
+        $upload_dir = 'uploads/client_assets/';
+        if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+        foreach ($_FILES['asset_files']['tmp_name'] as $k => $tmp) {
+            $name = basename($_FILES['asset_files']['name'][$k]);
+            $size = $_FILES['asset_files']['size'][$k];
+            if (!$tmp) continue;
+            $err = validate_upload($tmp, $name, $size);
+            if ($err) { echo "ERR_TYPE:$name"; exit(); }
+            $safe = safe_filename($name);
+            if (move_uploaded_file($tmp, $upload_dir . $safe)) {
+                $pdo->prepare("INSERT INTO client_assets (task_id,file_name,file_path,dashboard_seen,uploaded_by) VALUES (?,?,?,0,'client')")->execute([$task_id,$name,$upload_dir.$safe]);
+                $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_UPLOAD',?)")->execute(["Kunde {$client['name']} lud hoch: $name"]);
+            }
+        }
+        echo "OK"; exit();
+    }
+
+    // Meilenstein absegnen
+    if (isset($_POST['approve_ms'])) {
+        $ms_id = (int)$_POST['ms_id'];
+        // Sicherstellen dass dieser Meilenstein zu diesem Kunden gehört
+        $check = $pdo->prepare("SELECT m.id FROM task_milestones m JOIN tasks t ON m.task_id=t.id WHERE m.id=? AND t.contact_id=?");
+        $check->execute([$ms_id, $client['id']]);
+        if ($check->fetch()) {
+            $pdo->prepare("UPDATE task_milestones SET approved_at=NOW(),is_completed=1,approval_seen=0 WHERE id=?")->execute([$ms_id]);
+            $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_APPROVAL',?)")->execute(["Kunde {$client['name']} segnete Meilenstein #$ms_id ab."]);
+        }
+        header("Location: portal?token=$token&msg=approved"); exit();
+    }
+
+    // Allgemeines Projekt-Feedback
+    if (isset($_POST['send_feedback'])) {
+        $pdo->prepare("UPDATE tasks SET client_feedback=?,feedback_seen=0 WHERE id=?")->execute([$_POST['feedback'],(int)$_POST['task_id']]);
+        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_FEEDBACK',?)")->execute(["Kunde {$client['name']} sendete Projekt-Feedback."]);
+        header("Location: portal?token=$token&msg=feedback"); exit();
+    }
+
+    // Asset löschen
+    if (isset($_POST['delete_asset'])) {
+        $aid  = (int)$_POST['asset_id'];
+        $row  = $pdo->prepare("SELECT file_path FROM client_assets WHERE id=? AND task_id IN (SELECT id FROM tasks WHERE contact_id=?)");
+        $row->execute([$aid, $client['id']]);
+        $file = $row->fetch();
+        if ($file) {
+            @unlink($file['file_path']);
+            $pdo->prepare("DELETE FROM client_assets WHERE id=?")->execute([$aid]);
+            $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_DELETE',?)")->execute(["Kunde {$client['name']} löschte Datei."]);
+        }
+        header("Location: portal?token=$token&msg=deleted"); exit();
+    }
+}
+
+// ── AUTH CHECK: PIN-Schutz ──────────────────────────────────────
+$_pin_is_set = !empty($client['portal_pin'] ?? null);
+$_is_auth    = !empty($_SESSION[$_sess_key]);
+
+if (!$_is_auth) {
+    $_name_parts = explode(' ', $client['name']);
+    $_avatar     = strtoupper(substr($_name_parts[0], 0, 1) . (isset($_name_parts[1]) ? substr($_name_parts[1], 0, 1) : ''));
+    $_first_name = htmlspecialchars($_name_parts[0]);
+    $_locked     = !empty($client['portal_pin_locked_until'] ?? null) && strtotime($client['portal_pin_locked_until']) > time();
+    ?><!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zugang · <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
+  <?php require_once 'includes/theme.php'; ?>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <style>
+    *{box-sizing:border-box}
+    body{min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center;font-family:'Open Sans',sans-serif;padding:20px;
+      background:linear-gradient(135deg,var(--color-sidebar) 0%,color-mix(in srgb,var(--color-sidebar) 60%,var(--color-primary)) 100%);
+      position:relative;overflow:hidden;}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;
+      background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
+    .pin-card{background:#fff;border-radius:24px;padding:44px 40px 36px;width:100%;max-width:430px;
+      box-shadow:0 24px 72px rgba(0,0,0,.4);position:relative;z-index:1;
+      animation:fadeUp .35s cubic-bezier(.22,.68,0,1.2);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+    .pin-avatar{width:76px;height:76px;border-radius:22px;background:var(--color-primary);
+      display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;
+      font-family:'Poppins',sans-serif;margin:0 auto 20px;
+      box-shadow:0 8px 28px color-mix(in srgb,var(--color-primary) 55%,transparent);}
+    .pin-wrap{position:relative}
+    .pin-input{border-radius:12px;font-size:17px;letter-spacing:3px;padding:13px 48px 13px 18px;
+      border:2px solid #e9ecef;width:100%;transition:border-color .2s,box-shadow .2s;
+      font-family:'Poppins',sans-serif;background:#fafbfc;outline:none;}
+    .pin-input:focus{background:#fff;border-color:var(--color-primary);
+      box-shadow:0 0 0 4px color-mix(in srgb,var(--color-primary) 14%,transparent);}
+    .pin-input.err{border-color:#dc3545;}
+    .pin-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+      background:none;border:none;color:#adb5bd;cursor:pointer;font-size:18px;padding:4px;
+      line-height:1;transition:color .15s;}
+    .pin-toggle:hover{color:var(--color-primary)}
+    .btn-pin{background:var(--color-primary);color:#fff;border:none;border-radius:12px;padding:14px;
+      width:100%;font-size:15px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;
+      letter-spacing:.3px;transition:opacity .2s,transform .1s;}
+    .btn-pin:hover{opacity:.88}.btn-pin:active{transform:scale(.98)}
+    .strength-bar{height:4px;border-radius:2px;background:#e9ecef;margin-top:6px;overflow:hidden}
+    .strength-fill{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s}
+    .match-msg{font-size:12px;margin-top:4px;min-height:16px}
+  </style>
+</head>
+<body>
+<div class="pin-card">
+  <div class="pin-avatar"><?= $_avatar ?></div>
+
+  <?php if ($_pin_is_set): ?>
+    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:#1a1a2e;">Willkommen zurück</h4>
+    <p class="text-muted text-center mb-4" style="font-size:13.5px;">Hallo <?= $_first_name ?>, geben Sie Ihren Zugangscode ein.</p>
+  <?php else: ?>
+    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:#1a1a2e;">Portal einrichten</h4>
+    <p class="text-muted text-center mb-4" style="font-size:13.5px;">Legen Sie einmalig einen persönlichen Zugangscode für Ihr Portal fest.</p>
+  <?php endif; ?>
+
+  <?php if ($_pin_error): ?>
+  <div class="alert alert-danger rounded-3 d-flex align-items-start gap-2 py-2 px-3 mb-4" style="font-size:13px;">
+    <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+    <span><?= htmlspecialchars($_pin_error) ?></span>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($_locked): ?>
+    <div class="text-center py-3 text-muted">
+      <i class="bi bi-shield-lock-fill mb-3 d-block" style="font-size:3rem;color:#dc3545;opacity:.7;"></i>
+      <p class="fw-bold mb-1">Zugang vorübergehend gesperrt</p>
+      <p class="small mb-0">Bitte kontaktieren Sie <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong> zum Zurücksetzen.</p>
+    </div>
+  <?php elseif ($_pin_is_set): ?>
+    <form method="POST">
+      <input type="hidden" name="action" value="verify_portal_pin">
+      <div class="mb-4">
+        <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode</label>
+        <div class="pin-wrap">
+          <input type="password" name="pin" id="pi1" class="pin-input <?= $_pin_error ? 'err' : '' ?>"
+                 placeholder="••••••" autofocus autocomplete="current-password" required>
+          <button type="button" class="pin-toggle" onclick="tv('pi1',this)" tabindex="-1"><i class="bi bi-eye"></i></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-pin"><i class="bi bi-shield-lock-fill me-2"></i>Einloggen</button>
+    </form>
+  <?php else: ?>
+    <form method="POST" autocomplete="off" onsubmit="return chkMatch()">
+      <input type="hidden" name="action" value="set_portal_pin">
+      <div class="mb-3">
+        <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode wählen <span class="text-muted fw-normal">(mind. 4 Zeichen)</span></label>
+        <div class="pin-wrap">
+          <input type="password" name="pin" id="pi1" class="pin-input" placeholder="Neuer Zugangscode"
+                 autofocus autocomplete="new-password" required minlength="4" oninput="updStr(this.value)">
+          <button type="button" class="pin-toggle" onclick="tv('pi1',this)" tabindex="-1"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="strength-bar"><div class="strength-fill" id="sf"></div></div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode bestätigen</label>
+        <div class="pin-wrap">
+          <input type="password" name="pin_confirm" id="pi2" class="pin-input" placeholder="Wiederholen"
+                 autocomplete="new-password" required minlength="4" oninput="liveMatch()">
+          <button type="button" class="pin-toggle" onclick="tv('pi2',this)" tabindex="-1"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="match-msg" id="mm"></div>
+      </div>
+      <button type="submit" class="btn-pin"><i class="bi bi-check-circle-fill me-2"></i>Zugangscode festlegen</button>
+    </form>
+  <?php endif; ?>
+
+  <div class="text-center text-muted mt-4" style="font-size:11.5px;">
+    <i class="bi bi-lock-fill" style="color:var(--color-primary);"></i>
+    Bereitgestellt von <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong>
+  </div>
+</div>
+<script>
+function tv(id,btn){const f=document.getElementById(id),s=f.type==='password';f.type=s?'text':'password';btn.innerHTML=s?'<i class="bi bi-eye-slash"></i>':'<i class="bi bi-eye"></i>';}
+function updStr(v){const f=document.getElementById('sf');let w=0,c='#dc3545';if(v.length>=4){w=33;c='#ffc107';}if(v.length>=7){w=66;c='#fd7e14';}if(v.length>=10||v.length>=6&&/[^a-zA-Z0-9]/.test(v)){w=100;c='#28a745';}f.style.width=w+'%';f.style.background=c;}
+function liveMatch(){const p1=document.getElementById('pi1').value,p2=document.getElementById('pi2'),mm=document.getElementById('mm'),ok=p2.value===p1&&p2.value.length>0;mm.style.color=ok?'#28a745':'#dc3545';mm.textContent=p2.value?(ok?'✓ Übereinstimmend':'✗ Stimmt nicht überein'):'';p2.classList.toggle('err',!ok&&p2.value.length>0);}
+function chkMatch(){const ok=document.getElementById('pi1').value===document.getElementById('pi2').value;if(!ok){liveMatch();return false;}return true;}
+</script>
+</body>
+</html>
+<?php
+    exit();
+}
+
+// =============================================
+// DATEN LADEN (alles gebatcht vor dem HTML)
+// =============================================
+$projects = $pdo->prepare("SELECT * FROM tasks WHERE contact_id=? ORDER BY created_at DESC");
+$projects->execute([$client['id']]);
+$projects = $projects->fetchAll(PDO::FETCH_ASSOC);
+
+// Batch: Meilensteine + Assets + Kommentare
+$milestones_by_task = [];
+$assets_by_task     = [];
+$comments_by_ms     = [];
+
+if (!empty($projects)) {
+    $pids = array_column($projects, 'id');
+    $ph   = implode(',', array_fill(0, count($pids), '?'));
+
+    $ms_rows = $pdo->prepare("SELECT * FROM task_milestones WHERE task_id IN ($ph) ORDER BY created_at ASC");
+    $ms_rows->execute($pids);
+    $all_ms_ids = [];
+    foreach ($ms_rows->fetchAll(PDO::FETCH_ASSOC) as $ms) {
+        $milestones_by_task[$ms['task_id']][] = $ms;
+        $all_ms_ids[] = $ms['id'];
+    }
+
+    $asset_rows = $pdo->prepare("SELECT * FROM client_assets WHERE task_id IN ($ph) ORDER BY uploaded_at DESC");
+    $asset_rows->execute($pids);
+    foreach ($asset_rows->fetchAll(PDO::FETCH_ASSOC) as $a) {
+        $assets_by_task[$a['task_id']][] = $a;
+    }
+
+    if (!empty($all_ms_ids)) {
+        $ph2  = implode(',', array_fill(0, count($all_ms_ids), '?'));
+        $coms = $pdo->prepare("SELECT * FROM milestone_comments WHERE milestone_id IN ($ph2) ORDER BY created_at ASC");
+        $coms->execute($all_ms_ids);
+        foreach ($coms->fetchAll(PDO::FETCH_ASSOC) as $c) {
+            $comments_by_ms[$c['milestone_id']][] = $c;
+        }
+    }
+}
+
+$invoices = $pdo->prepare("SELECT * FROM finances WHERE contact_id=? AND type='INCOME' ORDER BY record_date DESC");
+$invoices->execute([$client['id']]);
+$invoices = $invoices->fetchAll(PDO::FETCH_ASSOC);
+
+$tickets_stmt = $pdo->prepare("SELECT t.*,
+    (SELECT COUNT(*) FROM ticket_notes tn WHERE tn.ticket_id=t.id AND tn.is_public=1) AS reply_count
+    FROM support_tickets t WHERE t.contact_id=? ORDER BY t.created_at DESC");
+$tickets_stmt->execute([$client['id']]);
+$tickets = $tickets_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$public_notes_by_ticket = [];
+if (!empty($tickets)) {
+    $tids = array_column($tickets, 'id');
+    $tph  = implode(',', array_fill(0, count($tids), '?'));
+    $tnq  = $pdo->prepare("SELECT * FROM ticket_notes WHERE ticket_id IN ($tph) AND is_public=1 ORDER BY created_at ASC");
+    $tnq->execute($tids);
+    foreach ($tnq->fetchAll(PDO::FETCH_ASSOC) as $n) {
+        $public_notes_by_ticket[$n['ticket_id']][] = $n;
+    }
+}
+
+// Wiki-Artikel + Anhänge
+$wiki_articles = [];
+$wiki_stmt = $pdo->prepare("SELECT wa.* FROM wiki_articles wa JOIN wiki_client_shares wcs ON wa.id=wcs.article_id WHERE wcs.contact_id=? ORDER BY wa.is_pinned DESC, wa.created_at DESC");
+$wiki_stmt->execute([$client['id']]);
+$wiki_articles = $wiki_stmt->fetchAll(PDO::FETCH_ASSOC);
+if (!empty($wiki_articles)) {
+    $wids    = array_column($wiki_articles, 'id');
+    $wph     = implode(',', array_fill(0, count($wids), '?'));
+    $att_q   = $pdo->prepare("SELECT * FROM wiki_attachments WHERE article_id IN ($wph) ORDER BY uploaded_at ASC");
+    $att_q->execute($wids);
+    $att_map = [];
+    foreach ($att_q->fetchAll(PDO::FETCH_ASSOC) as $a) { $att_map[$a['article_id']][] = $a; }
+    foreach ($wiki_articles as &$wa) { $wa['attachments'] = $att_map[$wa['id']] ?? []; }
+    unset($wa);
+}
+
+// Quick-Stats für den Header
+$open_inv_count   = count(array_filter($invoices, fn($i) => in_array($i['status'], ['Offen','Überfällig'])));
+$open_ticket_count = count(array_filter($tickets, fn($t) => $t['status'] !== 'Erledigt'));
+$active_proj_count = count(array_filter($projects, fn($p) => $p['status'] !== 'Erledigt'));
+
+// Client-Avatar (erste Buchstaben des Namens)
+$name_parts = explode(' ', $client['name']);
+$avatar_letters = strtoupper(substr($name_parts[0], 0, 1) . (isset($name_parts[1]) ? substr($name_parts[1], 0, 1) : ''));
+
+$is_partner = ($client['contact_type'] === 'Geschäftspartner');
+?>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><?= $is_partner ? 'Partner-Portal' : 'Kundenportal' ?> | <?= setting('company_short', COMPANY_SHORT) ?></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+  <?php require_once 'includes/theme.php'; ?>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <style>
+    :root {
+      --portal-bg: #f4f6f9;
+    }
+
+    body { background: var(--portal-bg); font-family: 'Open Sans', sans-serif; }
+
+    /* ── HEADER ── */
+    .portal-header {
+      background: linear-gradient(135deg, var(--color-sidebar) 0%, color-mix(in srgb, var(--color-sidebar) 60%, var(--color-primary)) 100%);
+      padding: 52px 0 88px;
+      position: relative;
+      overflow: hidden;
+    }
+    .portal-header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .portal-avatar {
+      width: 84px; height: 84px; border-radius: 50%;
+      background: var(--color-primary);
+      border: 3px solid rgba(255,255,255,.35);
+      box-shadow: 0 0 0 6px rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; font-weight: 800; color: #fff;
+      font-family: 'Poppins', sans-serif;
+      flex-shrink: 0;
+    }
+    .portal-header-stat {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 14px;
+      padding: 14px 24px;
+      text-align: center;
+      backdrop-filter: blur(6px);
+      flex: 1 0 0%;
+      min-width: 110px;
+      max-width: 190px;
+      transition: background .2s;
+    }
+    .portal-header-stat:hover { background: rgba(255,255,255,.18); }
+    .portal-header-stat .stat-val { font-size: 26px; font-weight: 800; color: #fff; line-height: 1; font-family: 'Poppins', sans-serif; }
+    .portal-header-stat .stat-lbl { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 4px; letter-spacing: .3px; }
+
+    /* ── NAV PILLS ── */
+    .portal-nav-wrap {
+      background: #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+      position: sticky; top: 0; z-index: 100;
+      margin-top: -36px;
+    }
+    .portal-nav-inner {
+      display: flex; overflow-x: auto; gap: 4px;
+      padding: 10px 16px; scrollbar-width: none;
+    }
+    .portal-nav-inner::-webkit-scrollbar { display: none; }
+    .portal-pill {
+      white-space: nowrap; border-radius: 8px;
+      padding: 8px 18px; font-size: 13px; font-weight: 600;
+      color: #6c757d; border: none; background: transparent;
+      cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px;
+    }
+    .portal-pill:hover { background: #f0f7ff; color: var(--color-primary); }
+    .portal-pill.active { background: var(--color-primary); color: #fff; }
+    .portal-pill .pill-badge {
+      background: rgba(255,255,255,.3); color: #fff;
+      font-size: 10px; border-radius: 10px; padding: 1px 6px; font-weight: 700;
+    }
+    .portal-pill:not(.active) .pill-badge { background: #e9ecef; color: #495057; }
+    .portal-pill.active .pill-badge-danger { background: #dc3545; }
+
+    /* ── CONTENT ── */
+    .portal-content { padding: 32px 0 60px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── PROJECT CARDS ── */
+    .project-card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      border: 1px solid #e9ecef;
+      overflow: hidden; margin-bottom: 24px;
+    }
+    .project-card-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .project-progress-bar {
+      height: 6px; border-radius: 3px;
+      background: #e9ecef; overflow: hidden;
+    }
+    .project-progress-fill {
+      height: 100%; border-radius: 3px;
+      background: var(--color-primary);
+      transition: width .5s ease;
+    }
+    .project-progress-fill.complete { background: #28a745; }
+
+    /* ── MILESTONE TIMELINE ── */
+    .timeline { padding: 4px 0; }
+    .tl-item {
+      display: flex; gap: 12px;
+      position: relative; padding-bottom: 4px;
+    }
+    .tl-item:not(:last-child) .tl-line { display: block; }
+    .tl-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 28px; }
+    .tl-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid #dee2e6; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0; transition: all .2s; z-index: 1;
+    }
+    .tl-dot.done    { background: #28a745; border-color: #28a745; color: #fff; }
+    .tl-dot.pending { background: #fff3cd; border-color: #ffc107; color: #856404; }
+    .tl-dot.approved { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+    .tl-line {
+      display: none; flex: 1; width: 2px;
+      background: #e9ecef; margin: 4px 0;
+      min-height: 16px;
+    }
+    .tl-body { flex: 1; padding-bottom: 16px; }
+    .tl-title { font-weight: 600; font-size: 14px; color: #212529; line-height: 1.4; }
+    .tl-title.done-text { text-decoration: line-through; color: #adb5bd; font-weight: 400; }
+    .tl-meta { font-size: 11px; color: #adb5bd; margin-top: 2px; }
+
+    /* ── MILESTONE COMMENTS ── */
+    .ms-comments { margin-top: 10px; }
+    .ms-comment-bubble {
+      background: #f0f7ff; border-radius: 0 10px 10px 10px;
+      padding: 9px 13px; margin-bottom: 6px; font-size: 13px;
+      border: 1px solid #d0e8f9; position: relative;
+    }
+    .ms-comment-bubble.self {
+      background: #f0fff4; border-color: #b2dfdb; border-radius: 10px 10px 10px 0;
+    }
+    .ms-comment-meta { font-size: 11px; color: #6c757d; margin-bottom: 4px; font-weight: 600; }
+    .ms-comment-text { color: #343a40; line-height: 1.5; }
+    .ms-comment-form { display: none; margin-top: 8px; }
+    .ms-comment-form.open { display: block; }
+    .ms-comment-toggle {
+      font-size: 12px; color: var(--color-primary); background: none; border: none;
+      padding: 2px 0; cursor: pointer; font-weight: 600;
+      display: flex; align-items: center; gap: 4px;
+      transition: opacity .15s;
+    }
+    .ms-comment-toggle:hover { opacity: .7; }
+
+    /* ── PROJECT COLLAPSE ── */
+    .project-card-header {
+      cursor: pointer; user-select: none;
+    }
+    .project-card-header:hover { background: #fafbfc; }
+    .proj-chevron { transition: transform .3s ease; color: #adb5bd; flex-shrink: 0; }
+    .project-card-header[aria-expanded="false"] .proj-chevron { transform: rotate(-90deg); }
+
+    /* ── APPROVE BUTTON ── */
+    .btn-approve {
+      background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+      border-radius: 8px; padding: 5px 14px; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .btn-approve:hover { background: #28a745; color: #fff; border-color: #28a745; }
+
+    /* ── FILES ZONE ── */
+    .upload-zone {
+      border: 2px dashed #cbd5e0; border-radius: 12px;
+      padding: 24px 16px; text-align: center; cursor: pointer;
+      transition: all .2s; background: #fafbfc;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--color-primary); background: #f0f8ff;
+    }
+    .file-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 8px;
+      background: #f8f9fa; border: 1px solid #e9ecef;
+      margin-bottom: 6px; font-size: 13px;
+    }
+    .file-row .file-name { flex: 1; min-width: 0; font-weight: 600; color: #343a40; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-badge-admin { background: #cfe2ff; color: #0a58ca; font-size: 10px; border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
+    .file-badge-client { background: #e2e3e5; color: #41464b; font-size: 10px; border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
+
+    /* ── INVOICE CARDS ── */
+    .invoice-card {
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      border: 1px solid #e9ecef; padding: 20px;
+      transition: box-shadow .2s; height: 100%;
+    }
+    .invoice-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+    .invoice-amount { font-size: 26px; font-weight: 800; font-family: 'Poppins', sans-serif; color: #212529; }
+    .invoice-overdue .invoice-amount { color: #dc3545; }
+
+    /* ── TICKET CARDS ── */
+    .ticket-card {
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      border: 1px solid #e9ecef;
+      margin-bottom: 14px;
+      border-left: 4px solid #dee2e6;
+      overflow: hidden;
+    }
+    .ticket-card.open   { border-left-color: #ffc107; }
+    .ticket-card.active { border-left-color: var(--color-primary); }
+    .ticket-card.done   { border-left-color: #28a745; opacity: .8; }
+    .ticket-header { padding: 16px 20px; cursor: pointer; user-select: none; transition: background .15s; }
+    .ticket-header:hover { background: #fafbfc; }
+    .ticket-chevron { font-size: 13px; transition: transform .3s ease; color: #adb5bd; flex-shrink: 0; }
+    [data-bs-toggle="collapse"][aria-expanded="true"] .ticket-chevron { transform: rotate(180deg); }
+    .ticket-body { padding: 0 20px 16px; background: #fafbfc; border-top: 1px solid #f0f0f0; }
+
+    /* ── TOAST ── */
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1090; }
+
+    /* ── MISC ── */
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #adb5bd; margin-bottom: 10px; }
+    .feedback-card { background: #fffbf0; border-radius: 14px; border: 1px solid #fde8a1; padding: 20px; }
+    .empty-state { text-align: center; padding: 48px 20px; color: #adb5bd; }
+    .empty-state i { font-size: 48px; display: block; margin-bottom: 12px; }
+    .empty-state p { font-weight: 600; margin: 0; }
+
+    @media(max-width:768px) {
+      .portal-header { padding: 28px 0 56px; }
+      .portal-header-stat { min-width: 90px; max-width: none; padding: 10px 14px; flex: 1; }
+      .portal-header-stat .stat-val { font-size: 20px; }
+      .portal-nav-inner { padding: 8px 10px; gap: 2px; }
+      .portal-pill { padding: 7px 12px; font-size: 12px; }
+      .invoice-amount { font-size: 20px; }
+      .portal-content { padding: 20px 0 50px; }
+      .project-card-header { padding: 16px 18px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-container">
+  <?php if(isset($_GET['msg'])): ?>
+  <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body fw-bold">
+        <?php
+          $msgs = [
+            'approved'        => 'Meilenstein erfolgreich abgesegnet!',
+            'feedback'        => 'Ihr Feedback wurde gespeichert!',
+            'deleted'         => 'Datei erfolgreich entfernt!',
+            'uploaded'        => 'Datei(en) erfolgreich hochgeladen!',
+            'ticket_created'  => 'Ihre Anfrage wurde gesendet!',
+            'reply_sent'      => 'Ihre Antwort wurde gesendet!',
+            'ticket_closed'   => 'Ticket als erledigt markiert.',
+            'ticket_deleted'  => 'Ticket wurde gelöscht.',
+            'profile_updated' => 'Ihre Daten wurden aktualisiert!',
+          ];
+          echo '<i class="bi bi-check-circle-fill me-2"></i>' . ($msgs[$_GET['msg']] ?? '');
+        ?>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+  <?php endif; ?>
+</div>
+
+<!-- HEADER -->
+<header class="portal-header">
+  <div class="container">
+    <div class="text-center mb-4">
+      <div class="portal-avatar mx-auto mb-3"><?= $avatar_letters ?></div>
+      <p class="text-white-50 small mb-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+        <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
+        <?php if($is_partner): ?>
+          <span style="background:rgba(255,193,7,0.25);color:#ffd54f;border:1px solid rgba(255,193,7,0.4);border-radius:20px;padding:1px 10px;font-size:10px;font-weight:700;letter-spacing:0.5px;">PARTNER</span>
+        <?php endif; ?>
+      </p>
+      <h1 class="text-white fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:clamp(22px,5vw,36px);">
+        <?= $is_partner ? 'Guten Tag' : 'Willkommen' ?><?= $client['company'] ? ', '.htmlspecialchars($client['company']) : ', '.htmlspecialchars(explode(' ',$client['name'])[0]) ?>!
+      </h1>
+      <p class="text-white-50 mb-0 small"><?= $is_partner ? 'Ihr persönliches Partner-Portal' : 'Ihr persönliches Projektportal' ?></p>
+    </div>
+    <div class="d-flex gap-3 flex-wrap justify-content-center">
+      <div class="portal-header-stat">
+        <div class="stat-val"><?= $active_proj_count ?></div>
+        <div class="stat-lbl">Aktive Projekte</div>
+      </div>
+      <?php if($is_partner): ?>
+      <div class="portal-header-stat">
+        <div class="stat-val"><?= count($projects) ?></div>
+        <div class="stat-lbl">Projekte gesamt</div>
+      </div>
+      <?php else: ?>
+      <div class="portal-header-stat">
+        <div class="stat-val" style="<?= $open_inv_count > 0 ? 'color:#ffd54f;' : '' ?>"><?= $open_inv_count ?></div>
+        <div class="stat-lbl">Offene Rechnungen</div>
+      </div>
+      <?php endif; ?>
+      <div class="portal-header-stat">
+        <div class="stat-val" style="<?= $open_ticket_count > 0 ? 'color:#ff8a65;' : '' ?>"><?= $open_ticket_count ?></div>
+        <div class="stat-lbl"><?= $is_partner ? 'Offene Anfragen' : 'Support-Tickets' ?></div>
+      </div>
+    </div><!-- /stats -->
+  </div><!-- /container -->
+</header>
+
+<!-- NAV PILLS -->
+<div class="portal-nav-wrap">
+  <div class="container">
+    <div class="portal-nav-inner" id="portalNav">
+      <button class="portal-pill active" data-tab="projects">
+        <i class="bi bi-<?= $is_partner ? 'diagram-3-fill' : 'kanban-fill' ?>"></i> <?= $is_partner ? 'Zusammenarbeit' : 'Projekte' ?>
+        <?php if($active_proj_count > 0): ?><span class="pill-badge"><?= $active_proj_count ?></span><?php endif; ?>
+      </button>
+      <button class="portal-pill" data-tab="invoices">
+        <i class="bi bi-receipt"></i> <?= $is_partner ? 'Abrechnungen' : 'Rechnungen' ?>
+        <?php if($open_inv_count > 0): ?><span class="pill-badge pill-badge-danger"><?= $open_inv_count ?></span><?php endif; ?>
+      </button>
+      <button class="portal-pill" data-tab="support">
+        <i class="bi bi-<?= $is_partner ? 'envelope-fill' : 'life-preserver' ?>"></i> <?= $is_partner ? 'Anfragen' : 'Support' ?>
+        <?php if($open_ticket_count > 0): ?><span class="pill-badge"><?= $open_ticket_count ?></span><?php endif; ?>
+      </button>
+      <?php if(!empty($wiki_articles)): ?>
+      <button class="portal-pill" data-tab="wiki">
+        <i class="bi bi-<?= $is_partner ? 'folder2-open' : 'book-fill' ?>"></i> <?= $is_partner ? 'Ressourcen' : 'Wissen' ?>
+        <span class="pill-badge"><?= count($wiki_articles) ?></span>
+      </button>
+      <?php endif; ?>
+      <button class="portal-pill" data-tab="profile">
+        <i class="bi bi-person-fill"></i> Mein Profil
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="portal-content">
+  <div class="container">
+
+    <!-- ═══════════════════════════════════════ PROJEKTE ═══ -->
+    <div class="tab-pane active" id="tab-projects">
+
+      <?php if(empty($projects)): ?>
+        <div class="empty-state bg-white rounded-4 shadow-sm border">
+          <i class="bi bi-folder-x"></i>
+          <p><?= $is_partner ? 'Aktuell sind keine gemeinsamen Projekte hinterlegt.' : 'Aktuell sind keine Projekte hinterlegt.' ?></p>
+        </div>
+
+      <?php else: ?>
+        <?php
+        // Suchfeld
+        if(count($projects) > 2): ?>
+        <div class="d-flex justify-content-end mb-3">
+          <div class="input-group" style="max-width:280px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted small"></i></span>
+            <input type="text" id="projectSearch" class="form-control border-start-0 ps-0 bg-white" placeholder="Projekt suchen...">
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php foreach($projects as $p_idx => $p):
+          $milestones = $milestones_by_task[$p['id']] ?? [];
+          $assets     = $assets_by_task[$p['id']] ?? [];
+          $total = count($milestones);
+          $done  = count(array_filter($milestones, fn($m) => $m['is_completed']));
+          $prog  = $total > 0 ? round($done / $total * 100) : 0;
+          $status_colors = ['In Bearbeitung'=>'#149ddd','Erledigt'=>'#28a745','Pausiert'=>'#ffc107','Planung'=>'#6f42c1'];
+          $s_color = $status_colors[$p['status']] ?? '#6c757d';
+        ?>
+        <div class="project-card project-card-item" data-title="<?= htmlspecialchars(strtolower($p['title'])) ?>">
+
+          <!-- Project Header -->
+          <div class="project-card-header" data-bs-toggle="collapse" data-bs-target="#proj-body-<?= $p['id'] ?>"
+               aria-expanded="<?= $p_idx === 0 ? 'true' : 'false' ?>" aria-controls="proj-body-<?= $p['id'] ?>">
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-3 flex-wrap">
+              <div style="min-width:0;">
+                <h4 class="fw-bold mb-1 project-title-text" style="font-family:'Poppins',sans-serif;color:#1a1a2e;"><?= htmlspecialchars($p['title']) ?></h4>
+                <?php if($p['category']): ?>
+                  <span class="badge rounded-pill small fw-normal" style="background:#e8f4fd;color:var(--color-primary);"><?= htmlspecialchars($p['category']) ?></span>
+                <?php endif; ?>
+              </div>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <span class="badge fw-semibold py-2 px-3 rounded-pill" style="background:<?= $s_color ?>1a;color:<?= $s_color ?>;border:1px solid <?= $s_color ?>44;white-space:nowrap;"><?= htmlspecialchars($p['status']) ?></span>
+                <i class="bi bi-chevron-down proj-chevron" style="<?= $p_idx !== 0 ? 'transform:rotate(-90deg);' : '' ?>"></i>
+              </div>
+            </div>
+            <!-- Progress -->
+            <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
+              <span style="color:var(--color-primary);">Fortschritt</span>
+              <span style="color:<?= $prog==100?'#28a745':'var(--color-primary)' ?>;"><?= $prog ?>%</span>
+            </div>
+            <div class="project-progress-bar">
+              <div class="project-progress-fill <?= $prog==100?'complete':'' ?>" style="width:<?= $prog ?>%;"></div>
+            </div>
+            <?php if($total > 0): ?>
+              <div class="text-muted mt-1" style="font-size:11px;"><?= $done ?> von <?= $total ?> Schritten abgeschlossen</div>
+            <?php endif; ?>
+          </div>
+
+          <!-- Project Body -->
+          <div class="collapse <?= $p_idx === 0 ? 'show' : '' ?>" id="proj-body-<?= $p['id'] ?>">
+          <div class="p-4">
+            <div class="row g-4">
+
+              <!-- LEFT: Beschreibung + Meilensteine -->
+              <div class="col-lg-7">
+                <?php if(!empty(trim($p['description']))): ?>
+                  <p class="text-muted mb-4" style="font-size:14px;line-height:1.75;"><?= nl2br(htmlspecialchars($p['description'])) ?></p>
+                <?php endif; ?>
+
+                <!-- Milestone Timeline -->
+                <?php if(!empty($milestones)): ?>
+                <div class="section-label"><i class="bi bi-list-check me-1"></i><?= $is_partner ? 'Projektschritte' : 'Roadmap & Meilensteine' ?></div>
+                <?php if(!$is_partner): ?>
+                <p class="text-muted small mb-3">Schließen Sie erledigte Schritte mit "Absegnen" ab, damit wir mit dem nächsten beginnen können.</p>
+                <?php endif; ?>
+                <div class="timeline">
+                  <?php foreach($milestones as $idx => $ms):
+                    $is_last   = $idx === count($milestones) - 1;
+                    $ms_coms   = $comments_by_ms[$ms['id']] ?? [];
+                    $dot_class = $ms['approved_at'] ? 'approved' : ($ms['is_completed'] ? 'pending' : '');
+                    $dot_icon  = $ms['approved_at'] ? 'bi-check-lg' : ($ms['is_completed'] ? 'bi-hourglass-split' : '');
+                  ?>
+                  <div class="tl-item">
+                    <div class="tl-left">
+                      <div class="tl-dot <?= $dot_class ?>">
+                        <?php if($dot_icon): ?><i class="bi <?= $dot_icon ?>" style="font-size:12px;"></i><?php endif; ?>
+                      </div>
+                      <?php if(!$is_last): ?><div class="tl-line"></div><?php endif; ?>
+                    </div>
+                    <div class="tl-body">
+                      <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+                        <div style="min-width:0;">
+                          <div class="tl-title <?= $ms['approved_at'] ? 'done-text' : '' ?>"><?= htmlspecialchars($ms['title']) ?></div>
+                          <?php if($ms['approved_at']): ?>
+                            <div class="tl-meta"><i class="bi bi-patch-check-fill text-success me-1"></i><?= $is_partner ? 'Abgeschlossen am' : 'Freigegeben am' ?> <?= date('d.m.Y', strtotime($ms['approved_at'])) ?></div>
+                          <?php elseif($ms['is_completed']): ?>
+                            <?php if(!$is_partner): ?>
+                            <div class="tl-meta" style="color:#856404;"><i class="bi bi-hourglass me-1"></i>Warten auf Ihre Freigabe</div>
+                            <?php else: ?>
+                            <div class="tl-meta text-success"><i class="bi bi-check2 me-1"></i>Abgeschlossen</div>
+                            <?php endif; ?>
+                          <?php endif; ?>
+                        </div>
+                        <?php if(!$is_partner && $ms['is_completed'] && !$ms['approved_at']): ?>
+                          <form method="POST" class="m-0 flex-shrink-0">
+                            <input type="hidden" name="ms_id" value="<?= $ms['id'] ?>">
+                            <button type="submit" name="approve_ms" class="btn-approve"><i class="bi bi-check-circle me-1"></i>Absegnen</button>
+                          </form>
+                        <?php endif; ?>
+                      </div>
+
+                      <!-- Kommentar-Thread -->
+                      <?php if(!empty($ms_coms)): ?>
+                      <div class="ms-comments mt-2">
+                        <?php foreach($ms_coms as $c): ?>
+                        <div class="ms-comment-bubble<?= $c['author']==='client' ? ' self' : '' ?>">
+                          <div class="ms-comment-meta">
+                            <?= $c['author']==='client' ? '<i class="bi bi-person-fill me-1"></i>Sie' : '<i class="bi bi-headset me-1"></i>'.htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
+                            <span class="fw-normal ms-2 text-muted"><?= date('d.m.Y H:i', strtotime($c['created_at'])) ?></span>
+                          </div>
+                          <div class="ms-comment-text"><?= nl2br(htmlspecialchars($c['message'])) ?></div>
+                        </div>
+                        <?php endforeach; ?>
+                      </div>
+                      <?php endif; ?>
+
+                      <!-- Kommentar hinzufügen -->
+                      <div class="mt-2">
+                        <button type="button" class="ms-comment-toggle" onclick="toggleCommentForm(this, <?= $ms['id'] ?>)">
+                          <i class="bi bi-chat-dots"></i>
+                          <?= empty($ms_coms) ? 'Kommentar hinterlassen' : 'Antworten' ?>
+                        </button>
+                        <div class="ms-comment-form" id="cf_<?= $ms['id'] ?>">
+                          <div class="d-flex gap-2 mt-2">
+                            <textarea class="form-control form-control-sm" id="cft_<?= $ms['id'] ?>" rows="2"
+                                      placeholder="Ihre Anmerkung zu diesem Schritt..." style="font-size:13px;resize:none;border-radius:10px;"></textarea>
+                            <div class="d-flex flex-column gap-1">
+                              <button type="button" class="btn btn-sm btn-primary px-3 fw-bold" onclick="submitComment(<?= $ms['id'] ?>)" style="border-radius:8px;">
+                                <i class="bi bi-send-fill"></i>
+                              </button>
+                              <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="toggleCommentForm(null, <?= $ms['id'] ?>)" style="border-radius:8px;">
+                                <i class="bi bi-x"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                  <?php endforeach; ?>
+                </div>
+                <?php else: ?>
+                  <div class="text-muted small fst-italic py-2">Noch keine Meilensteine für dieses Projekt.</div>
+                <?php endif; ?>
+              </div>
+
+              <!-- RIGHT: Dateien + Feedback -->
+              <div class="col-lg-5">
+
+                <!-- Dateien -->
+                <div class="mb-4">
+                  <div class="section-label"><i class="bi bi-paperclip me-1"></i><?= $is_partner ? 'Dokumente & Dateien' : 'Dateien & Assets' ?></div>
+
+                  <?php if(!empty($assets)): ?>
+                  <div class="mb-3" style="max-height:220px;overflow-y:auto;">
+                    <?php foreach($assets as $asset):
+                      $ext = strtolower(pathinfo($asset['file_name'], PATHINFO_EXTENSION));
+                      $viewable = in_array($ext, ['pdf','jpg','jpeg','png','gif','webp','svg']);
+                      $is_admin = isset($asset['uploaded_by']) && $asset['uploaded_by'] === 'admin';
+                    ?>
+                    <div class="file-row" id="asset_row_<?= $asset['id'] ?>">
+                      <i class="bi bi-file-earmark text-muted flex-shrink-0"></i>
+                      <span class="file-name" title="<?= htmlspecialchars($asset['file_name']) ?>"><?= htmlspecialchars($asset['file_name']) ?></span>
+                      <span class="<?= $is_admin ? 'file-badge-admin' : 'file-badge-client' ?>"><?= $is_admin ? 'Von uns' : 'Von Ihnen' ?></span>
+                      <?php if($viewable): ?>
+                        <a href="<?= htmlspecialchars($asset['file_path']) ?>" target="_blank" class="text-muted" title="Ansehen"><i class="bi bi-eye small"></i></a>
+                      <?php endif; ?>
+                      <a href="<?= htmlspecialchars($asset['file_path']) ?>" download class="text-primary" title="Herunterladen"><i class="bi bi-download small"></i></a>
+                      <?php if(!$is_admin): ?>
+                      <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>">
+                        <input type="hidden" name="delete_asset" value="1">
+                        <input type="hidden" name="asset_id" value="<?= $asset['id'] ?>">
+                        <button type="button" class="btn-icon text-danger p-0" style="background:none;border:none;cursor:pointer;font-size:13px;"
+                                data-confirmed="0" onclick="confirmDeleteAsset(this,<?= $asset['id'] ?>)" title="Löschen"><i class="bi bi-trash3"></i></button>
+                      </form>
+                      <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                  <?php endif; ?>
+
+                  <div class="upload-zone" data-task-id="<?= $p['id'] ?>" onclick="document.getElementById('file_<?= $p['id'] ?>').click()">
+                    <i class="bi bi-cloud-upload-fill fs-2 mb-2 d-block" style="color:var(--color-primary);opacity:.6;"></i>
+                    <div class="fw-semibold small text-dark">Dateien hochladen</div>
+                    <div class="text-muted mt-1" style="font-size:11px;">Klicken oder Dateien hierher ziehen · max. 100 MB</div>
+                    <input type="file" id="file_<?= $p['id'] ?>" multiple style="display:none;" onchange="autoUpload(this,<?= $p['id'] ?>)">
+                  </div>
+                  <div class="progress mt-2" id="box_<?= $p['id'] ?>" style="display:none;height:6px;border-radius:3px;">
+                    <div id="bar_<?= $p['id'] ?>" class="progress-bar progress-bar-animated bg-success" style="width:0;"></div>
+                  </div>
+                </div>
+
+                <?php if(!$is_partner): ?>
+                <!-- Allgemeines Feedback -->
+                <div class="feedback-card">
+                  <div class="section-label" style="color:#856404;"><i class="bi bi-chat-left-dots-fill me-1"></i>Allgemeines Feedback</div>
+                  <p class="text-muted small mb-3">Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?</p>
+                  <form method="POST">
+                    <input type="hidden" name="task_id" value="<?= $p['id'] ?>">
+                    <textarea name="feedback" rows="3" class="form-control mb-3" style="font-size:13px;border-radius:10px;resize:none;border-color:#fde8a1;background:#fff;" placeholder="Ihre Anmerkungen..."><?= htmlspecialchars($p['client_feedback'] ?? '') ?></textarea>
+                    <button type="submit" name="send_feedback" class="btn btn-sm fw-bold w-100 text-white" style="background:var(--color-sidebar);border-radius:10px;"><i class="bi bi-send me-1"></i>Feedback speichern</button>
+                  </form>
+                </div>
+                <?php endif; ?>
+
+              </div>
+            </div>
+          </div>
+          </div><!-- /collapse -->
+        </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div><!-- /projects -->
+
+    <!-- ═══════════════════════════════════════ RECHNUNGEN ═══ -->
+    <div class="tab-pane" id="tab-invoices">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Abrechnungen' : 'Rechnungsarchiv' ?></h4>
+          <p class="text-muted small m-0"><?= $is_partner ? 'Gemeinsame Abrechnungen auf einen Blick — als PDF herunterladbar.' : 'Alle Rechnungen auf einen Blick — als PDF herunterladbar.' ?></p>
+        </div>
+        <?php if($open_inv_count > 0): ?>
+          <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 fs-6">
+            <i class="bi bi-exclamation-circle me-1"></i><?= $open_inv_count ?> offen / überfällig
+          </span>
+        <?php endif; ?>
+      </div>
+
+      <?php if(empty($invoices)): ?>
+        <div class="empty-state bg-white rounded-4 border shadow-sm">
+          <i class="bi bi-receipt"></i>
+          <p>Noch keine Rechnungen vorhanden.</p>
+        </div>
+      <?php else: ?>
+        <div class="row g-3">
+          <?php foreach($invoices as $inv):
+            $is_paid     = $inv['status'] === 'Bezahlt';
+            $is_overdue  = $inv['status'] === 'Überfällig';
+            $badge_cls   = $is_paid ? 'bg-success' : ($is_overdue ? 'bg-danger' : 'bg-warning text-dark');
+          ?>
+          <div class="col-md-6 col-lg-4">
+            <div class="invoice-card <?= $is_overdue ? 'invoice-overdue' : '' ?>">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="invoice-amount"><?= number_format($inv['amount'],2,',','.') ?> €</div>
+                <span class="badge <?= $badge_cls ?> rounded-pill px-3 py-2"><?= $inv['status'] ?></span>
+              </div>
+              <div class="fw-semibold text-dark mb-1"><?= htmlspecialchars($inv['title']) ?></div>
+              <div class="text-muted small mb-3">
+                <?= date('d.m.Y', strtotime($inv['record_date'])) ?>
+                <?php if($inv['due_date']): ?>
+                  · <span class="<?= $is_overdue ? 'text-danger fw-bold' : '' ?>">fällig <?= date('d.m.Y', strtotime($inv['due_date'])) ?></span>
+                <?php endif; ?>
+              </div>
+              <?php if(!empty($inv['invoice_pdf_path'])): ?>
+                <div class="d-flex gap-2">
+                  <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" target="_blank" class="btn btn-sm btn-outline-primary fw-bold flex-grow-1" style="border-radius:8px;">
+                    <i class="bi bi-eye me-1"></i>Ansehen
+                  </a>
+                  <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" download class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px;" title="Herunterladen">
+                    <i class="bi bi-download"></i>
+                  </a>
+                </div>
+              <?php else: ?>
+                <div class="text-muted small text-center fst-italic py-1">PDF auf Anfrage</div>
+              <?php endif; ?>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div><!-- /invoices -->
+
+    <!-- ═══════════════════════════════════════ SUPPORT ═══ -->
+    <div class="tab-pane" id="tab-support">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="project-card p-4">
+            <h5 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Neue Mitteilung' : 'Neue Anfrage' ?></h5>
+            <p class="text-muted small mb-4"><?= $is_partner ? 'Fragen zur Zusammenarbeit oder sonstige Anliegen? Ich melde mich schnellstmöglich.' : 'Probleme mit der Website oder Änderungswünsche? Ich melde mich schnellstmöglich.' ?></p>
+            <form method="POST">
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Betreff</label>
+                <input type="text" name="subject" class="form-control" required placeholder="Worum geht es?" style="border-radius:10px;">
+              </div>
+              <div class="mb-4">
+                <label class="form-label small fw-bold">Beschreibung</label>
+                <textarea name="message" class="form-control" rows="5" required placeholder="Beschreiben Sie Ihr Anliegen..." style="border-radius:10px;resize:none;"></textarea>
+              </div>
+              <button type="submit" name="create_ticket" class="btn btn-danger w-100 fw-bold py-2" style="border-radius:10px;">
+                <i class="bi bi-send me-2"></i><?= $is_partner ? 'Absenden' : 'Ticket absenden' ?>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <h5 class="fw-bold mb-3" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Bisherige Mitteilungen' : 'Meine Anfragen' ?></h5>
+          <?php if(empty($tickets)): ?>
+            <div class="empty-state bg-white rounded-4 border shadow-sm">
+              <i class="bi bi-inbox" style="font-size:36px;"></i>
+              <p>Noch keine Anfragen gestellt.</p>
+            </div>
+          <?php else: ?>
+            <?php
+            $_prio_map = ['Kritisch'=>'#dc3545','Hoch'=>'#fd7e14','Mittel'=>'#ffc107','Niedrig'=>'#adb5bd'];
+            foreach($tickets as $t):
+              $is_open   = $t['status'] === 'Offen';
+              $is_active = $t['status'] === 'In Bearbeitung';
+              $is_done   = $t['status'] === 'Erledigt';
+              $t_badge   = $is_done ? 'bg-success' : ($is_active ? 'bg-primary' : 'bg-warning text-dark');
+              $card_cls  = $is_done ? 'done' : ($is_active ? 'active' : 'open');
+              $prio      = $t['priority'] ?? 'Mittel';
+              $pc        = $_prio_map[$prio] ?? '#adb5bd';
+              $pub_notes = $public_notes_by_ticket[$t['id']] ?? [];
+              $reply_cnt = (int)($t['reply_count'] ?? 0);
+            ?>
+            <div class="ticket-card <?= $card_cls ?>">
+
+              <!-- Ticket-Kopfzeile (klickbar) -->
+              <div class="ticket-header d-flex justify-content-between align-items-start gap-2 flex-wrap"
+                   data-bs-toggle="collapse" data-bs-target="#tkb_<?= $t['id'] ?>" aria-expanded="false">
+                <div style="min-width:0;">
+                  <div class="fw-bold text-dark mb-1"><?= htmlspecialchars($t['subject']) ?></div>
+                  <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span style="background:<?=$pc?>22;color:<?=$pc?>;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;text-transform:uppercase;white-space:nowrap;"><?= htmlspecialchars($prio) ?></span>
+                    <small class="text-muted"><i class="bi bi-clock me-1"></i><?= date('d.m.Y', strtotime($t['created_at'])) ?></small>
+                    <?php if ($reply_cnt > 0): ?>
+                      <small class="text-primary fw-semibold"><i class="bi bi-chat-dots-fill me-1"></i><?= $reply_cnt ?> Antwort<?= $reply_cnt > 1 ? 'en' : '' ?></small>
+                    <?php endif; ?>
+                  </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                  <span class="badge <?= $t_badge ?> rounded-pill px-3 py-1 small"><?= $t['status'] ?></span>
+                  <i class="bi bi-chevron-down ticket-chevron"></i>
+                </div>
+              </div>
+
+              <!-- Ticket-Inhalt (einklappbar) -->
+              <div class="collapse" id="tkb_<?= $t['id'] ?>">
+                <div class="ticket-body pt-3">
+
+                  <!-- Originalnachricht -->
+                  <div class="ms-comment-bubble self">
+                    <div class="ms-comment-meta">
+                      <i class="bi bi-person-fill me-1"></i><?= htmlspecialchars($client['name']) ?>
+                      <span class="fw-normal ms-2 text-muted"><?= date('d.m.Y H:i', strtotime($t['created_at'])) ?></span>
+                    </div>
+                    <div class="ms-comment-text"><?= nl2br(htmlspecialchars($t['message'])) ?></div>
+                  </div>
+
+                  <!-- Öffentliche Antworten (Admin + Kunde) -->
+                  <?php foreach($pub_notes as $n): $is_cn = $n['author'] === 'client'; ?>
+                  <div class="ms-comment-bubble <?= $is_cn ? 'self' : '' ?> mt-2">
+                    <div class="ms-comment-meta">
+                      <?php if ($is_cn): ?>
+                        <i class="bi bi-person-fill me-1"></i><?= htmlspecialchars($client['name']) ?>
+                      <?php else: ?>
+                        <i class="bi bi-headset me-1"></i><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
+                      <?php endif; ?>
+                      <span class="fw-normal ms-2 text-muted"><?= date('d.m.Y H:i', strtotime($n['created_at'])) ?></span>
+                    </div>
+                    <div class="ms-comment-text"><?= nl2br(htmlspecialchars($n['note'])) ?></div>
+                  </div>
+                  <?php endforeach; ?>
+
+                  <!-- Antwortformular (nur wenn nicht Erledigt) -->
+                  <?php if (!$is_done): ?>
+                  <form method="POST" class="mt-3">
+                    <input type="hidden" name="action" value="add_ticket_reply">
+                    <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
+                    <div class="d-flex gap-2">
+                      <textarea name="reply" class="form-control form-control-sm" rows="2"
+                                placeholder="Antwort oder Rückfrage hinzufügen…"
+                                style="resize:none;border-radius:10px;" required></textarea>
+                      <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold align-self-end" style="border-radius:10px;" title="Absenden">
+                        <i class="bi bi-send-fill"></i>
+                      </button>
+                    </div>
+                  </form>
+                  <?php endif; ?>
+
+                  <!-- Aktions-Leiste -->
+                  <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2">
+
+                    <!-- Priorität -->
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="small text-muted fw-bold">Priorität:</span>
+                      <select class="form-select form-select-sm" style="width:auto;border-radius:8px;"
+                              id="prio_sel_<?= $t['id'] ?>"
+                              onchange="updatePortalPrio(<?= $t['id'] ?>, this)">
+                        <?php foreach (['Niedrig'=>'⚪','Mittel'=>'🟡','Hoch'=>'🟠','Kritisch'=>'🔴'] as $pv => $pe): ?>
+                          <option value="<?= $pv ?>" <?= $prio === $pv ? 'selected' : '' ?>><?= $pe ?> <?= $pv ?></option>
+                        <?php endforeach; ?>
+                      </select>
+                      <small id="prio_msg_<?= $t['id'] ?>" class="text-success" style="display:none;">✓</small>
+                    </div>
+
+                    <!-- Status + Löschen -->
+                    <div class="d-flex gap-2">
+                      <?php if (!$is_done): ?>
+                      <form method="POST">
+                        <input type="hidden" name="action" value="close_ticket">
+                        <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-success fw-bold" style="border-radius:8px;">
+                          <i class="bi bi-check-circle me-1"></i>Erledigt
+                        </button>
+                      </form>
+                      <?php endif; ?>
+                      <form method="POST" onsubmit="return confirm('Ticket und alle Nachrichten endgültig löschen?')">
+                        <input type="hidden" name="action" value="delete_portal_ticket">
+                        <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius:8px;">
+                          <i class="bi bi-trash3 me-1"></i>Löschen
+                        </button>
+                      </form>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div><!-- /support -->
+
+    <!-- ═══════════════════════════════════════ WIKI ═══ -->
+    <?php if(!empty($wiki_articles)): ?>
+    <div class="tab-pane" id="tab-wiki">
+      <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Wissensdatenbank</h4>
+      <p class="text-muted small mb-4">Artikel, die <?= setting('company_short', COMPANY_SHORT) ?> für Sie freigegeben hat.</p>
+
+      <?php
+      $wiki_grouped = [];
+      foreach($wiki_articles as $wa) { $wiki_grouped[$wa['category'] ?: 'Allgemein'][] = $wa; }
+      foreach($wiki_grouped as $cat => $items):
+      ?>
+        <div class="section-label mt-3"><?= htmlspecialchars($cat) ?></div>
+        <div class="row g-3 mb-2">
+          <?php foreach($items as $wa):
+            $safe_art = htmlspecialchars(json_encode($wa, JSON_HEX_TAG|JSON_HEX_APOS), ENT_QUOTES, 'UTF-8');
+            $att_count = count($wa['attachments'] ?? []);
+          ?>
+          <div class="col-md-6 col-lg-4">
+            <button type="button" class="project-card w-100 text-start p-0 border-0 h-100" onclick='openPortalWikiModal(<?= $safe_art ?>)' style="cursor:pointer;">
+              <div class="p-4">
+                <div class="d-flex align-items-start gap-3">
+                  <div style="width:40px;height:40px;border-radius:10px;background:#e8f5e9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="bi bi-file-earmark-text text-success fs-5"></i>
+                  </div>
+                  <div style="min-width:0;flex:1;">
+                    <div class="fw-semibold text-dark mb-1">
+                      <?php if($wa['is_pinned']): ?><i class="bi bi-pin-angle-fill text-warning me-1"></i><?php endif; ?>
+                      <?= htmlspecialchars($wa['title']) ?>
+                    </div>
+                    <div class="text-muted small"><?= htmlspecialchars(mb_strimwidth(strip_tags($wa['content']),0,80,'…')) ?></div>
+                    <?php if($att_count > 0): ?>
+                      <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i><?= $att_count ?> Anhang<?= $att_count > 1 ? 'e' : '' ?></div>
+                    <?php endif; ?>
+                  </div>
+                  <i class="bi bi-arrow-right-circle text-muted flex-shrink-0"></i>
+                </div>
+              </div>
+            </button>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?><!-- /wiki -->
+
+    <!-- ═══════════════════════════════════════ PROFIL ═══ -->
+    <div class="tab-pane" id="tab-profile">
+      <div class="project-card p-4" style="max-width:760px;">
+        <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Mein Profil</h4>
+        <p class="text-muted small mb-4">Ihre bei uns hinterlegten Stammdaten — werden u.a. für die Rechnungsstellung verwendet.</p>
+        <form method="POST">
+          <input type="hidden" name="update_profile" value="1">
+          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;">Kontaktdaten</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6"><label class="form-label small fw-bold">Vor- & Nachname *</label><input type="text" name="name" class="form-control" value="<?= htmlspecialchars($client['name']) ?>" required style="border-radius:10px;"></div>
+            <div class="col-md-6"><label class="form-label small fw-bold">Firmenname</label><input type="text" name="company" class="form-control" value="<?= htmlspecialchars($client['company'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold">E-Mail *</label><input type="email" name="email" class="form-control" value="<?= htmlspecialchars($client['email'] ?? '') ?>" required style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold">Telefon</label><input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($client['phone'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold">Website</label><input type="text" name="website" class="form-control" value="<?= htmlspecialchars($client['website'] ?? '') ?>" style="border-radius:10px;"></div>
+          </div>
+          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;">Rechnungsadresse</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12"><label class="form-label small fw-bold">Straße & Hausnummer</label><input type="text" name="street" class="form-control" value="<?= htmlspecialchars($client['street'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-3"><label class="form-label small fw-bold">PLZ</label><input type="text" name="zip" class="form-control" value="<?= htmlspecialchars($client['zip'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-5"><label class="form-label small fw-bold">Ort</label><input type="text" name="city" class="form-control" value="<?= htmlspecialchars($client['city'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold">Land</label><input type="text" name="country" class="form-control" value="<?= htmlspecialchars($client['country'] ?? 'Deutschland') ?>" style="border-radius:10px;"></div>
+          </div>
+          <button type="submit" class="btn btn-lg fw-bold w-100 text-white" style="background:var(--color-primary);border-radius:12px;">
+            <i class="bi bi-check-circle me-2"></i>Daten speichern
+          </button>
+        </form>
+      </div>
+    </div><!-- /profile -->
+
+  </div><!-- /container -->
+</div><!-- /portal-content -->
+
+<!-- WIKI LESE-MODAL -->
+<div class="modal fade" id="portalWikiModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-bottom pb-3 mt-2 mx-2 align-items-start">
+        <div>
+          <span class="badge bg-success text-uppercase" id="pw_category" style="letter-spacing:.5px;"></span>
+          <span id="pw_tags" class="ms-2"></span>
+          <h2 id="pw_title" class="fw-bold mt-2 mb-0" style="color:#1a1a2e;font-family:'Poppins',sans-serif;font-size:clamp(18px,3vw,26px);"></h2>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-3 px-4 pb-5">
+        <div id="pw_content" style="font-size:15px;color:#495057;line-height:1.8;"></div>
+        <div id="pw_attachments" class="mt-5 pt-4 border-top" style="display:none;">
+          <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-paperclip me-2"></i>Angehängte Dateien</h6>
+          <div id="pw_attachments_list" class="d-flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="text-center py-5 text-muted small">
+  <p class="mb-0">&copy; <?= date('Y') ?> <?= setting('company_name', COMPANY_NAME) ?> &bull; <a href="<?= setting('main_website', MAIN_WEBSITE) ?>" class="text-decoration-none text-muted fw-bold"><?= str_replace(['http://','https://','www.'],'',setting('main_website', MAIN_WEBSITE)) ?></a></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script>
+const PORTAL_TOKEN = '<?= htmlspecialchars($token, ENT_QUOTES) ?>';
+
+// ── TAB-NAVIGATION ──
+document.querySelectorAll('.portal-pill').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.portal-pill').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        const target = document.getElementById('tab-' + this.dataset.tab);
+        if (target) target.classList.add('active');
+        // Hash für Bookmark-Fähigkeit
+        history.replaceState(null, '', '#' + this.dataset.tab);
+    });
+});
+// Beim Laden ggf. Hash auswerten
+(function() {
+    const hash = location.hash.replace('#','');
+    if (hash) {
+        const btn = document.querySelector('.portal-pill[data-tab="'+hash+'"]');
+        if (btn) btn.click();
+    }
+})();
+
+// ── TOAST ──
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.toast').forEach(el => new bootstrap.Toast(el, {delay:4000}).show());
+    if (window.history.replaceState) {
+        const url = new URL(window.location);
+        if (url.searchParams.has('msg')) { url.searchParams.delete('msg'); window.history.replaceState({}, '', url); }
+    }
+    // Drag & Drop für Upload-Zones
+    document.querySelectorAll('.upload-zone').forEach(zone => {
+        zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
+        zone.addEventListener('dragleave', e => { e.preventDefault(); zone.classList.remove('dragover'); });
+        zone.addEventListener('drop', e => {
+            e.preventDefault(); zone.classList.remove('dragover');
+            const tid = zone.dataset.taskId;
+            const fi  = document.getElementById('file_'+tid);
+            if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; autoUpload(fi, tid); }
+        });
+    });
+    // Projekt-Suchfeld
+    const si = document.getElementById('projectSearch');
+    if (si) si.addEventListener('keyup', function() {
+        const f = this.value.toLowerCase();
+        document.querySelectorAll('.project-card-item').forEach(c => {
+            c.style.display = c.dataset.title.includes(f) ? '' : 'none';
+        });
+    });
+});
+
+// ── KOMMENTAR-TOGGLE ──
+function toggleCommentForm(btn, msId) {
+    const form = document.getElementById('cf_' + msId);
+    form.classList.toggle('open');
+    if (form.classList.contains('open')) document.getElementById('cft_' + msId).focus();
+}
+
+// ── KOMMENTAR SENDEN (AJAX) ──
+function submitComment(msId) {
+    const ta  = document.getElementById('cft_' + msId);
+    const msg = ta.value.trim();
+    if (!msg) return;
+
+    const fd = new FormData();
+    fd.append('action', 'add_ms_comment');
+    fd.append('milestone_id', msId);
+    fd.append('message', msg);
+
+    const btn = ta.nextElementSibling?.querySelector('button');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+
+    fetch('portal?token=' + PORTAL_TOKEN, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'ms-comment-bubble self';
+            bubble.innerHTML = `<div class="ms-comment-meta"><i class="bi bi-person-fill me-1"></i>Sie <span class="fw-normal ms-2 text-muted">${data.time}</span></div><div class="ms-comment-text">${data.message.replace(/\n/g,'<br>')}</div>`;
+
+            let thread = document.getElementById('cf_' + msId).closest('.tl-body').querySelector('.ms-comments');
+            if (!thread) {
+                thread = document.createElement('div');
+                thread.className = 'ms-comments mt-2';
+                document.getElementById('cf_' + msId).before(thread);
+            }
+            thread.appendChild(bubble);
+
+            ta.value = '';
+            document.getElementById('cf_' + msId).classList.remove('open');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>'; }
+        })
+        .catch(() => { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill"></i>'; } });
+}
+
+// ── DATEI LÖSCHEN ──
+function confirmDeleteAsset(btn, id) {
+    if (btn.dataset.confirmed === '1') {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        document.getElementById('del_asset_form_' + id).submit();
+    } else {
+        btn.dataset.confirmed = '1';
+        btn.style.color = '#dc3545';
+        btn.innerHTML = '<i class="bi bi-trash3-fill"></i>';
+        setTimeout(() => {
+            if (document.getElementById('asset_row_' + id)) {
+                btn.dataset.confirmed = '0';
+                btn.innerHTML = '<i class="bi bi-trash3"></i>';
+            }
+        }, 3000);
+    }
+}
+
+// ── DATEI-UPLOAD ──
+function autoUpload(input, taskId) {
+    const files = input.files;
+    if (!files.length) return;
+    const MAX = 100 * 1024 * 1024;
+    const forbidden = ['php','phtml','exe','sh','js','html','htm'];
+    const fd = new FormData();
+    fd.append('task_id', taskId);
+    for (let f of files) {
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (forbidden.includes(ext)) { alert('Dateityp .' + ext + ' ist nicht erlaubt.'); input.value=''; return; }
+        if (f.size > MAX) { alert(f.name + ' ist zu groß (max. 100 MB).'); input.value=''; return; }
+        fd.append('asset_files[]', f);
+    }
+    document.getElementById('box_' + taskId).style.display = 'block';
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'portal?token=' + PORTAL_TOKEN, true);
+    xhr.upload.onprogress = e => { if (e.lengthComputable) document.getElementById('bar_'+taskId).style.width = Math.round(e.loaded/e.total*100)+'%'; };
+    xhr.onload = () => {
+        const r = xhr.responseText.trim();
+        if (r.startsWith('ERR_SIZE'))  { alert('Datei zu groß (max. 100 MB).'); document.getElementById('box_'+taskId).style.display='none'; }
+        else if (r.startsWith('ERR_TYPE')) { alert('Dieser Dateityp ist gesperrt.'); document.getElementById('box_'+taskId).style.display='none'; }
+        else if (xhr.status === 200)  { window.location.href = 'portal?token='+PORTAL_TOKEN+'&msg=uploaded'; }
+    };
+    xhr.send(fd);
+}
+
+// ── TICKET: PRIORITÄT PER AJAX ÄNDERN ──
+function updatePortalPrio(ticketId, sel) {
+    const prio = sel.value;
+    const msg  = document.getElementById('prio_msg_' + ticketId);
+    const fd   = new FormData();
+    fd.append('action',    'update_ticket_priority');
+    fd.append('ticket_id', ticketId);
+    fd.append('priority',  prio);
+    fetch('portal?token=' + PORTAL_TOKEN, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.ok && msg) {
+                msg.style.display = 'inline';
+                setTimeout(() => { msg.style.display = 'none'; }, 2000);
+                // Prioritäts-Badge in der Kopfzeile aktualisieren
+                const map  = { Kritisch: '#dc3545', Hoch: '#fd7e14', Mittel: '#ffc107', Niedrig: '#adb5bd' };
+                const pc   = map[prio] || '#adb5bd';
+                const hdr  = sel.closest('.ticket-card')?.querySelector('.ticket-header [style*="border-radius:4px"]');
+                if (hdr) {
+                    hdr.style.background = pc + '22';
+                    hdr.style.color      = pc;
+                    hdr.textContent      = prio;
+                }
+            }
+        })
+        .catch(() => {});
+}
+
+// ── TICKET: AKKORDEON NACH REDIRECT WIEDER ÖFFNEN ──
+(function () {
+    const params   = new URLSearchParams(location.search);
+    const openId   = params.get('open_ticket');
+    if (!openId) return;
+    const collapse = document.getElementById('tkb_' + openId);
+    if (collapse) new bootstrap.Collapse(collapse, { toggle: false }).show();
+    // URL bereinigen
+    params.delete('open_ticket');
+    const newUrl = location.pathname + '?' + params.toString() + location.hash;
+    history.replaceState(null, '', newUrl);
+})();
+
+// ── WIKI MODAL ──
+function openPortalWikiModal(art) {
+    document.getElementById('pw_category').textContent = art.category || '';
+    document.getElementById('pw_title').textContent    = art.title    || '';
+    document.getElementById('pw_content').innerHTML    = art.content  || '';
+    let tagsHtml = '';
+    if (art.tags && art.tags.trim()) {
+        art.tags.split(',').forEach(t => { tagsHtml += `<span class="badge bg-light text-muted border me-1 fw-normal">${t.trim()}</span>`; });
+    }
+    document.getElementById('pw_tags').innerHTML = tagsHtml;
+    const attCont = document.getElementById('pw_attachments');
+    const attList = document.getElementById('pw_attachments_list');
+    if (art.attachments && art.attachments.length) {
+        let html = '';
+        art.attachments.forEach(a => {
+            const ext = a.file_name.split('.').pop().toLowerCase();
+            const viewable = ['pdf','jpg','jpeg','png','gif','webp','svg'].includes(ext);
+            const icon = ext==='pdf' ? 'bi-file-earmark-pdf text-danger' : ['jpg','jpeg','png','gif','webp','svg'].includes(ext) ? 'bi-file-earmark-image text-success' : 'bi-file-earmark text-secondary';
+            html += `<div class="btn-group shadow-sm me-2 mb-2">`;
+            if (viewable) html += `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ansehen"><i class="bi bi-eye"></i></a>`;
+            html += `<a href="${a.file_path}" download class="btn btn-sm btn-outline-primary fw-semibold"><i class="bi ${icon} me-1"></i>${a.file_name}</a></div>`;
+        });
+        attList.innerHTML = html;
+        attCont.style.display = 'block';
+    } else { attCont.style.display = 'none'; }
+    new bootstrap.Modal(document.getElementById('portalWikiModal')).show();
+    setTimeout(() => Prism.highlightAllUnder(document.getElementById('pw_content')), 150);
+}
+</script>
+</body>
+</html>

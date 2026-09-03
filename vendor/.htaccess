@@ -1,0 +1,13 @@
+# Drittanbieter-Code (Composer-Pakete) - wird nur per require/include aus
+# PHP geladen und darf niemals direkt per URL aufrufbar sein. Enthaelt u.a.
+# ausfuehrbare FPDF-Tutorial-Skripte, die sonst von jedem anonymen Besucher
+# aufgerufen werden koennten. Diese Datei greift unabhaengig von der
+# RewriteRule ^vendor/ in der Root-.htaccess (zwei getrennte Mechanismen,
+# falls mod_rewrite fehlt oder diese Datei fehlt).
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>

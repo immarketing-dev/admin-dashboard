@@ -1,0 +1,369 @@
+-- Admin Dashboard - database schema
+-- Import:  mysql -u USER -p DATABASE < install/schema.sql
+--
+-- Engine InnoDB, charset utf8mb4 throughout.
+--
+-- Minimum server version: MySQL 5.7.8 / MariaDB 10.2.7. Both are hard
+-- requirements, not recommendations: the "quotes" table uses the JSON
+-- column type, which older servers reject outright, and "wiki_articles"
+-- declares two TIMESTAMP columns that both default to CURRENT_TIMESTAMP
+-- (one of them also ON UPDATE CURRENT_TIMESTAMP) - MySQL before 5.6.5
+-- allows only one such column per table and this statement will fail
+-- to import on it.
+--
+-- 21 tables total: 14 reconstructed from the columns the application
+-- queries actually use (see docs/ for background), plus 7 that were
+-- already created ad hoc by the application code and are reproduced
+-- here verbatim (only "IF NOT EXISTS" and the ENGINE/CHARSET/COLLATE
+-- clause were added): quotes, milestone_comments, ticket_notes,
+-- wiki_client_shares, calendar_events, event_contacts, sso_tokens.
+--
+-- Foreign keys and pre-existing installations: this schema declares
+-- FOREIGN KEY constraints (with ON DELETE CASCADE / SET NULL) that the
+-- live private installation never had, because its tables were created
+-- ad hoc without any. That is a deliberate choice, not an oversight -
+-- a public product should ship a schema that enforces its own
+-- integrity, and the cascade/null-out behaviour below is what the
+-- application's own logic already assumes. The practical consequence
+-- is a behavioural difference by install history:
+--   * Fresh install (this file): deleting a contact sets
+--     tasks.contact_id / finances.contact_id / support_tickets.contact_id
+--     to NULL; deleting a task cascades away its task_milestones,
+--     client_assets and time_entries; deleting a wiki_articles row
+--     cascades away its wiki_attachments.
+--   * Existing database imported before this schema existed: none of
+--     that happens automatically - deleting a contact or task leaves
+--     the child rows in place (orphaned, but harmless, since every
+--     JOIN in the application already filters rows whose parent is
+--     missing).
+-- Adding these constraints to an existing database afterwards is
+-- optional and NOT done by this file. Doing so requires first finding
+-- and cleaning up any orphan rows the ad hoc tables have accumulated
+-- (e.g. task_milestones/client_assets/time_entries rows whose task_id
+-- no longer exists in tasks) - ALTER TABLE ... ADD CONSTRAINT ... FOREIGN
+-- KEY will otherwise fail with an error naming the first offending row.
+
+SET NAMES utf8mb4;
+SET foreign_key_checks = 0;
+
+-- -- Core ---------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS settings (
+  k VARCHAR(100) NOT NULL PRIMARY KEY,
+  v TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS users (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  email         VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS logs (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  action_type VARCHAR(50) NOT NULL,
+  description TEXT NOT NULL,
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ip          VARCHAR(45) DEFAULT NULL,
+  KEY idx_logs_type_created (action_type, created_at),
+  -- Fuer auth_is_locked()/auth_note_lockout(): exakter Spaltenvergleich
+  -- auf ip statt LIKE auf description, das sich mit einer praeparierten
+  -- E-Mail-Adresse im Login-Formular vergiften liesse.
+  KEY idx_logs_lockout (action_type, ip, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\sso.php:7
+-- (only IF NOT EXISTS and the engine clause were added).
+CREATE TABLE IF NOT EXISTS sso_tokens (
+  token      CHAR(64) PRIMARY KEY,
+  used       TINYINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- CRM ----------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  name                    VARCHAR(255) NOT NULL,
+  company                 VARCHAR(255) DEFAULT NULL,
+  email                   VARCHAR(255) DEFAULT NULL,
+  phone                   VARCHAR(50)  DEFAULT NULL,
+  website                 VARCHAR(255) DEFAULT NULL,
+  street                  VARCHAR(255) DEFAULT NULL,
+  zip                     VARCHAR(20)  DEFAULT NULL,
+  city                    VARCHAR(120) DEFAULT NULL,
+  country                 VARCHAR(120) DEFAULT NULL,
+  contact_type            VARCHAR(50)  NOT NULL DEFAULT 'Kunde',
+  source                  VARCHAR(100) DEFAULT NULL,
+  notes                   TEXT,
+  portal_token            CHAR(64)     DEFAULT NULL,
+  portal_pin              VARCHAR(255) DEFAULT NULL,
+  portal_pin_attempts     TINYINT UNSIGNED DEFAULT 0,
+  portal_pin_locked_until DATETIME     DEFAULT NULL,
+  created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_contacts_portal_token (portal_token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS leads_inbox (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(255) NOT NULL,
+  email      VARCHAR(255) DEFAULT NULL,
+  phone      VARCHAR(50)  DEFAULT NULL,
+  subject    VARCHAR(255) DEFAULT NULL,
+  message    TEXT,
+  source     VARCHAR(100) DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- Projects -------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  title            VARCHAR(255) NOT NULL,
+  category         VARCHAR(100) DEFAULT NULL,
+  description      TEXT,
+  status           ENUM('Offen','In Bearbeitung','Erledigt','Storniert')
+                     NOT NULL DEFAULT 'Offen',
+  contact_id       INT DEFAULT NULL,
+  start_date       DATE DEFAULT NULL,
+  deadline         DATE DEFAULT NULL,
+  client_feedback  TEXT,
+  feedback_seen    TINYINT(1) NOT NULL DEFAULT 0,
+  is_timer_running TINYINT(1) NOT NULL DEFAULT 0,
+  timer_start      DATETIME DEFAULT NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_tasks_contact (contact_id),
+  KEY idx_tasks_status  (status),
+  CONSTRAINT fk_tasks_contact FOREIGN KEY (contact_id)
+    REFERENCES contacts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS task_milestones (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  task_id       INT NOT NULL,
+  title         VARCHAR(255) NOT NULL,
+  is_completed  TINYINT(1) NOT NULL DEFAULT 0,
+  approved_at   DATETIME DEFAULT NULL,
+  approval_seen TINYINT(1) NOT NULL DEFAULT 0,
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_ms_task (task_id),
+  CONSTRAINT fk_ms_task FOREIGN KEY (task_id)
+    REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\portal.php:31
+-- (base table) plus column admin_seen, which the same private
+-- installation later added via d:\Downloads\admin-dashboard\index.php:272.
+-- Only IF NOT EXISTS and the engine clause were added.
+CREATE TABLE IF NOT EXISTS milestone_comments (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  milestone_id INT NOT NULL,
+  author       VARCHAR(20) NOT NULL DEFAULT 'client',
+  admin_seen   TINYINT(1) NOT NULL DEFAULT 0,
+  author_name  VARCHAR(255),
+  message      TEXT NOT NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ms (milestone_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- NOTE: the application code (index.php, tasks.php, portal.php) always
+-- orders by "uploaded_at", never "created_at" - the column is named
+-- uploaded_at here to match actual usage, not "created_at" as a naive
+-- reconstruction from the INSERT column list alone would suggest.
+CREATE TABLE IF NOT EXISTS client_assets (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  task_id        INT NOT NULL,
+  file_name      VARCHAR(255) NOT NULL,
+  file_path      VARCHAR(255) NOT NULL,
+  dashboard_seen TINYINT(1)  NOT NULL DEFAULT 0,
+  uploaded_by    VARCHAR(50) DEFAULT 'client',
+  uploaded_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_assets_task (task_id),
+  CONSTRAINT fk_assets_task FOREIGN KEY (task_id)
+    REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS time_entries (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  task_id          INT NOT NULL,
+  duration_minutes INT NOT NULL DEFAULT 0,
+  note             VARCHAR(255) DEFAULT NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_time_task (task_id),
+  CONSTRAINT fk_time_task FOREIGN KEY (task_id)
+    REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- Finance ---------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS finances (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  type             ENUM('INCOME','EXPENSE') NOT NULL DEFAULT 'INCOME',
+  title            VARCHAR(255) NOT NULL,
+  contact_id       INT DEFAULT NULL,
+  custom_name      VARCHAR(255) DEFAULT NULL,
+  amount           DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  status           VARCHAR(50) NOT NULL DEFAULT 'Offen',
+  record_date      DATE DEFAULT NULL,
+  due_date         DATE DEFAULT NULL,
+  notes            TEXT,
+  invoice_pdf_path VARCHAR(255) DEFAULT NULL,
+  is_recurring     TINYINT(1) NOT NULL DEFAULT 0,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_fin_contact (contact_id),
+  KEY idx_fin_type_date (type, record_date),
+  CONSTRAINT fk_fin_contact FOREIGN KEY (contact_id)
+    REFERENCES contacts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\quotes.php:20
+-- (only IF NOT EXISTS and the engine clause were added).
+CREATE TABLE IF NOT EXISTS quotes (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  quote_number   VARCHAR(50) NOT NULL,
+  subject        VARCHAR(255) NOT NULL DEFAULT '',
+  intro_text     TEXT,
+  contact_id     INT NULL,
+  custom_name    VARCHAR(255),
+  status         VARCHAR(50) NOT NULL DEFAULT 'Entwurf',
+  tax_type       VARCHAR(30) NOT NULL DEFAULT 'kleinunternehmer',
+  items          JSON NOT NULL,
+  notes          TEXT,
+  total_amount   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  valid_until    DATE NULL,
+  quote_pdf_path VARCHAR(255),
+  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- Support -------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  contact_id INT DEFAULT NULL,
+  subject    VARCHAR(255) NOT NULL,
+  message    TEXT,
+  status     VARCHAR(50) NOT NULL DEFAULT 'Offen',
+  priority   ENUM('Niedrig','Mittel','Hoch','Kritisch')
+               NOT NULL DEFAULT 'Mittel',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_tickets_contact (contact_id),
+  KEY idx_tickets_status  (status),
+  CONSTRAINT fk_tickets_contact FOREIGN KEY (contact_id)
+    REFERENCES contacts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\tickets.php:12
+-- (base table) plus columns author, is_public, which the same private
+-- installation later added via d:\Downloads\admin-dashboard\portal.php:45.
+-- Only IF NOT EXISTS and the engine clause were added.
+CREATE TABLE IF NOT EXISTS ticket_notes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id  INT NOT NULL,
+  note       TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  author     VARCHAR(20) NOT NULL DEFAULT 'admin',
+  is_public  TINYINT(1) NOT NULL DEFAULT 0,
+  INDEX idx_tid (ticket_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- Wiki ----------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS wiki_articles (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  title      VARCHAR(255) NOT NULL,
+  content    LONGTEXT,
+  category   VARCHAR(100) DEFAULT NULL,
+  tags       VARCHAR(255) DEFAULT NULL,
+  is_pinned  TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+               ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_wiki_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- NOTE: the application code (wiki.php, portal.php) always orders by
+-- "uploaded_at", never "created_at" - named uploaded_at here to match
+-- actual usage, not "created_at" as a naive reconstruction from the
+-- INSERT column list alone would suggest.
+CREATE TABLE IF NOT EXISTS wiki_attachments (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  article_id INT NOT NULL,
+  file_name  VARCHAR(255) NOT NULL,
+  file_path  VARCHAR(255) NOT NULL,
+  uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_watt_article (article_id),
+  CONSTRAINT fk_watt_article FOREIGN KEY (article_id)
+    REFERENCES wiki_articles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\wiki.php:11
+-- (only IF NOT EXISTS and the engine clause were added).
+CREATE TABLE IF NOT EXISTS wiki_client_shares (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  article_id INT NOT NULL,
+  contact_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_share (article_id, contact_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- Calendar --------------------------------------------------------------
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\calendar.php:26
+-- (only the engine clause was added; IF NOT EXISTS was already present).
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  title        VARCHAR(255) NOT NULL,
+  description  TEXT,
+  location     VARCHAR(255) DEFAULT '',
+  meeting_url  VARCHAR(500) DEFAULT '',
+  event_date   DATE NOT NULL,
+  start_time   TIME DEFAULT NULL,
+  end_time     TIME DEFAULT NULL,
+  category     VARCHAR(50) DEFAULT 'Termin',
+  color        VARCHAR(20) DEFAULT '#4a90d9',
+  status       VARCHAR(30) DEFAULT 'Geplant',
+  ics_uid      VARCHAR(150) DEFAULT NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_date (event_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Taken verbatim from d:\Downloads\admin-dashboard\calendar.php:47
+-- (only the engine clause was added; IF NOT EXISTS was already present).
+CREATE TABLE IF NOT EXISTS event_contacts (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  event_id     INT NOT NULL,
+  contact_id   INT NOT NULL,
+  invite_token VARCHAR(64) DEFAULT NULL,
+  invited_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_evt_con (event_id, contact_id),
+  -- uk_token and idx_token both index invite_token - a genuine
+  -- duplicate, verbatim from the original source (calendar.php:47) and
+  -- deliberately kept rather than "cleaned up" here, since this table
+  -- must stay byte-for-byte identical to what the live installation
+  -- already runs. MySQL will emit a duplicate-index warning on import;
+  -- that warning is expected and harmless.
+  UNIQUE KEY uk_token (invite_token),
+  INDEX idx_token (invite_token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -- Monitoring -----------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS monitored_urls (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  url_name   VARCHAR(255) NOT NULL,
+  url_link   VARCHAR(500) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- A fresh installation is by definition already at the current schema
+-- version. Without this row, run_migrations() would try to migrate
+-- from version 0 onward on the very first page load and run ALTER
+-- TABLE statements against columns/indexes that already exist - each
+-- one an error-log line. This value must match SCHEMA_VERSION in
+-- includes/migrations.php.
+INSERT INTO settings (k, v) VALUES ('schema_version', '2')
+  ON DUPLICATE KEY UPDATE v = VALUES(v);
+
+SET foreign_key_checks = 1;

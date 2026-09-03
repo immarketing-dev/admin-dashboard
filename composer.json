@@ -1,0 +1,22 @@
+{
+    "name": "davidimminger/admin-dashboard",
+    "description": "Self-hosted admin panel for freelancers and small agencies: projects, CRM, invoicing, quotes, support tickets, wiki and a client portal.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "ext-curl": "*",
+        "ext-mbstring": "*",
+        "ext-fileinfo": "*",
+        "phpmailer/phpmailer": "^7.1",
+        "setasign/fpdf": "^1.8.6"
+    },
+    "suggest": {
+        "ext-gd": "Only needed if the company logo used in invoice/quote PDFs is a GIF or WebP file; FPDF converts those through gd. PNG and JPEG logos need no gd."
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

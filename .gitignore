@@ -1,0 +1,12 @@
+.env
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+uploads/*/*
+!uploads/*/.gitkeep
+!uploads/*/.htaccess
+.superpowers/
+docs/superpowers/
+tools/leakscan-local.txt

@@ -1,0 +1,203 @@
+/* =========================================================
+   Design-Tokens. Einzige Stelle mit Rohfarbwerten.
+   Der Dark Mode belegt dieselben Tokens neu – Komponenten
+   in app.css brauchen dafür keine eigene Regel.
+   ========================================================= */
+
+:root {
+  /* Markenfarben – zur Laufzeit von includes/theme.php überschrieben */
+  --color-primary: #149ddd;
+  --color-sidebar: #040b14;
+
+  /* Flächen */
+  --surface-page:    #f4f7f6;
+  --surface-card:    #ffffff;
+  --surface-sunken:  #eef2f5;
+  --surface-subtle:  #f8f9fa;
+  --surface-accent:  #f0f7ff;
+
+  /* Text */
+  --text-strong:  #050d18;
+  --text-body:    #272829;
+  --text-heading: #173b6c;
+  --text-muted:   #6c757d;
+  --text-faint:   #adb5bd;
+  --text-invert:  #ffffff;
+
+  /* Rahmen */
+  --border-subtle: #e9ecef;
+  --border-base:   #dee2e6;
+  --border-strong: #ced4da;
+
+  /* Statusfarben: Fläche und Schrift immer als Paar */
+  --state-success-bg: #d4edda;  --state-success-fg: #155724;
+  --state-info-bg:    #cce5ff;  --state-info-fg:    #004085;
+  --state-warn-bg:    #fff3cd;  --state-warn-fg:    #856404;
+  --state-danger-bg:  #f8d7da;  --state-danger-fg:  #721c24;
+  --state-neutral-bg: #e2e3e5;  --state-neutral-fg: #383d41;
+
+  --accent-success: #28a745;
+  --accent-warning: #ffc107;
+  --accent-danger:  #dc3545;
+  --accent-neutral: #6c757d;
+
+  /* Alpha-Varianten der Markenfarbe (Teil B). --color-primary ist ein zur
+     Laufzeit gesetzter Hex-Wert, seine Kanaele lassen sich nicht direkt
+     interpolieren – deshalb color-mix() statt rgba(). Ein Token je
+     tatsaechlich in design.css vorkommendem Alpha-Wert. */
+  --ring-primary:   color-mix(in srgb, var(--color-primary) 25%, transparent);
+  --shadow-primary: 0 5px 15px color-mix(in srgb, var(--color-primary) 15%, transparent);
+
+  /* Alpha-Varianten ohne Markenbezug (Teil B) – feste Rohwerte, da sie
+     nicht von --color-primary abhaengen. */
+  --overlay-invert-05: rgba(255, 255, 255, 0.05);
+  --overlay-invert-60: rgba(255, 255, 255, .6);
+  --overlay-dark-05:   rgba(0, 0, 0, 0.05);
+  --overlay-danger-10: rgba(220, 53, 69, 0.1);
+  --overlay-scrim:     rgba(0, 0, 0, 0.5);
+  --pulse-ring:        rgba(220, 53, 69, 0);
+
+  /* Abstände */
+  --space-2: 8px;   --space-3: 12px;
+  --space-4: 15px;  --space-5: 20px;  --space-6: 25px;
+  --space-7: 30px;  --space-8: 40px;
+
+  /* Radien */
+  --radius-sm: 5px;  --radius-md: 8px;
+  --radius-lg: 10px; --radius-xl: 15px;
+
+  /* Schatten */
+  /* --shadow-sm und --shadow-lg werden in app.css nirgends verwendet -
+     bewusst so belassen (nicht loeschen): ihr Hell-Wert ist identisch mit
+     --shadow-card-rest bzw. mit dem Hell-Wert von --shadow-widget-hover/
+     --shadow-card-hover, aber ihr Dark-Wert weicht davon ab. Ein
+     Ersetzen durch --shadow-sm/--shadow-lg wuerde also im Dark Mode den
+     falschen Schatten liefern. */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, .04);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, .03);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, .06);
+
+  /* Komponenten-Tokens ohne eigenen Dark-Mode-Wert (Teil B). Diese Farben
+     hatten in design.css keine [data-theme="dark"]-Regel fuer die
+     jeweilige Komponente – sie blieben im Original auch im Dark Mode
+     unveraendert, deshalb hier bewusst nur im :root definiert. */
+  --text-faint-static: #adb5bd;
+  --text-nav-link:     #a8a9b4;
+  --text-nav-icon:     #6f7180;
+  --text-on-warning:   #000;
+
+  --surface-ghost:         #f0f7ff;
+  --surface-avatar:        #f0f2f5;
+  --surface-pinned:        #fffdf5;
+  --surface-pinned-hover:  #fff9e6;
+  --surface-code:          #2d2d2d;
+  --surface-info-panel:    #e7f3ff;
+  --surface-static:        #ffffff;
+  --surface-static-subtle: #f8f9fa;
+  --surface-upload-hover:  #f0f7ff;
+  --surface-approved:      #f0fff4;
+
+  --border-static: #dee2e6;
+  --border-upload: #ced4da;
+
+  --shadow-widget-hover:     0 6px 20px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover:       0 8px 20px rgba(0, 0, 0, 0.06);
+  --shadow-card-rest:        0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-column-inset:     inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-board-header:     0 2px 5px rgba(0, 0, 0, 0.02);
+  --shadow-nav-tabs:         0 2px 10px rgba(0, 0, 0, 0.02);
+  --shadow-collapse-btn:     0 2px 8px rgba(0, 0, 0, .3);
+  --shadow-accordion-divider: inset 0 -1px 0 rgba(0, 0, 0, .125);
+  --shadow-info-panel:       0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-portal-card:      0 4px 20px rgba(0, 0, 0, 0.03);
+
+  /* Komponenten-Tokens MIT eigenem Dark-Mode-Wert (Teil B). Fuer diese
+     Komponenten hatte design.css eine echte [data-theme="dark"]-Regel,
+     aber keines der bestehenden Tokens traf light- UND dark-Wert
+     zugleich exakt – deshalb je ein eigenes Token, Dark-Wert unten im
+     [data-theme="dark"]-Block. */
+  --border-card:          #e9ecef;
+  --surface-muted-panel:  #f8f9fa;
+  --border-badge:         #dee2e6;
+  --text-badge:           #495057;
+  --border-uptime:        #e9ecef;
+  --surface-uptime-hover: #ffffff;
+  --border-uptime-hover:  #dee2e6;
+  --border-wiki-accent:   transparent;
+  --border-wiki-divider:  #f1f3f5;
+  --surface-tint:         #f8fbfc;
+  --surface-tint-hover:   #f0f7ff;
+  --border-footer-divider: #e9ecef;
+
+  /* Tokens fuer die Bootstrap-Dark-Overrides am Ende von app.css (Teil B,
+     Runde 1). Diese Komponenten (.table, .alert-*, .shadow-sm als
+     Bootstrap-Utility usw.) haben in design.css keine eigene Hell-Regel -
+     es gibt also kein Token zum Umdefinieren, und die [data-theme="dark"]-
+     Regeln bleiben deshalb bestehen. Die Farben hier werden ausschliesslich
+     innerhalb dieser bereits [data-theme="dark"]-gescopten Regeln
+     referenziert, brauchen also keinen eigenen Hell/Dunkel-Wert. */
+  --ring-primary-20:      color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --shadow-utility-sm:    0 2px 8px rgba(0, 0, 0, 0.4);
+  --text-log-header:      #9eb3d8;
+  --border-alert-info:    #003080;
+  --surface-alert-warning: #3d2e00;
+  --border-alert-warning: #5a4300;
+  --border-alert-danger:  #5a1020;
+  --border-alert-success: #134a26;
+
+  /* Typografie */
+  --font-mono: 'Consolas', 'Monaco', monospace;
+
+  --text-xs: 10px;  --text-sm: 12px;  --text-base: 14px;
+  --text-md: 16px;  --text-lg: 20px;  --text-xl: 24px;
+
+  /* Layout */
+  --sidebar-width:           280px;
+  --sidebar-width-collapsed: 72px;
+}
+
+[data-theme="dark"] {
+  --surface-page:   #0f1117;
+  --surface-card:   #1e2130;
+  --surface-sunken: #161824;
+  --surface-subtle: #252840;
+  --surface-accent: #252840;
+
+  --text-strong:  #e2e8f0;
+  --text-body:    #d1d5db;
+  --text-heading: #e2e8f0;
+  --text-muted:   #9ca3af;
+  --text-faint:   #6b7280;
+
+  --border-subtle: #252840;
+  --border-base:   #2d3448;
+  --border-strong: #3d4460;
+
+  --state-success-bg: #0d2e17;  --state-success-fg: #5cba7d;
+  --state-info-bg:    #001a3d;  --state-info-fg:    #74b9ff;
+  --state-warn-bg:    #3d3200;  --state-warn-fg:    #ffc107;
+  --state-danger-bg:  #3d0d12;  --state-danger-fg:  #ff7777;
+  --state-neutral-bg: #1e2130;  --state-neutral-fg: #6c757d;
+
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, .3);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, .3);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, .4);
+
+  /* Teil B: Dark-Werte der Komponenten-Tokens mit Theme-Unterschied.
+     Jeder Wert stammt 1:1 aus der [data-theme="dark"]-Regel, die die
+     jeweilige Komponente in design.css hatte. */
+  --shadow-primary: 0 5px 15px color-mix(in srgb, var(--color-primary) 20%, transparent);
+
+  --border-card:          #2d3448;
+  --surface-muted-panel:  #161824;
+  --border-badge:         #3d4460;
+  --text-badge:           #d1d5db;
+  --border-uptime:        #3d4460;
+  --surface-uptime-hover: #2d3448;
+  --border-uptime-hover:  #4d5480;
+  --border-wiki-accent:   #2d3448;
+  --border-wiki-divider:  #2d3448;
+  --surface-tint:         #252840;
+  --surface-tint-hover:   #2d3448;
+  --border-footer-divider: #2d3448;
+}

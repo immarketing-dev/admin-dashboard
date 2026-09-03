@@ -1,0 +1,118 @@
+# ============================================
+# SICHERHEITS-KONFIGURATION
+# ============================================
+
+# Verzeichnis-Listings deaktivieren
+Options -Indexes
+
+# Sensible PHP-Dateien vor direktem Zugriff schützen
+<FilesMatch "^(config\.php|\.env|\.env\..*|composer\.(json|lock))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# includes/ komplett vor Direktzugriff sperren
+# vendor/ enthaelt Drittanbieter-Code (Composer-Pakete), der ausschliesslich
+# per require/include aus PHP heraus geladen wird - niemals direkt per URL.
+# Darunter liegen u.a. ausfuehrbare FPDF-Tutorial-Skripte; die duerfen von
+# aussen nicht aufrufbar sein. Zusaetzlich zu dieser Regel sperrt
+# vendor/.htaccess denselben Bereich unabhaengig von mod_rewrite ab.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^vendor/   - [F,L]
+</IfModule>
+
+# ============================================
+# SAUBERE URLs OHNE .php-ENDUNG
+# ============================================
+# Ziel: /tasks statt /tasks.php im Browser. Der komplette Block ist an das
+# Vorhandensein von mod_rewrite geknuepft, damit ein Server ohne dieses
+# Modul die Seite weiterhin ganz normal ausliefert - dann sind die URLs
+# eben wieder mit ".php" sichtbar, aber nichts bricht.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # --- 1) Externe Weiterleitung: /xyz.php -> /xyz (301) --------------
+    # Wird die alte URL mit ".php" direkt aufgerufen, leiten wir dauerhaft
+    # (301) auf die saubere URL um, damit nicht beide Varianten parallel
+    # im Suchindex landen bzw. verlinkt werden.
+    #
+    # WICHTIG - nur fuer GET/HEAD: Ein 301 auf eine POST-Anfrage wird vom
+    # Browser gemaess RFC 7231 als neue GET-Anfrage wiederholt, der
+    # ursprüngliche Body (Formulardaten, CSRF-Token, JSON-Payload) geht
+    # dabei verloren. Da praktisch jede Aktion im Panel (Formulare,
+    # board.php/finances.php-AJAX, Datei-Uploads) per POST auf genau
+    # diese .php-Dateien geht, wuerde ein methodenunabhaengiger Redirect
+    # jede dieser Aktionen still zerstoeren. Deshalb greift die
+    # Weiterleitung ausschliesslich bei GET; POST/PUT/DELETE/... an
+    # *.php werden von der Rewrite-Engine hier gar nicht angefasst und
+    # laufen direkt auf die echte .php-Datei.
+    RewriteCond %{REQUEST_METHOD} =GET
+    # Bedingung bewusst auf %{THE_REQUEST} (die vom Client tatsaechlich
+    # gesendete Request-Zeile), NICHT auf %{REQUEST_URI}: Letztere wuerde
+    # nach der internen Rewrite-Regel (siehe unten) bereits wieder auf
+    # ".php" enden und wir haetten eine Redirect-Schleife
+    # (/tasks -> tasks.php intern -> "sieht aus wie .php" -> redirect
+    # -> /tasks -> ...). %{THE_REQUEST} bleibt waehrend der gesamten
+    # Verarbeitung unveraendert die urspruengliche Anfrage.
+    RewriteCond %{THE_REQUEST} \s/+(.+)\.php[?\s] [NC]
+    RewriteRule ^ /%1 [R=301,L,QSA]
+
+    # --- 2) Interne Rewrite-Regel: /xyz -> xyz.php (intern) -------------
+    # Liefert im Hintergrund die passende .php-Datei aus, ohne dass sich
+    # die sichtbare URL im Browser aendert (kein Redirect, kein [R]-Flag).
+    # QSA reicht eine evtl. vorhandene Query-String durch, z.B.
+    # /portal?token=abc123 -> portal.php?token=abc123.
+    #
+    # Die drei Bedingungen sind bewusst in dieser Reihenfolge:
+    #  - !-f  : Es darf noch KEINE echte Datei unter diesem Pfad geben
+    #  - !-d  : Es darf noch KEIN echtes Verzeichnis unter diesem Pfad
+    #           geben (sonst wuerden z.B. assets/, uploads/, vendor/
+    #           durch diese Regel verschluckt)
+    #  - REQUEST_FILENAME.php -f : Erst wenn die passende .php-Datei
+    #           tatsaechlich existiert, wird umgeschrieben - alles
+    #           andere faellt normal auf 404 durch.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L,QSA]
+</IfModule>
+
+# HTTP Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # HSTS nur aktivieren wenn HTTPS zuverlässig läuft:
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+# Zugriff auf .htaccess selbst verweigern
+<Files ".htaccess">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</Files>
+
+# Kein Zugriff auf Backup-/Log-Dateien
+<FilesMatch "\.(bak|log|sql|swp|old|orig|tmp|~)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

@@ -1,0 +1,417 @@
+/* =========================================
+   GLOBALE STYLES (Admin & Portal)
+   ========================================= */
+body {
+    background-color: var(--surface-page);
+    font-family: 'Open Sans', sans-serif;
+    color: var(--text-body);
+    display: flex;
+    margin: 0;
+    overflow-x: hidden;
+}
+body.portal-body { display: block; }
+
+h1, h2, h3, h4, h5, h6, .brand, .widget-title {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Scrollbars */
+.scroll-container, .scroll-area, .task-content-scroll, .scroll-box-sm {
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.scroll-container::-webkit-scrollbar, .scroll-area::-webkit-scrollbar, .task-content-scroll::-webkit-scrollbar, .scroll-box-sm::-webkit-scrollbar { width: 4px; }
+.scroll-container::-webkit-scrollbar-thumb, .scroll-area::-webkit-scrollbar-thumb, .task-content-scroll::-webkit-scrollbar-thumb, .scroll-box-sm::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: var(--radius-lg);
+}
+
+.scroll-container { max-height: 185px; }
+.scroll-area { max-height: 250px; }
+.scroll-box-sm { max-height: 120px; }
+
+/* =========================================
+   ADMIN PANEL: SIDEBAR & LAYOUT
+   ========================================= */
+.sidebar {
+    width: var(--sidebar-width); min-width: var(--sidebar-width); height: 100vh;
+    background: var(--color-sidebar); color: var(--text-invert);
+    position: fixed; left: 0; top: 0; padding-top: var(--space-5);
+    z-index: 1050; transition: all 0.3s ease;
+}
+.sidebar .brand { text-align: center; margin-bottom: var(--space-7); font-size: 22px; font-weight: 700; color: var(--color-primary); }
+.sidebar .nav-link { color: var(--text-nav-link); padding: var(--space-3) var(--space-6); font-size: 15px; display: flex; align-items: center; text-decoration: none; transition: 0.3s; }
+.sidebar .nav-link i { font-size: var(--text-lg); margin-right: var(--space-4); color: var(--text-nav-icon); transition: 0.3s;}
+.sidebar .nav-link:hover, .sidebar .nav-link.active { color: var(--text-invert); background: var(--overlay-invert-05); border-left: 4px solid var(--color-primary); }
+.sidebar .nav-link:hover i, .sidebar .nav-link.active i { color: var(--color-primary); }
+
+.sidebar-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; border-radius: 9px;
+    font-size: var(--text-xs); font-weight: 700; line-height: 1;
+    padding: 0 5px; margin-left: auto;
+    background: var(--color-primary); color: var(--text-invert);
+    flex-shrink: 0;
+}
+.sidebar-badge-danger  { background: var(--accent-danger); }
+.sidebar-badge-warning { background: var(--accent-warning); color: var(--text-on-warning); }
+
+.sidebar .nav-link { display: flex; align-items: center; gap: 0; }
+.sidebar .nav-link i { flex-shrink: 0; }
+.sidebar .nav-link .sidebar-badge { margin-left: auto; }
+
+.main-content { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); min-height: 100vh; padding: var(--space-7); transition: 0.3s; display: flex; flex-direction: column; background: var(--surface-page); }
+.top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-7); background: var(--surface-card); padding: var(--space-4) var(--space-6); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+.top-header h2 { margin: 0; font-weight: 600; font-size: var(--text-xl); color: var(--text-heading); display: flex; align-items: center; gap: var(--space-4); }
+
+.sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--overlay-scrim); z-index: 1040; transition: 0.3s; opacity: 0;}
+.sidebar-overlay.active { display: block; opacity: 1;}
+.mobile-toggle { display: none; font-size: 28px; cursor: pointer; color: var(--color-primary); line-height: 1; margin-right: var(--space-4); }
+
+/* ── Collapsible Sidebar (Desktop) ── */
+.sidebar .brand .brand-icon { display: none; font-size: 22px; }
+
+#sidebarCollapseBtn {
+    position: fixed; left: 268px; top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    border: 2px solid var(--overlay-invert-60);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 1060;
+    color: var(--text-invert); font-size: var(--text-xs); line-height: 1;
+    transition: left .3s ease;
+    box-shadow: var(--shadow-collapse-btn);
+    padding: 0;
+}
+#sidebarCollapseBtn:hover { filter: brightness(1.2); }
+#sidebarCollapseBtn .ci { display: block; transition: transform .3s; }
+
+body.sidebar-collapsed #sidebarCollapseBtn { left: 61px; }
+body.sidebar-collapsed #sidebarCollapseBtn .ci { transform: rotate(180deg); }
+body.sidebar-collapsed .sidebar { width: var(--sidebar-width-collapsed); min-width: var(--sidebar-width-collapsed); }
+body.sidebar-collapsed .sidebar .brand .brand-text { display: none; }
+body.sidebar-collapsed .sidebar .brand .brand-icon { display: inline; }
+body.sidebar-collapsed .sidebar .nav-text { display: none; }
+body.sidebar-collapsed .sidebar .sidebar-badge { display: none !important; }
+body.sidebar-collapsed .sidebar .nav-link { padding: 13px 0; justify-content: center; }
+body.sidebar-collapsed .sidebar .nav-link i { margin-right: 0 !important; font-size: var(--text-lg); }
+body.sidebar-collapsed .main-content { margin-left: var(--sidebar-width-collapsed); width: calc(100% - var(--sidebar-width-collapsed)); }
+
+@media (max-width: 991px) { #sidebarCollapseBtn { display: none !important; } }
+
+/* =========================================
+   ADMIN PANEL: WIDGETS & KARTEN
+   ========================================= */
+.widget-box { background: var(--surface-card); border-radius: var(--radius-lg); padding: var(--space-5); box-shadow: var(--shadow-md); height: 100%; transition: 0.2s; }
+.widget-box:hover { box-shadow: var(--shadow-widget-hover); }
+.widget-title { font-size: var(--text-md); font-weight: 600; color: var(--text-heading); margin-bottom: var(--space-4); display: flex; justify-content: space-between; align-items: center; }
+
+/* WICHTIG FÜR DAS DASHBOARD: Portal-Aktivitäten Fix */
+.portal-activity-item {
+    border-left: 3px solid var(--color-primary);
+    padding: 10px var(--space-4) 10px var(--space-3); /* Etwas mehr Padding rechts für das X */
+    margin-bottom: 10px;
+    background: var(--surface-tint);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    position: relative;
+    transition: 0.2s;
+    cursor: pointer;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden; /* Verhindert das Herausbrechen des Inhalts */
+}
+.portal-activity-item:hover { background: var(--surface-tint-hover); transform: translateX(3px); }
+.activity-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--color-primary); display: block; margin-bottom: 2px;}
+
+.dismiss-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    color: var(--text-faint-static);
+    font-size: var(--text-md);
+    z-index: 10;
+    padding: 0 5px;
+    transition: 0.2s;
+    line-height: 1;
+}
+.dismiss-btn:hover { color: var(--accent-danger); }
+.dismiss-btn i { pointer-events: none; }
+
+.kpi-card { background: var(--surface-card); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-5); box-shadow: var(--shadow-md); display: flex; align-items: center; height: 100%; transition: transform 0.2s, box-shadow 0.2s; cursor: default; border-left: 4px solid transparent;}
+.kpi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); }
+.kpi-icon { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: var(--text-lg); margin-right: var(--space-4); flex-shrink: 0;}
+
+/* Finanz KPIs */
+.kpi-income { border-left-color: var(--accent-success); }
+.kpi-expense { border-left-color: var(--accent-danger); }
+.kpi-profit { border-left-color: var(--color-primary); }
+.kpi-open { border-left-color: var(--accent-warning); }
+
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: var(--space-2); }
+.bg-online, .dot-online { background-color: var(--accent-success); box-shadow: 0 0 8px var(--accent-success); }
+.bg-offline, .dot-offline { background-color: var(--accent-danger); box-shadow: 0 0 8px var(--accent-danger); }
+.bg-slow { background: var(--accent-warning); box-shadow: 0 0 8px var(--accent-warning); }
+
+/* border + border-color (hier und an mehreren Stellen unten) sehen redundant aus - sind es
+   fuer den Browser auch (beide tragen denselben Token, das Rendering ist identisch) - aber
+   NICHT entfernbar: in design.css stand fuer denselben Selektor im Hell-Modus "border" und im
+   [data-theme="dark"]-Override "border-color" (zwei verschiedene Eigenschaftsnamen fuer
+   dieselbe Kante). tools/check_css.php vergleicht woertliche Eigenschaftsnamen gegen
+   design.css getrennt fuer Hell (Pruefung 2) und Dunkel (Pruefung 5) - entfernt man eine
+   Haelfte, faellt genau eine der beiden Pruefungen, obwohl sich am gerenderten Ergebnis nichts
+   aendert. Empirisch geprueft (Auftrag Punkt 6): Entfernen von border-color hier laesst
+   Pruefung 5 mit "weder Token-Redefinition noch portierte Regel" fehlschlagen. Betrifft
+   .uptime-item, .kanban-card/.task-card, .k-badge, .kanban-card-footer/.task-card-footer,
+   .nav-tabs (border/border-color) sowie unten .task-card-completed/.task-card-cancelled,
+   .accordion-button:not(.collapsed), .wiki-list-item:hover (background/background-color,
+   dort umgekehrt: design.css nutzt "background-color" hell und "background" dunkel). */
+.uptime-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-uptime); border-color: var(--border-uptime); margin-bottom: var(--space-2); transition: 0.2s; }
+.uptime-item:hover { background: var(--surface-uptime-hover); border-color: var(--border-uptime-hover); transform: translateX(3px); }
+
+/* Buttons & Aktionen */
+.action-buttons { display: flex; align-items: center; gap: var(--space-2); }
+.btn-icon { background: none; border: none; color: var(--text-faint-static); transition: 0.2s; padding: 5px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;}
+.btn-icon:hover, .btn-icon:active { color: var(--color-primary); background: var(--overlay-dark-05); }
+.btn-icon.text-danger:hover, .btn-icon.text-danger:active { color: var(--accent-danger) !important; background: var(--overlay-danger-10); }
+.btn-icon i { pointer-events: none; }
+.trash-btn { background: none; border: none; padding: 5px; color: var(--text-faint-static); margin-top: -5px; transition: 0.2s; }
+.trash-btn:hover { color: var(--accent-danger); }
+
+/* Status Badges (Finanzen & Tickets) */
+.status-badge { font-size: 11px; font-weight: 700; padding: 5px var(--space-2); border-radius: 6px; text-transform: uppercase; cursor: pointer;}
+.status-offen { background: var(--state-warn-bg); color: var(--state-warn-fg); }
+.status-in-bearbeitung { background: var(--state-info-bg); color: var(--state-info-fg); }
+.status-erledigt { background: var(--state-neutral-bg); color: var(--state-neutral-fg); text-decoration: line-through;}
+.status-bezahlt { background: var(--state-success-bg); color: var(--state-success-fg); }
+.status-ueberfaellig { background: var(--state-danger-bg); color: var(--state-danger-fg); }
+.status-storniert { background: var(--state-neutral-bg); color: var(--state-neutral-fg); }
+
+.search-box:focus-within { box-shadow: 0 0 0 0.25rem var(--ring-primary); border-radius: var(--radius-sm); }
+
+/* Utility: consistent 10px uppercase section label */
+.label-xs { font-size: var(--text-xs); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); }
+
+/* =========================================
+   KANBAN BOARD & TASKS
+   ========================================= */
+.board-container { display: flex; gap: var(--space-5); flex-grow: 1; align-items: flex-start; overflow-x: auto; padding-bottom: var(--space-5);}
+.board-column { background: var(--surface-sunken); border-radius: var(--radius-lg); width: 33.333%; min-width: 320px; display: flex; flex-direction: column; max-height: calc(100vh - 140px); box-shadow: var(--shadow-column-inset); }
+.board-header { padding: var(--space-4) var(--space-5); font-weight: 700; font-family: 'Poppins', sans-serif; font-size: 15px; display: flex; justify-content: space-between; align-items: center; background: var(--surface-card); border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: var(--shadow-board-header); z-index: 2; }
+.header-todo { border-top: 4px solid var(--accent-neutral); }
+.header-doing { border-top: 4px solid var(--color-primary); }
+.header-done { border-top: 4px solid var(--accent-success); }
+.task-list { padding: var(--space-4); flex-grow: 1; overflow-y: auto; min-height: 150px; position: relative;}
+
+.kanban-card, .task-card {
+    /* border/border-color: load-bearing, siehe Kommentar bei .uptime-item weiter oben. */
+    background: var(--surface-card); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3);
+    box-shadow: var(--shadow-card-rest); transition: all 0.2s ease; border: 1px solid var(--border-card); border-color: var(--border-card); position: relative;
+}
+.kanban-card { cursor: grab; }
+.kanban-card:hover { box-shadow: var(--shadow-primary); border-color: var(--color-primary); transform: translateY(-2px);}
+.kanban-card:active { cursor: grabbing; }
+
+/* FIX FÜR TASKS.PHP */
+.task-card { padding: var(--space-5); border-top: 4px solid var(--color-primary); height: 480px; display: flex; flex-direction: column; margin-bottom: var(--space-7); }
+/* background-color/background: load-bearing (umgekehrter Fall), siehe Kommentar bei
+   .uptime-item weiter oben - design.css nutzt hier "background-color" hell, "background"
+   dunkel. */
+.task-card-completed { background-color: var(--surface-muted-panel) !important; background: var(--surface-muted-panel) !important; border-top-color: var(--text-faint-static) !important; opacity: 0.75; }
+.task-card-completed:hover { opacity: 1; }
+.task-card-cancelled { background-color: var(--surface-muted-panel) !important; background: var(--surface-muted-panel) !important; border-top-color: var(--text-faint-static) !important; opacity: 0.75; }
+.task-card-cancelled:hover { opacity: 1; }
+
+.kanban-card-title, .task-card h4 { font-weight: 700; font-size: var(--text-base); margin-bottom: var(--space-2); line-height: 1.3; cursor: pointer; color: var(--text-strong); transition: color 0.2s; word-break: break-word;}
+.task-card h4 { font-size: 1.15rem; margin-bottom: 0 !important; }
+.kanban-card-title:hover { color: var(--color-primary); text-decoration: underline; }
+.kanban-card-desc { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4;}
+.kanban-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+/* border/border-color (.k-badge und .kanban-card-footer/.task-card-footer): load-bearing,
+   siehe Kommentar bei .uptime-item weiter oben. */
+.k-badge { font-size: var(--text-xs); font-weight: 600; padding: 3px 6px; border-radius: 4px; background: var(--surface-subtle); border: 1px solid var(--border-badge); border-color: var(--border-badge); color: var(--text-badge); display: flex; align-items: center; gap: 3px;}
+.kanban-card-footer, .task-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border-footer-divider); border-color: var(--border-footer-divider); padding-top: 10px; margin-top: auto;}
+
+.drag-handle { color: var(--text-faint-static); cursor: grab; margin-right: 5px; font-size: 1.1rem; }
+.kanban-card:active .drag-handle { cursor: grabbing; }
+.sortable-ghost { opacity: 0.3; background-color: var(--surface-ghost); border: 2px dashed var(--color-primary); transform: scale(0.98); }
+.sortable-drag { cursor: grabbing !important; }
+.empty-state { display: none; text-align: center; color: var(--text-faint-static); font-size: var(--text-sm); font-weight: 600; padding: var(--space-5); border: 2px dashed var(--border-static); border-radius: var(--radius-md); }
+
+.pulse-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-danger); margin-right: var(--space-2); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0% { transform: scale(0.95); } 70% { transform: scale(1); box-shadow: 0 0 0 10px var(--pulse-ring); } 100% { transform: scale(0.95); } }
+
+/* =========================================
+   KONTAKTE & CRM
+   ========================================= */
+.contact-card { background: var(--surface-card); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-md); margin-bottom: var(--space-7); border-left: 4px solid var(--color-primary); position: relative; height: 100%; display: flex; flex-direction: column; transition: 0.3s;}
+.contact-avatar { width: 50px; height: 50px; border-radius: 50%; background: var(--surface-avatar); display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--color-primary); font-weight: bold; margin-right: var(--space-4); flex-shrink: 0;}
+.contact-card .card-actions { position: absolute; top: 15px; right: 15px; display: flex; gap: 5px; }
+
+/* =========================================
+   WIKI & SNIPPETS
+   ========================================= */
+.accordion-item { border: none; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-md); margin-bottom: var(--space-5); overflow: hidden; background: var(--surface-card); }
+.accordion-button { font-family: 'Poppins', sans-serif; font-size: var(--text-md); font-weight: 600; color: var(--text-heading); background: var(--surface-card); padding: 18px var(--space-6); border-left: 4px solid transparent;}
+/* background-color/background: load-bearing (wie .task-card-completed oben). */
+.accordion-button:not(.collapsed) { background-color: var(--surface-accent); background: var(--surface-accent); color: var(--color-primary); box-shadow: var(--shadow-accordion-divider); border-left: 4px solid var(--color-primary); }
+.accordion-button:focus { box-shadow: none; border-color: transparent; }
+.wiki-list-item { transition: all 0.2s; border-left: 4px solid var(--border-wiki-accent); cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-wiki-divider); }
+.wiki-list-item:last-child { border-bottom: none; }
+/* background-color/background: load-bearing (wie .task-card-completed oben). */
+.wiki-list-item:hover { background-color: var(--surface-tint); background: var(--surface-tint); border-left-color: var(--color-primary); padding-left: var(--space-7); }
+.wiki-list-item.pinned { background-color: var(--surface-pinned); border-left-color: var(--accent-warning); }
+.wiki-list-item.pinned:hover { background-color: var(--surface-pinned-hover); padding-left: var(--space-7); }
+.wiki-title { font-size: var(--text-md); font-weight: 700; color: var(--text-strong); margin-bottom: 3px; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.wiki-preview-text { font-size: 13px; color: var(--accent-neutral); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px; }
+.wiki-list-item .card-actions { opacity: 0.5; position: static; }
+.wiki-list-item:hover .card-actions { opacity: 1; }
+
+#view_content pre { background: var(--surface-code) !important; border-radius: var(--radius-md); margin: var(--space-4) 0; padding: var(--space-4); overflow-x: auto; }
+#view_content code { font-family: var(--font-mono); font-size: var(--text-base); }
+#view_content img { max-width: 100%; height: auto; border-radius: var(--radius-md); margin: var(--space-4) 0; display: block; }
+.ck-editor__editable_inline { min-height: 300px; }
+
+/* =========================================
+   KUNDEN PORTAL (portal.php)
+   ========================================= */
+.portal-header { background: var(--color-sidebar); color: var(--text-invert); padding: 60px 0 70px; border-bottom: 4px solid var(--color-primary); }
+.info-bar { background: var(--surface-info-panel); border-radius: 12px; padding: var(--space-6); margin-top: -40px; box-shadow: var(--shadow-info-panel); border-left: 5px solid var(--color-primary); margin-bottom: var(--space-7); position: relative; z-index: 10;}
+.project-card, .portal-card { background: var(--surface-static); border-radius: var(--radius-xl); padding: var(--space-7); box-shadow: var(--shadow-portal-card); margin-bottom: var(--space-8); border-top: 4px solid var(--color-primary); transition: transform 0.2s;}
+
+.milestone-item { padding: var(--space-4) var(--space-5); border-left: 4px solid var(--border-static); margin-bottom: var(--space-3); background: var(--surface-static-subtle); border-radius: 0 var(--radius-md) var(--radius-md) 0; display: flex; justify-content: space-between; align-items: center; transition: 0.3s;}
+.ms-approved { border-left-color: var(--accent-success); background: var(--surface-approved); }
+
+.upload-zone { border: 2px dashed var(--border-upload); padding: 35px var(--space-5); text-align: center; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; background: var(--surface-static-subtle); }
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--color-primary); background: var(--surface-upload-hover); color: var(--color-primary); }
+.upload-zone i { transition: transform 0.3s ease; }
+.upload-zone:hover i, .upload-zone.dragover i { transform: scale(1.1); }
+.section-hint { font-size: 13px; color: var(--accent-neutral); margin-bottom: var(--space-4); display: block; }
+
+/* border-bottom/border-color: load-bearing, siehe Kommentar bei .uptime-item weiter oben. */
+.nav-tabs { border-bottom: 2px solid var(--border-base); border-color: var(--border-base); margin-bottom: 35px; border-radius: var(--radius-lg); background: var(--surface-card); padding: 10px 10px 0; box-shadow: var(--shadow-nav-tabs);}
+.nav-tabs .nav-link { color: var(--text-muted); font-weight: 600; border: none; padding: var(--space-4) var(--space-6); transition: 0.3s; background: transparent; border-radius: var(--radius-md) var(--radius-md) 0 0;}
+.nav-tabs .nav-link:hover { color: var(--color-primary); background: var(--surface-tint);}
+.nav-tabs .nav-link.active { color: var(--color-primary); border-bottom: 3px solid var(--color-primary); background: transparent;}
+
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
+.tab-pane { transition: opacity 0.3s ease; }
+
+/* =========================================
+   RESPONSIVE DESIGN (Smartphones & Tablets)
+   ========================================= */
+@media (max-width: 991px) {
+    .sidebar { left: -280px; }
+    .sidebar.active { left: 0; }
+    .main-content { margin-left: 0; width: 100%; padding: var(--space-4); }
+    .mobile-toggle { display: block; }
+    .board-container { flex-direction: column; }
+    .board-column { width: 100%; min-width: 100%; max-height: none; margin-bottom: var(--space-5); }
+    .task-list { min-height: 50px; }
+    .wiki-preview-text { max-width: 200px; }
+    .wiki-list-item .card-actions { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    .task-header-row { flex-direction: column !important; }
+    .action-buttons { margin-top: var(--space-4); width: 100%; justify-content: flex-start; }
+    .top-header h2 { font-size: 18px; }
+    .top-header .d-flex { width: 100%; justify-content: space-between; margin-top: var(--space-4); }
+}
+
+/* =========================================================
+   DARK MODE: Overrides fuer Bootstrap-Komponenten
+   ---------------------------------------------------------
+   Diese Regeln bleiben als [data-theme]-Overrides bestehen, weil
+   diese Selektoren keine eigene Hell-Regel haben: überwiegend
+   Bootstrap-Komponenten und ein paar eigene Klassen dieses Projekts,
+   die auf Bootstrap-Standards verlassen. Ohne eine eigene Basisregel
+   gibt es kein Token zum Umdefinieren. Sie verwenden ausschliesslich
+   Tokens, keine Rohfarben, und ihre Zahl waechst nur mit den
+   Bootstrap-Komponenten, die wir einfaerben - nicht mit unseren
+   eigenen. Fuer eigene Komponenten gilt weiterhin: kein [data-theme], nur Tokens.
+
+   Hinweis .log-*: dem Klassennamen nach eine eigene Komponente,
+   aber design.css enthaelt fuer .log-container/.log-table/
+   .log-date keine einzige Hell-Regel - es gibt nichts, dessen
+   Token man umdefinieren koennte. Deshalb hier einsortiert wie
+   ein Bootstrap-Fall, nicht bei den Token-Redefinitionen oben.
+   ========================================================= */
+
+/* Tables */
+[data-theme="dark"] .table { color: var(--text-body); }
+[data-theme="dark"] .table thead th { color: var(--text-strong); border-color: var(--border-base); background: var(--surface-card); }
+[data-theme="dark"] .table tbody tr { border-color: var(--border-base); }
+[data-theme="dark"] .table tbody tr:hover { background: var(--surface-subtle); }
+[data-theme="dark"] .table-borderless td, [data-theme="dark"] .table-borderless th { border-color: var(--border-base); }
+[data-theme="dark"] .table-hover tbody tr:hover { background-color: var(--surface-subtle); }
+
+/* Forms */
+[data-theme="dark"] .form-control, [data-theme="dark"] .form-select { background: var(--surface-subtle); border-color: var(--border-strong); color: var(--text-body); }
+[data-theme="dark"] .form-control:focus, [data-theme="dark"] .form-select:focus { background: var(--border-base); border-color: var(--color-primary); color: var(--text-strong); box-shadow: 0 0 0 0.25rem var(--ring-primary-20); }
+[data-theme="dark"] .form-control::placeholder { color: var(--text-faint); }
+[data-theme="dark"] .input-group-text { background: var(--surface-subtle); border-color: var(--border-strong); color: var(--text-muted); }
+[data-theme="dark"] .form-label { color: var(--text-body); }
+[data-theme="dark"] .form-check-label { color: var(--text-body); }
+[data-theme="dark"] .form-text { color: var(--text-muted); }
+
+/* Modals */
+[data-theme="dark"] .modal-content { background: var(--surface-card); border-color: var(--border-base); }
+[data-theme="dark"] .modal-header { border-color: var(--border-base); }
+[data-theme="dark"] .modal-footer { background: var(--surface-sunken); border-color: var(--border-base); }
+[data-theme="dark"] .modal-title { color: var(--text-strong); }
+[data-theme="dark"] .btn-close { filter: invert(1); }
+
+/* Dropdowns */
+[data-theme="dark"] .dropdown-menu { background: var(--surface-card); border-color: var(--border-base); }
+[data-theme="dark"] .dropdown-item { color: var(--text-body); }
+[data-theme="dark"] .dropdown-item:hover, [data-theme="dark"] .dropdown-item:focus { background: var(--surface-subtle); color: var(--text-strong); }
+[data-theme="dark"] .dropdown-divider { border-color: var(--border-base); }
+[data-theme="dark"] .dropdown-header { color: var(--text-muted); }
+
+/* Borders & Backgrounds (Bootstrap-Utilities) */
+[data-theme="dark"] .bg-white, [data-theme="dark"] .bg-light { background: var(--surface-card) !important; }
+[data-theme="dark"] .border, [data-theme="dark"] .border-bottom, [data-theme="dark"] .border-top { border-color: var(--border-base) !important; }
+[data-theme="dark"] .text-muted { color: var(--text-faint) !important; }
+[data-theme="dark"] .text-dark { color: var(--text-body) !important; }
+[data-theme="dark"] hr { border-color: var(--border-base); }
+[data-theme="dark"] .shadow-sm { box-shadow: var(--shadow-utility-sm) !important; }
+
+/* Accordion (Wiki) - nur .accordion-body: alle anderen Accordion-Selektoren
+   haben eine eigene Hell-Regel und sind oben per Token geloest. */
+[data-theme="dark"] .accordion-body { background: var(--surface-card); }
+
+/* Log table - siehe Hinweis oben, keine eigene Hell-Regel vorhanden */
+[data-theme="dark"] .log-container { background: var(--surface-card); }
+[data-theme="dark"] .log-table th { color: var(--text-log-header); border-color: var(--border-base); }
+[data-theme="dark"] .log-table td { color: var(--text-body); border-color: var(--border-subtle); }
+[data-theme="dark"] .log-date { color: var(--text-strong); }
+
+/* Buttons (Bootstrap-Varianten) */
+[data-theme="dark"] .btn-outline-secondary { color: var(--text-muted); border-color: var(--border-strong); }
+[data-theme="dark"] .btn-outline-secondary:hover { background: var(--surface-subtle); color: var(--text-body); border-color: var(--text-faint); }
+[data-theme="dark"] .btn-light { background: var(--surface-subtle); border-color: var(--border-strong); color: var(--text-body); }
+[data-theme="dark"] .btn-light:hover { background: var(--border-base); }
+
+/* Alerts */
+[data-theme="dark"] .alert-info { background: var(--state-info-bg); border-color: var(--border-alert-info); color: var(--state-info-fg); }
+[data-theme="dark"] .alert-warning { background: var(--surface-alert-warning); border-color: var(--border-alert-warning); color: var(--accent-warning); }
+[data-theme="dark"] .alert-danger { background: var(--state-danger-bg); border-color: var(--border-alert-danger); color: var(--state-danger-fg); }
+[data-theme="dark"] .alert-success { background: var(--state-success-bg); border-color: var(--border-alert-success); color: var(--state-success-fg); }
+
+/* Misc (Bootstrap-Komponenten) */
+[data-theme="dark"] code { color: var(--state-info-fg); background: var(--surface-subtle); }
+[data-theme="dark"] .list-group-item { background: var(--surface-card); border-color: var(--border-base); color: var(--text-body); }
+[data-theme="dark"] .list-group-item:hover { background: var(--surface-subtle); }
+[data-theme="dark"] .pagination .page-link { background: var(--surface-card); border-color: var(--border-base); color: var(--text-body); }
+[data-theme="dark"] .pagination .page-item.active .page-link { background: var(--color-primary); border-color: var(--color-primary); }
+[data-theme="dark"] .progress { background: var(--surface-subtle); }
+[data-theme="dark"] small.text-muted { color: var(--text-faint) !important; }
+[data-theme="dark"] .card { background: var(--surface-card); border-color: var(--border-base); }
+[data-theme="dark"] .card-header { background: var(--surface-subtle); border-color: var(--border-base); color: var(--text-strong); }
+[data-theme="dark"] .card-body { color: var(--text-body); }
+[data-theme="dark"] .rounded-3, [data-theme="dark"] .rounded { background: var(--surface-card); }
