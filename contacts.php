@@ -142,7 +142,6 @@ $sql .= " ORDER BY created_at DESC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-?>
 
 $page_title   = 'Kontakte';
 $page_heading = 'CRM & Kontakte';

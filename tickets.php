@@ -250,7 +250,6 @@ function prio_badge(string $p): string {
     $c = $prio_css[$p] ?? '#adb5bd';
     return "<span style=\"background:{$c}22;color:{$c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;\">" . htmlspecialchars($p) . "</span>";
 }
-?>
 $page_title   = 'Support-Tickets';
 $page_heading = 'Support Zentrale';
 $current_page = basename($_SERVER['PHP_SELF']);

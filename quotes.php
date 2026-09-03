@@ -521,7 +521,6 @@ $kpi = $pdo->query("SELECT
     SUM(CASE WHEN status='Abgelehnt' THEN 1 ELSE 0 END) AS rejected,
     SUM(CASE WHEN status='Angenommen' THEN total_amount ELSE 0 END) AS revenue
 FROM quotes")->fetch(PDO::FETCH_ASSOC);
-?>
 $page_title   = 'Angebote';
 $page_heading = 'Angebote';
 $current_page = basename($_SERVER['PHP_SELF']);

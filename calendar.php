@@ -298,7 +298,6 @@ $preset_colors = [
     '#dc3545' => 'Rot',    '#6f42c1' => 'Lila',   '#20c997' => 'Türkis',
     '#e83e8c' => 'Pink',   '#343a40' => 'Dunkel',
 ];
-?>
 $page_title   = 'Kalender';
 $page_heading = 'Kalender';
 $current_page = basename($_SERVER['PHP_SELF']);

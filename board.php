@@ -93,7 +93,6 @@ function deadline_badge(string $deadline): string {
     if ($days <= 3)  return '<span class="k-badge" style="background:#ffc10720;color:#856404;border-color:#ffc10740;"><i class="bi bi-clock me-1"></i>in ' . $days . ' T.</span>';
     return '<span class="k-badge" style="color:#6c757d;border-color:#dee2e6;"><i class="bi bi-calendar3 me-1"></i>' . date('d.m.', strtotime($deadline)) . '</span>';
 }
-?>
 
 $page_title   = 'Kanban Board';
 $page_heading = 'Projekt Board';

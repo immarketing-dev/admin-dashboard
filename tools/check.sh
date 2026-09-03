@@ -32,6 +32,21 @@ else
   echo "HINWEIS: php nicht gefunden - CSS-Pruefung uebersprungen."
 fi
 
+# --- PHP-Code ausserhalb der Tags --------------------------------------
+# "php -l" hat hier eine prinzipielle blinde Stelle: fehlt ein oeffnendes
+# PHP-Tag, ist der Code einfach literaler Text und damit syntaktisch
+# gueltig. Die Seite liefert dann ihren eigenen Quelltext im Browser aus.
+# Genau das ist einmal passiert, in zehn von elf Seiten gleichzeitig, weil
+# ein fehlerhaftes Muster wiederholt wurde. Der Tokenizer findet es sicher.
+if command -v php >/dev/null 2>&1; then
+  if ! out=$(php tools/check_php_tags.php 2>&1); then
+    echo "PHP-TAGS: $out"
+    fail=1
+  fi
+else
+  echo "HINWEIS: php nicht gefunden - PHP-Tag-Pruefung uebersprungen."
+fi
+
 # --- 2a. Identifikatoren der privaten Installation ----------------------
 # Pro-Installation-Liste von Strings (DB-User, DB-Name, Hostname, E-Mail,
 # SMTP-Host etc.), die niemals in eine versionierte Datei geschrieben

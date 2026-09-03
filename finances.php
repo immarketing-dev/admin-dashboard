@@ -545,7 +545,6 @@ $sql_q .= " ORDER BY q.created_at DESC";
 $stmt_q = $pdo->prepare($sql_q); $stmt_q->execute($params_q);
 $quotes = $stmt_q->fetchAll(PDO::FETCH_ASSOC);
 $kpi_q = $pdo->query("SELECT COUNT(*) AS total, SUM(CASE WHEN status='Entwurf' THEN 1 ELSE 0 END) AS draft, SUM(CASE WHEN status='Gesendet' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN status='Angenommen' THEN 1 ELSE 0 END) AS accepted, SUM(CASE WHEN status='Abgelehnt' THEN 1 ELSE 0 END) AS rejected, SUM(CASE WHEN status='Angenommen' THEN total_amount ELSE 0 END) AS revenue FROM quotes")->fetch(PDO::FETCH_ASSOC);
-?>
 
 $page_title   = $active_tab === 'quotes' ? 'Angebote' : 'Finanzen';
 $page_heading = $active_tab === 'quotes' ? 'Angebote' : 'Finanz-Zentrale';

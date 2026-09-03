@@ -152,7 +152,6 @@ $s_favicon        = setting('favicon', '');
 // System info
 $php_version = PHP_VERSION;
 try { $db_version = $pdo->query("SELECT VERSION()")->fetchColumn(); } catch(Exception $e) { $db_version = 'n/a'; }
-?>
 $page_title   = 'Einstellungen';
 $page_heading = 'Einstellungen';
 $current_page = basename($_SERVER['PHP_SELF']);

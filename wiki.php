@@ -195,7 +195,6 @@ foreach($articles as $art) {
     }
     $grouped_articles[$cat][] = $art;
 }
-?>
 
 $page_title   = 'Wiki & Snippets';
 $page_heading = 'Wiki & Snippets';

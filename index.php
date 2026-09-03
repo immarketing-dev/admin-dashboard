@@ -362,7 +362,6 @@ $count_uploads = count($portal_uploads);
 $count_approvals = count($portal_approvals);
 $count_feedbacks = count($portal_feedbacks);
 $count_ms_comments = count($portal_ms_comments);
-?>
 
 $page_title   = 'Dashboard';
 $page_heading = 'Übersicht';

@@ -76,6 +76,12 @@ private history.
   benefit once the entry point is gone.
 
 ### Fixed
+- Ten of the eleven converted pages emitted their own PHP source into the
+  browser. The layout block was inserted after an existing closing tag without
+  reopening PHP, so the code was literal text — and because literal text is
+  always syntactically valid, `php -l` could not see it. `tools/check_php_tags.php`
+  now uses the tokenizer to detect PHP code outside the tags, and `tools/check.sh`
+  runs it.
 - `tools/` is denied at the web server level. A local `tools/leakscan-local.txt`
   lists exactly the strings that must never be published — database host, name
   and user of the operator’s own installation — so a reachable `tools/` would
