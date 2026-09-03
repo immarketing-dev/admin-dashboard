@@ -10,3 +10,6 @@ uploads/*/*
 .superpowers/
 docs/superpowers/
 tools/leakscan-local.txt
+
+# Manifest des Auslieferungsskripts (liegt im Zielordner, nicht hier)
+.deploy-manifest.json

@@ -54,3 +54,26 @@ pull request so you catch failures before CI does.
 
 Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`,
 `build:`. Explain why in the body, not just what.
+
+## Deploying to a live server
+
+Work only in the repository. Never edit the folder you upload from — changes
+there are overwritten on the next build and never reach git.
+
+```bash
+bash tools/check.sh              # before every commit
+git commit && git push
+php tools/deploy.php ../deploy-folder --dry-run   # see what changed
+php tools/deploy.php ../deploy-folder             # build it
+```
+
+`deploy.php` refuses to build while any check fails, excludes `.git`,
+`.github`, `docs` and `tools` from the output, preserves an existing `.env`
+and everything under `uploads/`, and prints which files changed since the
+last build so only those need uploading.
+
+**An upload never deletes.** When a file is removed from the project, the
+script lists it under "delete on the server" — that has to be done by hand,
+or the old file stays reachable. This matters: the project once shipped two
+login handlers with credentials in plain text, and merely uploading the
+replacement would have left them in place.
