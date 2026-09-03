@@ -301,89 +301,6 @@ $preset_colors = [
 $page_title   = 'Kalender';
 $page_heading = 'Kalender';
 $current_page = basename($_SERVER['PHP_SELF']);
-$extra_head = <<<'CSS'
-  <style>
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-
-    .cal-header-cell {
-        text-align: center; font-size: 11px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: .6px; padding: 8px 0 5px; color: #9aa0ab;
-    }
-    .cal-header-cell.cal-wk-end { color: #e05d6f; }
-
-    .cal-day {
-        min-height: 115px; background: #fff; border: 1px solid #edf0f4;
-        border-radius: 10px; padding: 8px 7px 6px; position: relative;
-        transition: box-shadow .18s, border-color .18s; cursor: pointer; overflow: hidden;
-    }
-    .cal-day:hover { box-shadow: 0 5px 20px rgba(0,0,0,.08); border-color: var(--color-primary); z-index: 1; }
-    .cal-day:hover .cal-add-hint { opacity: 1; }
-    .cal-day.cal-today { border: 2px solid var(--color-primary); background: linear-gradient(145deg, #f4faff 0%, #eaf3fd 100%); }
-    .cal-day.cal-weekend { background: #fafbfc; }
-    .cal-day.cal-empty { background: transparent; border-color: transparent; cursor: default; }
-
-    .cal-day-num {
-        font-size: 13px; font-weight: 700; color: #495057; margin-bottom: 5px;
-        display: inline-flex; align-items: center; justify-content: center;
-        width: 27px; height: 27px; border-radius: 50%;
-    }
-    .cal-today .cal-day-num { background: var(--color-primary); color: #fff; box-shadow: 0 2px 8px rgba(74,144,217,.3); }
-
-    .cal-add-hint {
-        position: absolute; top: 7px; right: 7px; width: 18px; height: 18px;
-        background: var(--color-primary); color: #fff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 14px; line-height: 1; font-weight: 300;
-        opacity: 0; transition: opacity .15s; pointer-events: none;
-    }
-    .cal-today .cal-add-hint { top: 8px; right: 8px; }
-
-    .cal-event {
-        display: flex; align-items: center; gap: 3px; font-size: 11px;
-        padding: 3px 6px 3px 5px; border-radius: 5px; margin-bottom: 3px;
-        white-space: nowrap; overflow: hidden; cursor: pointer;
-        transition: filter .12s; border-left: 2px solid transparent;
-    }
-    .cal-event:hover { filter: brightness(.92); }
-    .cal-event i { flex-shrink: 0; font-size: 10px; }
-    .cal-event-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
-
-    .cal-event-task         { background: #e3f4f8; color: #0c5460; border-color: #74c0d6; }
-    .cal-event-task-done    { background: #d8f0de; color: #155724; border-color: #6dcc83; }
-    .cal-event-task-overdue { background: #fde8ec; color: #721c24; border-color: #e07b8a; }
-    .cal-event-inv          { background: #fef5d9; color: #856404; border-color: #f0c040; }
-    .cal-event-inv-paid     { background: #d8f0de; color: #155724; border-color: #6dcc83; }
-    .cal-event-inv-overdue  { background: #fde8ec; color: #721c24; border-color: #e07b8a; }
-    .cal-more { font-size: 10px; color: var(--color-primary); font-weight: 700; cursor: pointer; display: block; padding: 1px 5px; }
-
-    .legend-chip {
-        display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #6c757d;
-        background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 20px; padding: 3px 9px;
-    }
-    .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-
-    #event-detail-panel { position: sticky; top: 20px; }
-
-    .color-swatch-label { cursor: pointer; }
-    .color-swatch-label .color-swatch {
-        width: 28px; height: 28px; border-radius: 50%; display: inline-block;
-        border: 3px solid transparent; transition: border-color .15s, box-shadow .15s;
-        box-shadow: 0 1px 4px rgba(0,0,0,.15);
-    }
-    .color-radio:checked + .color-swatch { border-color: #333 !important; box-shadow: 0 0 0 2px #fff inset, 0 1px 4px rgba(0,0,0,.2); }
-
-    .contact-item:hover { background: #f8f9fa !important; }
-    .contact-item:last-child { border-bottom: none !important; }
-    .btn-xs { padding: 2px 7px; font-size: 10px; line-height: 1.6; }
-
-    @media (max-width: 767px) {
-        .cal-day { min-height: 72px; padding: 5px 3px; }
-        .cal-event { font-size: 10px; padding: 2px 4px; }
-        .cal-day-num { width: 22px; height: 22px; font-size: 11px; }
-        .cal-add-hint { display: none; }
-    }
-  </style>
-CSS;
 $header_actions = '
     <div class="d-flex align-items-center gap-2">
         <button class="btn btn-sm btn-primary fw-bold" onclick="openNewModal(\'\')">
@@ -413,14 +330,14 @@ require 'includes/layout_start.php';
 
   <div class="row g-4">
     <div class="col-lg-9">
-      <div class="bg-white rounded-3 shadow-sm border p-4">
+      <div class="bg-surface rounded-3 shadow-sm border p-4">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-          <h4 class="fw-bold m-0 text-dark"><?= $month_names[$month] ?> <?= $year ?></h4>
+          <h4 class="fw-bold m-0 text-strong-c"><?= $month_names[$month] ?> <?= $year ?></h4>
           <div class="d-flex gap-3 small flex-wrap">
-            <span class="legend-chip"><span class="legend-dot" style="background:#d1ecf1;border:1px solid #74c0d6;"></span>Deadline</span>
-            <span class="legend-chip"><span class="legend-dot" style="background:#fff3cd;border:1px solid #f0c040;"></span>Rechnung</span>
-            <span class="legend-chip"><span class="legend-dot" style="background:#4a90d922;border:2px solid #4a90d9;"></span>Termin</span>
-            <span class="legend-chip"><span class="legend-dot" style="background:#f8d7da;border:1px solid #e07b8a;"></span>Überfällig</span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-task"></span>Deadline</span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-inv"></span>Rechnung</span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-event"></span>Termin</span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-overdue"></span>Überfällig</span>
           </div>
         </div>
 
@@ -507,8 +424,8 @@ require 'includes/layout_start.php';
       <div id="event-detail-panel">
 
         <!-- Monthly overview -->
-        <div class="bg-white rounded-3 shadow-sm border p-3 mb-3">
-          <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-fill me-2" style="color:var(--color-primary);"></i>Monatsüberblick</h6>
+        <div class="bg-surface rounded-3 shadow-sm border p-3 mb-3">
+          <h6 class="fw-bold text-strong-c mb-3"><i class="bi bi-bar-chart-fill me-2" style="color:var(--color-primary);"></i>Monatsüberblick</h6>
           <?php if ($total_events_month > 0): ?>
           <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
             <span class="small text-muted"><i class="bi bi-calendar2-event me-1"></i>Termine</span>
@@ -538,9 +455,9 @@ require 'includes/layout_start.php';
         </div>
 
         <!-- Day detail panel (filled via JS) -->
-        <div id="day-detail-card" class="bg-white rounded-3 shadow-sm border p-3 mb-3" style="display:none;">
+        <div id="day-detail-card" class="bg-surface rounded-3 shadow-sm border p-3 mb-3" style="display:none;">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold text-dark m-0" id="day-detail-title"></h6>
+            <h6 class="fw-bold text-strong-c m-0" id="day-detail-title"></h6>
             <button class="btn btn-xs btn-outline-primary" onclick="openNewModalForDay(currentDetailDay)">
               <i class="bi bi-plus"></i>
             </button>
@@ -550,14 +467,14 @@ require 'includes/layout_start.php';
 
         <!-- Upcoming 14 days -->
         <?php if (!empty($upcoming) && $is_current_month): ?>
-        <div class="bg-white rounded-3 shadow-sm border p-3 mt-3">
-          <h6 class="fw-bold text-dark mb-3"><i class="bi bi-calendar-event me-2 text-warning"></i>Nächste 14 Tage</h6>
+        <div class="bg-surface rounded-3 shadow-sm border p-3 mt-3">
+          <h6 class="fw-bold text-strong-c mb-3"><i class="bi bi-calendar-event me-2 text-warning"></i>Nächste 14 Tage</h6>
           <?php foreach($upcoming as $up): ?>
             <?php if ($up['type'] === 'event'): $evt = $up['data']; ?>
               <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded" style="background:<?=$evt['color']?>1a;border-left:3px solid <?=$evt['color']?>;">
                 <i class="bi bi-calendar2-event mt-1 small flex-shrink-0" style="color:<?=$evt['color']?>;"></i>
                 <div>
-                  <div class="fw-semibold small text-dark"><?= htmlspecialchars(mb_strimwidth($evt['title'],0,32,'…')) ?></div>
+                  <div class="fw-semibold small text-strong-c"><?= htmlspecialchars(mb_strimwidth($evt['title'],0,32,'…')) ?></div>
                   <div class="text-muted" style="font-size:11px;">
                     <?= date('d.m.Y', strtotime($evt['event_date'])) ?>
                     <?= !empty($evt['start_time']) ? ' · '.substr($evt['start_time'],0,5).' Uhr' : '' ?>
@@ -565,18 +482,18 @@ require 'includes/layout_start.php';
                 </div>
               </div>
             <?php elseif ($up['type'] === 'task'): $t = $up['data']; ?>
-              <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded" style="background:#d1ecf1;">
-                <i class="bi bi-briefcase mt-1 small" style="color:#0c5460;flex-shrink:0;"></i>
+              <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded tint-info">
+                <i class="bi bi-briefcase mt-1 small" style="color:var(--state-info-fg);flex-shrink:0;"></i>
                 <div>
-                  <div class="fw-semibold small text-dark"><?= htmlspecialchars(mb_strimwidth($t['title'],0,32,'…')) ?></div>
+                  <div class="fw-semibold small text-strong-c"><?= htmlspecialchars(mb_strimwidth($t['title'],0,32,'…')) ?></div>
                   <div class="text-muted" style="font-size:11px;"><?= date('d.m.Y', $up['ts']) ?> &middot; <?= htmlspecialchars($t['status']) ?></div>
                 </div>
               </div>
             <?php else: $inv = $up['data']; ?>
-              <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded" style="background:#fff3cd;">
-                <i class="bi bi-receipt mt-1 small" style="color:#856404;flex-shrink:0;"></i>
+              <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded tint-warn">
+                <i class="bi bi-receipt mt-1 small" style="color:var(--state-warn-fg);flex-shrink:0;"></i>
                 <div>
-                  <div class="fw-semibold small text-dark"><?= htmlspecialchars(mb_strimwidth($inv['title'],0,32,'…')) ?></div>
+                  <div class="fw-semibold small text-strong-c"><?= htmlspecialchars(mb_strimwidth($inv['title'],0,32,'…')) ?></div>
                   <div class="text-muted" style="font-size:11px;"><?= date('d.m.Y', $up['ts']) ?> &middot; <?= number_format($inv['amount'],2,',','.') ?> €</div>
                 </div>
               </div>
@@ -676,14 +593,14 @@ require 'includes/layout_start.php';
             <div class="col-12">
               <label class="form-label fw-bold small"><i class="bi bi-person-plus me-1"></i>Kontakte einladen</label>
               <input type="text" class="form-control form-control-sm mb-2" id="contactSearch" placeholder="Kontakt suchen..." autocomplete="off">
-              <div id="contactCheckList" style="max-height:150px;overflow-y:auto;border:1px solid #dee2e6;border-radius:6px;background:#fff;">
+              <div id="contactCheckList" style="max-height:150px;overflow-y:auto;border:1px solid var(--border-base);border-radius:6px;background:var(--surface-card);">
                 <?php if (empty($all_contacts)): ?>
                 <div class="p-3 text-muted small text-center">Keine Kontakte vorhanden.</div>
                 <?php else: ?>
                 <?php foreach($all_contacts as $c): ?>
-                <label class="contact-item d-flex align-items-center gap-2 px-3 py-2" style="cursor:pointer;border-bottom:1px solid #f5f5f5;margin:0;">
+                <label class="contact-item d-flex align-items-center gap-2 px-3 py-2" style="cursor:pointer;border-bottom:1px solid var(--border-subtle);margin:0;">
                   <input type="checkbox" name="contact_ids[]" value="<?= $c['id'] ?>" class="flex-shrink-0">
-                  <span class="text-dark small fw-semibold"><?= htmlspecialchars($c['name']) ?></span>
+                  <span class="text-strong-c small fw-semibold"><?= htmlspecialchars($c['name']) ?></span>
                   <?php if($c['email']): ?><small class="text-muted ms-auto"><?= htmlspecialchars($c['email']) ?></small><?php endif; ?>
                 </label>
                 <?php endforeach; ?>
@@ -694,7 +611,7 @@ require 'includes/layout_start.php';
           </div>
         </div>
 
-        <div class="modal-footer bg-light p-3">
+        <div class="modal-footer bg-subtle p-3">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
           <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-check2 me-1"></i>Speichern</button>
         </div>
@@ -718,7 +635,7 @@ require 'includes/layout_start.php';
         <div class="modal-body text-center py-4">
           <p class="mb-0 fw-bold">Termin und alle Einladungen löschen?</p>
         </div>
-        <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+        <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
           <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
         </div>
@@ -741,7 +658,7 @@ require 'includes/layout_start.php';
         <p class="fw-bold mb-1">Termin gespeichert!</p>
         <p class="text-muted small mb-0">Einladungs-E-Mail mit ICS-Kalenderlink an <strong><?= $invite_count ?> Kontakt<?= $invite_count > 1 ? 'e' : '' ?></strong> senden?</p>
       </div>
-      <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+      <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Später</button>
         <form method="POST" class="d-inline">
           <?= csrf_field() ?>
@@ -875,19 +792,19 @@ function showDayDetail(day, year, month) {
         if (ev.meeting_url) {
             meetingBtn = `<a href="${esc(ev.meeting_url)}" target="_blank" rel="noopener"
                 class="btn btn-xs mt-1 d-inline-flex align-items-center gap-1"
-                style="font-size:10px;background:#28a74522;color:#28a745;border:1px solid #28a74544;padding:2px 8px;">
+                style="font-size:var(--text-xs);background:var(--success-soft);color:var(--accent-success);border:1px solid var(--accent-success);padding:2px 8px;">
                 <i class="bi bi-camera-video"></i> Meeting beitreten
             </a>`;
         }
 
         let contactsHtml = '';
         if (ev.contacts && ev.contacts.length > 0) {
-            contactsHtml = '<div class="mt-2 pt-2" style="border-top:1px dashed #ddd;">';
+            contactsHtml = '<div class="mt-2 pt-2" style="border-top:1px dashed var(--border-base);">';
             contactsHtml += '<div class="text-muted mb-1" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Eingeladene Kontakte</div>';
             ev.contacts.forEach(c => {
                 contactsHtml += `<div class="d-flex align-items-center gap-1 mb-1">
                     <i class="bi bi-person-fill small flex-shrink-0" style="color:${color};"></i>
-                    <span class="small text-dark" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
+                    <span class="small text-strong-c" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
                     <div class="d-flex gap-1 ms-auto">
                         <button class="btn btn-xs btn-outline-secondary" style="padding:1px 5px;font-size:10px;"
                             onclick="copyLink('${esc(c.ics_link)}', this)" title="ICS-Einladungslink kopieren">
@@ -913,14 +830,14 @@ function showDayDetail(day, year, month) {
         html += `<div class="mb-3 p-2 rounded" style="background:${color}0d;border-left:3px solid ${color};">
             <div class="d-flex align-items-start justify-content-between gap-1 mb-1">
                 <div class="flex-grow-1 min-w-0">
-                    <div class="fw-semibold small text-dark">${esc(ev.title)}${statusLabel}</div>
+                    <div class="fw-semibold small text-strong-c">${esc(ev.title)}${statusLabel}</div>
                     <div class="text-muted" style="font-size:11px;"><i class="bi bi-clock me-1"></i>${timeStr}</div>
                     ${ev.location ? `<div class="text-muted" style="font-size:11px;"><i class="bi bi-geo-alt me-1"></i>${esc(ev.location)}</div>` : ''}
                     ${ev.category && ev.category !== 'Termin' ? `<div class="mt-1"><span class="badge" style="font-size:9px;background:${color}22;color:${color};">${esc(ev.category)}</span></div>` : ''}
                     ${meetingBtn}
                 </div>
                 <div class="d-flex gap-1 flex-shrink-0">
-                    <button class="btn btn-xs" style="padding:2px 6px;font-size:10px;background:#f8f9fa;border:1px solid #dee2e6;"
+                    <button class="btn btn-xs" style="padding:2px 6px;font-size:10px;background:var(--surface-subtle);border:1px solid var(--border-base);"
                         onclick="openEditModal(eventIndex[${ev.id}])" title="Bearbeiten">
                         <i class="bi bi-pencil"></i>
                     </button>
@@ -940,14 +857,14 @@ function showDayDetail(day, year, month) {
         const now = Date.now();
         const dl  = new Date(t.deadline).getTime();
         let cls, icon;
-        if (t.status === 'Erledigt')  { cls = '#d4edda'; icon = 'bi-check-circle-fill text-success'; }
-        else if (dl < now)            { cls = '#f8d7da'; icon = 'bi-exclamation-triangle-fill text-danger'; }
-        else                          { cls = '#d1ecf1'; icon = 'bi-briefcase text-info'; }
+        if (t.status === 'Erledigt')  { cls = 'tint-success'; icon = 'bi-check-circle-fill text-success'; }
+        else if (dl < now)            { cls = 'tint-danger';  icon = 'bi-exclamation-triangle-fill text-danger'; }
+        else                          { cls = 'tint-info';    icon = 'bi-briefcase text-info'; }
 
-        html += `<div class="d-flex align-items-start gap-2 mb-2 p-2 rounded" style="background:${cls};">
+        html += `<div class="d-flex align-items-start gap-2 mb-2 p-2 rounded ${cls}">
             <i class="bi ${icon} mt-1 small flex-shrink-0"></i>
             <div>
-                <div class="fw-semibold small text-dark">${esc(t.title)}</div>
+                <div class="fw-semibold small text-strong-c">${esc(t.title)}</div>
                 <div class="text-muted" style="font-size:11px;">${t.contact_name ? esc(t.contact_name)+' &middot; ' : ''}${esc(t.status)}</div>
             </div>
         </div>`;
@@ -955,14 +872,14 @@ function showDayDetail(day, year, month) {
 
     // Invoices
     invoices.forEach(inv => {
-        const cls  = inv.status === 'Bezahlt' ? '#d4edda' : (inv.status === 'Überfällig' ? '#f8d7da' : '#fff3cd');
+        const cls  = inv.status === 'Bezahlt' ? 'tint-success' : (inv.status === 'Überfällig' ? 'tint-danger' : 'tint-warn');
         const icon = inv.status === 'Bezahlt' ? 'bi-check-circle-fill text-success' : (inv.status === 'Überfällig' ? 'bi-exclamation-triangle-fill text-danger' : 'bi-receipt text-warning');
         const amt  = parseFloat(inv.amount).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-        html += `<div class="d-flex align-items-start gap-2 mb-2 p-2 rounded" style="background:${cls};">
+        html += `<div class="d-flex align-items-start gap-2 mb-2 p-2 rounded ${cls}">
             <i class="bi ${icon} mt-1 small flex-shrink-0"></i>
             <div>
-                <div class="fw-semibold small text-dark">${esc(inv.title)}</div>
+                <div class="fw-semibold small text-strong-c">${esc(inv.title)}</div>
                 <div class="text-muted" style="font-size:11px;">${inv.contact_name ? esc(inv.contact_name)+' &middot; ' : ''}${amt} € &middot; ${esc(inv.status)}</div>
             </div>
         </div>`;
@@ -980,7 +897,7 @@ function copyLink(url, btn) {
     navigator.clipboard.writeText(url).then(() => {
         const orig = btn.innerHTML;
         btn.innerHTML = '<i class="bi bi-check2"></i>';
-        btn.style.cssText = 'padding:1px 5px;font-size:10px;background:#d4edda;color:#155724;border:1px solid #c3e6cb;';
+        btn.style.cssText = 'padding:1px 5px;font-size:10px;background:var(--state-success-bg);color:var(--state-success-fg);border:1px solid var(--state-success-fg);';
         setTimeout(() => {
             btn.innerHTML = orig;
             btn.style.cssText = '';

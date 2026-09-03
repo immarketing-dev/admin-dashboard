@@ -76,7 +76,7 @@ if (isset($_POST['ajax_action'])) {
                     $asset_id = $pdo->lastInsertId();
 
                     $badge          = '<span class="badge bg-primary me-2" style="font-size:9px; padding:3px 5px;">Admin</span>';
-                    $html_response .= '<div class="d-flex justify-content-between align-items-center mb-1 bg-white p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">' . $badge . ' ' . htmlspecialchars($file_name) . '</span><div class="d-flex gap-2"><a href="' . $path . '" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(' . $asset_id . ')"><i class="bi bi-trash"></i></button></div></div>';
+                    $html_response .= '<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">' . $badge . ' ' . htmlspecialchars($file_name) . '</span><div class="d-flex gap-2"><a href="' . $path . '" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(' . $asset_id . ')"><i class="bi bi-trash"></i></button></div></div>';
                 }
             }
             $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('ASSET_ADDED', ?)")->execute(["Admin hat neue Dateien zu Projekt #$task_id hochgeladen."]);
@@ -392,16 +392,16 @@ $header_actions = '
       </div>';
 $extra_head = <<<'CSS'
   <style>
-      .ms-comment-thread { background:#f8f9fa; border-radius:6px; padding:8px 10px; margin-top:6px; font-size:12px; }
+      .ms-comment-thread { background:var(--surface-subtle); border-radius:6px; padding:8px 10px; margin-top:6px; font-size:12px; }
       .ms-com-bubble { border-radius:6px; padding:5px 9px; margin-bottom:4px; max-width:100%; word-break:break-word; }
-      .ms-com-bubble.client { background:#dbeafe; border-left:3px solid #3b82f6; }
-      .ms-com-bubble.admin  { background:#dcfce7; border-left:3px solid #22c55e; }
-      .ms-com-meta { font-size:10px; color:#6c757d; margin-bottom:2px; }
-      .ms-com-toggle { font-size:11px; color:#6c757d; cursor:pointer; text-decoration:none; }
-      .ms-com-toggle:hover { color:#333; text-decoration:underline; }
+      .ms-com-bubble.client { background:var(--state-info-bg); border-left:3px solid var(--state-info-fg); }
+      .ms-com-bubble.admin  { background:var(--state-success-bg); border-left:3px solid var(--state-success-fg); }
+      .ms-com-meta { font-size:10px; color:var(--text-muted); margin-bottom:2px; }
+      .ms-com-toggle { font-size:11px; color:var(--text-muted); cursor:pointer; text-decoration:none; }
+      .ms-com-toggle:hover { color:var(--text-strong); text-decoration:underline; }
       .ms-reply-row { display:flex; gap:4px; margin-top:6px; }
       .ms-reply-row input { font-size:12px; }
-      .task-card-cancelled { background-color: #f8f9fa !important; border-top-color: #adb5bd !important; opacity: 0.75; }
+      .task-card-cancelled { background-color: var(--surface-subtle) !important; border-top-color: var(--text-faint) !important; opacity: 0.75; }
       .task-card-cancelled:hover { opacity: 1; }
   </style>
 CSS;
@@ -424,12 +424,12 @@ require 'includes/layout_start.php';
     ?>
     <div class="row mb-4">
         <div class="col-12">
-            <form method="GET" action="tasks" class="bg-white p-3 rounded shadow-sm">
+            <form method="GET" action="tasks" class="bg-surface p-3 rounded shadow-sm">
 
                 <!-- Search bar + mobile collapse toggle -->
                 <div class="d-flex gap-2 align-items-center">
                     <div class="input-group" style="flex-grow:1; min-width:150px;">
-                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <span class="input-group-text bg-surface"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Suche..." value="<?=htmlspecialchars($search_query)?>">
                     </div>
                     <button type="button"
@@ -522,14 +522,14 @@ require 'includes/layout_start.php';
       <?php foreach($tasks as $task):
           $h = floor($task['tracked_minutes'] / 60); $m = $task['tracked_minutes'] % 60;
           $completed_class = $task['status'] === 'Erledigt' ? 'task-card-completed' : '';
-          $cancelled_style = $task['status'] === 'Storniert' ? ' style="background-color:#f8f9fa;border-top-color:#adb5bd;opacity:0.75;"' : '';
+          $cancelled_style = $task['status'] === 'Storniert' ? ' style="background-color:var(--surface-subtle);border-top-color:var(--text-faint);opacity:0.75;"' : '';
       ?>
           <div class="col-lg-6">
             <div class="task-card <?= $completed_class ?>"<?= $cancelled_style ?>>
               
               <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap task-header-row">
                 <div style="flex: 1; min-width: 0;"> 
-                    <span class="badge bg-light text-primary mb-1"><?=htmlspecialchars($task['category'])?></span>
+                    <span class="badge bg-subtle text-primary mb-1"><?=htmlspecialchars($task['category'])?></span>
                     
                     <h4 class="fw-bold mb-0">
                         <?php if($task['is_online'] !== null): ?>
@@ -568,8 +568,8 @@ require 'includes/layout_start.php';
                     <?php $_sc = ['Offen'=>'status-offen','In Bearbeitung'=>'status-in-bearbeitung','Erledigt'=>'status-erledigt','Storniert'=>'status-storniert'][$task['status']] ?? 'status-offen'; ?>
                     <button class="status-badge <?=$_sc?> dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= htmlspecialchars($task['status']); ?></button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-dark text-start p-0 text-decoration-none w-100">Offen</button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-dark text-start p-0 text-decoration-none w-100">In Bearbeitung</button></form></li>
+                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-strong-c text-start p-0 text-decoration-none w-100">Offen</button></form></li>
+                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-strong-c text-start p-0 text-decoration-none w-100">In Bearbeitung</button></form></li>
                       <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Erledigt"><button type="submit" class="btn-sm btn btn-link text-success text-start p-0 text-decoration-none w-100">Erledigt</button></form></li>
                       <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Storniert"><button type="submit" class="btn-sm btn btn-link text-secondary text-start p-0 text-decoration-none w-100">Storniert</button></form></li>
                     </ul>
@@ -647,7 +647,7 @@ require 'includes/layout_start.php';
                   <div class="d-flex gap-2 mb-2">
                       <button class="btn btn-sm w-50 d-flex justify-content-center align-items-center gap-2 <?=$task['is_timer_running']?'btn-danger':'btn-light border'?>" data-bs-toggle="collapse" data-bs-target="#t_<?=$task['id']?>">
                         <span class="text-truncate"><?=$task['is_timer_running']?'<span class="pulse-dot"></span> Timer':'Zeiterfassung'?></span>
-                        <span class="badge <?=$task['is_timer_running']?'bg-white text-danger':'bg-secondary'?>"><?=sprintf('%02dh %02dm', $h, $m)?></span>
+                        <span class="badge <?=$task['is_timer_running']?'bg-surface text-danger':'bg-secondary'?>"><?=sprintf('%02dh %02dm', $h, $m)?></span>
                       </button>
 
                       <button class="btn btn-sm btn-dark invoice-btn w-50 d-flex justify-content-center align-items-center gap-2" 
@@ -674,13 +674,13 @@ require 'includes/layout_start.php';
                   <?php if($task['client_feedback'] || count($task['assets']) > 0): ?>
                       <div class="d-flex gap-2 mt-2">
                           <?php if($task['client_feedback']): ?>
-                              <button class="btn btn-sm btn-outline-warning text-dark w-50 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#fb_<?=$task['id']?>">
+                              <button class="btn btn-sm btn-outline-warning text-strong-c w-50 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#fb_<?=$task['id']?>">
                                   <i class="bi bi-chat-left-text"></i> Feedback
                               </button>
                           <?php endif; ?>
                           
                           <?php if(count($task['assets']) > 0): ?>
-                              <button class="btn btn-sm btn-outline-info text-dark w-50 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#up_<?=$task['id']?>">
+                              <button class="btn btn-sm btn-outline-info text-strong-c w-50 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#up_<?=$task['id']?>">
                                   <i class="bi bi-paperclip"></i> Uploads (<?=count($task['assets'])?>)
                               </button>
                           <?php endif; ?>
@@ -697,13 +697,13 @@ require 'includes/layout_start.php';
 
                   <?php if(count($task['assets']) > 0): ?>
                       <div class="collapse mt-2" id="up_<?=$task['id']?>">
-                          <div class="p-2 bg-light rounded border scroll-box-sm mb-0">
+                          <div class="p-2 bg-subtle rounded border scroll-box-sm mb-0">
                               <?php foreach($task['assets'] as $a): 
                                   $uploaderBadge = (isset($a['uploaded_by']) && $a['uploaded_by'] === 'admin') 
                                       ? '<span class="badge bg-primary me-2" style="font-size:8px; padding: 3px 5px;">Admin</span>' 
                                       : '<span class="badge bg-secondary me-2" style="font-size:8px; padding: 3px 5px;">Kunde</span>';
                               ?>
-                                  <div class="d-flex justify-content-between align-items-center mb-1 bg-white p-1 px-2 rounded small shadow-sm">
+                                  <div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-1 px-2 rounded small shadow-sm">
                                       <span class="text-truncate d-flex align-items-center" style="max-width:65%">
                                           <?= $uploaderBadge ?>
                                           <?=htmlspecialchars($a['file_name'])?>
@@ -762,8 +762,8 @@ require 'includes/layout_start.php';
                 <div class="row g-3">
                     <div class="col-md-8"><label class="form-label">Titel</label><input type="text" name="title" id="e_title" class="form-control" required></div>
                     <div class="col-md-4"><label class="form-label">Kategorie</label><input type="text" name="category" id="e_cat" class="form-control"></div>
-                    <div class="col-md-12"><label class="form-label text-warning fw-bold">Feedback vom Portal</label><div id="e_feedback" class="p-3 bg-light rounded border scroll-box-sm" style="min-height:80px;"></div></div>
-                    <div class="col-md-12"><label class="form-label fw-bold">Projekt-Dateien</label><div id="e_assets" class="p-2 bg-light rounded border scroll-box-sm"></div></div>
+                    <div class="col-md-12"><label class="form-label text-warning fw-bold">Feedback vom Portal</label><div id="e_feedback" class="p-3 bg-subtle rounded border scroll-box-sm" style="min-height:80px;"></div></div>
+                    <div class="col-md-12"><label class="form-label fw-bold">Projekt-Dateien</label><div id="e_assets" class="p-2 bg-subtle rounded border scroll-box-sm"></div></div>
                     
                     <div class="col-md-12 border-top pt-3 mt-2">
                         <label class="form-label fw-bold">Eigene Dateien hinzufügen</label>
@@ -782,7 +782,7 @@ require 'includes/layout_start.php';
                 </div>
             </form>
         </div>
-        <div class="modal-footer d-flex justify-content-between bg-light">
+        <div class="modal-footer d-flex justify-content-between bg-subtle">
             <button type="button" class="btn btn-outline-danger fw-bold" onclick="triggerDeleteFromEdit()"><i class="bi bi-trash3-fill"></i> Löschen</button>
             <button type="submit" form="editTaskForm" class="btn btn-primary px-4 fw-bold">Speichern</button>
         </div>
@@ -804,7 +804,7 @@ require 'includes/layout_start.php';
                   <div class="modal-body text-center py-4">
                       <p class="mb-0 fw-bold">Möchtest du diese Datei wirklich endgültig löschen?</p>
                   </div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                       <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
                   </div>
@@ -827,7 +827,7 @@ require 'includes/layout_start.php';
                   <div class="modal-body text-center py-4">
                       <p class="mb-0 fw-bold">Möchtest du diesen Meilenstein wirklich löschen?</p>
                   </div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                       <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
                   </div>
@@ -846,7 +846,7 @@ require 'includes/layout_start.php';
               <div class="modal-body text-center py-3">
                   <p class="mb-0 text-muted small">Soll der Kunde per E-Mail über den abgeschlossenen Meilenstein informiert werden?</p>
               </div>
-              <div class="modal-footer p-2 d-flex gap-2 justify-content-center border-0 bg-light">
+              <div class="modal-footer p-2 d-flex gap-2 justify-content-center border-0 bg-subtle">
                   <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" id="msNotifyYes"><i class="bi bi-send me-1"></i>Ja, senden</button>
                   <button type="button" class="btn btn-outline-secondary btn-sm px-4" id="msNotifyNo">Nein</button>
               </div>
@@ -868,7 +868,7 @@ require 'includes/layout_start.php';
                   <div class="modal-body text-center py-4">
                       <p class="mb-0 fw-bold">Möchtest du dieses Projekt wirklich endgültig löschen?</p>
                   </div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
                       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
                       <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
                   </div>
@@ -884,7 +884,7 @@ require 'includes/layout_start.php';
           <input type="hidden" name="contact_id" id="inv_contact_id">
           
           <div class="modal-header bg-dark text-white"><h5><i class="bi bi-file-earmark-pdf me-2"></i> Rechnung konfigurieren</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body p-4 bg-light">
+          <div class="modal-body p-4 bg-subtle">
             <div class="row mb-4">
               <div class="col-md-6">
                 <div class="card border-0 shadow-sm p-3 h-100">
@@ -1041,7 +1041,7 @@ require 'includes/layout_start.php';
                     ? '<span class="badge bg-primary me-2" style="font-size:9px; padding:3px 5px;">Admin</span>' 
                     : '<span class="badge bg-secondary me-2" style="font-size:9px; padding:3px 5px;">Kunde</span>';
                     
-                assetHtml += `<div class="d-flex justify-content-between align-items-center mb-1 bg-white p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">${badge} ${a.file_name}</span><div class="d-flex gap-2"><a href="${a.file_path}" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(${a.id})"><i class="bi bi-trash"></i></button></div></div>`;
+                assetHtml += `<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">${badge} ${a.file_name}</span><div class="d-flex gap-2"><a href="${a.file_path}" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(${a.id})"><i class="bi bi-trash"></i></button></div></div>`;
             });
         } else { assetHtml = '<span class="small text-muted">Keine Dokumente.</span>'; }
         document.getElementById('e_assets').innerHTML = assetHtml;

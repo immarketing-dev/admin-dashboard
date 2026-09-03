@@ -654,7 +654,7 @@ require 'includes/layout_start.php';
     </div>
 
     <!-- Filter -->
-    <div class="bg-white p-3 rounded shadow-sm d-flex gap-2 align-items-center flex-wrap mb-4">
+    <div class="bg-surface p-3 rounded shadow-sm d-flex gap-2 align-items-center flex-wrap mb-4">
       <?php $q_statuses = ['all'=>'Alle','Entwurf'=>'Entwurf','Gesendet'=>'Gesendet','Angenommen'=>'Angenommen','Abgelehnt'=>'Abgelehnt']; ?>
       <?php foreach($q_statuses as $val => $label): ?>
         <a href="finances?tab=quotes&qstatus=<?= $val ?>" class="btn btn-sm <?= $filter_status_q === $val ? 'btn-primary' : 'btn-outline-secondary' ?>"><?= $label ?></a>
@@ -662,7 +662,7 @@ require 'includes/layout_start.php';
     </div>
 
     <!-- Tabelle -->
-    <div class="bg-white rounded-3 shadow-sm border">
+    <div class="bg-surface rounded-3 shadow-sm border">
       <?php if(empty($quotes)): ?>
         <div class="text-center py-5 text-muted">
           <i class="bi bi-file-earmark-text" style="font-size:3rem;"></i>
@@ -671,7 +671,7 @@ require 'includes/layout_start.php';
       <?php else: ?>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="bg-light small text-uppercase text-muted fw-bold">
+          <thead class="bg-subtle small text-uppercase text-muted fw-bold">
             <tr>
               <th class="py-3 ps-3">Angebots-Nr.</th>
               <th class="py-3">Kunde</th>
@@ -691,7 +691,7 @@ require 'includes/layout_start.php';
               $q_expired  = $q_row['valid_until'] && strtotime($q_row['valid_until']) < strtotime('today') && $q_row['status'] !== 'Angenommen';
             ?>
             <tr>
-              <td class="ps-3 fw-bold text-dark"><?= htmlspecialchars($q_row['quote_number']) ?></td>
+              <td class="ps-3 fw-bold text-strong-c"><?= htmlspecialchars($q_row['quote_number']) ?></td>
               <td><?= htmlspecialchars($q_client) ?></td>
               <td class="text-muted small"><?= date('d.m.Y', strtotime($q_row['created_at'])) ?></td>
               <td class="small <?= $q_expired ? 'text-danger fw-bold' : 'text-muted' ?>">
@@ -775,16 +775,16 @@ require 'includes/layout_start.php';
         </div>
     </div>
 
-    <div class="bg-white rounded shadow-sm p-4 mb-4">
+    <div class="bg-surface rounded shadow-sm p-4 mb-4">
         <h6 class="fw-bold mb-3 text-muted small text-uppercase">Einnahmen vs. Ausgaben — <?= htmlspecialchars($chart_title) ?></h6>
         <canvas id="financeChart" style="max-height: 250px;"></canvas>
     </div>
 
-    <form class="bg-white p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
+    <form class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
         <input type="hidden" name="period" value="<?= $period ?>">
         
         <div class="input-group input-group-sm w-auto search-box">
-            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
             <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suchen..." value="<?=htmlspecialchars($search_query)?>">
         </div>
 
@@ -814,10 +814,10 @@ require 'includes/layout_start.php';
         <button type="submit" class="btn btn-primary btn-sm ms-auto" style="display: none;">Suchen</button> <a href="finances" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-x-circle"></i> Reset</a>
     </form>
 
-    <div class="bg-white rounded shadow-sm overflow-hidden p-0 mb-4">
+    <div class="bg-surface rounded shadow-sm overflow-hidden p-0 mb-4">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light text-uppercase small fw-bold">
+                <thead class="bg-subtle text-uppercase small fw-bold">
                     <tr><th style="width: 50px;"></th><th>Datum</th><th>Bezeichnung</th><th>Kunde</th><th>Status</th><th class="text-end">Betrag</th><th class="text-center">Aktionen</th></tr>
                 </thead>
                 <tbody>
@@ -834,7 +834,7 @@ require 'includes/layout_start.php';
                             <td class="text-center"><?= $is_income ? '<i class="bi bi-arrow-down-left-circle-fill text-success fs-5"></i>' : '<i class="bi bi-arrow-up-right-circle-fill text-danger fs-5"></i>' ?></td>
                             <td><span class="small"><?=date('d.m.Y', strtotime($row['record_date']))?></span></td>
                             <td>
-                                <span class="fw-bold text-dark"><?=htmlspecialchars($row['title'])?></span>
+                                <span class="fw-bold text-strong-c"><?=htmlspecialchars($row['title'])?></span>
                                 <?php if($row['is_recurring']): ?> <span class="badge bg-info ms-1" style="font-size:9px;"><i class="bi bi-arrow-repeat"></i> Fix</span> <?php endif; ?>
                                 <?php if($row['notes']): ?> <i class="bi bi-chat-text text-muted ms-1" title="<?=htmlspecialchars($row['notes'])?>"></i> <?php endif; ?>
                             </td>
@@ -865,7 +865,7 @@ require 'includes/layout_start.php';
                     <?php endforeach; ?>
                 </tbody>
                 <?php if(!empty($records)): ?>
-                <tfoot class="bg-light">
+                <tfoot class="bg-subtle">
                     <tr>
                         <td colspan="5" class="text-end fw-bold small text-muted text-uppercase">Summe der gefilterten Liste:</td>
                         <td class="text-end fw-bold">
@@ -889,7 +889,7 @@ require 'includes/layout_start.php';
           <input type="hidden" name="contact_id" id="inv_contact_id">
           
           <div class="modal-header bg-dark text-white"><h5><i class="bi bi-file-earmark-pdf me-2"></i> Rechnung konfigurieren</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-          <div class="modal-body p-4 bg-light">
+          <div class="modal-body p-4 bg-subtle">
             <div class="row mb-4">
               <div class="col-md-6">
                 <div class="card border-0 shadow-sm p-3 h-100">
@@ -971,7 +971,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="financeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-light"><h5 class="fw-bold" id="fm_modal_title">Eintrag</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header bg-subtle"><h5 class="fw-bold" id="fm_modal_title">Eintrag</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4">
           <form method="POST" id="fm_form">
             <?= csrf_field() ?>
@@ -989,7 +989,7 @@ require 'includes/layout_start.php';
             </div>
           </form>
         </div>
-        <div class="modal-footer bg-light"><button type="submit" form="fm_form" class="btn btn-primary px-4 fw-bold">Speichern</button></div>
+        <div class="modal-footer bg-subtle"><button type="submit" form="fm_form" class="btn btn-primary px-4 fw-bold">Speichern</button></div>
       </div>
     </div>
   </div>
@@ -1002,7 +1002,7 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="action" value="delete_record"><input type="hidden" name="record_id" id="del_id">
                   <div class="modal-header bg-danger text-white"><h6 class="modal-title">Eintrag löschen?</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
                   <div class="modal-body text-center py-4"><p class="mb-0 fw-bold">Diesen Eintrag wirklich löschen?</p></div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button></div>
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button></div>
               </form>
           </div>
       </div>
@@ -1022,7 +1022,7 @@ require 'includes/layout_start.php';
             <div class="mb-3"><label class="fw-bold small">Betreff *</label><input type="text" name="email_subject" id="inv_email_subject" class="form-control" required></div>
             <div class="mb-3"><label class="fw-bold small">Nachricht</label><textarea name="email_body" id="inv_email_body" class="form-control" rows="6"></textarea></div>
           </div>
-          <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-info btn-sm px-4 fw-bold text-white"><i class="bi bi-send me-1"></i>Senden</button></div>
+          <div class="modal-footer bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-info btn-sm px-4 fw-bold text-white"><i class="bi bi-send me-1"></i>Senden</button></div>
         </form>
       </div>
     </div>
@@ -1036,12 +1036,12 @@ require 'includes/layout_start.php';
           <h5 class="modal-title fw-bold m-0" id="quoteModalTitle"><i class="bi bi-file-earmark-text me-2"></i> Neues Angebot</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4 bg-light">
+        <div class="modal-body p-4 bg-subtle">
           <form method="POST" id="quoteForm" onsubmit="return validateQuoteForm()">
             <?= csrf_field() ?>
             <input type="hidden" name="action" id="q_action" value="create_quote">
             <input type="hidden" name="quote_id" id="q_id">
-            <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+            <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
               <div class="col-md-5">
                 <label class="form-label small fw-bold">Kunde (aus Kontakten)</label>
                 <select name="contact_id" id="q_contact" class="form-select">
@@ -1084,17 +1084,17 @@ require 'includes/layout_start.php';
                 <textarea name="intro_text" id="q_intro_text" class="form-control form-control-sm" rows="2"></textarea>
               </div>
             </div>
-            <div class="bg-white p-3 rounded shadow-sm border mb-3">
+            <div class="bg-surface p-3 rounded shadow-sm border mb-3">
               <label class="form-label small fw-bold d-flex justify-content-between">
                 <span>Positionen</span>
                 <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" onclick="addQuoteItem()"><i class="bi bi-plus-lg"></i> Position</button>
               </label>
               <div id="q-items-container"></div>
               <div class="d-flex justify-content-end mt-2">
-                <div class="text-end fw-bold fs-5 text-dark" id="q-total-display">Gesamt: 0,00 €</div>
+                <div class="text-end fw-bold fs-5 text-strong-c" id="q-total-display">Gesamt: 0,00 €</div>
               </div>
             </div>
-            <div class="bg-white p-3 rounded shadow-sm border mb-3">
+            <div class="bg-surface p-3 rounded shadow-sm border mb-3">
               <label class="form-label small fw-bold">Notizen / Anmerkungen</label>
               <textarea name="notes" id="q_notes" class="form-control" rows="3"></textarea>
             </div>
@@ -1120,8 +1120,8 @@ require 'includes/layout_start.php';
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="send_quote_email">
           <input type="hidden" name="quote_id" id="qeq_id">
-          <div class="modal-body p-4 bg-light">
-            <div class="bg-white rounded-3 border p-3 mb-3 shadow-sm">
+          <div class="modal-body p-4 bg-subtle">
+            <div class="bg-surface rounded-3 border p-3 mb-3 shadow-sm">
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label small fw-bold">An (E-Mail) *</label>
@@ -1133,13 +1133,13 @@ require 'includes/layout_start.php';
                 </div>
               </div>
             </div>
-            <div class="bg-white rounded-3 border p-3 shadow-sm">
+            <div class="bg-surface rounded-3 border p-3 shadow-sm">
               <label class="form-label small fw-bold">Nachricht</label>
               <textarea name="email_body" id="qeq_body" class="form-control" rows="9" style="font-size:13px;resize:none;font-family:inherit;"></textarea>
             </div>
             <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i>Das Angebot-PDF wird automatisch angehängt.</div>
           </div>
-          <div class="modal-footer bg-light">
+          <div class="modal-footer bg-subtle">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
             <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-send me-1"></i>Senden</button>
           </div>
@@ -1158,20 +1158,27 @@ require 'includes/layout_start.php';
 
   <script>
     // CHART.JS INITIALISIERUNG
+    // Das Diagramm zeichnet auf ein <canvas> und kann CSS-Variablen
+    // nicht selbst aufloesen. Die Tokenwerte werden deshalb einmal
+    // ausgelesen - so stimmen Balken, Gitter und Achsen auch im Dark Mode.
+    const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
     const ctx = document.getElementById('financeChart').getContext('2d');
     new Chart(ctx, {
         type: 'bar',
         data: {
             labels: <?= json_encode($chart_labels) ?>,
             datasets: [
-                { label: 'Einnahmen', data: <?= json_encode($chart_inc) ?>, backgroundColor: '#28a745', borderRadius: 4 },
-                { label: 'Ausgaben', data: <?= json_encode($chart_exp) ?>, backgroundColor: '#dc3545', borderRadius: 4 }
+                { label: 'Einnahmen', data: <?= json_encode($chart_inc) ?>, backgroundColor: cssVar('--accent-success'), borderRadius: 4 },
+                { label: 'Ausgaben', data: <?= json_encode($chart_exp) ?>, backgroundColor: cssVar('--accent-danger'), borderRadius: 4 }
             ]
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { position: 'bottom' } },
-            scales: { y: { beginAtZero: true, grid: { color: '#f1f3f5' } }, x: { grid: { display: false } } }
+            plugins: { legend: { position: 'bottom', labels: { color: cssVar('--text-body') } } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: cssVar('--border-subtle') }, ticks: { color: cssVar('--text-muted') } },
+                x: { grid: { display: false }, ticks: { color: cssVar('--text-muted') } }
+            }
         }
     });
 

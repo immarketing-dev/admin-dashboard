@@ -156,10 +156,10 @@ require 'includes/layout_start.php';
 
     <div class="row mb-4">
         <div class="col-12">
-            <form method="GET" action="contacts" class="bg-white p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center">
+            <form method="GET" action="contacts" class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center">
                 <div style="flex-grow: 1; min-width: 250px;">
                     <div class="input-group input-group-sm search-box">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
                         <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suche nach Name, Firma, E-Mail oder Notiz..." value="<?=htmlspecialchars($search_query)?>">
                     </div>
                 </div>
@@ -212,9 +212,9 @@ require 'includes/layout_start.php';
                     elseif ($ct === 'Geschäftspartner') $ct_class = 'border-warning text-warning';
                     else $ct_class = 'border-primary text-primary';
                   ?>
-                  <span class="badge bg-light border <?= $ct_class ?>"><?= htmlspecialchars($ct) ?></span>
+                  <span class="badge bg-subtle border <?= $ct_class ?>"><?= htmlspecialchars($ct) ?></span>
                   <?php if(!empty($c['source'])): ?>
-                      <span class="badge bg-light text-muted border ms-1"><i class="bi bi-box-arrow-in-right"></i> <?=htmlspecialchars($c['source'])?></span>
+                      <span class="badge bg-subtle text-muted border ms-1"><i class="bi bi-box-arrow-in-right"></i> <?=htmlspecialchars($c['source'])?></span>
                   <?php endif; ?>
               </div>
 
@@ -250,7 +250,7 @@ require 'includes/layout_start.php';
               </div>
 
               <?php if(!empty($c['notes'])): ?>
-                  <div class="bg-light p-2 rounded small text-muted mb-3 scroll-box-sm border">
+                  <div class="bg-subtle p-2 rounded small text-muted mb-3 scroll-box-sm border">
                       <i class="bi bi-card-text me-1"></i> <?=nl2br(htmlspecialchars($c['notes']))?>
                   </div>
               <?php endif; ?>
@@ -287,8 +287,8 @@ require 'includes/layout_start.php';
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_contact">
             <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-person-plus-fill me-2"></i>Neuen Kontakt anlegen</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body p-4 bg-light">
-              <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+            <div class="modal-body p-4 bg-subtle">
+              <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
                   <h6 class="fw-bold text-primary border-bottom pb-2">Stammdaten</h6>
                   <div class="col-md-6"><label class="form-label small fw-bold">Name *</label><input type="text" name="name" class="form-control form-control-sm" required></div>
                   <div class="col-md-6"><label class="form-label small fw-bold">Firma</label><input type="text" name="company" class="form-control form-control-sm"></div>
@@ -296,14 +296,14 @@ require 'includes/layout_start.php';
                   <div class="col-md-4"><label class="form-label small fw-bold">Telefon</label><input type="text" name="phone" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold">Website</label><input type="text" name="website" class="form-control form-control-sm" placeholder="www.seite.de"></div>
               </div>
-              <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+              <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
                   <h6 class="fw-bold text-primary border-bottom pb-2">Adresse</h6>
                   <div class="col-12"><label class="form-label small fw-bold">Straße</label><input type="text" name="street" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold">PLZ</label><input type="text" name="zip" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold">Ort</label><input type="text" name="city" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold">Land</label><input type="text" name="country" class="form-control form-control-sm" value="Deutschland"></div>
               </div>
-              <div class="row g-3 bg-white p-3 rounded shadow-sm border">
+              <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
                   <h6 class="fw-bold text-primary border-bottom pb-2">Meta & CRM</h6>
                   <div class="col-md-6"><label class="form-label small fw-bold">Typ</label><select name="contact_type" class="form-select form-select-sm"><option value="Kunde">Kunde</option><option value="Interessent">Interessent</option><option value="Geschäftspartner">Geschäftspartner</option></select></div>
                   <div class="col-md-6"><label class="form-label small fw-bold">Quelle</label><input name="source" class="form-control form-control-sm" value="Direktkontakt"></div>
@@ -320,13 +320,13 @@ require 'includes/layout_start.php';
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-pencil-square me-2"></i>Kontakt bearbeiten</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body p-4 bg-light">
+        <div class="modal-body p-4 bg-subtle">
             <form action="contacts" method="POST" id="editContactForm">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="edit_contact">
                 <input type="hidden" name="contact_id" id="edit_id">
                 
-                <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+                <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
                     <h6 class="fw-bold text-primary border-bottom pb-2">Stammdaten</h6>
                     <div class="col-md-6"><label class="form-label small fw-bold">Name *</label><input type="text" name="name" id="edit_name" class="form-control form-control-sm" required></div>
                     <div class="col-md-6"><label class="form-label small fw-bold">Firma</label><input type="text" name="company" id="edit_company" class="form-control form-control-sm"></div>
@@ -335,7 +335,7 @@ require 'includes/layout_start.php';
                     <div class="col-md-4"><label class="form-label small fw-bold">Website</label><input type="text" name="website" id="edit_website" class="form-control form-control-sm"></div>
                 </div>
                 
-                <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+                <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
                     <h6 class="fw-bold text-primary border-bottom pb-2">Adresse</h6>
                     <div class="col-12"><label class="form-label small fw-bold">Straße</label><input type="text" name="street" id="edit_street" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold">PLZ</label><input type="text" name="zip" id="edit_zip" class="form-control form-control-sm"></div>
@@ -343,7 +343,7 @@ require 'includes/layout_start.php';
                     <div class="col-md-4"><label class="form-label small fw-bold">Land</label><input type="text" name="country" id="edit_country" class="form-control form-control-sm"></div>
                 </div>
                 
-                <div class="row g-3 bg-white p-3 rounded shadow-sm border">
+                <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
                     <h6 class="fw-bold text-primary border-bottom pb-2">Meta & CRM</h6>
                     <div class="col-md-6"><label class="form-label small fw-bold">Typ</label><select name="contact_type" id="edit_contact_type" class="form-select form-select-sm"><option value="Kunde">Kunde</option><option value="Interessent">Interessent</option><option value="Geschäftspartner">Geschäftspartner</option></select></div>
                     <div class="col-md-6"><label class="form-label small fw-bold">Quelle</label><input type="text" name="source" id="edit_source" class="form-control form-control-sm"></div>
@@ -351,7 +351,7 @@ require 'includes/layout_start.php';
                 </div>
             </form>
         </div>
-        <div class="modal-footer d-flex justify-content-between bg-light">
+        <div class="modal-footer d-flex justify-content-between bg-subtle">
             <button type="button" class="btn btn-outline-danger" id="modalDeleteBtn" data-confirmed="0" onclick="confirmDeleteFromEdit(this)"><i class="bi bi-trash3-fill"></i> Löschen</button>
             <button type="submit" form="editContactForm" class="btn btn-primary px-4 fw-bold">Speichern</button>
         </div>
@@ -362,8 +362,8 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="qrModal" tabindex="-1">
     <div class="modal-dialog"><div class="modal-content border-0 shadow">
         <div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold">Portal-Zugang: <span id="qr_name" class="text-info"></span></h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body p-4 text-center bg-light">
-            <div id="qrcode" class="mb-3 d-flex justify-content-center p-3 bg-white rounded shadow-sm d-inline-block border"></div>
+        <div class="modal-body p-4 text-center bg-subtle">
+            <div id="qrcode" class="mb-3 d-flex justify-content-center p-3 bg-surface rounded shadow-sm d-inline-block border"></div>
             <br>
             <button class="btn btn-outline-dark btn-sm mb-4 fw-bold shadow-sm" onclick="downloadQR()"><i class="bi bi-download"></i> QR-Code speichern (.png)</button>
             

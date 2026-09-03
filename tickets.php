@@ -244,10 +244,10 @@ $kpi_total = $kpi_open + $kpi_wip + $kpi_done;
 $all_contacts = $pdo->query("SELECT id, name, company FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Prioritäts-Farben
-$prio_css = ['Kritisch' => '#dc3545', 'Hoch' => '#fd7e14', 'Mittel' => '#ffc107', 'Niedrig' => '#adb5bd'];
+$prio_css = ['Kritisch' => 'var(--accent-danger)', 'Hoch' => 'var(--accent-warning)', 'Mittel' => 'var(--color-primary)', 'Niedrig' => 'var(--text-faint)'];
 function prio_badge(string $p): string {
     global $prio_css;
-    $c = $prio_css[$p] ?? '#adb5bd';
+    $c = $prio_css[$p] ?? 'var(--text-faint)';
     return "<span style=\"background:{$c}22;color:{$c};font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;\">" . htmlspecialchars($p) . "</span>";
 }
 $page_title   = 'Support-Tickets';
@@ -272,8 +272,8 @@ require 'includes/layout_start.php';
     <!-- KPI Cards -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-md-3">
-        <div class="widget-box text-center py-3" style="border-top:4px solid #dc3545;">
-          <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:#dc3545;"><?= $kpi_open ?></div>
+        <div class="widget-box widget-accent-left text-center py-3">
+          <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--accent-danger);"><?= $kpi_open ?></div>
           <div class="label-xs">Offen</div>
         </div>
       </div>
@@ -284,23 +284,23 @@ require 'includes/layout_start.php';
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="widget-box text-center py-3" style="border-top:4px solid #28a745;">
-          <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:#28a745;"><?= $kpi_done ?></div>
+        <div class="widget-box widget-accent-left text-center py-3">
+          <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--accent-success);"><?= $kpi_done ?></div>
           <div class="label-xs">Erledigt</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="widget-box text-center py-3" style="border-top:4px solid #6c757d;">
-          <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:#6c757d;"><?= $kpi_total ?></div>
+        <div class="widget-box widget-accent-left text-center py-3">
+          <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--text-muted);"><?= $kpi_total ?></div>
           <div class="label-xs">Gesamt</div>
         </div>
       </div>
     </div>
 
     <!-- Filter -->
-    <form class="bg-white p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
+    <form class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
       <div class="input-group input-group-sm search-box" style="flex-grow:1;max-width:380px;">
-        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+        <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
         <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Kunde, Betreff oder Nachricht…" value="<?= htmlspecialchars($search_query) ?>">
       </div>
       <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
@@ -323,10 +323,10 @@ require 'includes/layout_start.php';
     </form>
 
     <!-- Tabelle -->
-    <div class="bg-white rounded shadow-sm overflow-hidden">
+    <div class="bg-surface rounded shadow-sm overflow-hidden">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="bg-light small text-uppercase fw-bold text-muted">
+          <thead class="bg-subtle small text-uppercase fw-bold text-muted">
             <tr>
               <th style="width:130px;">Datum / Alter</th>
               <th style="width:105px;">Priorität</th>
@@ -351,7 +351,7 @@ require 'includes/layout_start.php';
               $age        = (int)$t['age_days'];
               $is_old     = $age >= 3 && $t['status'] !== 'Erledigt';
               $prio       = $t['priority'] ?? 'Mittel';
-              $row_style  = $t['status'] === 'Erledigt' ? 'opacity:.6' : ($is_old ? 'background:#fff9f9' : '');
+              $row_style  = $t['status'] === 'Erledigt' ? 'opacity:.6' : ($is_old ? 'background:var(--danger-soft)' : '');
             ?>
             <tr style="<?= $row_style ?>" id="row_<?= $t['id'] ?>">
               <td class="small">
@@ -362,7 +362,7 @@ require 'includes/layout_start.php';
               </td>
               <td><?= prio_badge($prio) ?></td>
               <td>
-                <div class="fw-bold text-dark"><?= htmlspecialchars($t['contact_name'] ?? '–') ?></div>
+                <div class="fw-bold text-strong-c"><?= htmlspecialchars($t['contact_name'] ?? '–') ?></div>
                 <div class="small text-muted"><?= htmlspecialchars($t['company'] ?? '') ?></div>
               </td>
               <td>
@@ -411,7 +411,7 @@ require 'includes/layout_start.php';
           <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal"></button>
         </div>
 
-        <div class="modal-body p-0 bg-light">
+        <div class="modal-body p-0 bg-subtle">
           <div class="row g-0">
 
             <!-- Links: Nachricht + Notizen + Antwort -->
@@ -419,8 +419,8 @@ require 'includes/layout_start.php';
 
               <div>
                 <div class="label-xs mb-2">Nachricht des Kunden</div>
-                <div class="bg-white p-3 rounded border shadow-sm" id="tm_message"
-                     style="min-height:110px;white-space:pre-wrap;font-size:14px;color:#333;"></div>
+                <div class="bg-surface p-3 rounded border shadow-sm" id="tm_message"
+                     style="min-height:110px;white-space:pre-wrap;font-size:14px;color:var(--text-body);"></div>
               </div>
 
               <div>
@@ -439,7 +439,7 @@ require 'includes/layout_start.php';
 
               <div>
                 <div class="label-xs mb-2">Antwort senden</div>
-                <div class="bg-white p-3 rounded border shadow-sm">
+                <div class="bg-surface p-3 rounded border shadow-sm">
                   <div class="row g-2 mb-2">
                     <div class="col-sm-6">
                       <input type="email" id="tm_reply_to" class="form-control form-control-sm" placeholder="An: E-Mail-Adresse">
@@ -481,7 +481,7 @@ require 'includes/layout_start.php';
               </div>
               <div>
                 <div class="label-xs mb-1">Eingegangen</div>
-                <div class="fw-bold small text-dark" id="tm_date"></div>
+                <div class="fw-bold small text-strong-c" id="tm_date"></div>
                 <div class="small text-muted" id="tm_age"></div>
               </div>
               <div>
@@ -546,7 +546,7 @@ require 'includes/layout_start.php';
               <textarea name="message" class="form-control" rows="5" required placeholder="Detaillierte Beschreibung…"></textarea>
             </div>
           </div>
-          <div class="modal-footer bg-light d-flex justify-content-between">
+          <div class="modal-footer bg-subtle d-flex justify-content-between">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
             <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i>Ticket erstellen</button>
           </div>
@@ -570,7 +570,7 @@ require 'includes/layout_start.php';
           <div class="modal-body text-center py-4">
             <p class="mb-0 fw-bold">Ticket und alle Notizen endgültig löschen?</p>
           </div>
-          <div class="modal-footer p-2 d-flex justify-content-between bg-light">
+          <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
             <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
           </div>
@@ -584,7 +584,7 @@ require 'includes/layout_start.php';
     const delModal = new bootstrap.Modal(document.getElementById('deleteTicketModal'));
     const csrf     = () => document.querySelector('meta[name="csrf-token"]').content;
 
-    const prioColors = { Kritisch: '#dc3545', Hoch: '#fd7e14', Mittel: '#ffc107', Niedrig: '#adb5bd' };
+    const prioColors = { Kritisch: 'var(--accent-danger)', Hoch: 'var(--accent-warning)', Mittel: 'var(--color-primary)', Niedrig: 'var(--text-faint)' };
     let _ticket = null;
 
     function viewTicket(t) {
@@ -601,7 +601,7 @@ require 'includes/layout_start.php';
         document.getElementById('tm_message').textContent = t.message;
 
         // Prio-Badge im Header
-        const pc = prioColors[t.priority] || '#adb5bd';
+        const pc = prioColors[t.priority] || 'var(--text-faint)';
         document.getElementById('tm_prio_badge').innerHTML =
             `<span style="background:${pc}33;color:${pc};font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;">${t.priority || 'Mittel'}</span>`;
 
@@ -638,18 +638,18 @@ require 'includes/layout_start.php';
                 const count = document.getElementById('tm_notes_count');
                 count.textContent = notes.length > 0 ? `(${notes.length})` : '';
                 if (notes.length === 0) {
-                    list.innerHTML = '<div class="text-muted small text-center py-2 border rounded bg-white">Noch keine Notizen.</div>';
+                    list.innerHTML = '<div class="text-muted small text-center py-2 border rounded bg-surface">Noch keine Notizen.</div>';
                     return;
                 }
                 list.innerHTML = notes.map(n => {
                     const isClient = n.author === 'client';
                     const isPublic = n.is_public && !isClient;
-                    const bg     = isClient ? '#f0fff4' : (isPublic ? '#e8f4fd' : '#fff');
-                    const border = isClient ? '#b2dfdb' : (isPublic ? '#bee3f8' : '#dee2e6');
+                    const bg     = isClient ? 'var(--state-success-bg)' : (isPublic ? 'var(--state-info-bg)' : 'var(--surface-card)');
+                    const border = isClient ? 'var(--state-success-fg)' : (isPublic ? 'var(--state-info-fg)' : 'var(--border-base)');
                     const pill   = isClient
-                        ? `<span style="font-size:9px;background:#28a74522;color:#28a745;border-radius:3px;padding:1px 5px;font-weight:700;text-transform:uppercase;">Kunde</span>`
+                        ? `<span style="font-size:9px;background:var(--success-soft);color:var(--accent-success);border-radius:3px;padding:1px 5px;font-weight:700;text-transform:uppercase;">Kunde</span>`
                         : (isPublic
-                            ? `<span style="font-size:9px;background:#149ddd22;color:#149ddd;border-radius:3px;padding:1px 5px;font-weight:700;text-transform:uppercase;">👁 Sichtbar</span>`
+                            ? `<span style="font-size:9px;background:var(--accent-soft);color:var(--color-primary);border-radius:3px;padding:1px 5px;font-weight:700;text-transform:uppercase;">👁 Sichtbar</span>`
                             : '');
                     return `<div class="border rounded p-2 shadow-sm" style="background:${bg};border-color:${border}!important;">
                         ${pill ? `<div class="mb-1">${pill}</div>` : ''}
@@ -744,7 +744,7 @@ require 'includes/layout_start.php';
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ action: 'update_priority', ticket_id: _ticket.id, priority: prio, csrf_token: csrf() })
         });
-        const pc = prioColors[prio] || '#adb5bd';
+        const pc = prioColors[prio] || 'var(--text-faint)';
         document.getElementById('tm_prio_badge').innerHTML =
             `<span style="background:${pc}33;color:${pc};font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px;">${prio}</span>`;
     }

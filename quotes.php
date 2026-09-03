@@ -583,7 +583,7 @@ require 'includes/layout_start.php';
   </div>
 
   <!-- Filter -->
-  <div class="bg-white p-3 rounded shadow-sm d-flex gap-2 align-items-center flex-wrap mb-4">
+  <div class="bg-surface p-3 rounded shadow-sm d-flex gap-2 align-items-center flex-wrap mb-4">
     <?php $statuses = ['all'=>'Alle','Entwurf'=>'Entwurf','Gesendet'=>'Gesendet','Angenommen'=>'Angenommen','Abgelehnt'=>'Abgelehnt']; ?>
     <?php foreach($statuses as $val => $label): ?>
       <a href="quotes?status=<?= $val ?>" class="btn btn-sm <?= $filter_status === $val ? 'btn-primary' : 'btn-outline-secondary' ?>"><?= $label ?></a>
@@ -591,7 +591,7 @@ require 'includes/layout_start.php';
   </div>
 
   <!-- Tabelle -->
-  <div class="bg-white rounded-3 shadow-sm border">
+  <div class="bg-surface rounded-3 shadow-sm border">
     <?php if(empty($quotes)): ?>
       <div class="text-center py-5 text-muted">
         <i class="bi bi-file-earmark-text" style="font-size:3rem;"></i>
@@ -600,7 +600,7 @@ require 'includes/layout_start.php';
     <?php else: ?>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
-        <thead class="bg-light small text-uppercase text-muted fw-bold">
+        <thead class="bg-subtle small text-uppercase text-muted fw-bold">
           <tr>
             <th class="py-3 ps-3">Angebots-Nr.</th>
             <th class="py-3">Kunde</th>
@@ -625,7 +625,7 @@ require 'includes/layout_start.php';
             $expired = $q['valid_until'] && strtotime($q['valid_until']) < strtotime('today') && $q['status'] !== 'Angenommen';
           ?>
           <tr>
-            <td class="ps-3 fw-bold text-dark"><?= htmlspecialchars($q['quote_number']) ?></td>
+            <td class="ps-3 fw-bold text-strong-c"><?= htmlspecialchars($q['quote_number']) ?></td>
             <td><?= htmlspecialchars($client) ?></td>
             <td class="text-muted small"><?= date('d.m.Y', strtotime($q['created_at'])) ?></td>
             <td class="small <?= $expired ? 'text-danger fw-bold' : 'text-muted' ?>">
@@ -697,13 +697,13 @@ require 'includes/layout_start.php';
         <h5 class="modal-title fw-bold m-0" id="quoteModalTitle"><i class="bi bi-file-earmark-text me-2"></i> Neues Angebot</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-4 bg-light">
+      <div class="modal-body p-4 bg-subtle">
         <form method="POST" id="quoteForm" onsubmit="return validateQuoteForm()">
           <?= csrf_field() ?>
           <input type="hidden" name="action" id="q_action" value="create_quote">
           <input type="hidden" name="quote_id" id="q_id">
 
-          <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+          <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
             <div class="col-md-5">
               <label class="form-label small fw-bold">Kunde (aus Kontakten)</label>
               <select name="contact_id" id="q_contact" class="form-select" onchange="fillClientName(this)">
@@ -750,7 +750,7 @@ require 'includes/layout_start.php';
           </div>
 
           <!-- Positionen -->
-          <div class="bg-white p-3 rounded shadow-sm border mb-3">
+          <div class="bg-surface p-3 rounded shadow-sm border mb-3">
             <label class="form-label small fw-bold d-flex justify-content-between">
               <span>Positionen</span>
               <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" onclick="addItem()"><i class="bi bi-plus-lg"></i> Position</button>
@@ -759,12 +759,12 @@ require 'includes/layout_start.php';
               <!-- Positionen werden per JS eingefügt -->
             </div>
             <div class="d-flex justify-content-end mt-2">
-              <div class="text-end fw-bold fs-5 text-dark" id="total-display">Gesamt: 0,00 €</div>
+              <div class="text-end fw-bold fs-5 text-strong-c" id="total-display">Gesamt: 0,00 €</div>
             </div>
           </div>
 
           <!-- Notizen -->
-          <div class="bg-white p-3 rounded shadow-sm border mb-3">
+          <div class="bg-surface p-3 rounded shadow-sm border mb-3">
             <label class="form-label small fw-bold">Notizen / Anmerkungen</label>
             <textarea name="notes" id="q_notes" class="form-control" rows="3" placeholder="z.B. Zahlungsbedingungen, Hinweise..."></textarea>
           </div>
@@ -791,8 +791,8 @@ require 'includes/layout_start.php';
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="send_quote_email">
         <input type="hidden" name="quote_id" id="eq_id">
-        <div class="modal-body p-4 bg-light">
-          <div class="bg-white rounded-3 border p-3 mb-3 shadow-sm">
+        <div class="modal-body p-4 bg-subtle">
+          <div class="bg-surface rounded-3 border p-3 mb-3 shadow-sm">
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label small fw-bold">An (E-Mail) *</label>
@@ -804,13 +804,13 @@ require 'includes/layout_start.php';
               </div>
             </div>
           </div>
-          <div class="bg-white rounded-3 border p-3 shadow-sm">
+          <div class="bg-surface rounded-3 border p-3 shadow-sm">
             <label class="form-label small fw-bold">Nachricht</label>
             <textarea name="email_body" id="eq_body" class="form-control" rows="9" style="font-size:13px;resize:none;border-radius:8px;font-family:inherit;"></textarea>
           </div>
           <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i>Das Angebot-PDF wird automatisch angehängt.</div>
         </div>
-        <div class="modal-footer bg-light">
+        <div class="modal-footer bg-subtle">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
           <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-send me-1"></i>Senden</button>
         </div>

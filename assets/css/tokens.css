@@ -151,6 +151,44 @@
   --text-xs: 10px;  --text-sm: 12px;  --text-base: 14px;
   --text-md: 16px;  --text-lg: 20px;  --text-xl: 24px;
 
+
+  /* ─────────────────────────────────────────────────────────────
+     Refresh 2026-09: ein Akzent statt sieben.
+     Die Seiten trugen ihre Akzentfarben bisher inline (#fd7e14,
+     #6f42c1, #0dcaf0, #28a745 ... als Widget-Rand). Ab jetzt gilt:
+     Primary traegt Marke und Navigation, die Statusfarben tragen
+     ausschliesslich Status. Diese Tokens sind der Ersatz.
+     ───────────────────────────────────────────────────────────── */
+
+  /* Getoente Flaechen. Ersetzen die vollflaechig eingefaerbten
+     Icon-Kacheln - der Glyph traegt die Farbe, die Flaeche nur
+     eine Ahnung davon. */
+  --accent-soft:        color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --accent-soft-strong: color-mix(in srgb, var(--color-primary) 20%, transparent);
+
+  --success-soft: color-mix(in srgb, var(--accent-success) 14%, transparent);
+  --warning-soft: color-mix(in srgb, var(--accent-warning) 20%, transparent);
+  --danger-soft:  color-mix(in srgb, var(--accent-danger)  14%, transparent);
+  --neutral-soft: color-mix(in srgb, var(--accent-neutral) 12%, transparent);
+
+  /* Elevation: eine Skala, zwei Zustaende. Die --shadow-*-Token oben
+     bleiben bestehen - zu viele Selektoren referenzieren sie -, neue
+     und ueberarbeitete Komponenten nehmen diese hier. */
+  --elev-rest:   0 1px 2px rgba(0, 0, 0, .04), 0 4px 12px rgba(0, 0, 0, .03);
+  --elev-raised: 0 2px 4px rgba(0, 0, 0, .05), 0 10px 24px rgba(0, 0, 0, .06);
+
+  /* Sichtbarer Fokus. Gab es vorher nirgends einheitlich. */
+  --focus-ring: 0 0 0 3px var(--accent-soft-strong);
+
+  /* Schriftgroessen, die die Seiten bisher inline gesetzt haben
+     (9px/11px/13px/15px kamen zusammen ueber 200-mal vor). */
+  --text-2xs:       11px;
+  --text-sm-plus:   13px;
+  --text-base-plus: 15px;
+
+  /* Innenabstand der Widgets. Etwas mehr Luft als --space-5, ohne
+     dass die Karten spuerbar wachsen. */
+  --pad-widget: 22px;
   /* Layout */
   --sidebar-width:           280px;
   --sidebar-width-collapsed: 72px;
@@ -200,4 +238,17 @@
   --surface-tint:         #252840;
   --surface-tint-hover:   #2d3448;
   --border-footer-divider: #2d3448;
+
+  /* Refresh 2026-09 - Dunkelwerte. Getoente Flaechen brauchen im
+     Dunkeln mehr Deckung, sonst verschwinden sie in der Karte. */
+  --accent-soft:        color-mix(in srgb, var(--color-primary) 22%, transparent);
+  --accent-soft-strong: color-mix(in srgb, var(--color-primary) 32%, transparent);
+
+  --success-soft: color-mix(in srgb, var(--accent-success) 24%, transparent);
+  --warning-soft: color-mix(in srgb, var(--accent-warning) 26%, transparent);
+  --danger-soft:  color-mix(in srgb, var(--accent-danger)  24%, transparent);
+  --neutral-soft: color-mix(in srgb, var(--accent-neutral) 22%, transparent);
+
+  --elev-rest:   0 1px 2px rgba(0, 0, 0, .30), 0 4px 12px rgba(0, 0, 0, .25);
+  --elev-raised: 0 2px 4px rgba(0, 0, 0, .35), 0 10px 24px rgba(0, 0, 0, .40);
 }

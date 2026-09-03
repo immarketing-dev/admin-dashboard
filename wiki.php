@@ -207,9 +207,9 @@ require 'includes/head.php';
 require 'includes/layout_start.php';
 ?>
 
-    <form method="GET" action="wiki" class="bg-white p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
+    <form method="GET" action="wiki" class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
         <div class="input-group input-group-sm w-auto search-box" style="flex-grow: 1; max-width: 400px;">
-            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
             <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Wiki durchsuchen..." value="<?=htmlspecialchars($search_query)?>">
         </div>
 
@@ -234,7 +234,7 @@ require 'includes/layout_start.php';
     <div class="accordion" id="wikiAccordion">
         
       <?php if(empty($grouped_articles)): ?>
-          <div class="text-center py-5 text-muted bg-white rounded shadow-sm border">
+          <div class="text-center py-5 text-muted bg-surface rounded shadow-sm border">
               <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
               <p>Keine Wiki-Einträge gefunden.</p>
           </div>
@@ -285,7 +285,7 @@ require 'includes/layout_start.php';
                                       <?php if(!empty($article['tags'])):
                                           $tags = explode(',', $article['tags']);
                                           foreach($tags as $t): ?>
-                                              <span class="badge bg-light text-muted border fw-normal ms-1" style="font-size: 10px;"><?= htmlspecialchars(trim($t)) ?></span>
+                                              <span class="badge bg-subtle text-muted border fw-normal ms-1" style="font-size: 10px;"><?= htmlspecialchars(trim($t)) ?></span>
                                       <?php endforeach; endif; ?>
                                   </div>
                                   <div class="wiki-preview-text">
@@ -332,18 +332,18 @@ require 'includes/layout_start.php';
             <h5 class="modal-title fw-bold m-0" id="form_title_label"><i class="bi bi-journal-plus me-2"></i> Neuer Eintrag</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4 bg-light">
+        <div class="modal-body p-4 bg-subtle">
           <form action="wiki" method="POST" enctype="multipart/form-data" id="wikiMainForm">
             <?= csrf_field() ?>
             <input type="hidden" name="action" id="form_action" value="add_article">
             <input type="hidden" name="article_id" id="form_article_id">
             
-            <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+            <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
               <div class="col-md-8"><label class="form-label fw-bold small">Titel *</label><input type="text" name="title" id="form_title" class="form-control" required></div>
               <div class="col-md-4"><label class="form-label fw-bold small">Kategorie *</label><input class="form-control" list="catList" name="category" id="form_category" required><datalist id="catList"><?php foreach($all_categories as $cat): ?><option value="<?=htmlspecialchars($cat)?>"><?php endforeach; ?></datalist></div>
             </div>
             
-            <div class="mb-3 bg-white p-3 rounded shadow-sm border">
+            <div class="mb-3 bg-surface p-3 rounded shadow-sm border">
                 <label class="form-label fw-bold small">Inhalt</label>
                 <!-- form-control und rows als Rueckfallebene: startet CKEditor nicht -->
                 <!-- (CDN nicht erreichbar, JS-Fehler davor), bleibt sonst ein -->
@@ -351,7 +351,7 @@ require 'includes/layout_start.php';
                 <textarea name="content" id="editor" class="form-control" rows="14"></textarea>
             </div>
             
-            <div class="row bg-white p-3 rounded shadow-sm border mx-0 align-items-end">
+            <div class="row bg-surface p-3 rounded shadow-sm border mx-0 align-items-end">
               <div class="col-md-5">
                   <label class="form-label fw-bold small">Dateien / Bilder anhängen</label>
                   <input type="file" name="attachments[]" id="fileInput" class="form-control form-control-sm" multiple>
@@ -380,7 +380,7 @@ require 'includes/layout_start.php';
             </div>
           </form>
         </div>
-        <div class="modal-footer p-3 bg-light d-flex justify-content-between">
+        <div class="modal-footer p-3 bg-subtle d-flex justify-content-between">
             <button type="button" class="btn btn-outline-danger fw-bold" id="modalDeleteBtn" style="display:none;" data-confirmed="0" onclick="confirmDeleteFromEdit(this)">
                 <i class="bi bi-trash3-fill"></i> Löschen
             </button>
@@ -399,15 +399,15 @@ require 'includes/layout_start.php';
             <div>
                 <span class="badge bg-primary text-uppercase" id="view_category" style="letter-spacing: 0.5px;"></span>
                 <span id="view_tags_container" class="ms-2"></span>
-                <h2 id="view_title" class="fw-bold mt-2 mb-0" style="color:#173b6c;"></h2>
+                <h2 id="view_title" class="fw-bold mt-2 mb-0" style="color:var(--text-heading);"></h2>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body pt-3 px-4 pb-4">
-          <div id="view_content" style="font-size: 15px; color: #495057; line-height: 1.7;"></div>
+          <div id="view_content" style="font-size: 15px; color: var(--text-body); line-height: 1.7;"></div>
           
           <div id="view_attachments" class="mt-5 pt-4 border-top" style="display:none;">
-              <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-paperclip me-1"></i> Angehängte Dateien</h6>
+              <h6 class="fw-bold mb-3 text-strong-c"><i class="bi bi-paperclip me-1"></i> Angehängte Dateien</h6>
               <div id="view_attachments_list" class="d-flex flex-wrap gap-2"></div>
           </div>
         </div>
@@ -530,7 +530,7 @@ require 'includes/layout_start.php';
                 let viewBtn = isViewable ? `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" title="Ansehen"><i class="bi bi-eye"></i></a>` : '';
 
                 assetHtml += `
-                <div class="d-flex align-items-center bg-white border rounded p-1 pe-2 shadow-sm w-100" id="asset_row_${a.id}">
+                <div class="d-flex align-items-center bg-surface border rounded p-1 pe-2 shadow-sm w-100" id="asset_row_${a.id}">
                     <span class="text-truncate px-2" style="font-size:12px; max-width: 300px;"><i class="bi bi-file-earmark me-1"></i> ${a.file_name}</span>
                     <div class="ms-auto d-flex">
                         ${viewBtn}
@@ -558,7 +558,7 @@ require 'includes/layout_start.php';
       if(art.tags && art.tags.trim() !== '') {
           let tagsArray = art.tags.split(',');
           tagsArray.forEach(t => {
-              tagsHtml += `<span class="badge bg-light text-muted border me-1 fw-normal">${t.trim()}</span>`;
+              tagsHtml += `<span class="badge bg-subtle text-muted border me-1 fw-normal">${t.trim()}</span>`;
           });
       }
       document.getElementById('view_tags_container').innerHTML = tagsHtml;

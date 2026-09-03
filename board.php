@@ -88,10 +88,10 @@ unset($task);
 function deadline_badge(string $deadline): string {
     if (empty($deadline) || str_contains($deadline, '0000')) return '';
     $days = (int)round((strtotime($deadline) - strtotime('today')) / 86400);
-    if ($days < 0)  return '<span class="k-badge" style="background:#dc354520;color:#dc3545;border-color:#dc354540;"><i class="bi bi-alarm-fill me-1"></i>Überfällig</span>';
-    if ($days === 0) return '<span class="k-badge" style="background:#fd7e1420;color:#fd7e14;border-color:#fd7e1440;"><i class="bi bi-alarm me-1"></i>Heute</span>';
-    if ($days <= 3)  return '<span class="k-badge" style="background:#ffc10720;color:#856404;border-color:#ffc10740;"><i class="bi bi-clock me-1"></i>in ' . $days . ' T.</span>';
-    return '<span class="k-badge" style="color:#6c757d;border-color:#dee2e6;"><i class="bi bi-calendar3 me-1"></i>' . date('d.m.', strtotime($deadline)) . '</span>';
+    if ($days < 0)  return '<span class="k-badge k-badge-overdue"><i class="bi bi-alarm-fill me-1"></i>Überfällig</span>';
+    if ($days === 0) return '<span class="k-badge k-badge-today"><i class="bi bi-alarm me-1"></i>Heute</span>';
+    if ($days <= 3)  return '<span class="k-badge k-badge-soon"><i class="bi bi-clock me-1"></i>in ' . $days . ' T.</span>';
+    return '<span class="k-badge" style="color:var(--text-muted);border-color:var(--border-base);"><i class="bi bi-calendar3 me-1"></i>' . date('d.m.', strtotime($deadline)) . '</span>';
 }
 
 $page_title   = 'Kanban Board';
@@ -100,7 +100,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
       <div class="d-flex gap-3 align-items-center w-100 flex-wrap" style="max-width: 450px;">
           <div class="input-group input-group-sm search-box" style="flex-grow: 1;">
-              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+              <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
               <input type="text" id="boardSearch" class="form-control border-start-0 ps-0" placeholder="Board durchsuchen...">
           </div>
           <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold shadow-sm text-nowrap"><i class="bi bi-card-list"></i> Listenansicht</a>
@@ -147,7 +147,7 @@ require 'includes/layout_start.php';
               <div class="kanban-card-footer">
                 <small class="text-muted" style="font-size: 10px;"><i class="bi bi-calendar-event"></i> <?php echo date('d.m.', strtotime($task['created_at'])); ?></small>
                 <?php if($task['milestones_total'] > 0): ?>
-                    <span class="badge" style="background: <?=$task['progress']==100?'#28a745':'var(--color-primary)'?>; font-size: 10px; padding: 4px 6px;">
+                    <span class="badge" style="background: <?=$task['progress']==100?'var(--accent-success)':'var(--color-primary)'?>; font-size: 10px; padding: 4px 6px;">
                         <?=$task['progress']?>% (<?=$task['milestones_done']?>/<?=$task['milestones_total']?>) <i class="bi bi-check2-all"></i>
                     </span>
                 <?php endif; ?>
@@ -196,7 +196,7 @@ require 'includes/layout_start.php';
               <div class="kanban-card-footer">
                 <small class="text-muted" style="font-size: 10px;"><i class="bi bi-calendar-event"></i> <?php echo date('d.m.', strtotime($task['created_at'])); ?></small>
                 <?php if($task['milestones_total'] > 0): ?>
-                    <span class="badge" style="background: <?=$task['progress']==100?'#28a745':'var(--color-primary)'?>; font-size: 10px; padding: 4px 6px;">
+                    <span class="badge" style="background: <?=$task['progress']==100?'var(--accent-success)':'var(--color-primary)'?>; font-size: 10px; padding: 4px 6px;">
                         <?=$task['progress']?>% (<?=$task['milestones_done']?>/<?=$task['milestones_total']?>) <i class="bi bi-check2-all"></i>
                     </span>
                 <?php endif; ?>
@@ -222,7 +222,7 @@ require 'includes/layout_start.php';
           <?php foreach($tasks_done as $task): 
               $safe_json = htmlspecialchars(json_encode($task), ENT_QUOTES, 'UTF-8');
           ?>
-            <div class="kanban-card" data-task-id="<?php echo $task['id']; ?>" style="opacity: 0.65; background-color: #fcfcfc;">
+            <div class="kanban-card" data-task-id="<?php echo $task['id']; ?>" style="opacity: 0.65; background-color: var(--surface-subtle);">
               <div class="kanban-meta">
                   <?php if(!empty($task['category'])): ?>
                       <span class="k-badge text-muted"><?=htmlspecialchars($task['category'])?></span>
@@ -245,7 +245,7 @@ require 'includes/layout_start.php';
               <div class="kanban-card-footer">
                 <small class="text-muted" style="font-size: 10px;"><i class="bi bi-calendar-check"></i> <?php echo date('d.m.', strtotime($task['created_at'])); ?></small>
                 <?php if($task['milestones_total'] > 0): ?>
-                    <span class="badge" style="background: <?=$task['progress']==100?'#28a745':'var(--color-primary)'?>; font-size: 10px; padding: 4px 6px;">
+                    <span class="badge" style="background: <?=$task['progress']==100?'var(--accent-success)':'var(--color-primary)'?>; font-size: 10px; padding: 4px 6px;">
                         <?=$task['progress']?>% (<?=$task['milestones_done']?>/<?=$task['milestones_total']?>) <i class="bi bi-check2-all"></i>
                     </span>
                 <?php endif; ?>
@@ -278,26 +278,26 @@ require 'includes/layout_start.php';
           <h5 class="modal-title fw-bold" id="vt_title"></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4 bg-light">
+        <div class="modal-body p-4 bg-subtle">
           <div class="d-flex gap-2 mb-3" id="vt_badges"></div>
           
-          <div class="row mb-4 bg-white p-3 rounded border shadow-sm mx-0">
+          <div class="row mb-4 bg-surface p-3 rounded border shadow-sm mx-0">
               <div class="col-6">
                   <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 10px;">Startdatum</small>
-                  <span id="vt_start" class="fw-bold text-dark">-</span>
+                  <span id="vt_start" class="fw-bold text-strong-c">-</span>
               </div>
               <div class="col-6 border-start">
                   <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 10px;">Deadline</small>
-                  <span id="vt_deadline" class="fw-bold text-dark">-</span>
+                  <span id="vt_deadline" class="fw-bold text-strong-c">-</span>
               </div>
           </div>
 
           <div class="mb-4">
               <small class="text-muted fw-bold d-block mb-1 text-uppercase" style="font-size: 10px;">Beschreibung</small>
-              <div id="vt_desc" class="p-3 border rounded bg-white text-dark shadow-sm" style="min-height: 80px; white-space: pre-wrap; font-size: 14px;"></div>
+              <div id="vt_desc" class="p-3 border rounded bg-surface text-dark shadow-sm" style="min-height: 80px; white-space: pre-wrap; font-size: 14px;"></div>
           </div>
 
-          <div class="bg-white p-3 border rounded shadow-sm">
+          <div class="bg-surface p-3 border rounded shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-1">
                   <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Fortschritt (<span id="vt_progress_text"></span>)</small>
               </div>
@@ -310,7 +310,7 @@ require 'includes/layout_start.php';
           </div>
 
         </div>
-        <div class="modal-footer bg-light d-flex justify-content-between border-top-0">
+        <div class="modal-footer bg-subtle d-flex justify-content-between border-top-0">
             <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Schließen</button>
             <a href="#" id="vt_edit_link" class="btn btn-primary fw-bold px-4"><i class="bi bi-pencil-square me-1"></i> In Liste bearbeiten</a>
         </div>
@@ -352,14 +352,14 @@ require 'includes/layout_start.php';
             // Optisches Feedback anpassen
             if(newStatus === 'Erledigt') {
                 itemEl.style.opacity = '0.65';
-                itemEl.style.backgroundColor = '#fcfcfc';
+                itemEl.style.backgroundColor = 'var(--surface-subtle)';
                 if(titleLink) {
                     titleLink.classList.add('text-decoration-line-through', 'text-muted');
                     titleLink.classList.remove('text-dark');
                 }
             } else {
                 itemEl.style.opacity = '1';
-                itemEl.style.backgroundColor = '#fff';
+                itemEl.style.backgroundColor = '';
                 if(titleLink) {
                     titleLink.classList.remove('text-decoration-line-through', 'text-muted');
                     titleLink.classList.add('text-dark');
@@ -419,7 +419,7 @@ require 'includes/layout_start.php';
         pBar.style.width = task.progress + '%';
         
         if(task.progress === 100) {
-            pBar.style.backgroundColor = '#28a745';
+            pBar.style.backgroundColor = 'var(--accent-success)';
         } else {
             pBar.style.backgroundColor = 'var(--color-primary)';
         }
@@ -430,10 +430,10 @@ require 'includes/layout_start.php';
             task.milestones.forEach(m => {
                 let icon = m.is_completed == 1 ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-circle text-muted"></i>';
                 let strike = m.is_completed == 1 ? 'text-decoration-line-through text-muted' : 'text-dark fw-bold';
-                msHtml += `<div class="list-group-item d-flex align-items-center gap-3 py-2 bg-white"><span style="font-size:1.2rem;">${icon}</span> <span class="${strike}">${m.title}</span></div>`;
+                msHtml += `<div class="list-group-item d-flex align-items-center gap-3 py-2 bg-surface"><span style="font-size:1.2rem;">${icon}</span> <span class="${strike}">${m.title}</span></div>`;
             });
         } else {
-            msHtml = '<div class="list-group-item text-muted small py-3 text-center bg-white">Noch keine Meilensteine angelegt.</div>';
+            msHtml = '<div class="list-group-item text-muted small py-3 text-center bg-surface">Noch keine Meilensteine angelegt.</div>';
         }
         document.getElementById('vt_milestones').innerHTML = msHtml;
 
