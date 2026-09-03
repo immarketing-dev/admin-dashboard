@@ -2,11 +2,11 @@
 // 1. Zentrale Config laden
 require_once 'config.php';
 
-// Session-Parameter basierend auf der Config setzen
-$host_url = parse_url(MAIN_WEBSITE, PHP_URL_HOST);
-$cookie_domain = '.' . ltrim($host_url, 'www.');
-session_set_cookie_params(0, '/', $cookie_domain);
-session_start();
+// Session ueber den gemeinsamen Bootstrap. Frueher setzte diese Datei ein
+// domainweites Cookie (abgeleitet aus MAIN_WEBSITE) und erzeugte damit
+// selbst den PHPSESSID-Konflikt, den includes/session.php beschreibt.
+require_once 'includes/session.php';
+app_session_start();
 
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     die("Zugriff verweigert.");

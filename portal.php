@@ -1,7 +1,8 @@
 <?php
 require_once 'config.php';
 require_once 'includes/upload_helper.php';
-session_start();
+require_once 'includes/session.php';
+app_session_start();
 
 // Token-Prüfung
 if (!isset($_GET['token']) || strlen($_GET['token']) < 10) {

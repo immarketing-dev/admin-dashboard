@@ -3,16 +3,8 @@ require_once 'config.php';
 require_once 'includes/csrf.php';
 require_once 'includes/auth_login.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'secure'   => isset($_SERVER['HTTPS']),
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    session_start();
-}
+require_once 'includes/session.php';
+app_session_start();
 
 if (!empty($_SESSION['admin_logged_in'])) {
     header('Location: index');

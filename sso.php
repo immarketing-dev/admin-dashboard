@@ -32,16 +32,8 @@ if ($consume->rowCount() !== 1) {
 }
 
 // Lokale Session setzen
-if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'secure'   => isset($_SERVER['HTTPS']),
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    session_start();
-}
+require_once 'includes/session.php';
+    app_session_start();
 
 // Session-Fixation: session_start() uebernimmt eine vom Client
 // mitgeschickte PHPSESSID. Vor dem Setzen der Rechte eine neue ID

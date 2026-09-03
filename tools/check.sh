@@ -47,6 +47,18 @@ else
   echo "HINWEIS: php nicht gefunden - PHP-Tag-Pruefung uebersprungen."
 fi
 
+# --- Session-Bootstrap -------------------------------------------------
+# Prueft, dass die Anwendung einen eigenen Session-Namen benutzt. Mit dem
+# Standardnamen PHPSESSID kollidiert sie mit jeder anderen PHP-Anwendung,
+# die auf einer Schwesterdomain ein domainweites Cookie setzt - der Login
+# scheitert dann still, ohne Fehlermeldung.
+if command -v php >/dev/null 2>&1; then
+  if ! out=$(php tools/test_session.php 2>&1); then
+    echo "SESSION: $out"
+    fail=1
+  fi
+fi
+
 # --- 2a. Identifikatoren der privaten Installation ----------------------
 # Pro-Installation-Liste von Strings (DB-User, DB-Name, Hostname, E-Mail,
 # SMTP-Host etc.), die niemals in eine versionierte Datei geschrieben
