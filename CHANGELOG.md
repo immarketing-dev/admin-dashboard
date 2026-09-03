@@ -111,3 +111,22 @@ private history.
   sat in the root `.htaccess` outside any directory scope — on a mod_php
   host that disables PHP for the entire application. It now lives only in
   `uploads/.htaccess`, alongside a wider denied-extension list.
+- **Favicon and company-logo uploads still accepted SVG:** `settings.php`
+  carries its own upload allow-lists instead of using
+  `includes/upload_helper.php`, and still listed `image/svg+xml`/`svg` for
+  favicons (checked with `OR`, so a spoofed `Content-Type` header could
+  bypass the MIME check on its own), while the logo upload never
+  validated the file extension at all and could be tricked into saving a
+  `.svg` file the same way. Both are the same stored-XSS risk SVG uploads
+  were already removed for elsewhere: served inline from the panel's own
+  origin, an SVG can carry `<script>`. SVG is now rejected for both, MIME
+  type and extension are required together (`AND`, not `OR`), and the
+  delete-on-replace loop still unlinks a pre-existing `.svg` file left
+  over from before this fix.
+- **Unvalidated fallback file upload in `tasks.php`:** the no-JS fallback
+  path in the `edit_task` action moved uploaded files straight into
+  `uploads/client_assets/` without calling `validate_upload()`, unlike
+  every other upload endpoint in the app — any file type, including SVG,
+  could be stored and served from the panel's own origin. It now runs
+  through the same `validate_upload()`/`safe_filename()` checks as the
+  AJAX upload path next to it.

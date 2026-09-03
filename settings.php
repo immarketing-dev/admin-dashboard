@@ -49,13 +49,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'upload_logo') {
         if (isset($_FILES['company_logo']) && $_FILES['company_logo']['error'] === UPLOAD_ERR_OK) {
+            // SVG bewusst NICHT erlaubt: SVGs koennen <script> und Event-Handler
+            // enthalten und werden vom Portal aus dem eigenen Origin ausgeliefert -
+            // ein SVG-Logo waere gespeichertes XSS. Die Endung wird zusaetzlich
+            // gegen eine eigene Liste geprueft (nicht nur der MIME-Typ), da
+            // $_FILES[...]['type'] vom Client kommt und sich faelschen laesst -
+            // sonst koennte z.B. eine .svg-Datei mit vorgetaeuschtem
+            // "image/png"-Typ trotzdem mit .svg-Endung gespeichert werden.
             $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
             $f = $_FILES['company_logo'];
-            if (in_array($f['type'], $allowed) && $f['size'] <= 2 * 1024 * 1024) {
-                $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+            $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+            if (in_array($f['type'], $allowed) && in_array($ext, $allowed_ext) && $f['size'] <= 2 * 1024 * 1024) {
                 $logo_dir = __DIR__ . '/uploads/logos/';
                 if (!is_dir($logo_dir)) mkdir($logo_dir, 0755, true);
-                foreach (['png','jpg','jpeg','gif','webp'] as $e) @unlink($logo_dir . 'company_logo.' . $e);
+                // 'svg' bleibt in dieser Loesch-Schleife: die Endung wird zwar
+                // nicht mehr akzeptiert, aber ein vor diesem Fix (oder ueber
+                // die frueher fehlende Endungspruefung) abgelegtes SVG-Logo
+                // soll beim naechsten Upload trotzdem entfernt werden.
+                foreach (['png','jpg','jpeg','gif','webp','svg'] as $e) @unlink($logo_dir . 'company_logo.' . $e);
                 $rel = 'uploads/logos/company_logo.' . $ext;
                 move_uploaded_file($f['tmp_name'], __DIR__ . '/' . $rel);
                 $pdo->prepare("INSERT INTO settings (k,v) VALUES ('company_logo',?) ON DUPLICATE KEY UPDATE v=?")->execute([$rel, $rel]);
@@ -73,14 +85,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'upload_favicon') {
         if (isset($_FILES['favicon_file']) && $_FILES['favicon_file']['error'] === UPLOAD_ERR_OK) {
-            $allowed_fav = ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png', 'image/svg+xml'];
+            // SVG bewusst NICHT erlaubt: SVGs koennen <script> und Event-Handler
+            // enthalten und werden vom Portal aus dem eigenen Origin ausgeliefert -
+            // ein SVG-Favicon waere gespeichertes XSS. Nicht wieder hinzufuegen,
+            // ohne serverseitiges Sanitizing des SVG-Inhalts.
+            $allowed_fav = ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png'];
             $f = $_FILES['favicon_file'];
             $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
-            $allowed_ext = ['ico', 'png', 'svg'];
-            if (in_array($f['type'], $allowed_fav) || in_array($ext, $allowed_ext)) {
+            $allowed_ext = ['ico', 'png'];
+            // MIME-Typ UND Endung muessen passen (UND statt ODER): $_FILES[...]['type']
+            // kommt vom Client und laesst sich faelschen - bei einer reinen
+            // ODER-Verknuepfung koennte eine .svg-Datei mit vorgetaeuschtem
+            // "image/png"-Typ die Pruefung umgehen und trotzdem mit .svg-Endung
+            // gespeichert werden.
+            if (in_array($f['type'], $allowed_fav) && in_array($ext, $allowed_ext)) {
                 if ($f['size'] <= 512 * 1024) {
                     $fav_dir = __DIR__ . '/uploads/favicons/';
                     if (!is_dir($fav_dir)) mkdir($fav_dir, 0755, true);
+                    // 'svg' bleibt in dieser Loesch-Schleife, obwohl SVG nicht mehr
+                    // hochgeladen werden kann: so wird ein vor diesem Fix bereits
+                    // hochgeladenes SVG-Favicon beim naechsten Upload entfernt und
+                    // bleibt nicht verwaist auf der Platte liegen.
                     foreach (['ico','png','svg'] as $e) @unlink($fav_dir . 'favicon.' . $e);
                     $rel = 'uploads/favicons/favicon.' . $ext;
                     move_uploaded_file($f['tmp_name'], __DIR__ . '/' . $rel);
@@ -351,8 +376,8 @@ require 'includes/layout_start.php';
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="upload_favicon">
             <label class="form-label fw-semibold">Favicon hochladen</label>
-            <input type="file" name="favicon_file" class="form-control mb-2" accept=".ico,.png,.svg" required>
-            <div class="form-text mb-3">ICO, PNG oder SVG · max. 512 KB · Empfehlung: 32×32 px oder 64×64 px (ICO/PNG)</div>
+            <input type="file" name="favicon_file" class="form-control mb-2" accept=".ico,.png" required>
+            <div class="form-text mb-3">ICO oder PNG · max. 512 KB · Empfehlung: 32×32 px oder 64×64 px</div>
             <button type="submit" class="btn btn-primary btn-sm px-3">
               <i class="bi bi-upload me-1"></i>Hochladen & speichern
             </button>

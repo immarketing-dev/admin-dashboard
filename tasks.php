@@ -119,14 +119,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // Fallback Upload (Falls jemand ohne JS hochlädt)
         if (!empty($_FILES['admin_assets']['name'][0])) {
             $upload_dir = 'uploads/client_assets/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-            
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+
             foreach ($_FILES['admin_assets']['tmp_name'] as $key => $tmp_name) {
                 $file_name = basename($_FILES['admin_assets']['name'][$key]);
+                $file_size = $_FILES['admin_assets']['size'][$key];
                 if ($tmp_name) {
-                    $safe_name = time() . '_' . preg_replace("/[^a-zA-Z0-9.-]/", "_", $file_name);
+                    // Auch dieser Fallback-Pfad (ohne JS) muss durch validate_upload()
+                    // laufen - sonst waere er ein ungeprueftes Upload-Schlupfloch
+                    // (z.B. fuer SVG mit eingebettetem Script) am MIME-/Endungs-Check
+                    // vorbei, den der AJAX-Upload weiter oben in dieser Datei nutzt.
+                    $err = validate_upload($tmp_name, $file_name, $file_size);
+                    if ($err) continue;
+
+                    $safe_name = safe_filename($file_name);
                     $path = $upload_dir . $safe_name;
-                    
+
                     if (move_uploaded_file($tmp_name, $path)) {
                         $pdo->prepare("INSERT INTO client_assets (task_id, file_name, file_path, dashboard_seen, uploaded_by) VALUES (?, ?, ?, 1, 'admin')")
                             ->execute([$task_id, $file_name, $path]);
