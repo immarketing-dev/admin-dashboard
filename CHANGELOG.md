@@ -35,6 +35,14 @@ private history.
   (`.env` parser tests). CI runs `tools/check.sh` on PHP 8.1, 8.2 and 8.3.
 - `csrf_check_get()` for the two GET-based status handlers in
   `quotes.php`/`finances.php` (later removed again — see Removed).
+- `install/preflight.php`, a self-contained installation pre-flight check
+  for both a fresh install and a migration of an existing installation
+  onto this codebase. Runs before `.env` or the database exist, reports
+  PHP version/extensions, `uploads/` permissions, and — once `.env` is
+  present — database connectivity, table/row counts and `schema_version`,
+  without ever printing a credential. Refuses to run once the
+  installation is already set up, and instructs (never self-deletes) the
+  operator to remove it after use.
 
 ### Changed
 - The two parallel login paths (a settings-table password check with no

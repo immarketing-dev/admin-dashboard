@@ -97,6 +97,19 @@ cd admin-dashboard
 cp .env.example .env
 ```
 
+### Pre-flight check (recommended)
+
+Before editing `.env` or importing the schema, upload the project to the
+target server and open `install/preflight.php` in a browser. It works
+without any configuration and reports what the server already has — PHP
+version and extensions, whether `uploads/` and its six subdirectories are
+writable, and, once `.env` exists, whether the database is reachable,
+which of the 21 expected tables are present, and current row counts
+(useful for confirming nothing was lost when migrating an existing
+installation onto this codebase). Act on anything it reports as FAIL, then
+**delete the file** — it reads server and database internals and must not
+stay reachable after setup.
+
 Edit `.env` and fill in at least `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`.
 
 `vendor/` is committed, so `composer install` is **optional** — run it only
