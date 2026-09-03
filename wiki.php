@@ -345,7 +345,10 @@ require 'includes/layout_start.php';
             
             <div class="mb-3 bg-white p-3 rounded shadow-sm border">
                 <label class="form-label fw-bold small">Inhalt</label>
-                <textarea name="content" id="editor"></textarea>
+                <!-- form-control und rows als Rueckfallebene: startet CKEditor nicht -->
+                <!-- (CDN nicht erreichbar, JS-Fehler davor), bleibt sonst ein -->
+                <!-- nacktes Textfeld in Browser-Standardbreite stehen. -->
+                <textarea name="content" id="editor" class="form-control" rows="14"></textarea>
             </div>
             
             <div class="row bg-white p-3 rounded shadow-sm border mx-0 align-items-end">
