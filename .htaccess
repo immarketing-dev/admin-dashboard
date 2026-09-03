@@ -71,12 +71,18 @@ Options -Indexes
     RewriteRule ^ /%1 [R=301,L,QSA]
 
     # --- 2a) Eigene Seiten haben Vorrang vor gleichnamigen Verzeichnissen
-    # Manche Hoster legen im Webspace eigene Verzeichnisse an - IONOS etwa
-    # ein geschuetztes "logs/". Die allgemeine Regel unten verlangt !-d und
-    # greift dann nicht; die Anfrage landet auf dem fremden Verzeichnis und
-    # wird mit 403 abgewiesen. Diese Regel zieht deshalb vor: existiert eine
-    # gleichnamige .php im Wurzelverzeichnis, gewinnt sie - unabhaengig
-    # davon, ob daneben ein Verzeichnis gleichen Namens liegt.
+    # Legt der Hoster im Webspace ein Verzeichnis an, das genauso heisst wie
+    # eine unserer Seiten, verlangt die allgemeine Regel unten !-d und greift
+    # nicht - die Anfrage landet auf dem fremden Verzeichnis. Diese Regel
+    # zieht deshalb vor: existiert eine gleichnamige .php im Wurzel-
+    # verzeichnis, gewinnt sie.
+    #
+    # ACHTUNG - das hilft NICHT gegen jede Sperre. Verbietet der Hoster einen
+    # Pfad serverseitig ueber die URL (etwa per <Location>), greift diese
+    # Pruefung erst nach dem Rewrite, aber weiterhin auf die urspruengliche
+    # URL - keine .htaccess kann das aufheben. Deshalb heisst die Log-Seite
+    # systemlogs.php und nicht logs.php: /logs ist bei IONOS gesperrt, und
+    # nur ein anderer Name loest das.
     # Nur einteilige Pfade, damit assets/, uploads/ und vendor/ unberuehrt
     # bleiben (dort gibt es ohnehin keine gleichnamige .php).
     RewriteCond %{REQUEST_FILENAME}.php -f

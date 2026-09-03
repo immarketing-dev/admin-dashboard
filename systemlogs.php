@@ -140,7 +140,7 @@ $page_heading = 'System-Logs';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
       <div class="header-actions d-flex gap-2">
-        <form action="logs" method="POST" style="margin: 0;">
+        <form action="systemlogs" method="POST" style="margin: 0;">
           ' . csrf_field() . '
           <input type="hidden" name="action" value="export_logs">
           <button type="submit" class="btn btn-success"><i class="bi bi-download"></i> <span class="d-none d-md-inline">Als .txt exportieren</span></button>
@@ -182,7 +182,7 @@ require 'includes/layout_start.php';
       </div>
       <button type="submit" class="btn btn-sm btn-primary fw-bold">Filtern</button>
       <?php if($log_filter || $log_search): ?>
-        <a href="logs" class="btn btn-sm btn-outline-secondary">Zurücksetzen</a>
+        <a href="systemlogs" class="btn btn-sm btn-outline-secondary">Zurücksetzen</a>
       <?php endif; ?>
       <span class="text-muted small ms-auto"><?= count($logs) ?> Einträge</span>
     </form>
@@ -225,7 +225,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="clearLogsModal" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
-              <form action="logs" method="POST">
+              <form action="systemlogs" method="POST">
                   <input type="hidden" name="action" value="clear_logs">
                   
                   <div class="modal-header bg-danger text-white">

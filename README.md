@@ -207,6 +207,15 @@ INSERT INTO leads_inbox (name, email, phone, subject, message, source)
 VALUES (?, ?, ?, ?, ?, 'Contact form');
 ```
 
+### Reserved paths
+
+The log viewer is `systemlogs.php`, not `logs.php`. Some shared hosts -
+IONOS among them - reserve `/logs` at the server level and answer it with
+403 no matter what the application does. A rewrite cannot override a deny
+that matches the URL rather than the file, so the page carries a different
+name instead. Keep that in mind before adding a page called `stats`,
+`admin` or `cgi-bin`.
+
 ## Security
 
 - `.env`, `config.php`, everything under `includes/`, and PHP execution

@@ -45,7 +45,7 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE type='INCO
     </li>
 <li class="nav-item"><a class="nav-link <?= ($current_page == 'calendar.php') ? 'active' : '' ?>" href="calendar"><i class="bi bi-calendar3"></i> <span class="nav-text">Kalender</span></a></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'wiki.php') ? 'active' : '' ?>" href="wiki"><i class="bi bi-book-half"></i> <span class="nav-text">Wiki / Wissen</span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'logs.php') ? 'active' : '' ?>" href="logs"><i class="bi bi-journal-text"></i> <span class="nav-text">System-Logs</span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text">System-Logs</span></a></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text">Einstellungen</span></a></li>
     <li class="nav-item mt-5"><a class="nav-link text-danger" href="logout"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Logout</span></a></li>
   </ul>
