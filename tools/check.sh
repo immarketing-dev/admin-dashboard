@@ -296,6 +296,11 @@ if command -v php >/dev/null 2>&1; then
     echo "FEHLERSEITE: $out"
     fail=1
   fi
+  # Zeitabrechnung: der gefaehrliche Fall ist die doppelte Rechnung.
+  if ! out=$(php tools/test_time_billing.php 2>&1); then
+    echo "ZEITABRECHNUNG: $out"
+    fail=1
+  fi
   # Rechnungspositionen und Summen - hier wird mit Geld gerechnet.
   if ! out=$(php tools/test_invoice_items.php 2>&1); then
     echo "POSITIONEN: $out"

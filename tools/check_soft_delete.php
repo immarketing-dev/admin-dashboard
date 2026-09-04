@@ -49,6 +49,16 @@ const AUSNAHMEN = [
     // PDF. Fuer den Kunden gilt das NICHT - dessen Zweige tragen
     // deleted_at IS NULL und stehen deshalb nicht in dieser Liste.
     // tools/test_file_access.php haelt beide Faelle einzeln nach.
+    // stundensatz() liest eine Stammdatenangabe, keine Liste: der Preis
+    // eines Projekts gilt auch dann, wenn das Projekt im Papierkorb
+    // liegt. Wuerde hier gefiltert, faende die Funktion nichts und
+    // fiele stillschweigend auf die Voreinstellung zurueck - die
+    // Abrechnung alter Zeiten bekaeme einen anderen Preis als
+    // vereinbart, ohne dass es jemandem auffiele.
+    'includes/time_billing.php' => [
+        'SELECT t.hourly_rate AS projekt, c.hourly_rate AS kunde',
+    ],
+
     'includes/file_access.php' => [
         'SELECT invoice_pdf_path AS pfad FROM finances WHERE id = ?',
         'SELECT quote_pdf_path AS pfad FROM quotes WHERE id = ?',

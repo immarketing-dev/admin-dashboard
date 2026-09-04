@@ -96,14 +96,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     // 3. Kontakt Hinzufügen / Bearbeiten
     elseif ($action === 'add_contact' || $action === 'edit_contact') {
         $name = trim($_POST['name']);
-        $params = [$name, trim($_POST['company']), trim($_POST['email']), trim($_POST['phone']), trim($_POST['website']), trim($_POST['street']), trim($_POST['zip']), trim($_POST['city']), trim($_POST['country']), $_POST['contact_type'], $_POST['source'], trim($_POST['notes'])];
+        // Leer heisst "kein eigener Satz" und muss NULL werden, nicht 0:
+        // eine 0 waere die Aussage "wird nicht berechnet" und wuerde den
+        // Satz aus den Einstellungen ueberstimmen.
+        $satz = trim($_POST['hourly_rate'] ?? '');
+        $satz = ($satz === '') ? null : (float) str_replace(',', '.', $satz);
+
+        $params = [$name, trim($_POST['company']), trim($_POST['email']), trim($_POST['phone']), trim($_POST['website']), trim($_POST['street']), trim($_POST['zip']), trim($_POST['city']), trim($_POST['country']), $_POST['contact_type'], $_POST['source'], trim($_POST['notes']), $satz];
 
         if ($action === 'edit_contact') {
             $params[] = (int)$_POST['contact_id'];
-            $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=? WHERE id=?")->execute($params);
+            $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=?, hourly_rate=? WHERE id=?")->execute($params);
             log_event($pdo, 'CONTACT_EDITED', "Kontakt '".$name."' wurde aktualisiert.");
         } else {
-            $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
+            $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes, hourly_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
             log_event($pdo, 'CONTACT_ADDED', "Neuer Kontakt '".$name."' wurde angelegt.");
         }
     }
@@ -312,6 +318,7 @@ require 'includes/layout_start.php';
                   <div class="col-md-4"><label class="form-label small fw-bold">E-Mail</label><input type="email" name="email" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Telefon') ?></label><input type="text" name="phone" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Website') ?></label><input type="text" name="website" class="form-control form-control-sm" placeholder="www.seite.de"></div>
+                  <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Stundensatz') ?></label><input type="number" step="0.01" min="0" name="hourly_rate" class="form-control form-control-sm" placeholder="<?= te('leer = Voreinstellung') ?>"></div>
               </div>
               <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
                   <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Adresse') ?></h6>
@@ -350,6 +357,7 @@ require 'includes/layout_start.php';
                     <div class="col-md-4"><label class="form-label small fw-bold">E-Mail</label><input type="email" name="email" id="edit_email" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Telefon') ?></label><input type="text" name="phone" id="edit_phone" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Website') ?></label><input type="text" name="website" id="edit_website" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Stundensatz') ?></label><input type="number" step="0.01" min="0" name="hourly_rate" id="edit_hourly_rate" class="form-control form-control-sm" placeholder="<?= te('leer = Voreinstellung') ?>"></div>
                 </div>
                 
                 <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
@@ -430,6 +438,9 @@ require 'includes/layout_start.php';
         document.getElementById('edit_email').value = c.email || '';
         document.getElementById('edit_phone').value = c.phone || '';
         document.getElementById('edit_website').value = c.website || '';
+        // Leer lassen, wenn kein eigener Satz hinterlegt ist - sonst
+        // stuende dort eine 0, und die bedeutet "wird nicht berechnet".
+        document.getElementById('edit_hourly_rate').value = (c.hourly_rate === null || c.hourly_rate === undefined) ? '' : c.hourly_rate;
         document.getElementById('edit_street').value = c.street || '';
         document.getElementById('edit_zip').value = c.zip || '';
         document.getElementById('edit_city').value = c.city || '';

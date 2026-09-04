@@ -56,7 +56,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $client_line2   = safe_decode($_POST['client_line2'] ?? ''); 
 
     // 3. Metadaten
-    $invoice_number = $_POST['invoice_number'] ?? 'RE-00000';
+    // Die Nummer kam bisher ungeprueft aus dem Formular - und das Fenster
+    // in tasks.php erzeugte sie im Browser als Zeitstempel
+    // ("RE-20260904-193045"). Damit liefen zwei Nummernkreise
+    // nebeneinander: fortlaufende aus finances.php, Zeitstempel aus der
+    // Projektseite. § 14 UStG verlangt fuer Ausgangsrechnungen eine
+    // fortlaufende, einmalig vergebene Nummer - und genau dafuer gibt es
+    // includes/numbering.php, das auf diesem Weg nie zum Zuge kam.
+    //
+    // Alles, was nicht dem vergebenen Muster entspricht, wird deshalb
+    // verworfen und serverseitig neu vergeben. Eine gueltige Nummer wird
+    // uebernommen, damit das erneute Erzeugen derselben Rechnung
+    // weiterhin dieselbe Zeile trifft statt eine zweite anzulegen.
+    require_once __DIR__ . '/includes/numbering.php';
+    $invoice_number = trim($_POST['invoice_number'] ?? '');
+    if (!preg_match('/^RE-\d{4}-\d{3,}$/', $invoice_number)) {
+        $invoice_number = next_invoice_number($pdo);
+    }
     
     $raw_invoice_date = !empty($_POST['invoice_date']) ? $_POST['invoice_date'] : date('Y-m-d');
     $raw_due_date = !empty($_POST['due_date']) ? $_POST['due_date'] : date('Y-m-d', strtotime($raw_invoice_date . ' + 14 days'));
@@ -322,6 +338,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                               json_encode($items), $tax_type, $summen['netto'], $summen['steuer']]);
 
             log_event($pdo, 'INVOICE_CREATED', "Rechnung $invoice_number für $db_client_name generiert.");
+
+            // Wurden erfasste Zeiten uebernommen, sind sie ab jetzt
+            // abgerechnet. Ohne diesen Vermerk taucht dieselbe Stunde
+            // beim naechsten Mal wieder auf, und der Kunde zahlt sie
+            // zweimal - ein Fehler, den nur er bemerkt.
+            $zeit_ids = $_POST['time_entry_ids'] ?? [];
+            if (is_array($zeit_ids) && $zeit_ids) {
+                require_once __DIR__ . '/includes/time_billing.php';
+                zeiten_abrechnen($pdo, $zeit_ids, (int) $pdo->lastInsertId());
+            }
         } else {
             // AKTUALISIEREN (Wenn du die gleiche Rechnung noch mal überschreibst)
             $update = $pdo->prepare("

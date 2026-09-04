@@ -45,6 +45,9 @@ jobs:
       - name: Invoice item tests
         run: php tools/test_invoice_items.php
 
+      - name: Time billing tests
+        run: php tools/test_time_billing.php
+
       - name: File access tests
         run: php tools/test_file_access.php
 

@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -357,6 +357,31 @@ function migrations(): array
             // eine erfundene Nettosumme waere schlimmer als gar keine, weil
             // sie sich in einer Auswertung nicht von einer echten
             // unterscheiden liesse.
+        ],
+
+        // Version 9: erfasste Zeit wird abrechenbar.
+        //
+        // Der Timer laeuft seit Langem, aber time_entries kannte weder
+        // einen Preis noch ein Kennzeichen "abgerechnet". Die Minuten
+        // mussten von Hand zusammengezaehlt und als Position abgetippt
+        // werden - und ob eine Stunde schon auf einer Rechnung stand,
+        // wusste niemand ausser dem, der sie geschrieben hatte.
+        9 => [
+            'ALTER TABLE contacts ADD COLUMN hourly_rate DECIMAL(10,2) DEFAULT NULL',
+            'ALTER TABLE tasks     ADD COLUMN hourly_rate DECIMAL(10,2) DEFAULT NULL',
+
+            'ALTER TABLE time_entries'
+            . ' ADD COLUMN billed_at DATETIME DEFAULT NULL,'
+            . ' ADD COLUMN invoice_id INT DEFAULT NULL',
+
+            // ON DELETE SET NULL und nicht CASCADE: wird eine Rechnung
+            // endgueltig geloescht, sind die Stunden trotzdem geleistet
+            // worden. Sie werden dann wieder abrechenbar, statt
+            // klammheimlich mitgeloescht zu werden.
+            'ALTER TABLE time_entries ADD CONSTRAINT fk_time_invoice'
+            . ' FOREIGN KEY (invoice_id) REFERENCES finances(id) ON DELETE SET NULL',
+
+            'CREATE INDEX idx_time_unbilled ON time_entries (task_id, billed_at)',
         ],
     ];
 }

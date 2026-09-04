@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'save_company') {
         $keys = ['company_name','company_short','base_url','main_website','admin_email','support_email',
-                 'bank_holder','bank_iban','bank_bic','payment_note'];
+                 'bank_holder','bank_iban','bank_bic','payment_note','default_hourly_rate'];
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
@@ -226,6 +226,9 @@ $s_color_primary  = demo_einstellung('color_primary', setting('color_primary', C
 $s_color_sidebar  = demo_einstellung('color_sidebar', setting('color_sidebar', COLOR_SIDEBAR));
 $s_company_name   = setting('company_name', COMPANY_NAME);
 $s_company_short  = setting('company_short', COMPANY_SHORT);
+// Stundensatz, der gilt, wenn weder Projekt noch Kunde einen eigenen
+// tragen - siehe stundensatz() in includes/time_billing.php.
+$s_hourly_rate    = setting('default_hourly_rate', '60');
 $s_base_url       = setting('base_url', BASE_URL);
 $s_main_website   = setting('main_website', MAIN_WEBSITE);
 $s_admin_email    = setting('admin_email', ADMIN_EMAIL);
@@ -399,6 +402,13 @@ require 'includes/layout_start.php';
           <div class="col-md-6">
             <label class="form-label"><?= te('Kurzname') ?></label>
             <input type="text" name="company_short" class="form-control" value="<?= htmlspecialchars($s_company_short) ?>">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-bold"><?= te('Stundensatz (Voreinstellung)') ?></label>
+            <input type="number" step="0.01" min="0" name="default_hourly_rate" class="form-control"
+                   value="<?= htmlspecialchars($s_hourly_rate) ?>">
+            <div class="form-text small"><?= te('Gilt, wenn weder das Projekt noch der Kunde einen eigenen Satz hat.') ?></div>
             <div class="form-text"><?= te('Wird im Seitentitel und Portal-Header verwendet.') ?></div>
           </div>
           <div class="col-md-6">

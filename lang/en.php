@@ -1259,6 +1259,17 @@ return [
         => 'Invalid access. Please use the link from your e-mail.',
     'Zugang abgelaufen oder ungültig.'
         => 'Access expired or invalid.',
+    // ── Stundensätze und Zeitabrechnung ─────────────────────────────
+    'Stundensatz'
+        => 'Hourly rate',
+    'Stundensatz (Voreinstellung)'
+        => 'Hourly rate (default)',
+    'leer = Voreinstellung'
+        => 'empty = default',
+    'Gilt, wenn weder das Projekt noch der Kunde einen eigenen Satz hat.'
+        => 'Applies when neither the project nor the client has its own rate.',
+    'Std'
+        => 'hrs',
     'Kein Zugriff.'
         => 'No access.',
     'Datei nicht gefunden.'

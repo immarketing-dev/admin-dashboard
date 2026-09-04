@@ -389,6 +389,15 @@ $task_ids = array_column($tasks, 'id');
 $milestones_map = [];
 $assets_map = [];
 $time_map = [];
+// Ausserhalb des Batch-Blocks, damit beides auch dann steht, wenn die
+// Liste leer ist - die Kartenschleife greift sonst auf Undefiniertes zu.
+$unbilled_map = [];
+
+// Die naechste fortlaufende Rechnungsnummer fuer das Rechnungsfenster.
+// Endgueltig vergeben wird sie in invoice.php; dieser Wert ist die
+// Anzeige, damit im Browser keine zweite Nummernserie entsteht.
+require_once __DIR__ . '/includes/numbering.php';
+$next_inv_number = next_invoice_number($pdo);
 
 if (!empty($task_ids)) {
     $ph = implode(',', array_fill(0, count($task_ids), '?'));
@@ -409,6 +418,23 @@ if (!empty($task_ids)) {
     $te_stmt->execute($task_ids);
     foreach ($te_stmt->fetchAll() as $t) {
         $time_map[$t['task_id']] = (int)$t['total'];
+    }
+
+    // Noch nicht abgerechnete Zeiten, getrennt von der Gesamtzeit: der
+    // Rechnungsknopf uebernahm bisher ALLE erfassten Stunden, auch die
+    // laengst bezahlten. Wer zweimal abrechnete, stellte beim zweiten Mal
+    // die erste Rechnung gleich mit.
+    $ub_stmt = $pdo->prepare(
+        "SELECT task_id, id, duration_minutes FROM time_entries
+          WHERE task_id IN ($ph) AND billed_at IS NULL
+          ORDER BY created_at ASC, id ASC"
+    );
+    $ub_stmt->execute($task_ids);
+    foreach ($ub_stmt->fetchAll(PDO::FETCH_ASSOC) as $z) {
+        $tid = (int) $z['task_id'];
+        if (!isset($unbilled_map[$tid])) $unbilled_map[$tid] = ['minuten' => 0, 'ids' => []];
+        $unbilled_map[$tid]['minuten'] += (int) $z['duration_minutes'];
+        $unbilled_map[$tid]['ids'][]    = (int) $z['id'];
     }
 
     // Batch-load milestone IDs for comment loading
@@ -813,9 +839,18 @@ require 'includes/layout_start.php';
                               data-id="<?= $task['id'] ?>" 
                               data-contact-id="<?= $task['contact_id'] ?>" 
                               data-task-title="<?= htmlspecialchars($task['title']) ?>" 
-                              data-hours="<?= round($task['tracked_minutes']/60,2) ?>" 
+                              data-hours="<?= round((($unbilled_map[$task['id']]['minuten'] ?? 0) / 60), 2) ?>"
+                              data-rate="<?= htmlspecialchars((string) ($task['hourly_rate'] ?? $task['contact_rate'] ?? setting('default_hourly_rate', '60'))) ?>"
+                              data-time-ids="<?= htmlspecialchars(implode(',', $unbilled_map[$task['id']]['ids'] ?? [])) ?>" 
                               data-bs-toggle="modal" data-bs-target="#invoiceModal">
                           <i class="bi bi-receipt"></i> <?= te('Rechnung') ?>
+                          <?php $_offen_h = round((($unbilled_map[$task['id']]['minuten'] ?? 0) / 60), 2); ?>
+                          <?php if ($_offen_h > 0): ?>
+                            <?php /* Wie viele Stunden noch nicht abgerechnet sind. Ohne die
+                                     Zahl am Knopf ist nicht zu sehen, ob es ueberhaupt etwas
+                                     abzurechnen gibt - und ob die letzte Abrechnung griff. */ ?>
+                            <span class="badge bg-secondary"><?= $_offen_h ?> <?= te('Std') ?></span>
+                          <?php endif; ?>
                       </button>
                   </div>
 
@@ -1348,16 +1383,16 @@ require 'includes/layout_start.php';
     document.querySelectorAll('.invoice-btn').forEach(btn => {
       btn.addEventListener('click', function() {
           const cId = this.getAttribute('data-contact-id');
-          const d = new Date(); 
-          
-          const timestamp = d.getFullYear().toString() + 
-                            (d.getMonth()+1).toString().padStart(2, '0') + 
-                            d.getDate().toString().padStart(2, '0') + "-" + 
-                            d.getHours().toString().padStart(2, '0') + 
-                            d.getMinutes().toString().padStart(2, '0') + 
-                            d.getSeconds().toString().padStart(2, '0');
-                            
-          document.getElementById('inv_number').value = "RE-" + timestamp;
+
+          // Die Nummer kommt vom Server. Frueher stand hier ein aus der
+          // Uhrzeit gebauter Wert ("RE-20260904-193045") - eine zweite
+          // Nummernserie neben der fortlaufenden aus finances.php. Fuer
+          // Ausgangsrechnungen verlangt Paragraf 14 UStG genau eine,
+          // fortlaufend und einmalig vergeben; dafuer gibt es
+          // includes/numbering.php, das auf diesem Weg nie zum Zuge kam.
+          // invoice.php prueft das Format noch einmal und vergibt
+          // notfalls neu - dieser Wert hier ist nur die Anzeige.
+          document.getElementById('inv_number').value = <?= tjs($next_inv_number ?? '') ?>;
           document.getElementById('inv_contact_id').value = cId || '';
           
           document.getElementById('inv_client_name').value = '';
@@ -1371,7 +1406,31 @@ require 'includes/layout_start.php';
               document.getElementById('inv_client_city').value = (c.zip || '') + " " + (c.city || '');
           }
           document.getElementById('invoice-items-container').innerHTML = '';
-          addInvoiceRow(<?= tjs('Service: ') ?> + this.getAttribute('data-task-title'), this.getAttribute('data-hours'), 60);
+
+          // Der Stundensatz stand hier fest auf 60 - unabhaengig davon,
+          // was mit dem Kunden vereinbart war. Jetzt kommt er aus dem
+          // Projekt, sonst vom Kunden, sonst aus den Einstellungen.
+          const stunden = this.getAttribute('data-hours');
+          const satz    = this.getAttribute('data-rate') || '60';
+          addInvoiceRow(<?= tjs('Service: ') ?> + this.getAttribute('data-task-title'), stunden, satz);
+
+          // Welche Zeiterfassungen hier abgerechnet werden. invoice.php
+          // vermerkt sie danach als abgerechnet, damit dieselbe Stunde
+          // nicht ein zweites Mal auf einer Rechnung landet.
+          const alt = document.getElementById('inv_time_ids');
+          if (alt) alt.remove();
+          const ids = this.getAttribute('data-time-ids') || '';
+          if (ids) {
+              const form = document.getElementById('inv_number').form;
+              const box  = document.createElement('div');
+              box.id = 'inv_time_ids';
+              ids.split(',').forEach(id => {
+                  const f = document.createElement('input');
+                  f.type = 'hidden'; f.name = 'time_entry_ids[]'; f.value = id;
+                  box.appendChild(f);
+              });
+              form.appendChild(box);
+          }
       });
     });
 

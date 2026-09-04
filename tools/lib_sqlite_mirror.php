@@ -130,15 +130,31 @@ function nach_sqlite(string $sql): array
  */
 class SqliteSpiegelPDO extends PDO
 {
+    /**
+     * MySQL-Zeitfunktionen, die SQLite anders schreibt.
+     *
+     * NOW() ist der haeufigste Fall: SQLite kennt es nicht und bricht mit
+     * "no such function". CURRENT_TIMESTAMP bedeutet in MySQL dasselbe,
+     * aber der gespiegelte Code soll unveraendert laufen - er ist es, der
+     * geprueft wird, nicht eine fuer den Test zurechtgebogene Fassung.
+     */
+    private static function zeitfunktionen(string $sql): string
+    {
+        return preg_replace('/\bNOW\s*\(\s*\)/i', 'CURRENT_TIMESTAMP', $sql);
+    }
+
     public function exec(string $statement): int|false
     {
         if (preg_match('/^\s*SET\s+FOREIGN_KEY_CHECKS/i', $statement)) return 0;
+        $statement = self::zeitfunktionen($statement);
         $statement = preg_replace('/^\s*TRUNCATE TABLE\s+/i', 'DELETE FROM ', $statement);
         return parent::exec($statement);
     }
 
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
+        $query = self::zeitfunktionen($query);
+
         if (stripos($query, 'ON DUPLICATE KEY UPDATE') !== false) {
             $query = preg_replace('/\s*ON DUPLICATE KEY UPDATE.*$/is', '', $query);
             $query = preg_replace('/^\s*INSERT INTO/i', 'INSERT OR REPLACE INTO', $query);

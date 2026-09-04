@@ -9,6 +9,42 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Tracked time can be billed.** The timer had been recording for a long
+  time, but the hours never reached an invoice: `time_entries` knew neither
+  a rate nor a "billed" marker. Whoever wanted to invoice added the minutes
+  up by hand and typed a line item — and whether an hour had already been
+  charged was known only to the person who had charged it.
+
+  Schema version 9 adds an hourly rate to `contacts` and `tasks` and
+  `billed_at` / `invoice_id` to `time_entries`. The rate resolves
+  project → client → default (a setting), so a special price on one project
+  does not force changing the client's rate and thereby break all their
+  other projects. A rate of 0,00 is an answer, not an absence, and is not
+  overridden.
+
+  The invoice button on a project now offers only the **unbilled** hours and
+  shows how many there are; `invoice.php` marks them as billed afterwards.
+  Before, it handed over *every* recorded hour, so invoicing a project twice
+  billed the first invoice again — an error only the customer would notice.
+  The `UPDATE` carries `AND billed_at IS NULL`, so two concurrent runs cannot
+  both claim the same entries.
+
+  21 checks in `tools/test_time_billing.php`, against the SQLite mirror. The
+  mirror learned to translate `NOW()`, so the production code stays as it
+  is rather than being bent into a testable shape.
+
+### Fixed
+- **Invoices from the projects page had timestamp numbers.** The modal built
+  its own number in the browser (`RE-20260904-193045`) and `invoice.php` took
+  whatever arrived in the POST. Two number series ran side by side —
+  sequential ones from `finances.php`, timestamps from the projects page —
+  while `includes/numbering.php`, which exists precisely to prevent that,
+  was never reached on this path. § 14 UStG requires a single sequential
+  series, each number issued once. The server now supplies the number and
+  rejects anything not matching `RE-JJJJ-NNN`, issuing a fresh one instead.
+
+- **The hourly rate in that same modal was hard-coded to 60**, regardless of
+  what had been agreed with the client.
 - **Invoices keep their line items.** `invoice.php` took them by POST,
   printed them into the PDF and threw them away — `finances` held a single
   `amount`. The PDF was the only place the breakdown existed at all, so an

@@ -102,6 +102,8 @@ CREATE TABLE IF NOT EXISTS contacts (
   portal_pin              VARCHAR(255) DEFAULT NULL,
   portal_pin_attempts     TINYINT UNSIGNED DEFAULT 0,
   portal_pin_locked_until DATETIME     DEFAULT NULL,
+  -- Stundensatz dieses Kunden. Ein Projekt darf ihn ueberschreiben.
+  hourly_rate             DECIMAL(10,2) DEFAULT NULL,
   created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at     DATETIME DEFAULT NULL,
   UNIQUE KEY uq_contacts_portal_token (portal_token),
@@ -135,6 +137,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   feedback_seen    TINYINT(1) NOT NULL DEFAULT 0,
   is_timer_running TINYINT(1) NOT NULL DEFAULT 0,
   timer_start      DATETIME DEFAULT NULL,
+  -- Stundensatz dieses Projekts. Hat Vorrang vor dem des Kunden.
+  hourly_rate      DECIMAL(10,2) DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_tasks_contact (contact_id),
   KEY idx_tasks_status  (status),
@@ -226,7 +230,14 @@ CREATE TABLE IF NOT EXISTS time_entries (
   duration_minutes INT NOT NULL DEFAULT 0,
   note             VARCHAR(255) DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Gesetzt, sobald die Zeit auf einer Rechnung steht. Ohne dieses
+  -- Kennzeichen liesse sich dieselbe Stunde zweimal abrechnen.
+  billed_at        DATETIME DEFAULT NULL,
+  invoice_id       INT DEFAULT NULL,
   KEY idx_time_task (task_id),
+  KEY idx_time_unbilled (task_id, billed_at),
+  CONSTRAINT fk_time_invoice FOREIGN KEY (invoice_id)
+    REFERENCES finances(id) ON DELETE SET NULL,
   CONSTRAINT fk_time_task FOREIGN KEY (task_id)
     REFERENCES tasks(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -412,7 +423,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '8')
+INSERT INTO settings (k, v) VALUES ('schema_version', '9')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;
