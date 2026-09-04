@@ -9,14 +9,33 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Public demo mode.** `DEMO_MODE=true` turns the panel into a publicly
+  reachable, read-only instance: every page opens without a login and
+  every POST is rejected before a handler runs. Because every
+  state-changing action in this codebase is a POST, that one guard in
+  `includes/auth.php` also puts the eight mail send sites, the four upload
+  sites and every delete out of reach; `portal.php` and `invoice.php` call
+  it themselves as they do not include `auth.php`. Form submissions
+  redirect back with a notice, AJAX callers get
+  `{"ok":false,"demo":true}`. Filters, search, paging, detail views and
+  dark mode keep working. See `docs/DEMO.md`.
+- `tools/seed_demo.php` replaces `install/seed_demo.sql`: it inserts row by
+  row and reads back each generated id instead of hardcoding ids 1 and 2,
+  and produces a full year of invented data (~450 rows across 20 tables)
+  with every date relative to the run, so the demo does not age. It
+  refuses to run unless `DEMO_MODE=true`, because it empties the tables
+  first.
+- `tools/check_demo.php`, `tools/test_demo.php` and
+  `tools/test_seed_demo.php`, all wired into `tools/check.sh`. The seed
+  test translates `install/schema.sql` to SQLite and runs the seed against
+  it for real, so a wrong column name fails the build.
 - `.env`-based configuration with a dependency-free loader
   (`includes/env.php`), so a plain FTP deployment still works without
   Composer. A missing `.env` now shows setup instructions instead of a
   raw database error.
-- `install/schema.sql` covering all 21 tables the application uses, and
-  `install/seed_demo.sql` with fictional demo data (reserved
-  `.example`/`.org`/`.net` domains only) so a fresh install doesn't start
-  empty.
+- `install/schema.sql` covering every table the application uses, so a
+  fresh install has a schema to import. Example data comes from
+  `tools/seed_demo.php` (see below).
 - Versioned migrations (`includes/migrations.php`, gated by a
   `schema_version` row in `settings`) replacing the per-request
   AUTO-PATCH blocks that used to attempt `CREATE`/`ALTER TABLE` on every
@@ -142,6 +161,13 @@ private history.
   Older entries were previously unreachable: the page showed the newest N
   and nothing else.
 ### Changed
+- `SSO_ENABLED` is now forced to `false` in demo mode regardless of the
+  `.env`, because `sso.php` writes to `sso_tokens` before any POST is
+  involved.
+- The uptime monitor makes no outbound request in demo mode; without
+  that, anyone could point the server's `curl` at an arbitrary address
+  through the monitored-URL list.
+
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
   one, on the `users` table, with CSRF protection, an IP-based lockout,
@@ -238,6 +264,20 @@ private history.
   benefit once the entry point is gone.
 
 ### Fixed
+- `install/schema.sql` could not be imported at all. Two columns added by
+  migrations (`task_milestones.waiting_on`, `client_assets.uploaded_by_name`)
+  were appended to the end of their `CREATE TABLE` list with the preceding
+  comma left in place, which MySQL rejects — so a fresh install had been
+  broken since migration 5, while every existing installation kept running
+  and never noticed. `check_schema.php` now checks for it.
+- `invoice.php` verifies the session itself instead of including
+  `includes/auth.php`, duplicating logic that belongs in one place. It now
+  at least calls the demo guard explicitly, so its POST handler — which
+  writes to `finances` and stores a PDF — cannot run in demo mode.
+- The toast used for demo notices was confined to 180 px on a 360 px
+  screen: a fixed-position box with `left: 50%` can only occupy the right
+  half, so its `max-width` never applied. Centred via `left`/`right` and
+  `margin` instead.
 - Ten of the eleven converted pages emitted their own PHP source into the
   browser. The layout block was inserted after an existing closing tag without
   reopening PHP, so the code was literal text — and because literal text is
