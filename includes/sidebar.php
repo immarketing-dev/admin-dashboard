@@ -20,7 +20,11 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE type='INCO
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'index.php') ? 'active' : '' ?>" href="index">
         <i class="bi bi-grid-1x2-fill"></i> <span class="nav-text">Dashboard</span>
-        <?php if($_sb_leads > 0): ?><span class="sidebar-badge"><?= $_sb_leads ?></span><?php endif; ?>
+        <?php /* $_sb_portal wurde mit fünf Abfragen je Seitenaufruf ermittelt und
+                 nirgends benutzt. Das Abzeichen zählt jetzt beides: neue Anfragen
+                 über die Website und ungesehene Vorgänge aus dem Kundenportal. */ ?>
+        <?php $_sb_dash = $_sb_leads + $_sb_portal; ?>
+        <?php if($_sb_dash > 0): ?><span class="sidebar-badge" title="<?= $_sb_leads ?> Anfrage(n), <?= $_sb_portal ?> Portal-Vorgang/-Vorgänge"><?= $_sb_dash ?></span><?php endif; ?>
       </a>
     </li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'calendar.php') ? 'active' : '' ?>" href="calendar"><i class="bi bi-calendar3"></i> <span class="nav-text">Kalender</span></a></li>

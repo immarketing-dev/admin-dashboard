@@ -29,6 +29,30 @@ const ALLOWED_MIME_TYPES = [
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
 
 /**
+ * Ermittelt den MIME-Typ einer Datei. Gibt null zurueck, wenn die
+ * Erweiterung fileinfo fehlt.
+ *
+ * mime_content_type() existiert nur mit geladener fileinfo-Erweiterung.
+ * Fehlt sie, war der bisherige direkte Aufruf ein Fatal Error - und zwar
+ * bei jedem einzelnen Upload, quer durch alle Formulare.
+ */
+function detect_mime_type(string $tmp_name): ?string {
+    if (function_exists('finfo_open')) {
+        $fi = finfo_open(FILEINFO_MIME_TYPE);
+        if ($fi !== false) {
+            $mime = finfo_file($fi, $tmp_name);
+            finfo_close($fi);
+            if (is_string($mime) && $mime !== '') return $mime;
+        }
+    }
+    if (function_exists('mime_content_type')) {
+        $mime = mime_content_type($tmp_name);
+        if (is_string($mime) && $mime !== '') return $mime;
+    }
+    return null;
+}
+
+/**
  * Prüft eine hochgeladene Datei auf MIME-Typ, Endung und Größe.
  * Gibt null bei Erfolg zurück, sonst eine Fehlermeldung.
  */
@@ -38,7 +62,13 @@ function validate_upload(string $tmp_name, string $original_name, int $file_size
     }
 
     $ext  = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
-    $mime = mime_content_type($tmp_name);
+    $mime = detect_mime_type($tmp_name);
+
+    // Ohne verlaessliche Typerkennung wird abgelehnt, nicht durchgewunken:
+    // die Endung allein ist keine Pruefung, sie stammt vom Hochladenden.
+    if ($mime === null) {
+        return "Dateityp konnte nicht geprueft werden - die PHP-Erweiterung fileinfo fehlt auf dem Server.";
+    }
 
     if (!isset(ALLOWED_MIME_TYPES[$mime])) {
         return "Nicht erlaubter Dateityp ($mime): " . htmlspecialchars($original_name);

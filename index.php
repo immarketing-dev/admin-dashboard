@@ -285,8 +285,11 @@ $upcoming_deadlines = $pdo->query("
     ORDER BY due_date ASC LIMIT 12
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-$monitored_urls   = $pdo->query("SELECT * FROM monitored_urls ORDER BY url_name ASC")->fetchAll(PDO::FETCH_ASSOC);
-$uptime_statuses  = getParallelSiteStatuses($monitored_urls); // alle URLs parallel prüfen
+// Nur die Anzahl wird beim Seitenaufbau gebraucht. Die eigentliche
+// Prüfung übernimmt der AJAX-Teil (ajax_widget=monitor), der direkt nach
+// dem Laden angestoßen wird: ein erreichbarer, aber langsamer Server darf
+// nicht den Aufbau der ganzen Seite aufhalten.
+$monitored_count = (int)$pdo->query("SELECT COUNT(*) FROM monitored_urls")->fetchColumn();
 $open_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE status != 'Erledigt'")->fetchColumn();
 
 // Termine heute & diese Woche
@@ -677,50 +680,24 @@ require 'includes/layout_start.php';
                 </div>
                 
                 <div class="scroll-container" id="monitor_widget_body">
-                    <?php
-                    if(count($monitored_urls) > 0):
-                        foreach($monitored_urls as $key => $url):
-                            $status = $uptime_statuses[$key];
-
-                            $dot_class   = 'bg-offline';
-                            $status_text = "Offline ($status[code])";
-
-                            if ($status['online']) {
-                                if ($status['time'] > 1500) {
-                                    $dot_class   = 'bg-slow';
-                                    $status_text = "Langsam";
-                                } else {
-                                    $dot_class   = 'bg-online';
-                                    $status_text = "Online";
-                                }
-                            } elseif ($status['code'] == 0) {
-                                $status_text = "Timeout/DNS";
-                            }
-                    ?>
-                            <div class="uptime-item">
-                                <div class="uptime-header">
-                                    <div class="text-truncate fw-bold text-strong-c d-flex align-items-center" style="font-size:13px;">
-                                        <span class="status-dot <?=$dot_class?>"></span>
-                                        <?=$url['url_name']?>
-                                    </div>
-                                    <button type="button" class="trash-btn" onclick="triggerDeleteMonitor(<?=$url['id']?>)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                                
-                                <div class="uptime-stats">
-                                    <span class="<?=!$status['online'] ? 'text-danger fw-bold' : ''?>">
-                                        <i class="bi bi-activity"></i> <?=$status_text?>
-                                    </span>
-                                    <?php if($status['code'] > 0): ?>
-                                        <span><i class="bi bi-stopwatch"></i> <?=$status['time']?> ms</span>
-                                    <?php endif; ?>
+                    <?php if ($monitored_count > 0): ?>
+                        <?php for ($i = 0; $i < min($monitored_count, 3); $i++): ?>
+                        <div class="uptime-item" aria-hidden="true">
+                            <div class="uptime-header">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="status-dot" style="background:var(--border-strong);"></span>
+                                    <span class="skeleton-line" style="width:120px;"></span>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                            <div class="uptime-stats"><span class="skeleton-line" style="width:60px;"></span></div>
+                        </div>
+                        <?php endfor; ?>
+                        <div class="text-muted text-center" style="font-size:var(--text-2xs);">
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>Status wird geprüft …
+                        </div>
                     <?php else: ?>
                         <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
-                            <i class="bi bi-server d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
+                            <i class="bi bi-server d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
                             Keine URLs im Monitor.
                         </div>
                     <?php endif; ?>
@@ -1383,6 +1360,8 @@ require 'includes/layout_start.php';
         setInterval(poll, INTERVAL);
         setInterval(() => pollHtml('portal_activity_body', 'index?ajax_widget=portal_activity'), HTML_INTERVAL);
         setInterval(() => pollHtml('monitor_widget_body',  'index?ajax_widget=monitor'), MON_INTERVAL);
+        // Erstabruf sofort: der Seitenaufbau prüft die URLs nicht mehr selbst.
+        pollHtml('monitor_widget_body', 'index?ajax_widget=monitor');
     })();
 
   </script>

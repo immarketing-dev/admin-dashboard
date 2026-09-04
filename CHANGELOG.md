@@ -72,6 +72,11 @@ private history.
   once or twice and never configures; the toggle then fixes the choice for
   that browser. The admin panel is unaffected and still starts light.
   `includes/theme.php` gained a `$theme_follow_system` flag for this.
+- `tools/test_csrf.php` and `tools/test_upload.php`, in the style of the
+  existing checks and wired into CI. They cover the token comparison
+  (including the empty-session case `hash_equals` would otherwise accept),
+  the upload type and size rules, and `safe_filename()` against path
+  traversal, null bytes and overlong names.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -126,6 +131,17 @@ private history.
   Card shadows use the shared elevation scale. Without this the theme
   attribute had nothing to act on — the page would have stayed light
   whatever the setting.
+- The dashboard no longer checks monitored sites while building the page.
+  `getParallelSiteStatuses()` ran on every load with a six-second timeout,
+  so one slow or dead site delayed the entire page by up to six seconds —
+  and the widget was refreshed over AJAX anyway. The initial render now
+  shows a placeholder and the existing partial is fetched immediately.
+- The sidebar's dashboard badge counts unseen portal activity again.
+  `$_sb_portal` was computed with five queries per page load and never
+  used.
+- The dark theme's blanket `.rounded` rule no longer overrides an explicit
+  background. It painted a card surface onto every rounded element,
+  including ones meant to show the card behind them.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.
@@ -233,3 +249,10 @@ private history.
   page also carries the handful of `[data-theme]` rules for the Bootstrap
   utilities it uses, which it could not inherit because it does not load
   `app.css`.
+- Uploads crashed outright on a server without the `fileinfo` extension.
+  `validate_upload()` called `mime_content_type()` directly, which only
+  exists when that extension is loaded — the result was a fatal error on
+  every upload in every form, not a rejected file. Type detection is now
+  behind `detect_mime_type()`, and a file whose type cannot be established
+  is rejected rather than waved through: the extension comes from whoever
+  uploaded the file and is not a check.
