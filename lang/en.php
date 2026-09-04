@@ -1391,4 +1391,69 @@ return [
         => '(untitled)',
     'Sprache, Farben und Thema gelten nur für Ihren Besuch. Andere Besucher sehen weiterhin die Vorgaben, und beim nächsten Aufruf beginnt alles von vorn.'
         => 'Language, colours and theme apply to your visit only. Other visitors still see the defaults, and everything starts over on your next visit.',
+    // ── Reiter, Zwischentexte, Bruchstuecke ──────────────────────────
+    'weitere'
+        => 'more',
+    'Einnahmen vs. Ausgaben —'
+        => 'Income vs. expenses —',
+    'Kundenportal'
+        => 'Client portal',
+    'Zusammenarbeit'
+        => 'Collaboration',
+    'Abrechnungen'
+        => 'Statements',
+    'Rechnungen'
+        => 'Invoices',
+    'Anfragen'
+        => 'Requests',
+    'Support'
+        => 'Support',
+    'Ressourcen'
+        => 'Resources',
+    'Wissen'
+        => 'Knowledge',
+    'Schritten abgeschlossen'
+        => 'steps completed',
+    'Unbekannt'
+        => 'Unknown',
+    'Hauptansprechpartner'
+        => 'Main contact',
+    'Beteiligt'
+        => 'Involved',
+    'Austausch zum Projekt'
+        => 'Project discussion',
+    'wartet auf Ihre Antwort'
+        => 'awaiting your reply',
+    'Angebot'
+        => 'Quote',
+    'Rechnungsarchiv'
+        => 'Invoice archive',
+    'offen / überfällig'
+        => 'open / overdue',
+    'fällig'
+        => 'due',
+    'Artikel, die'
+        => 'Articles that',
+    'für Sie freigegeben hat.'
+        => 'has shared with you.',
+    'Deutschland'
+        => 'Germany',
+    'Filter'
+        => 'Filter',
+    'Austausch'
+        => 'Discussion',
+    'Zeiterfassung'
+        => 'Time tracking',
+    'Uploads ('
+        => 'Uploads (',
+    'd alt'
+        => 'd old',
+    'Eintrag/Einträge im Papierkorb'
+        => 'entry/entries in the trash',
+    'Gelöschtes bleibt'
+        => 'Deleted items stay recoverable for',
+    'Soeben aufgeräumt:'
+        => 'Just cleaned up:',
+    ' Tage'
+        => ' days',
 ];

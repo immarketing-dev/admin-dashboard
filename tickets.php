@@ -254,7 +254,7 @@ require 'includes/layout_start.php';
       <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
         <option value="all"><?= te('Alle Status') ?></option>
         <option value="Offen"          <?= $filter_status === 'Offen'          ? 'selected' : '' ?>><?= te('Offen') ?></option>
-        <option value="In Bearbeitung" <?= $filter_status === te('In Bearbeitung') ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
+        <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
         <option value="Erledigt"       <?= $filter_status === 'Erledigt'       ? 'selected' : '' ?>><?= te('Erledigt') ?></option>
       </select>
       <select name="priority" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
@@ -305,7 +305,7 @@ require 'includes/layout_start.php';
               <td class="small">
                 <div class="fw-bold text-muted"><?= date('d.m.Y', strtotime($t['created_at'])) ?></div>
                 <div class="<?= $is_old ? 'text-danger fw-bold' : 'text-muted' ?>" style="font-size:10px;">
-                  <?= $is_old ? '<i class="bi bi-clock-history me-1"></i>' : '' ?><?= $age ?>d alt
+                  <?= $is_old ? '<i class="bi bi-clock-history me-1"></i>' : '' ?><?= $age ?><?= te('d alt') ?>
                 </div>
               </td>
               <td><?= prio_badge($prio) ?></td>

@@ -388,7 +388,7 @@ require 'includes/layout_start.php';
               <?php endforeach; ?>
 
               <?php if ($total_items > $show_limit): ?>
-                <span class="cal-more">+<?= $total_items - $show_limit ?> weitere</span>
+                <span class="cal-more">+<?= $total_items - $show_limit ?> <?= te('weitere') ?></span>
               <?php endif; ?>
 
             </div>

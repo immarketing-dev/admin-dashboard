@@ -123,12 +123,12 @@ require 'includes/layout_start.php';
   <div class="d-flex align-items-center gap-3">
     <div class="icon-tile icon-tile-neutral"><i class="bi bi-trash3"></i></div>
     <div>
-      <div class="fw-bold text-strong-c"><?= $gesamt ?> Eintrag/Einträge im Papierkorb</div>
+      <div class="fw-bold text-strong-c"><?= $gesamt ?> <?= te('Eintrag/Einträge im Papierkorb') ?></div>
       <div class="text-muted small">
-        Gelöschtes bleibt <?= AUFBEWAHRUNG_TAGE ?> Tage wiederherstellbar und wird danach
+        <?= te('Gelöschtes bleibt') ?> <?= AUFBEWAHRUNG_TAGE ?> Tage wiederherstellbar und wird danach
         beim Öffnen dieser Seite automatisch entfernt.
         <?php if ($geraeumt > 0): ?>
-          <span class="text-strong-c">Soeben aufgeräumt: <?= $geraeumt ?>.</span>
+          <span class="text-strong-c"><?= te('Soeben aufgeräumt:') ?> <?= $geraeumt ?>.</span>
         <?php endif; ?>
       </div>
     </div>
@@ -172,7 +172,7 @@ require 'includes/layout_start.php';
             </td>
             <td class="d-none d-md-table-cell">
               <span class="due-chip <?= $rest <= 3 ? 'due-overdue' : ($rest <= 7 ? 'due-today' : '') ?>">
-                <?= $rest > 0 ? $rest . ' Tage' : 'heute' ?>
+                <?= $rest > 0 ? $rest . te(' Tage') : 'heute' ?>
               </span>
             </td>
             <td class="text-end">

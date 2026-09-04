@@ -185,7 +185,7 @@ require 'includes/layout_start.php';
                         <option value="all"><?= te('Alle Typen') ?></option>
                         <option value="Kunde" <?= $filter_type === 'Kunde' ? 'selected' : '' ?>><?= te('Kunden') ?></option>
                         <option value="Interessent" <?= $filter_type === 'Interessent' ? 'selected' : '' ?>><?= te('Interessenten') ?></option>
-                        <option value="Geschäftspartner" <?= $filter_type === te('Geschäftspartner') ? 'selected' : '' ?>><?= te('Geschäftspartner') ?></option>
+                        <option value="Geschäftspartner" <?= $filter_type === 'Geschäftspartner' ? 'selected' : '' ?>><?= te('Geschäftspartner') ?></option>
                 </select>
                 <button type="submit" class="btn btn-primary btn-sm" style="display: none;"><?= te('Filtern') ?></button>
                 <?php if($search_query !== '' || $filter_type !== 'all'): ?>

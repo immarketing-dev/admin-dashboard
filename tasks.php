@@ -564,7 +564,7 @@ require 'includes/layout_start.php';
                             data-bs-toggle="collapse"
                             data-bs-target="#taskFiltersCollapse"
                             aria-expanded="<?= $active_filter_count > 0 ? 'true' : 'false' ?>">
-                        <i class="bi bi-sliders"></i> Filter
+                        <i class="bi bi-sliders"></i> <?= te('Filter') ?>
                         <?php if($active_filter_count > 0): ?>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:10px;"><?=$active_filter_count?></span>
                         <?php endif; ?>
@@ -588,7 +588,7 @@ require 'includes/layout_start.php';
                             <select name="status" class="form-select">
                                 <option value="all"><?= te('Alle Status') ?></option>
                                 <option value="Offen" <?= $filter_status === 'Offen' ? 'selected' : '' ?>><?= te('Offen') ?></option>
-                                <option value="In Bearbeitung" <?= $filter_status === te('In Bearbeitung') ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
+                                <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
                                 <option value="Erledigt" <?= $filter_status === 'Erledigt' ? 'selected' : '' ?>><?= te('Erledigt') ?></option>
                                 <option value="Storniert" <?= $filter_status === 'Storniert' ? 'selected' : '' ?>><?= te('Storniert') ?></option>
                             </select>
@@ -793,7 +793,7 @@ require 'includes/layout_start.php';
                   <div class="proj-talk-admin mt-2">
                     <a class="ms-com-toggle" onclick="toggleTalk(<?=$task['id']?>)">
                       <i class="bi bi-chat-square-text"></i>
-                      Austausch<?= $talk ? ' (' . count($talk) . ')' : '' ?>
+                      <?= te('Austausch') ?><?= $talk ? ' (' . count($talk) . ')' : '' ?>
                     </a>
                     <div class="ms-comment-thread d-none" id="talk-<?=$task['id']?>">
                       <?php foreach($talk as $t): $vonUns = $t['author_contact_id'] === null; ?>
@@ -832,7 +832,7 @@ require 'includes/layout_start.php';
 
                   <div class="d-flex gap-2 mb-2">
                       <button class="btn btn-sm w-50 d-flex justify-content-center align-items-center gap-2 <?=$task['is_timer_running']?'btn-danger':'btn-light border'?>" data-bs-toggle="collapse" data-bs-target="#t_<?=$task['id']?>">
-                        <span class="text-truncate"><?=$task['is_timer_running']?'<span class="pulse-dot"></span> Timer':'Zeiterfassung'?></span>
+                        <span class="text-truncate"><?=$task['is_timer_running']?'<span class="pulse-dot"></span> Timer':te('Zeiterfassung')?></span>
                         <span class="badge <?=$task['is_timer_running']?'bg-surface text-danger':'bg-secondary'?>"><?=sprintf('%02dh %02dm', $h, $m)?></span>
                       </button>
 
@@ -867,7 +867,7 @@ require 'includes/layout_start.php';
                           
                           <?php if(count($task['assets']) > 0): ?>
                               <button class="btn btn-sm btn-outline-info text-strong-c w-50 d-flex justify-content-center align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#up_<?=$task['id']?>">
-                                  <i class="bi bi-paperclip"></i> Uploads (<?=count($task['assets'])?>)
+                                  <i class="bi bi-paperclip"></i> <?= te('Uploads (') ?><?=count($task['assets'])?>)
                               </button>
                           <?php endif; ?>
                       </div>
@@ -973,7 +973,7 @@ require 'includes/layout_start.php';
                       <select name="member_ids[]" id="e_members" class="form-select" multiple size="5">
                         <?php foreach($all_contacts as $c): ?>
                           <option value="<?=$c['id']?>">
-                            <?=htmlspecialchars($c['name'])?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?><?= $c['contact_type'] === te('Geschäftspartner') ? ' (Partner)' : '' ?>
+                            <?=htmlspecialchars($c['name'])?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?><?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
                           </option>
                         <?php endforeach; ?>
                       </select>
@@ -1519,7 +1519,7 @@ require 'includes/layout_start.php';
                 <?php foreach($all_contacts as $c): ?>
                   <option value="<?= (int)$c['id'] ?>">
                     <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?>
-                    <?= $c['contact_type'] === te('Geschäftspartner') ? ' (Partner)' : '' ?>
+                    <?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
                   </option>
                 <?php endforeach; ?>
               </select>
