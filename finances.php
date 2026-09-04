@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
+require_once 'includes/filter_state.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
@@ -226,7 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $typ_name = ($type === 'INCOME') ? 'Einnahme' : 'Ausgabe';
             log_event($pdo, 'FINANCE_ADDED', "Neue $typ_name angelegt: '$title' über $amount €.");
         }
-        header("Location: finances"); exit();
+        filter_redirect('finances');
     }
     
     if ($action === 'update_status') {
@@ -260,7 +261,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
         log_event($pdo, 'FINANCE_DELETED', "Finanzeintrag '{$row['title']}' (ID: $id) wurde dauerhaft gelöscht.");
 
-        header("Location: finances"); exit();
+        filter_redirect('finances');
     }
 
     // ── QUOTES ──────────────────────────────────────────────────────
@@ -277,7 +278,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("INSERT INTO quotes (quote_number,subject,intro_text,contact_id,custom_name,status,tax_type,items,notes,total_amount,valid_until) VALUES (?,?,?,?,?,'Entwurf',?,?,?,?,?)")
             ->execute([$quote_number,$subject,$intro_text,$contact_id,$custom_name,$tax_type,json_encode($items),$notes,$total,$valid_until]);
         log_event($pdo, 'QUOTE_CREATED', "Angebot $quote_number erstellt.");
-        header("Location: finances?tab=quotes"); exit();
+        filter_redirect('finances', ['tab' => 'quotes']);
     }
     if ($action === 'edit_quote') {
         $id          = (int)$_POST['quote_id'];
@@ -293,7 +294,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("UPDATE quotes SET subject=?,intro_text=?,contact_id=?,custom_name=?,status=?,tax_type=?,items=?,notes=?,total_amount=?,valid_until=? WHERE id=?")
             ->execute([$subject,$intro_text,$contact_id,$custom_name,$status,$tax_type,json_encode($items),$notes,$total,$valid_until,$id]);
         log_event($pdo, 'QUOTE_EDITED', "Angebot #$id aktualisiert.");
-        header("Location: finances?tab=quotes"); exit();
+        filter_redirect('finances', ['tab' => 'quotes']);
     }
     if ($action === 'delete_quote') {
         $id = (int)$_POST['quote_id'];
@@ -303,13 +304,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
         $pdo->prepare("UPDATE quotes SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
         log_event($pdo, 'QUOTE_DELETED', "Angebot {$q2['quote_number']} gelöscht.");
-        header("Location: finances?tab=quotes"); exit();
+        filter_redirect('finances', ['tab' => 'quotes']);
     }
     if ($action === 'generate_pdf') {
         $id   = (int)$_POST['quote_id'];
         $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
-        if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
+        if (!$q2) { filter_redirect('finances', ['tab' => 'quotes']); }
         $rel_path = build_quote_pdf($pdo, $q2);
         $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=? AND status='Entwurf'")->execute([$id]);
         log_event($pdo, 'QUOTE_PDF', "PDF für Angebot {$q2['quote_number']} generiert.");
@@ -323,12 +324,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $to_email = trim($_POST['to_email'] ?? '');
         $subj2    = trim($_POST['email_subject'] ?? '');
         $body2    = trim($_POST['email_body'] ?? '');
-        if (!filter_var($to_email, FILTER_VALIDATE_EMAIL)) { header("Location: finances?tab=quotes&error=invalid_email"); exit(); }
+        if (!filter_var($to_email, FILTER_VALIDATE_EMAIL)) { filter_redirect('finances', ['tab' => 'quotes', 'error' => 'invalid_email']); }
         $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country,c.email AS c_email FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
-        if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
+        if (!$q2) { filter_redirect('finances', ['tab' => 'quotes']); }
         if (empty($q2['quote_pdf_path']) || !file_exists(__DIR__.'/'.$q2['quote_pdf_path'])) { $q2['quote_pdf_path'] = build_quote_pdf($pdo, $q2); }
-        if (!$_pm_available) { header("Location: finances?tab=quotes&error=no_phpmailer"); exit(); }
+        if (!$_pm_available) { filter_redirect('finances', ['tab' => 'quotes', 'error' => 'no_phpmailer']); }
         try {
             $mail = new PHPMailer(true); $mail->isSMTP(); $mail->Host = SMTP_HOST; $mail->SMTPAuth = true;
             $mail->Username = SMTP_USER; $mail->Password = SMTP_PASS;
@@ -340,14 +341,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $mail->send();
             if ($q2['status']==='Entwurf') $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=?")->execute([$id]);
             log_event($pdo, 'QUOTE_EMAIL_SENT', "Angebot {$q2['quote_number']} per E-Mail an $to_email gesendet.");
-            header("Location: finances?tab=quotes&msg=quote_email_sent"); exit();
-        } catch (PHPMailerException $e) { header("Location: finances?tab=quotes&error=email_failed&detail=".urlencode($e->getMessage())); exit(); }
+            filter_redirect('finances', ['tab' => 'quotes', 'msg' => 'quote_email_sent']);
+        } catch (PHPMailerException $e) { filter_redirect('finances', ['tab' => 'quotes', 'error' => 'email_failed', 'detail' => $e->getMessage()]); }
     }
     if ($action === 'convert_to_invoice') {
         $id   = (int)$_POST['quote_id'];
         $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
-        if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
+        if (!$q2) { filter_redirect('finances', ['tab' => 'quotes']); }
         $inv_num2 = next_invoice_number($pdo);
         $inv_pdf2 = build_invoice_pdf_from_quote($q2, $inv_num2);
         $client_name2 = $q2['custom_name'] ?: ($q2['c_name'] ?? 'Unbekannt');
@@ -355,7 +356,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             ->execute([$inv_num2,$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2]);
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
         log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q2['quote_number']} zu Rechnung $inv_num2 konvertiert.");
-        header("Location: finances?msg=invoice_created"); exit();
+        filter_redirect('finances', ['msg' => 'invoice_created']);
     }
     // ── END QUOTES ──────────────────────────────────────────────────
 
@@ -366,17 +367,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $body     = trim($_POST['email_body'] ?? '');
 
         if (!filter_var($to_email, FILTER_VALIDATE_EMAIL)) {
-            header("Location: finances?error=invalid_email"); exit();
+            filter_redirect('finances', ['error' => 'invalid_email']);
         }
         if (!$_pm_available) {
-            header("Location: finances?error=no_phpmailer"); exit();
+            filter_redirect('finances', ['error' => 'no_phpmailer']);
         }
 
         $stmt = $pdo->prepare("SELECT f.*, c.email AS c_email FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE f.deleted_at IS NULL AND f.id=?");
         $stmt->execute([$id]);
         $rec = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$rec || empty($rec['invoice_pdf_path'])) {
-            header("Location: finances?error=no_pdf"); exit();
+            filter_redirect('finances', ['error' => 'no_pdf']);
         }
 
         try {
@@ -400,9 +401,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             }
             $mail->send();
             log_event($pdo, 'INVOICE_EMAIL_SENT', "Rechnung {$rec['title']} per E-Mail an $to_email gesendet.");
-            header("Location: finances?msg=email_sent"); exit();
+            filter_redirect('finances', ['msg' => 'email_sent']);
         } catch (PHPMailerException $e) {
-            header("Location: finances?error=email_failed&detail=" . urlencode($e->getMessage())); exit();
+            filter_redirect('finances', ['error' => 'email_failed', 'detail' => $e->getMessage()]);
         }
     }
 }
@@ -994,7 +995,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="deleteFinanceModal" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
-              <form action="finances" method="POST">
+              <form method="POST">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete_record"><input type="hidden" name="record_id" id="del_id">
                   <div class="modal-header bg-danger text-white"><h6 class="modal-title"><?= te('Eintrag löschen?') ?></h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
@@ -1009,7 +1010,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="invoiceEmailModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content border-0 shadow">
-        <form method="POST" action="finances">
+        <form method="POST">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="send_invoice_email">
           <input type="hidden" name="record_id" id="inv_email_record_id">

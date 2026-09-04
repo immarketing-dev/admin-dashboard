@@ -9,6 +9,13 @@
  * noch die Schaltflächen, nicht mehr deren Anordnung. Zum Ausblenden
  * einer Beschriftung auf sehr schmalen Geräten die Beschriftung einer
  * Nebenaktion in <span class="btn-label"> setzen.
+ *
+ * Die Lupe der globalen Suche sitzt am Ende derselben Gruppe. Sie stand
+ * frueher als eigenes Kind zwischen Titel und Aktionen - und bekam beim
+ * Umbruch eine eigene Zeile, weil Titel und Aktionen auf schmalen
+ * Geräten je die volle Breite beanspruchen. Der Kopf war dadurch
+ * dreizeilig. Deshalb wird .header-actions jetzt immer ausgegeben, auch
+ * wenn eine Seite gar keine eigenen Schaltflächen mitbringt.
  */
 $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 ?>
@@ -28,15 +35,15 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
       <i class="bi bi-list mobile-toggle" id="mobile-toggle-btn"></i>
       <?= htmlspecialchars($page_heading ?? '') ?>
     </h2>
-    <button type="button" class="gsearch-trigger" data-gsearch-open
-            aria-label="<?= te('Globale Suche öffnen') ?>" title="<?= te('Globale Suche (Strg+K)') ?>">
-      <i class="bi bi-search" aria-hidden="true"></i>
-      <span class="gsearch-trigger-text"><?= te('Suchen') ?></span>
-      <kbd><?= te('Strg K') ?></kbd>
-    </button>
-    <?php if (!empty($header_actions)): ?>
-      <div class="header-actions"><?= $header_actions ?></div>
-    <?php endif; ?>
+    <div class="header-actions">
+      <?= $header_actions ?? '' ?>
+      <button type="button" class="gsearch-trigger" data-gsearch-open
+              aria-label="<?= te('Globale Suche öffnen') ?>" title="<?= te('Globale Suche (Strg+K)') ?>">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <span class="gsearch-trigger-text"><?= te('Suchen') ?></span>
+        <kbd><?= te('Strg K') ?></kbd>
+      </button>
+    </div>
   </div>
 
 <?php if (demo_mode() && ($_GET['demo'] ?? '') === 'blocked'): ?>
