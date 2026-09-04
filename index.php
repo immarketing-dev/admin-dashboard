@@ -316,6 +316,7 @@ $upcoming_deadlines = $pdo->query("
     SELECT 'invoice', f.id, f.title, f.due_date, c.name, DATEDIFF(f.due_date, CURDATE())
     FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id
     WHERE f.type = 'INCOME' AND f.status IN ('Offen','Überfällig')
+      AND f.deleted_at IS NULL
       AND f.due_date IS NOT NULL AND f.due_date > '0000-00-00'
       AND f.due_date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY)
     ORDER BY due_date ASC LIMIT 12
@@ -1381,7 +1382,13 @@ require 'includes/layout_start.php';
         }
 
         function poll() {
-            fetch('ajax_poll', { cache: 'no-store' })
+            // no-cache und nicht no-store: no-store umgeht den Zwischenspeicher
+            // vollstaendig, der Browser schickt dann kein If-None-Match, und
+            // das ETag in ajax_poll.php koennte nie greifen. no-cache heisst
+            // "aufbewahren, aber jedes Mal rueckfragen" - bei einer 304 legt
+            // der Browser den gespeicherten Rumpf vor, r.text() liefert also
+            // unveraendert die Daten.
+            fetch('ajax_poll', { cache: 'no-cache' })
                 .then(r => r.text())
                 .then(text => {
                     let data;

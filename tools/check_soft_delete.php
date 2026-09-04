@@ -82,7 +82,34 @@ foreach ($dateien as $datei) {
         if (!preg_match('/\bFROM\s+(' . implode('|', WEICHE_TABELLEN) . ')\b/i', $sql, $m)) return;
 
         $geprueft++;
-        if (stripos($sql, 'deleted_at') !== false) return;
+
+        // Zaehlen statt nur nachsehen, ob das Wort vorkommt.
+        //
+        // Der Anlass: das Deadline-Widget in ajax_poll.php verband per
+        // UNION ALL eine Abfrage auf tasks mit einer auf finances. Die
+        // erste Haelfte trug "deleted_at IS NULL", die zweite nicht - und
+        // weil das Wort damit irgendwo im SQL stand, ging die Pruefung
+        // durch. Geloeschte Rechnungen tauchten monatelang unter den
+        // faelligen auf.
+        //
+        // Nicht exakt, aber am richtigen Ende grob: kommen mehrere weiche
+        // Tabellen vor, muss "deleted_at" mindestens ebenso oft
+        // auftauchen. Falsch-positiv ist es nur dort, wo eine Abfrage
+        // dieselbe Tabelle mehrfach nennt und eine Bedingung fuer beide
+        // reicht - dann greift die Ausnahmeliste unten.
+        // Bewusst nur FROM, nicht JOIN: ein LEFT JOIN auf contacts soll
+        // einen geloeschten Kontakt in aller Regel MITnehmen - sonst
+        // stuende bei einer Rechnung an einen inzwischen geloeschten
+        // Kunden gar kein Name mehr. Mit JOIN in diesem Muster meldete
+        // die Pruefung 22 solcher Stellen, und keine davon war falsch.
+        // Mehrere FROM dagegen heisst UNION - und da hat jeder Zweig
+        // seine eigene Bedingung noetig.
+        $tabellen_treffer = preg_match_all(
+            '/\bFROM\s+(?:' . implode('|', WEICHE_TABELLEN) . ')\b/i',
+            $sql
+        );
+        $noetig = max(1, $tabellen_treffer);
+        if (substr_count(strtolower($sql), 'deleted_at') >= $noetig) return;
 
         foreach (AUSNAHMEN[$rel] ?? [] as $muster) {
             if ($muster !== '*' && strpos($sql, $muster) !== false) return;
