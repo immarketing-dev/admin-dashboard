@@ -20,7 +20,7 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 <?php if (demo_mode()): ?>
   <div class="demo-strip" role="status">
     <i class="bi bi-eye" aria-hidden="true"></i>
-    <span><strong>Demo-Version</strong> &ndash; alle Daten sind erfunden, Änderungen werden nicht gespeichert.</span>
+    <span><strong><?= te('Demo-Version') ?></strong> &ndash; <?= te('alle Daten sind erfunden, Änderungen werden nicht gespeichert.') ?></span>
   </div>
 <?php endif; ?>
   <div class="top-header<?= !empty($header_class) ? ' ' . htmlspecialchars($header_class, ENT_QUOTES) : '' ?>">
@@ -29,10 +29,10 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
       <?= htmlspecialchars($page_heading ?? '') ?>
     </h2>
     <button type="button" class="gsearch-trigger" data-gsearch-open
-            aria-label="Globale Suche öffnen" title="Globale Suche (Strg+K)">
+            aria-label="<?= te('Globale Suche öffnen') ?>" title="<?= te('Globale Suche (Strg+K)') ?>">
       <i class="bi bi-search" aria-hidden="true"></i>
-      <span class="gsearch-trigger-text">Suchen</span>
-      <kbd>Strg K</kbd>
+      <span class="gsearch-trigger-text"><?= te('Suchen') ?></span>
+      <kbd><?= te('Strg K') ?></kbd>
     </button>
     <?php if (!empty($header_actions)): ?>
       <div class="header-actions"><?= $header_actions ?></div>
@@ -42,8 +42,8 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 <?php if (demo_mode() && ($_GET['demo'] ?? '') === 'blocked'): ?>
   <div class="demo-hinweis" role="alert">
     <i class="bi bi-info-circle" aria-hidden="true"></i>
-    <span><?= htmlspecialchars(DEMO_HINWEIS) ?> Zum Ansehen und Ausprobieren
-      bleibt aber alles offen &ndash; Filter, Suche und jede Ansicht funktionieren.</span>
+    <span><?= te('Dies ist eine Demo-Version. Änderungen werden nicht gespeichert.') ?>
+      <?= te('Zum Ansehen und Ausprobieren bleibt aber alles offen – Filter, Suche und jede Ansicht funktionieren.') ?></span>
   </div>
 <?php endif; ?>
 

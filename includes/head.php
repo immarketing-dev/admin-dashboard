@@ -8,7 +8,7 @@
 $page_title = $page_title ?? 'Dashboard';
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?= lang() ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

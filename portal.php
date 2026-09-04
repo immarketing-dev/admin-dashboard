@@ -387,7 +387,7 @@ if (!$_is_auth) {
                    && !empty($client['portal_pin_locked_until'] ?? null)
                    && strtotime($client['portal_pin_locked_until']) > time();
     ?><!DOCTYPE html>
-<html lang="de">
+<html lang="<?= lang() ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -667,7 +667,7 @@ $avatar_letters = strtoupper(substr($name_parts[0], 0, 1) . (isset($name_parts[1
 $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?= lang() ?>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1004,7 +1004,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 <?php if (demo_mode()): ?>
   <div class="demo-portal-hinweis" role="status">
     <i class="bi bi-eye" aria-hidden="true"></i>
-    <span><strong>Demo-Version</strong> &ndash; dies ist ein Beispielportal. Alle Namen, Projekte und Beträge sind erfunden, Änderungen werden nicht gespeichert.</span>
+    <span><strong><?= te('Demo-Version') ?></strong> &ndash; <?= te('dies ist ein Beispielportal. Alle Namen, Projekte und Beträge sind erfunden, Änderungen werden nicht gespeichert.') ?></span>
   </div>
 <?php endif; ?>
 
