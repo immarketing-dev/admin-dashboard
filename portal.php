@@ -12,6 +12,26 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 }
 app_session_start();
 
+// ── Der Zugangslink darf nicht weiterwandern ───────────────────────
+// Der Token steht in der Adresszeile und ist damit der Schluessel zum
+// Portal. Zwei Wege, auf denen er das Haus verlaesst, werden hier
+// zugehalten:
+//
+//  - Der Verweisende. Klickt ein Kunde im Portal auf einen Link nach
+//    aussen, schickt der Browser die aktuelle Adresse mit - samt Token.
+//    Die allgemeine Regel in .htaccess ("strict-origin-when-cross-origin")
+//    kuerzt zwar auf die Herkunft, aber nur bei fremdem Ziel; hier gilt
+//    grundsaetzlich nichts zu senden.
+//
+//  - Suchmaschinen. Wird ein Portallink irgendwo veroeffentlicht - in
+//    einem Forum, in einer weitergeleiteten E-Mail -, hat er in keinem
+//    Index etwas verloren.
+//
+// Die PIN bleibt der eigentliche Schutz; das hier verhindert, dass der
+// Token ueberhaupt erst in fremde Haende geraet.
+header('Referrer-Policy: no-referrer');
+header('X-Robots-Tag: noindex, nofollow, noarchive');
+
 // Token-Prüfung
 if (!isset($_GET['token']) || strlen($_GET['token']) < 10) {
     die(t('Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.'));
@@ -404,11 +424,11 @@ if (!$_is_auth) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= te('Zugang') ?> · <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/tokens.css">
-  <?php if (demo_mode()): ?><link rel="stylesheet" href="assets/css/demo.css"><?php endif; ?>
+  <link href="<?= asset('assets/vendor/bootstrap/bootstrap.min.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/fonts/fonts.css') ?>" rel="stylesheet">
+  <link rel="stylesheet" href="<?= asset('assets/css/tokens.css') ?>">
+  <?php if (demo_mode()): ?><link rel="stylesheet" href="<?= asset('assets/css/demo.css') ?>"><?php endif; ?>
   <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
     *{box-sizing:border-box}
@@ -684,14 +704,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $is_partner ? 'Partner-Portal' : te('Kundenportal') ?> | <?= setting('company_short', COMPANY_SHORT) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link href="<?= asset('assets/vendor/bootstrap/bootstrap.min.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/fonts/fonts.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/prism/prism-tomorrow.min.css') ?>" rel="stylesheet">
+  <link rel="stylesheet" href="<?= asset('assets/css/tokens.css') ?>">
   <?php if (demo_mode()): ?>
-  <link rel="stylesheet" href="assets/css/demo.css">
-  <script src="assets/js/demo.js" defer></script>
+  <link rel="stylesheet" href="<?= asset('assets/css/demo.css') ?>">
+  <script src="<?= asset('assets/js/demo.js') ?>" defer></script>
   <?php endif; ?>
   <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
@@ -1358,9 +1378,9 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                              : ($lader !== '' ? htmlspecialchars($selbst ? 'Sie' : $lader) : te('Von Ihnen')) ?>
                       </span>
                       <?php if($viewable): ?>
-                        <a href="<?= htmlspecialchars($asset['file_path']) ?>" target="_blank" class="text-muted" title="<?= te('Ansehen') ?>"><i class="bi bi-eye small"></i></a>
+                        <a href="file?type=asset&amp;id=<?= (int)$asset['id'] ?>&amp;token=<?= urlencode($token) ?>" target="_blank" class="text-muted" title="<?= te('Ansehen') ?>"><i class="bi bi-eye small"></i></a>
                       <?php endif; ?>
-                      <a href="<?= htmlspecialchars($asset['file_path']) ?>" download class="text-primary" title="<?= te('Herunterladen') ?>"><i class="bi bi-download small"></i></a>
+                      <a href="file?type=asset&amp;id=<?= (int)$asset['id'] ?>&amp;token=<?= urlencode($token) ?>&amp;dl=1" download class="text-primary" title="<?= te('Herunterladen') ?>"><i class="bi bi-download small"></i></a>
                       <?php if(!$is_admin): ?>
                       <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>">
                         <?= csrf_field() ?>
@@ -1547,7 +1567,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
               <div class="d-flex flex-wrap gap-2 mt-3">
                 <?php if(!empty($q['quote_pdf_path']) && file_exists($q['quote_pdf_path'])): ?>
-                  <a href="<?= htmlspecialchars($q['quote_pdf_path']) ?>" target="_blank" rel="noopener"
+                  <a href="file?type=quote&amp;id=<?= (int)$q['id'] ?>&amp;token=<?= urlencode($token) ?>" target="_blank" rel="noopener"
                      class="btn btn-sm btn-outline-secondary fw-bold">
                     <i class="bi bi-file-earmark-pdf me-1"></i><?= te('Angebot als PDF') ?>
                   </a>
@@ -1669,10 +1689,10 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <?php endif; ?>
               <?php if(!empty($inv['invoice_pdf_path'])): ?>
                 <div class="d-flex gap-2">
-                  <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" target="_blank" class="btn btn-sm btn-outline-primary fw-bold flex-grow-1" style="border-radius:8px;">
+                  <a href="file?type=invoice&amp;id=<?= (int)$inv['id'] ?>&amp;token=<?= urlencode($token) ?>" target="_blank" class="btn btn-sm btn-outline-primary fw-bold flex-grow-1" style="border-radius:8px;">
                     <i class="bi bi-eye me-1"></i><?= te('Ansehen') ?>
                   </a>
-                  <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" download class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px;" title="<?= te('Herunterladen') ?>">
+                  <a href="file?type=invoice&amp;id=<?= (int)$inv['id'] ?>&amp;token=<?= urlencode($token) ?>&amp;dl=1" download class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px;" title="<?= te('Herunterladen') ?>">
                     <i class="bi bi-download"></i>
                   </a>
                 </div>
@@ -1952,15 +1972,21 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <p class="mb-0">&copy; <?= date('Y') ?> <?= setting('company_name', COMPANY_NAME) ?> &bull; <a href="<?= setting('main_website', MAIN_WEBSITE) ?>" class="text-decoration-none text-muted fw-bold"><?= str_replace(['http://','https://','www.'],'',setting('main_website', MAIN_WEBSITE)) ?></a></p>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+<script src="<?= asset('assets/vendor/bootstrap/bootstrap.bundle.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/qrcode/qrcode.min.js') ?>"
         integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="assets/js/payment-qr.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="<?= asset('assets/js/payment-qr.js') ?>" defer></script>
+<script src="<?= asset('assets/vendor/prism/prism.min.js') ?>"></script>
+<!-- markup-templating MUSS vor prism-php stehen: die PHP-Definition baut
+     darauf auf und wirft sonst "buildPlaceholders of undefined". Die
+     Abhaengigkeit fehlte von Anfang an; der Fehler faellt nicht auf, weil
+     er erst beim Anzeigen eines PHP-Blocks auftritt und dort nur still
+     nicht einfaerbt. -->
+<script src="<?= asset('assets/vendor/prism/components/prism-markup-templating.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/prism/components/prism-php.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/prism/components/prism-javascript.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/prism/components/prism-css.min.js') ?>"></script>
 <script>
 /* Umschalter für das dunkle Design.
    Ohne gespeicherte Wahl folgt das Portal der Systemeinstellung des
@@ -2217,8 +2243,9 @@ function openPortalWikiModal(art) {
             const viewable = ['pdf','jpg','jpeg','png','gif','webp','svg'].includes(ext);
             const icon = ext==='pdf' ? 'bi-file-earmark-pdf text-danger' : ['jpg','jpeg','png','gif','webp','svg'].includes(ext) ? 'bi-file-earmark-image text-success' : 'bi-file-earmark text-secondary';
             html += `<div class="btn-group shadow-sm me-2 mb-2">`;
-            if (viewable) html += `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ansehen"><i class="bi bi-eye"></i></a>`;
-            html += `<a href="${a.file_path}" download class="btn btn-sm btn-outline-primary fw-semibold"><i class="bi ${icon} me-1"></i>${a.file_name}</a></div>`;
+            const wUrl = `file?type=wiki&id=${a.id}&token=${PORTAL_TOKEN}`;
+            if (viewable) html += `<a href="${wUrl}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ansehen"><i class="bi bi-eye"></i></a>`;
+            html += `<a href="${wUrl}&dl=1" download class="btn btn-sm btn-outline-primary fw-semibold"><i class="bi ${icon} me-1"></i>${a.file_name}</a></div>`;
         });
         attList.innerHTML = html;
         attCont.style.display = 'block';

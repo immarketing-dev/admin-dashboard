@@ -106,7 +106,7 @@ $header_actions = '
           <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Listenansicht</span></a>
       </div>';
 // Sortable.js (Drag & Drop) wird nur hier gebraucht, daher hier statt in head.php.
-$extra_head = '<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>';
+$extra_head = '<script src="' . asset('assets/vendor/sortable/Sortable.min.js') . '"></script>';
 
 require 'includes/head.php';
 require 'includes/layout_start.php';

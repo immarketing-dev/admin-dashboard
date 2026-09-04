@@ -316,6 +316,7 @@ $upcoming_deadlines = $pdo->query("
     SELECT 'invoice', f.id, f.title, f.due_date, c.name, DATEDIFF(f.due_date, CURDATE())
     FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id
     WHERE f.type = 'INCOME' AND f.status IN ('Offen','Überfällig')
+      AND f.deleted_at IS NULL
       AND f.due_date IS NOT NULL AND f.due_date > '0000-00-00'
       AND f.due_date <= DATE_ADD(CURDATE(), INTERVAL 14 DAY)
     ORDER BY due_date ASC LIMIT 12
@@ -440,10 +441,10 @@ $header_actions = '
         </div>
         <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Zu den Projekten</span></a>
       </div>';
-$extra_head = <<<'HTML'
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@13.2.0/dist/gridstack.min.css">
-<script src="https://cdn.jsdelivr.net/npm/gridstack@13.2.0/dist/gridstack-all.js"></script>
-HTML;
+// Verkettung statt Nowdoc: die Einbindungen brauchen den Zeitstempel aus
+// asset(), und ein Nowdoc setzt nichts ein.
+$extra_head = '<link rel="stylesheet" href="' . asset('assets/vendor/gridstack/gridstack.min.css') . '">' . "\n"
+            . '<script src="' . asset('assets/vendor/gridstack/gridstack-all.js') . '"></script>';
 
 require 'includes/head.php';
 require 'includes/layout_start.php';
@@ -1381,7 +1382,13 @@ require 'includes/layout_start.php';
         }
 
         function poll() {
-            fetch('ajax_poll', { cache: 'no-store' })
+            // no-cache und nicht no-store: no-store umgeht den Zwischenspeicher
+            // vollstaendig, der Browser schickt dann kein If-None-Match, und
+            // das ETag in ajax_poll.php koennte nie greifen. no-cache heisst
+            // "aufbewahren, aber jedes Mal rueckfragen" - bei einer 304 legt
+            // der Browser den gespeicherten Rumpf vor, r.text() liefert also
+            // unveraendert die Daten.
+            fetch('ajax_poll', { cache: 'no-cache' })
                 .then(r => r.text())
                 .then(text => {
                     let data;

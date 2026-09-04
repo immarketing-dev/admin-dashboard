@@ -38,3 +38,15 @@ jobs:
 
       - name: Mail template tests
         run: php tools/test_mail_templates.php
+
+      - name: Placeholder/parameter count
+        run: php tools/check_placeholders.php
+
+      - name: Invoice item tests
+        run: php tools/test_invoice_items.php
+
+      - name: File access tests
+        run: php tools/test_file_access.php
+
+      - name: Error page tests
+        run: php tools/test_errors.php

@@ -116,8 +116,48 @@ Options -Indexes
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
-    # HSTS nur aktivieren wenn HTTPS zuverlässig läuft:
-    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # ── Content-Security-Policy ────────────────────────────────────
+    # Seit alle Bibliotheken oertlich liegen (assets/vendor/) laedt das
+    # Panel nichts mehr von fremden Adressen. Erst dadurch ist diese
+    # Regel ueberhaupt aufstellbar: sie verbietet genau das.
+    #
+    # Ihr Wert liegt weniger im Verhindern von XSS - dagegen hilft die
+    # Maskierung im Code - als im Abschneiden des Abflusses. Selbst wenn
+    # es jemandem gelingt, Code einzuschleusen, kann er die Daten
+    # nirgendwohin senden: connect-src, img-src und form-action lassen
+    # nur die eigene Herkunft zu.
+    #
+    # 'unsafe-inline' ist noch noetig und bleibt der Schwachpunkt: die
+    # Seiten tragen rund 2900 Zeilen Skript direkt im Markup und
+    # zahlreiche onclick-Attribute. Wandern die nach assets/js/, kann
+    # 'unsafe-inline' ersatzlos entfallen - vorher nicht, sonst
+    # reagiert keine Schaltflaeche mehr.
+    #
+    # setifempty und nicht set: file.php setzt fuer ausgelieferte
+    # Kundendateien eine deutlich strengere eigene Regel
+    # ("default-src 'none'; sandbox"). Ein "Header set" hier wuerde sie
+    # ueberschreiben und damit abschwaechen.
+    Header always setifempty Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'"
+
+    # HSTS: die Demo und das Panel laufen ueber HTTPS, und ein
+    # Rueckfall auf HTTP ist bei einem Anmeldeformular nichts, was man
+    # dem Zufall ueberlassen sollte. Ohne preload und ohne
+    # includeSubDomains - beides bindet laenger, als sich hier
+    # ueberblicken laesst.
+    Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>
+
+# ============================================
+# KOMPRESSION
+# ============================================
+# Betrifft nur Textformate; Bilder, Schriften und PDF sind bereits
+# gepackt und wuerden durch eine zweite Runde nur Rechenzeit kosten.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE text/javascript application/javascript
+    AddOutputFilterByType DEFLATE application/json application/xml
+    AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>
 
 # Zugriff auf .htaccess selbst verweigern

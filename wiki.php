@@ -202,7 +202,7 @@ $page_heading = 'Wiki & Snippets';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '<button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> Neuer Eintrag</button>';
 // Prism-Theme (Code-Highlighting) wird nur hier gebraucht, daher hier statt in head.php.
-$extra_head = '<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />';
+$extra_head = '<link href="' . asset('assets/vendor/prism/prism-tomorrow.min.css') . '" rel="stylesheet" />';
 
 require 'includes/head.php';
 require 'includes/layout_start.php';
@@ -463,11 +463,18 @@ require 'includes/layout_start.php';
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-  <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+  <script src="<?= asset('assets/vendor/prism/prism.min.js') ?>"></script>
+  <!-- markup-templating MUSS vor prism-php stehen: die PHP-Definition
+       baut darauf auf und wirft sonst beim ersten Hervorheben
+       "buildPlaceholders of undefined". Die Abhaengigkeit fehlte hier
+       von Anfang an - der Fehler fiel nicht auf, weil er erst beim
+       Anzeigen eines PHP-Blocks auftritt und dort nur still nicht
+       einfaerbt. -->
+  <script src="<?= asset('assets/vendor/prism/components/prism-markup-templating.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/prism/components/prism-php.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/prism/components/prism-javascript.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/prism/components/prism-css.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/ckeditor/ckeditor.js') ?>"></script>
 
   <script>
     let wikiEditor;
@@ -528,7 +535,7 @@ require 'includes/layout_start.php';
                 let ext = a.file_name.split('.').pop().toLowerCase();
                 let isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
                 
-                let viewBtn = isViewable ? `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" title="Ansehen"><i class="bi bi-eye"></i></a>` : '';
+                let viewBtn = isViewable ? `<a href="file?type=wiki&id=${a.id}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" title="Ansehen"><i class="bi bi-eye"></i></a>` : '';
 
                 assetHtml += `
                 <div class="d-flex align-items-center bg-surface border rounded p-1 pe-2 shadow-sm w-100" id="asset_row_${a.id}">
@@ -573,9 +580,9 @@ require 'includes/layout_start.php';
               
               attHtml += `<div class="btn-group shadow-sm me-2 mb-2">`;
               if (isViewable) {
-                  attHtml += `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary" title=<?= tjs('Im Browser ansehen') ?>><i class="bi bi-eye"></i></a>`;
+                  attHtml += `<a href="file?type=wiki&id=${a.id}" target="_blank" class="btn btn-sm btn-outline-secondary" title=<?= tjs('Im Browser ansehen') ?>><i class="bi bi-eye"></i></a>`;
               }
-              attHtml += `<a href="${a.file_path}" download class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-download me-1"></i> ${a.file_name}</a>`;
+              attHtml += `<a href="file?type=wiki&id=${a.id}&dl=1" download class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-download me-1"></i> ${a.file_name}</a>`;
               attHtml += `</div>`;
           });
           document.getElementById('view_attachments_list').innerHTML = attHtml;

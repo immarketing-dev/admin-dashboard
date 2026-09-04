@@ -1259,6 +1259,10 @@ return [
         => 'Invalid access. Please use the link from your e-mail.',
     'Zugang abgelaufen oder ungültig.'
         => 'Access expired or invalid.',
+    'Kein Zugriff.'
+        => 'No access.',
+    'Datei nicht gefunden.'
+        => 'File not found.',
     'Zugang'
         => 'Access',
     'Hallo %s, geben Sie Ihren Zugangscode ein.'

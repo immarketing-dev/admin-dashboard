@@ -40,13 +40,19 @@ function auth_is_locked(PDO $pdo, string $ip): bool
     // Beschreibung enthaelt die vom Angreifer frei waehlbare E-Mail-
     // Adresse, ein LIKE-Muster darauf liesse sich mit einer praeparierten
     // Adresse im E-Mail-Feld vergiften und eine fremde Adresse sperren.
+    // Die Frist steht als Konstante im Code und wird deshalb eingesetzt,
+    // nicht gebunden. MySQL erwartet hinter INTERVAL einen Zahlenausdruck;
+    // ein gebundener Parameter kommt dort als Zeichenkette an, was mit
+    // echten Prepared Statements (siehe config.php) zur Auslegungssache
+    // wird. Bei der Anmeldesperre ist das der falsche Ort dafuer: faellt
+    // sie aus, laesst sich das Passwort unbegrenzt durchprobieren.
     $stmt = $pdo->prepare(
         "SELECT COUNT(*) FROM logs
           WHERE action_type = 'LOGIN_FAILED'
             AND ip = ?
-            AND created_at > (NOW() - INTERVAL ? MINUTE)"
+            AND created_at > (NOW() - INTERVAL " . (int) AUTH_LOCKOUT_MIN . " MINUTE)"
     );
-    $stmt->execute([$ip, AUTH_LOCKOUT_MIN]);
+    $stmt->execute([$ip]);
 
     return (int) $stmt->fetchColumn() >= AUTH_MAX_ATTEMPTS;
 }
@@ -60,9 +66,9 @@ function auth_note_lockout(PDO $pdo, string $ip): void
         "SELECT COUNT(*) FROM logs
           WHERE action_type = 'SYSTEM_LOCKOUT'
             AND ip = ?
-            AND created_at > (NOW() - INTERVAL ? MINUTE)"
+            AND created_at > (NOW() - INTERVAL " . (int) AUTH_LOCKOUT_MIN . " MINUTE)"
     );
-    $stmt->execute([$ip, AUTH_LOCKOUT_MIN]);
+    $stmt->execute([$ip]);
 
     if ((int) $stmt->fetchColumn() > 0) {
         return;

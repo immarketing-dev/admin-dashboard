@@ -144,7 +144,24 @@ if [ -n "$creds" ]; then
   fail=1
 fi
 
-# --- 3. Unversionierte CDN-Referenzen -----------------------------------
+# --- 3. Keine fremden Herkuenfte im Ladepfad ----------------------------
+# Alle Bibliotheken liegen unter assets/vendor/. Das ist die Voraussetzung
+# fuer die Content-Security-Policy in .htaccess: sie erlaubt ausser der
+# eigenen Herkunft nichts mehr. Schleicht sich wieder eine CDN-Einbindung
+# ein, laedt sie im Betrieb schlicht nicht - und zwar still, weil ein
+# blockiertes Skript keine sichtbare Fehlermeldung erzeugt, sondern nur
+# eine Schaltflaeche, die nicht mehr reagiert.
+extern=$(grep -rnE '(href|src)=["'"'"'][^"'"'"']*//(cdn|cdnjs|fonts\.googleapis|fonts\.gstatic|unpkg|ajax\.googleapis)' . \
+          --include='*.php' --include='*.html' --include='*.js' \
+          "${SCAN_EXCLUDES[@]}" 2>/dev/null)
+if [ -n "$extern" ]; then
+  echo "EXTERN: Einbindung von fremder Herkunft (gehoert nach assets/vendor/):"
+  echo "$extern"
+  fail=1
+fi
+
+# Unversionierte Referenzen bleiben verboten - auch in Kommentaren und
+# Dokumentation, wo sie als Vorlage zum Kopieren dienen koennten.
 cdn=$(grep -rn '@latest' . \
           --include='*.php' --include='*.ini' --include='*.yml' --include='*.yaml' --include='*.conf' \
           "${SCAN_EXCLUDES[@]}" 2>/dev/null)
@@ -174,6 +191,48 @@ for dir in uploads/*/; do
     fail=1
   fi
 done
+
+# --- 4c. Kundenunterlagen sind gesperrt ----------------------------------
+# Die vier Verzeichnisse mit Kundendaten duerfen vom Webserver gar nicht
+# ausgeliefert werden - der einzige Weg hinein ist file.php, das vorher
+# prueft, wer fragt. Eine blosse Anwesenheitspruefung wie oben genuegt
+# hier nicht: die alte .htaccess war vorhanden und sperrte trotzdem nur
+# die PHP-Ausfuehrung, waehrend jede Rechnung als PDF offen im Netz lag.
+for dir in client_assets invoices quotes wiki; do
+  pfad="uploads/$dir/.htaccess"
+  if [ ! -f "$pfad" ]; then
+    echo "UPLOADS: $pfad fehlt - Kundenunterlagen waeren oeffentlich abrufbar."
+    fail=1
+  elif ! grep -q 'Require all denied' "$pfad" || ! grep -q 'Deny from all' "$pfad"; then
+    echo "UPLOADS: $pfad sperrt nicht (erwartet: 'Require all denied' UND 'Deny from all')."
+    fail=1
+  fi
+done
+# --- 4d. Keine direkten Links auf gesperrte Verzeichnisse ---------------
+# Ein href="uploads/invoices/…" umgeht file.php und damit die
+# Zugriffspruefung. Nach der Sperre oben laeuft er ohnehin ins Leere - ein
+# toter Link faellt aber erst dem Kunden auf, dieser Scan schon vorher.
+direkt=$(grep -rnE '(href|src)=("|'"'"'|`)?(\.\./)*uploads/(client_assets|invoices|quotes|wiki)' . \
+           --include='*.php' --include='*.js' "${SCAN_EXCLUDES[@]}" 2>/dev/null)
+if [ -n "$direkt" ]; then
+  echo "UPLOADS: direkter Link auf ein gesperrtes Verzeichnis (file.php benutzen):"
+  echo "$direkt"
+  fail=1
+fi
+
+# --- 4e. Kein overflow-x:hidden am Seitenrumpf ---------------------------
+# "hidden" macht aus dem Rumpf einen eigenen Scroll-Behaelter. Jedes
+# position:sticky darin haelt sich dann an diesem Behaelter fest statt am
+# Sichtfeld - der Seitenkopf und die Filterleiste scrollen wieder mit,
+# ohne dass irgendetwas an ihren eigenen Regeln falsch waere. Der Fehler
+# ist von der Ursache her nicht zu erraten, deshalb dieser Riegel.
+# "clip" schneidet genauso ab und erzeugt keinen Behaelter.
+if grep -nE '^\s*overflow-x:\s*hidden' assets/css/app.css | grep -q .; then
+  echo "CSS: overflow-x:hidden gefunden - bricht position:sticky. 'clip' benutzen:"
+  grep -nE '^\s*overflow-x:\s*hidden' assets/css/app.css
+  fail=1
+fi
+
 # --- 5. Demo-Modus -------------------------------------------------------
 # check_demo prueft die Annahmen des Schreibschutzes (jede POST-Seite
 # gedeckt, kein Schreibzugriff im Anzeigepfad). test_seed_demo laesst die
@@ -219,6 +278,31 @@ if command -v php >/dev/null 2>&1; then
   # also gegen die echten Tabellen samt Fremdschluesseln.
   if ! out=$(php tools/test_task_members.php 2>&1); then
     echo "BETEILIGTE: $out"
+    fail=1
+  fi
+  # Wer welche hochgeladene Datei bekommt. Ein Fehler darin gibt Kunden
+  # die Unterlagen anderer Kunden - und faellt im Betrieb nie auf, weil
+  # niemand die Rechnung sieht, die er faelschlich sehen duerfte.
+  # Das Auffangnetz laeuft nur, wenn ohnehin schon etwas schiefging -
+  # ein Fehler darin ersetzt eine leere Seite durch eine andere.
+  # Platzhalter gegen uebergebene Werte. "php -l" sieht eine Abfrage,
+  # der ein Wert fehlt, nicht - sie ist syntaktisch tadellos und faellt
+  # erst zur Laufzeit auf, mitten im Speichern.
+  if ! out=$(php tools/check_placeholders.php 2>&1); then
+    echo "PLATZHALTER: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_errors.php 2>&1); then
+    echo "FEHLERSEITE: $out"
+    fail=1
+  fi
+  # Rechnungspositionen und Summen - hier wird mit Geld gerechnet.
+  if ! out=$(php tools/test_invoice_items.php 2>&1); then
+    echo "POSITIONEN: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_file_access.php 2>&1); then
+    echo "DATEIZUGRIFF: $out"
     fail=1
   fi
   if ! out=$(php tools/test_seed_demo.php 2>&1); then

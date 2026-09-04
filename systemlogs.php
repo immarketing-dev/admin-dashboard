@@ -70,8 +70,11 @@ if ($log_search) {
     $params[] = "%$log_search%"; $params[] = "%$log_search%"; $params[] = "%$log_search%";
 }
 if ($log_range !== 'all') {
-    $where[]  = 'created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-    $params[] = (int)$log_range;
+    // Eingesetzt statt gebunden, weil MySQL hinter INTERVAL einen
+    // Zahlenausdruck erwartet und ein gebundener Wert dort als
+    // Zeichenkette ankommt. Der Wert stammt aus der Adresszeile, wird
+    // hier aber auf int gecastet - damit steht nur eine Zahl im SQL.
+    $where[]  = 'created_at >= DATE_SUB(NOW(), INTERVAL ' . (int) $log_range . ' DAY)';
 }
 $wsql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
 

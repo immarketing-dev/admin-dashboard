@@ -55,4 +55,4 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 <?php endif; ?>
 
 <?php require __DIR__ . "/search_overlay.php"; ?>
-<script src="assets/js/search.js" defer></script>
+<script src="<?= asset('assets/js/search.js') ?>" defer></script>

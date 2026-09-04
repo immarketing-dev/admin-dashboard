@@ -9,7 +9,154 @@ private history.
 ## [Unreleased]
 
 ### Added
-- **Draggable dashboard.** The eleven widgets on the start page sat in four
+- **Invoices keep their line items.** `invoice.php` took them by POST,
+  printed them into the PDF and threw them away — `finances` held a single
+  `amount`. The PDF was the only place the breakdown existed at all, so an
+  invoice could not be corrected, its PDF not regenerated, and VAT not
+  evaluated. An e-invoice (XRechnung, ZUGFeRD) was impossible outright:
+  that needs the items individually and machine-readable.
+
+  Schema version 8 adds `items` (JSON), `tax_type`, `net_amount` and
+  `tax_amount` to `finances`, in exactly the format quotes already use, so
+  converting a quote to an invoice now carries the breakdown across instead
+  of losing it. Existing invoices keep `net_amount` NULL rather than having
+  it back-filled from `amount` — an invented net sum would be worse than
+  none, because an evaluation could not tell it from a real one.
+
+  The arithmetic moved into `includes/invoice_items.php`, which the PDF, the
+  totals and the database row now share; previously the PDF loop computed
+  the net sum as a side effect of printing, so the number existed only while
+  the document was being drawn. Rounding is applied to the tax, not to the
+  gross, so the printed tax is exactly the difference between the two
+  printed sums. An unknown tax type yields no tax rather than a guessed 19 %.
+  26 checks in `tools/test_invoice_items.php`.
+
+- **`tools/check_placeholders.php`** counts `?` placeholders against the
+  values passed to `execute()`. `php -l` cannot see a query that lost a
+  value — it is syntactically perfect and fails at runtime, mid-save. It
+  found a real one immediately: the quote-to-invoice conversion in
+  `quotes.php`, which this same change had just given four more columns
+  without extending its parameter list. It reads the value list
+  bracket-aware rather than by regex; a non-greedy `.*?\]` stops at the
+  first `])`, which already occurs inside `trim($_POST['x'])` mid-list and
+  produced four false reports.
+
+### Security- **Every library is served from the panel itself now, and a
+  Content-Security-Policy enforces it.** Bootstrap, Bootstrap Icons,
+  Chart.js, Prism, SortableJS, Gridstack, qrcode.js and CKEditor came from
+  four foreign origins on every page load, none of them with an
+  `integrity` hash — a compromised CDN meant arbitrary code running inside
+  an authenticated admin session. Chart.js was pulled without any version
+  at all, so two deploys could get different releases.
+
+  All of it lives under `assets/vendor/` (2.4 MB, committed), Chart.js
+  pinned at 4.4.1. Google Fonts moved too: loading them from
+  `fonts.googleapis.com` sent every visitor's IP address — in the client
+  portal, the *customers'* IP addresses — to a third party outside the EU,
+  for five files that now sit in `assets/vendor/fonts/`.
+
+  Only with nothing left to load externally does a CSP become possible:
+  `default-src 'self'`, with `connect-src`, `img-src` and `form-action`
+  limited to the same origin. Its value is less in preventing XSS —
+  escaping does that — than in cutting off the exit: injected code has
+  nowhere to send what it reads. `'unsafe-inline'` is still required and
+  remains the weak spot; roughly 2900 lines of inline script and the
+  `onclick` attributes have to move to `assets/js/` before it can go.
+
+  It is set with `Header always setifempty`, not `set`, so it cannot
+  overwrite the much stricter policy `file.php` sends with customer
+  documents (`default-src 'none'; sandbox`).
+
+  Verified with Playwright against a real HTTP server under that exact
+  policy: all ten library checks pass, both font families load locally,
+  and there are no CSP violations.
+
+- **HSTS is on** (`max-age=31536000`, without `preload` or
+  `includeSubDomains` — both commit longer than is sensible here), and
+  responses are compressed via `mod_deflate`.
+
+### Fixed
+- **PHP code was never syntax-highlighted in the wiki or the portal.**
+  Prism's PHP grammar builds on `markup-templating`, which was never
+  loaded — the first `highlightElement` on a PHP block threw
+  "buildPlaceholders of undefined". It failed silently, because an
+  uncoloured code block still looks like a code block. Found while
+  verifying the libraries under CSP.
+
+### Added
+- **Static assets are cached for a year** instead of being re-fetched on
+  every page load — 2.4 MB of libraries plus a 57 kB stylesheet, noticeable
+  on a phone connection. That is only safe because every reference now
+  carries a timestamp: `asset()` in `config.php` appends `?v=<filemtime>`,
+  so a changed file has a changed address. The rules sit in a separate
+  `assets/.htaccess`; in the root one they would also have hit the PHP
+  responses, which carry session content.
+- **The page header and the filter bar stay put while scrolling**, on every
+  page and at every width. Both were part of the normal flow, so on a long
+  list the page title, its buttons, the global search and the whole filter
+  row scrolled out of sight — and filtering a list meant scrolling back to
+  the top first.
+
+  The header comes from `includes/layout_start.php`, which all twelve pages
+  use, and the filter bar is one shared `.filter-bar` class across the seven
+  pages that have one, so this is two rules in `app.css` rather than a change
+  per page. Pages without a filter bar (dashboard, board, calendar, settings,
+  trash) keep the sticky header; `board.php` and `calendar.php` carry their
+  search and month navigation in `$header_actions`, so those ride along.
+
+  Two details made it work. `body` had `overflow-x: hidden`, which turns the
+  body into its own scroll container — every `position: sticky` inside then
+  anchors to that container instead of the viewport and scrolls away anyway.
+  It is `overflow-x: clip` now, which clips the same way without creating a
+  container, and `tools/check.sh` rejects a relapse, because the symptom
+  gives no hint of the cause. And the filter bar has to latch below a header
+  whose height is not knowable in CSS — it wraps to two or three rows on a
+  phone, and changes again when the sidebar collapses or the fonts finish
+  loading. `assets/js/sticky-header.js` measures it with a `ResizeObserver`
+  and writes `--header-height`; the token carries a single-row default for
+  the moment before the script runs.
+
+  Verified with Playwright against the real stylesheets at 1280×800 and
+  375×667: after scrolling, the header sits at viewport top, the filter bar
+  exactly `--header-height + 12px` below it, and `elementFromPoint` hits
+  both rather than content showing through.
+
+### Security- **Uploaded files are no longer served directly.** Everything under
+  `uploads/` was delivered by the web server to anyone who knew the path.
+  For invoices the path did not even have to be guessed: they were named
+  `Rechnung_RE-2026-001.pdf`, so counting from 001 upwards handed out every
+  invoice of every customer — name, address and amount. Project files and
+  wiki attachments (contracts, powers of attorney) were reachable the same
+  way, protected only by a timestamp in the filename.
+
+  The four directories holding customer data — `client_assets`, `invoices`,
+  `quotes` and `wiki` — now deny web access outright, and `file.php` is the
+  only way in. It resolves a database id rather than a path and asks
+  `includes/file_access.php` who may see it, applying exactly the rule the
+  client portal already uses for its lists: project files go to everyone on
+  the project (`task_contacts`), invoices and quotes to the contact they are
+  addressed to, quote drafts to nobody, and wiki attachments only for
+  articles explicitly shared with that contact. A request that fails the
+  check gets the same 404 as a missing file, so the response cannot be used
+  to count how many invoices exist.
+
+  `uploads/logos` and `uploads/favicons` stay public on purpose — the login
+  page shows them before anyone has authenticated.
+
+  Anything the browser might interpret as HTML now goes out as a download
+  with `application/octet-stream`, never inline. The files come from the
+  same origin as the panel, so a script inside one would run with the
+  session of whoever opened it. Uploads reject SVG already; this keeps the
+  decision correct even if that list ever grows.
+
+  Three checks keep it that way: `tools/test_file_access.php` (21 access
+  cases plus 10 delivery cases, run against the SQLite mirror of the real
+  schema), a `tools/check.sh` rule that the four `.htaccess` files actually
+  deny rather than merely exist — the old ones were present and still only
+  blocked PHP execution — and a scan for `href="uploads/…"` links that would
+  bypass `file.php`.
+
+### Added- **Draggable dashboard.** The eleven widgets on the start page sat in four
   fixed Bootstrap rows; they now sit in a twelve-column Gridstack grid and
   can be moved and resized with the mouse. Drag by the widget title bar, or
   by a slim grip in the top padding for the five widgets that have no title
