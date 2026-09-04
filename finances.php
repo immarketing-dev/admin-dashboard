@@ -551,7 +551,6 @@ $page_heading = $active_tab === 'quotes' ? 'Angebote' : 'Finanz-Zentrale';
 $current_page = basename($_SERVER['PHP_SELF']);
 // Vier Buttons im Header (CSV/Rechnung/Ausgabe/Einnahme) brauchen Zeilenumbruch
 // auf schmalen Screens - im Original war das die Klasse "top-header flex-wrap".
-$header_class = 'flex-wrap';
 if ($active_tab === 'quotes') {
     $header_actions = '
       <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#quoteModal" onclick="prepareNewQuote()">
@@ -560,10 +559,10 @@ if ($active_tab === 'quotes') {
 } else {
     $header_actions = '
       <div class="d-flex gap-2">
-          <a href="?export=csv" class="btn btn-outline-dark btn-sm shadow-sm fw-bold px-3"><i class="bi bi-filetype-csv"></i> CSV</a>
-          <button class="btn btn-primary btn-sm shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#invoiceModal"><i class="bi bi-file-earmark-plus"></i> Rechnung erstellen</button>
-          <button class="btn btn-outline-danger btn-sm shadow-sm" onclick="openFinanceModal(\'EXPENSE\')"><i class="bi bi-dash-circle"></i> Ausgabe</button>
-          <button class="btn btn-outline-success btn-sm shadow-sm" onclick="openFinanceModal(\'INCOME\')"><i class="bi bi-plus-circle"></i> Einnahme</button>
+          <a href="?export=csv" class="btn btn-outline-secondary btn-sm fw-bold px-3"><i class="bi bi-filetype-csv"></i> <span class="btn-label">CSV</span></a>
+          <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#invoiceModal"><i class="bi bi-file-earmark-plus"></i> Rechnung <span class="btn-label-xs">erstellen</span></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="openFinanceModal(\'EXPENSE\')"><i class="bi bi-dash-circle"></i> <span class="btn-label">Ausgabe</span></button>
+          <button class="btn btn-outline-success btn-sm" onclick="openFinanceModal(\'INCOME\')"><i class="bi bi-plus-circle"></i> <span class="btn-label">Einnahme</span></button>
       </div>';
 }
 // Chart.js wird nur hier gebraucht, daher hier statt in head.php.
@@ -654,7 +653,7 @@ require 'includes/layout_start.php';
     </div>
 
     <!-- Filter -->
-    <div class="bg-surface p-3 rounded shadow-sm d-flex gap-2 align-items-center flex-wrap mb-4">
+    <div class="filter-bar">
       <?php $q_statuses = ['all'=>'Alle','Entwurf'=>'Entwurf','Gesendet'=>'Gesendet','Angenommen'=>'Angenommen','Abgelehnt'=>'Abgelehnt']; ?>
       <?php foreach($q_statuses as $val => $label): ?>
         <a href="finances?tab=quotes&qstatus=<?= $val ?>" class="btn btn-sm <?= $filter_status_q === $val ? 'btn-primary' : 'btn-outline-secondary' ?>"><?= $label ?></a>
@@ -780,10 +779,10 @@ require 'includes/layout_start.php';
         <canvas id="financeChart" style="max-height: 250px;"></canvas>
     </div>
 
-    <form class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
+    <form class="filter-bar">
         <input type="hidden" name="period" value="<?= $period ?>">
         
-        <div class="input-group input-group-sm w-auto search-box">
+        <div class="input-group input-group-sm search-box">
             <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
             <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suchen..." value="<?=htmlspecialchars($search_query)?>">
         </div>

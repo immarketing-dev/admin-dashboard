@@ -85,8 +85,45 @@ h1, h2, h3, h4, h5, h6, .brand, .widget-title {
 .sidebar .nav-link .sidebar-badge { margin-left: auto; }
 
 .main-content { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); min-height: 100vh; padding: var(--space-7); transition: 0.3s; display: flex; flex-direction: column; background: var(--surface-page); }
-.top-header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); background: var(--surface-card); padding: var(--space-4) var(--space-6); border-radius: var(--radius-lg); box-shadow: var(--elev-rest); }
-.top-header h2 { margin: 0; font-weight: 600; font-size: var(--text-xl); color: var(--text-heading); display: flex; align-items: center; gap: var(--space-4); }
+.top-header {
+    display: flex; flex-wrap: wrap;
+    justify-content: space-between; align-items: center;
+    gap: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-6);
+    background: var(--surface-card);
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elev-rest);
+}
+/* Der Titel darf schrumpfen (min-width:0), damit er die Aktionen nicht
+   aus dem Kopf hinausdraengt - ohne das wurde "Projekte & Aufgaben" auf
+   schmalen Geraeten dreizeilig, waehrend die Knoepfe ueber die Kante
+   hinausragten. */
+.top-header h2 {
+    margin: 0; font-weight: 600; font-size: var(--text-xl);
+    color: var(--text-heading);
+    display: flex; align-items: center; gap: var(--space-4);
+    flex: 1 1 auto; min-width: 0;
+}
+
+/* Aktionsbereich im Seitenkopf. includes/layout_start.php legt diesen
+   Rahmen um $header_actions - die Seiten selbst muessen nichts tun. */
+.header-actions {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: var(--space-2);
+    flex: 0 1 auto; min-width: 0;
+}
+/* Gruppen, welche die Seiten selbst mitbringen, muessen ebenfalls
+   umbrechen duerfen. Sonst brach zwar der Kopf um, die Gruppe darin aber
+   nicht, und ein Knopf ragte weiter hinaus - genau der Fall auf
+   finances.php, das als einzige Seite schon flex-wrap gesetzt hatte. */
+.header-actions .d-flex { flex-wrap: wrap; }
+/* Ein Knopf bricht als Ganzes um, nie seine Beschriftung. */
+.header-actions .btn { white-space: nowrap; }
+/* Ein Suchfeld im Kopf nimmt den freien Platz, gibt ihn aber her,
+   bevor der Knopf daneben umbricht. */
+.header-actions .search-box { flex: 1 1 180px; min-width: 0; }
+.btn-label { display: inline; }
 
 .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--overlay-scrim); z-index: 1040; transition: 0.3s; opacity: 0;}
 .sidebar-overlay.active { display: block; opacity: 1;}
@@ -620,6 +657,45 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 /* Logbuch: Kontaktaktionen. Hiess vorher .bg-purple und war der letzte
    Rest der alten Dekorpalette - jetzt die Markenfarbe. */
 .log-badge-contact { background-color: var(--color-primary); color: var(--text-invert); }
+
+/* =========================================================
+   FILTERLEISTE
+   ---------------------------------------------------------
+   Stand auf fuenf Seiten als identische Utility-Kette
+   ("bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2
+   align-items-center mb-4") im Markup. Als Komponente laesst
+   sich ihr Verhalten auf schmalen Geraeten an einer Stelle
+   regeln statt fuenfmal.
+   ========================================================= */
+.filter-bar {
+    background: var(--surface-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elev-rest);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: var(--space-3);
+}
+/* Das Suchfeld nimmt den freien Platz, gibt ihn aber wieder her, sobald
+   es eng wird - min-width:0 hebt die Vorgabe auf, mit der ein Flex-Kind
+   sonst nie unter seine Inhaltsbreite schrumpft. Ohne das wurde der
+   Platzhaltertext abgeschnitten statt das Feld schmaler zu werden. */
+.filter-bar .search-box,
+.filter-bar .input-group { flex: 1 1 260px; min-width: 0; max-width: 420px; }
+.filter-bar .form-select,
+.filter-bar .form-control { min-width: 0; }
+.filter-bar .btn { white-space: nowrap; }
+
+@media (max-width: 576px) {
+    .filter-bar { gap: var(--space-2); padding: var(--space-3); }
+    /* Ganze Zeile fuer die Suche - die Deckelung von oben faellt hier weg. */
+    .filter-bar .search-box,
+    .filter-bar .input-group { flex: 1 1 100%; max-width: none; }
+    /* Zwei Auswahlfelder teilen sich eine Zeile. */
+    .filter-bar > div:has(> .form-select),
+    .filter-bar > .form-select { flex: 1 1 calc(50% - var(--space-2)); }
+    .filter-bar .btn { flex: 1 1 auto; }
+}
 /* =========================================
    RESPONSIVE DESIGN (Smartphones & Tablets)
    ========================================= */
@@ -638,8 +714,13 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 @media (max-width: 768px) {
     .task-header-row { flex-direction: column !important; }
     .action-buttons { margin-top: var(--space-4); width: 100%; justify-content: flex-start; }
-    .top-header h2 { font-size: 18px; }
-    .top-header .d-flex { width: 100%; justify-content: space-between; margin-top: var(--space-4); }
+    /* Titel auf eine eigene Zeile, Aktionen darunter ueber die volle
+       Breite. Vorher setzte eine Regel nur "width:100%" auf ein direktes
+       .d-flex-Kind: das traf die Seiten nicht, deren Aktion ein blanker
+       <button> ist, und erlaubte keinen Umbruch. */
+    .top-header { padding: var(--space-4); }
+    .top-header h2 { font-size: 18px; flex: 1 1 100%; }
+    .header-actions { flex: 1 1 100%; }
 }
 
 /* =========================================================
@@ -748,4 +829,25 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
         transition-duration: .001ms !important;
         scroll-behavior: auto !important;
     }
+}
+
+/* =========================================================
+   Sehr schmale Geraete: Nebenaktionen im Seitenkopf zeigen nur
+   ihr Icon. Die Hauptaktion (.btn-primary) behaelt ihre
+   Beschriftung - sonst muss man raten, was der Knopf tut.
+   Die Beschriftung wird per <span class="btn-label"> gekennzeichnet;
+   ein Knopf ohne diesen span behaelt seinen Text immer (etwa
+   "Heute" im Kalender, das gar kein Icon hat).
+   ========================================================= */
+@media (max-width: 480px) {
+    .header-actions .btn:not(.btn-primary) .btn-label { display: none; }
+    .header-actions .btn:not(.btn-primary) {
+        padding-left: 10px; padding-right: 10px;
+    }
+    .header-actions .btn:not(.btn-primary) i { margin-right: 0 !important; }
+    /* Auch die Hauptaktion darf einen entbehrlichen Teil ihrer
+       Beschriftung ablegen: "Rechnung erstellen" wird zu "Rechnung".
+       Ohne das passt die vierte Schaltflaeche auf finances.php nicht
+       mehr in dieselbe Zeile und faellt allein darunter. */
+    .header-actions .btn-label-xs { display: none; }
 }

@@ -387,8 +387,8 @@ $page_heading = 'Projekte & Aufgaben';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
       <div class="d-flex gap-2">
-          <a href="board" class="btn btn-outline-primary btn-sm shadow-sm fw-bold"><i class="bi bi-kanban"></i> Boardansicht</a>
-          <button class="btn btn-primary btn-sm shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addTaskModal"><i class="bi bi-plus-lg"></i> Neues Projekt</button>
+          <a href="board" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-kanban"></i> <span class="btn-label">Boardansicht</span></a>
+          <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addTaskModal"><i class="bi bi-plus-lg"></i> Neues Projekt</button>
       </div>';
 $extra_head = <<<'CSS'
   <style>
@@ -424,7 +424,7 @@ require 'includes/layout_start.php';
     ?>
     <div class="row mb-4">
         <div class="col-12">
-            <form method="GET" action="tasks" class="bg-surface p-3 rounded shadow-sm">
+            <form method="GET" action="tasks" class="filter-bar d-block">
 
                 <!-- Search bar + mobile collapse toggle -->
                 <div class="d-flex gap-2 align-items-center">

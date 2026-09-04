@@ -373,7 +373,7 @@ $header_actions = '
           <span id="live_dot" style="width:7px;height:7px;border-radius:50%;background:var(--accent-success);display:inline-block;"></span>
           <span id="live_label">Live</span>
         </span>
-        <a href="tasks" class="btn btn-outline-primary btn-sm shadow-sm fw-bold"><i class="bi bi-card-list"></i> Zu den Projekten</a>
+        <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Zu den Projekten</span></a>
       </div>';
 $extra_head = <<<'CSS'
 CSS;

@@ -525,7 +525,7 @@ $page_title   = 'Angebote';
 $page_heading = 'Angebote';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
-    <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#quoteModal" onclick="prepareNewQuote()">
+    <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#quoteModal" onclick="prepareNewQuote()">
       <i class="bi bi-plus-lg me-1"></i> Neues Angebot
     </button>';
 
@@ -583,7 +583,7 @@ require 'includes/layout_start.php';
   </div>
 
   <!-- Filter -->
-  <div class="bg-surface p-3 rounded shadow-sm d-flex gap-2 align-items-center flex-wrap mb-4">
+  <div class="filter-bar">
     <?php $statuses = ['all'=>'Alle','Entwurf'=>'Entwurf','Gesendet'=>'Gesendet','Angenommen'=>'Angenommen','Abgelehnt'=>'Abgelehnt']; ?>
     <?php foreach($statuses as $val => $label): ?>
       <a href="quotes?status=<?= $val ?>" class="btn btn-sm <?= $filter_status === $val ? 'btn-primary' : 'btn-outline-secondary' ?>"><?= $label ?></a>

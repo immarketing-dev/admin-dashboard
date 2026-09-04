@@ -57,6 +57,15 @@ private history.
 - A visible keyboard focus ring on links, buttons and navigation items.
   Bootstrap suppresses the browser default in several places and nothing
   replaced it. `prefers-reduced-motion` is now honoured.
+- `.header-actions` and `.filter-bar` components. `includes/layout_start.php`
+  now wraps `$header_actions` itself, so pages supply buttons rather than
+  their arrangement, and the filter bar replaces a utility string that had
+  been copied verbatim onto five pages. Wrapping, spacing and narrow-screen
+  behaviour are defined once instead of eleven times.
+- `.btn-label` and `.btn-label-xs` mark the parts of a button caption that
+  may be dropped below 480px. Secondary header actions fall back to their
+  icon; the primary action keeps its wording, because an unlabelled primary
+  button is a guess.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -94,6 +103,17 @@ private history.
 - The page-local `<style>` blocks of the dashboard and the calendar moved
   into `assets/css/app.css`. Both defined component styles that the rest of
   the application had no way to reuse.
+- The page header now defines how it behaves when it runs out of room. The
+  heading may shrink (`min-width: 0`) instead of being squeezed into three
+  lines while the buttons spill past the edge, and below 768px the actions
+  move onto their own full-width row under the title.
+- Header buttons are one size (`btn-sm`) and take their elevation from the
+  card they sit on. `shadow-sm` was set on some and not others.
+- Filter bars no longer carry per-page inline widths (`flex-grow`,
+  `min-width`, `max-width`). Those overrode the stylesheet and were what
+  stopped the search field from shrinking; the width cap now lives in the
+  component. On `contacts.php` the search field also sat inside a wrapper
+  `<div>`, so the component's rules never reached the flex child at all.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.
@@ -185,3 +205,12 @@ private history.
   height now follows \`100dvh\` so it tracks the mobile address bar, and
   \`transition: all\` is narrowed to the properties that actually change,
   which kept the height from animating as that bar slid in and out.
+- Four page headers overflowed horizontally on a phone: the calendar by 67px
+  at 360px wide, projects by 47px, finances by 40px, the dashboard by 5px.
+  `finances.php` overflowed even though it was the one page that already set
+  `flex-wrap` — the header wrapped, but the button group inside it did not,
+  so a button still crossed the edge. Verified from 320px to 1440px.
+- `btn-outline-dark` was the only button variant without a dark-theme rule,
+  leaving a dark border and dark text on a dark surface: the CSV export
+  button in the finance header was invisible. The three places that used it
+  now use `btn-outline-secondary`, which has one.

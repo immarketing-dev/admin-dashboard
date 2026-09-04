@@ -139,15 +139,15 @@ $page_title   = 'System-Logs';
 $page_heading = 'System-Logs';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
-      <div class="header-actions d-flex gap-2">
+      <div class="d-flex gap-2">
         <form action="systemlogs" method="POST" style="margin: 0;">
           ' . csrf_field() . '
           <input type="hidden" name="action" value="export_logs">
-          <button type="submit" class="btn btn-success"><i class="bi bi-download"></i> <span class="d-none d-md-inline">Als .txt exportieren</span></button>
+          <button type="submit" class="btn btn-success btn-sm fw-bold"><i class="bi bi-download"></i> <span class="btn-label">Als .txt exportieren</span></button>
         </form>
 
-        <button type="button" class="btn btn-outline-danger" onclick="triggerClearLogs()">
-            <i class="bi bi-trash3" style="pointer-events:none;"></i> <span class="d-none d-md-inline">Logs leeren</span>
+        <button type="button" class="btn btn-outline-danger btn-sm fw-bold" onclick="triggerClearLogs()">
+            <i class="bi bi-trash3" style="pointer-events:none;"></i> <span class="btn-label">Logs leeren</span>
         </button>
       </div>';
 $extra_head = <<<'CSS'
