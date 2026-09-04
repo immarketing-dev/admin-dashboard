@@ -124,9 +124,9 @@ function nach_sqlite(string $sql): array
 }
 
 /**
- * PDO-Aufsatz, der die drei MySQL-eigenen Anweisungen des Seeds
- * übersetzt. Der Seed selbst bleibt dadurch frei von Rücksichten auf
- * diese Spiegelung.
+ * PDO-Aufsatz, der die MySQL-eigenen Anweisungen uebersetzt, die hier
+ * vorkommen. Der gespiegelte Code bleibt dadurch frei von Ruecksichten
+ * auf diese Spiegelung - er soll so laufen wie im Betrieb.
  */
 class SqliteSpiegelPDO extends PDO
 {
@@ -143,6 +143,10 @@ class SqliteSpiegelPDO extends PDO
             $query = preg_replace('/\s*ON DUPLICATE KEY UPDATE.*$/is', '', $query);
             $query = preg_replace('/^\s*INSERT INTO/i', 'INSERT OR REPLACE INTO', $query);
         }
+        // MySQL schreibt INSERT IGNORE, SQLite INSERT OR IGNORE - beide
+        // ueberspringen eine Zeile, die einen eindeutigen Schluessel
+        // verletzen wuerde.
+        $query = preg_replace('/^\s*INSERT\s+IGNORE\s+INTO/i', 'INSERT OR IGNORE INTO', $query);
         return parent::prepare($query, $options);
     }
 }

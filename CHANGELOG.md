@@ -186,6 +186,29 @@ private history.
   Older entries were previously unreachable: the page showed the newest N
   and nothing else.
 ### Changed
+- **Project participants are picked with checkboxes.** Both places that
+  choose them did it differently: the edit dialog had a
+  `<select multiple size="5">` with the note "hold Ctrl or ⌘ to select
+  several" — unusable on a touchscreen, where one tap discards the whole
+  selection — and the "Beteiligte am Projekt" dialog had a list with an X
+  per row plus a dropdown to add one person at a time, each a separate
+  save and page reload.
+
+  Both now share one checkbox list from `includes/task_members.php`, with
+  a search field above it that filters in the browser. The main contact is
+  ticked and locked, labelled as such, and the lock follows along when the
+  customer is changed in the edit dialog. The participants dialog saves
+  the whole selection in one submission (`set_task_contacts`) instead of
+  one change at a time.
+
+  The reconciliation — compare wanted against current, keep existing rows
+  so `added_at` survives, fix the roles — moved into
+  `task_members_abgleichen()` and is shared by both handlers rather than
+  written twice. `add_task_contact` and `remove_task_contact` are gone.
+  `tools/test_task_members.php` runs it against the SQLite mirror of the
+  real schema: changing the main contact, unselectable main contact,
+  duplicate and unusable ids, and that two projects do not affect each
+  other.
 - **The global search sits with the other header buttons.** It used to be
   its own child of the page header, between the title and the action
   buttons. On narrow screens the title and the actions each claim a full

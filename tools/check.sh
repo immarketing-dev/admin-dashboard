@@ -215,6 +215,12 @@ if command -v php >/dev/null 2>&1; then
     echo "FILTER: $out"
     fail=1
   fi
+  # Der Abgleich der Projektbeteiligten laeuft gegen den SQLite-Spiegel,
+  # also gegen die echten Tabellen samt Fremdschluesseln.
+  if ! out=$(php tools/test_task_members.php 2>&1); then
+    echo "BETEILIGTE: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_seed_demo.php 2>&1); then
     echo "SEED: $out"
     fail=1

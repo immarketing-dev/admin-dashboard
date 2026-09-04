@@ -739,6 +739,67 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     .filter-bar > .form-select { flex: 1 1 calc(50% - var(--space-2)); }
     .filter-bar .btn { flex: 1 1 auto; }
 }
+
+/* =========================================================
+   BETEILIGTEN-AUSWAHL (Projekte)
+   ---------------------------------------------------------
+   Ersetzt ein <select multiple>, das gedrueckte Strg-Taste verlangte und
+   auf einem Berührungsbildschirm gar nicht zu bedienen war: ein Tipp
+   verwarf dort die gesamte bisherige Auswahl. Markup in
+   includes/task_members.php, beide Fenster benutzen dasselbe.
+   ========================================================= */
+.member-picker {
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    overflow: hidden;
+}
+.member-filter {
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: 0;
+    background: var(--surface-subtle);
+}
+.member-filter:focus { box-shadow: none; border-bottom-color: var(--color-primary); }
+
+/* Feste Hoehe statt mitwachsender Liste: das Fenster darueber soll nicht
+   je nach Anzahl der Kontakte eine andere Groesse haben. */
+.member-list { max-height: 240px; overflow-y: auto; }
+
+.member-row {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: 7px var(--space-3);
+    margin: 0;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.member-row:last-child { border-bottom: 0; }
+.member-row:hover { background: var(--surface-subtle); }
+.member-row input { flex: 0 0 auto; margin: 0; cursor: pointer; }
+
+.member-text { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.member-name { font-weight: 600; color: var(--text-strong); font-size: var(--text-sm-plus); }
+.member-meta { color: var(--text-muted); font-size: var(--text-2xs); }
+
+/* Der Hauptansprechpartner ist gesetzt, nicht gewaehlt - das Kaestchen
+   ist gesperrt, und die Zeile sagt warum. */
+.member-row.is-owner { background: var(--accent-soft); cursor: default; }
+.member-row.is-owner input { cursor: not-allowed; }
+.member-owner-tag {
+    flex: 0 0 auto;
+    font-size: var(--text-2xs);
+    color: var(--color-primary);
+    background: var(--surface-card);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    padding: 1px 6px;
+    white-space: nowrap;
+}
+
+/* Angehakt bleibt auch beim Filtern sichtbar; die leichte Faerbung macht
+   die eigene Auswahl in einer langen Liste auffindbar. */
+.member-row.is-checked .member-name { color: var(--color-primary); }
+
 /* =========================================
    RESPONSIVE DESIGN (Smartphones & Tablets)
    ========================================= */
