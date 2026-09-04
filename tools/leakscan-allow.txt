@@ -1,0 +1,24 @@
+# Bewusst oeffentliche Zeichenketten
+#
+# Der Leak-Scan in tools/check.sh vergleicht das Repository gegen
+# tools/leakscan-local.txt - eine lokale Liste von Kennzeichen der privaten
+# Installation (Datenbankbenutzer, Hostnamen, Adressen), die niemals in eine
+# versionierte Datei geraten duerfen.
+#
+# Einzelne dieser Zeichenketten sollen aber sehr wohl oeffentlich sein. Sie
+# stehen hier, nicht in der lokalen Liste: eine Ausnahme dort wuerde den
+# Schutz still aufweichen und niemandem auffallen. Hier ist sie versioniert,
+# im Diff sichtbar und mit Begruendung.
+#
+# Eine Fundstelle wird nur dann durchgelassen, wenn nach dem Entfernen der
+# hier genannten Zeichenketten kein verbotener Ausdruck mehr uebrig bleibt.
+# Eine Zeile, die daneben noch ein echtes Kennzeichen enthaelt, faellt also
+# weiterhin auf.
+#
+# Format: eine Zeichenkette je Zeile. # leitet einen Kommentar ein.
+
+# Die oeffentliche Demo. Sie ist zum Verteilen gedacht, und die README
+# verlinkt sie bewusst - das ist der Zweck eines Portfolio-Repositories.
+# Die Adresse ist ohnehin nicht geheim: jedes Zertifikat einer Subdomain
+# steht in den oeffentlichen Certificate-Transparency-Protokollen.
+admin.david-imminger.de/demo

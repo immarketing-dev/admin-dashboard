@@ -75,6 +75,35 @@ if [ -f "$LOCAL_LEAKLIST" ]; then
   FORBIDDEN=$(grep -v '^[[:space:]]*#' "$LOCAL_LEAKLIST" | grep -v '^[[:space:]]*$' | paste -sd'|' -)
   if [ -n "$FORBIDDEN" ]; then
     hits=$(grep -rniE "$FORBIDDEN" . "${SCAN_EXCLUDES[@]}" --exclude="$(basename "$LOCAL_LEAKLIST")" 2>/dev/null)
+
+    # Bewusst oeffentliche Zeichenketten herausnehmen - etwa die Adresse der
+    # oeffentlichen Demo, die die README absichtlich verlinkt. Die Liste ist
+    # versioniert (tools/leakscan-allow.txt), damit eine Ausnahme im Diff
+    # sichtbar ist statt still in der lokalen Liste zu verschwinden.
+    #
+    # Eine Fundstelle faellt nur dann weg, wenn nach dem Entfernen der
+    # freigegebenen Zeichenketten kein verbotener Ausdruck mehr uebrig ist.
+    # Eine Zeile, die daneben noch ein echtes Kennzeichen traegt, bleibt.
+    ALLOWLIST="tools/leakscan-allow.txt"
+    if [ -n "$hits" ] && [ -f "$ALLOWLIST" ]; then
+      allow_lines=$(grep -v '^[[:space:]]*#' "$ALLOWLIST" | grep -v '^[[:space:]]*$')
+      if [ -n "$allow_lines" ]; then
+        gefiltert=""
+        while IFS= read -r zeile; do
+          [ -z "$zeile" ] && continue
+          rest="$zeile"
+          while IFS= read -r erlaubt; do
+            [ -z "$erlaubt" ] && continue
+            rest=${rest//"$erlaubt"/}
+          done <<< "$allow_lines"
+          if printf '%s' "$rest" | grep -qiE "$FORBIDDEN"; then
+            gefiltert="${gefiltert}${zeile}"$'\n'
+          fi
+        done <<< "$hits"
+        hits=$(printf '%s' "$gefiltert")
+      fi
+    fi
+
     if [ -n "$hits" ]; then
       echo "LEAK: Identifikator der privaten Installation gefunden:"
       echo "$hits"

@@ -1,41 +1,52 @@
 # Screenshots
 
-This directory is currently empty. The main `README.md` does not embed any
-screenshot yet, on purpose — there is no web server, database or browser
-available in the environment this repository was prepared in, so no image
-could be produced or verified here. An embedded image that doesn't exist
-is the first thing a visitor to the repository would see on GitHub, so
-nothing is linked until the files below actually exist.
+## Never capture from an installation holding real customer data
 
-## Never capture screenshots from an installation holding real customer data
-
-Take these screenshots only against an instance loaded with
-`install/seed_demo.sql` — fictional contacts, projects and invoices on
-reserved example domains. Never against a production database. A
-screenshot is a permanent, public artifact; a customer name, e-mail
+Capture only against a demo instance — fictional contacts, projects and
+invoices on reserved example domains. Never against a production database.
+A screenshot is a permanent, public artifact; a customer name, e-mail
 address or invoice amount that ends up in one cannot be un-published by
 deleting the file later.
 
+Running the panel with `DEMO_MODE=true` and the data from
+`tools/seed_demo.php` guarantees this: that data is invented end to end,
+and demo mode blocks every write, so nothing you click while capturing can
+change what the next screenshot shows.
+
 ## How to capture them
 
-1. Set up a local instance following the README's Installation section.
-2. Import `install/schema.sql`, then `install/seed_demo.sql`.
-3. Log in (the first visit creates the administrator account) and browse
-   with the demo data loaded.
-4. Capture, at a reasonable desktop width (around 1440px), and save as
-   PNG directly into this directory:
-   - `dashboard.png` — the Dashboard (KPIs, deadlines, uptime monitor,
-     lead inbox)
-   - `projects.png` — the Projects view (milestones, time tracking)
-   - `finances.png` — Finances (income/expenses, charts)
-   - `portal.png` — the client Portal, as a contact would see it after
-     logging in with a token and PIN
-5. Add the embeds to the main `README.md` once the files exist, e.g.:
+Set up a demo instance following [docs/DEMO.md](../DEMO.md), then capture
+at a desktop width of 1440px and save as PNG into this directory:
 
-   ```markdown
-   ![Dashboard](docs/screenshots/dashboard.png)
-   ```
+| File | Page | What it should show |
+|---|---|---|
+| `dashboard.png` | `/` | KPIs, deadlines, uptime monitor, lead inbox |
+| `projects.png` | `/tasks` | milestones, time tracking, client feedback |
+| `finances.png` | `/finances` | income and expenses, the twelve-month chart |
+| `portal.png` | `/portal?token=…` | the portal as a contact sees it, past the PIN |
 
-6. Run `bash tools/check.sh` again afterwards — it also flags stray files
-   under `uploads/`, so make sure any test uploads used while capturing
-   the Portal or Projects screenshots are cleaned up first.
+Two things worth doing before pressing the button:
+
+- **Dismiss the notification toasts on the dashboard.** Four of them stack
+  in the top-right corner and cover a whole widget. In demo mode their
+  close button is a POST and gets rejected, so remove them from the browser
+  console instead:
+  `document.querySelectorAll('.toast').forEach(t => t.remove())`
+- **Switch the finance page to "Dieses Jahr".** The default is the current
+  month, which is a handful of bars. The year view is what makes the chart
+  worth a screenshot.
+
+Then add the embeds to the main `README.md`:
+
+```markdown
+![Dashboard](docs/screenshots/dashboard.png)
+```
+
+Afterwards run `bash tools/check.sh` — it flags stray files under
+`uploads/`, so clean up anything uploaded while capturing.
+
+## Keeping them current
+
+The demo data is generated relative to the day it is seeded, so a
+screenshot ages with the instance behind it rather than with the calendar.
+Re-capture when the interface changes visibly, not on a schedule.

@@ -1001,6 +1001,13 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 </head>
 <body>
 
+<?php if (demo_mode()): ?>
+  <div class="demo-portal-hinweis" role="status">
+    <i class="bi bi-eye" aria-hidden="true"></i>
+    <span><strong>Demo-Version</strong> &ndash; dies ist ein Beispielportal. Alle Namen, Projekte und Beträge sind erfunden, Änderungen werden nicht gespeichert.</span>
+  </div>
+<?php endif; ?>
+
 <!-- TOAST -->
 <div class="toast-container">
   <?php if(isset($_GET['msg'])): ?>
