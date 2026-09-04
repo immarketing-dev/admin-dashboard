@@ -37,6 +37,11 @@ const DEMO_ERLAUBTE_AKTIONEN = [
     // Sprache und Farben: die Handler in settings.php schreiben im
     // Demo-Modus in die Sitzung statt in die Datenbank.
     'save_language', 'save_design', 'reset_design',
+    // Die Anordnung der Widgets auf der Startseite. Derselbe Gedanke:
+    // includes/dashboard_layout.php legt sie im Demo-Modus in der Sitzung
+    // ab, damit jeder Besucher fuer sich schieben kann, ohne die Startseite
+    // fuer alle anderen zu veraendern.
+    'save_dashboard_layout', 'reset_dashboard_layout',
 ];
 
 function demo_mode(): bool
@@ -152,8 +157,9 @@ function demo_portal_pin(): string
 /**
  * Einstellungen, die ein Demo-Besucher fuer sich selbst aendern darf.
  *
- * Sprache und Farben. Die Wahl landet in der Sitzung, nicht in der
- * Datenbank - aus zwei Gruenden:
+ * Sprache, Farben und die Anordnung der Widgets auf der Startseite.
+ * Die Wahl landet in der Sitzung, nicht in der Datenbank - aus zwei
+ * Gruenden:
  *
  *  - Der Datenbankbenutzer der Demo darf nur lesen.
  *  - Waere es die Datenbank, saehe der naechste Besucher, was der
@@ -163,7 +169,7 @@ function demo_portal_pin(): string
  * Alles andere auf der Einstellungsseite bleibt gesperrt: Firmendaten,
  * Logo, Mailvorlagen und Protokollgrenzen sind Inhalt, nicht Ansicht.
  */
-const DEMO_EIGENE_EINSTELLUNGEN = ['ui_language', 'color_primary', 'color_sidebar'];
+const DEMO_EIGENE_EINSTELLUNGEN = ['ui_language', 'color_primary', 'color_sidebar', 'dashboard_layout'];
 
 /** Der vom Besucher gewaehlte Wert, sonst der uebergebene Standard. */
 function demo_einstellung(string $schluessel, string $standard): string

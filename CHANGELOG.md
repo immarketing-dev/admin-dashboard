@@ -9,6 +9,31 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Draggable dashboard.** The eleven widgets on the start page sat in four
+  fixed Bootstrap rows; they now sit in a twelve-column Gridstack grid and
+  can be moved and resized with the mouse. Drag by the widget title bar, or
+  by a slim grip in the top padding for the five widgets that have no title
+  bar; resize from the bottom-right corner. Every widget carries a minimum
+  size, so the project list and the notes field cannot be shrunk out of
+  their own card. A "Widgets" menu in the page header hides and restores
+  individual widgets and resets the layout to the default. Saving happens
+  automatically after each move, debounced into one request.
+
+  The layout lives in `includes/dashboard_layout.php` — one place that
+  declares each widget's default position, minimum size, grip and label —
+  and is stored as JSON under the `dashboard_layout` settings key. PHP
+  writes the coordinates into the markup as `gs-` attributes, so the page
+  renders in its final arrangement instead of flashing the default layout
+  and then jumping. A stored layout survives widgets being added or
+  removed later: unknown names are dropped, missing ones fall back to their
+  default position, and unusable JSON yields the default layout rather than
+  an empty page. Below 768 px the grid collapses to one column and dragging
+  is off — a move there would otherwise overwrite the desktop arrangement.
+
+  In demo mode the layout goes to the visitor's session instead of the
+  database, the same route language and colours already take: the demo
+  database user may only read, and every visitor should be able to
+  rearrange the page for themselves without changing it for everyone else.
 - **Public demo mode.** `DEMO_MODE=true` turns the panel into a publicly
   reachable, read-only instance: every page opens without a login and
   every POST is rejected before a handler runs. Because every

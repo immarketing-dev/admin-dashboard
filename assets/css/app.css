@@ -1012,3 +1012,130 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 }
 .demo-hinweis i    { color: var(--accent-warning); font-size: var(--text-base-plus); flex: 0 0 auto; }
 .demo-hinweis span { min-width: 0; }
+
+/* =====================================================================
+   Startseite: verschiebbares Raster
+   ---------------------------------------------------------------------
+   Die Widgets lagen bis hierher in vier festen Bootstrap-Reihen. Jetzt
+   traegt Gridstack sie, und ihre Plaetze kommen aus der Datenbank bzw.
+   - in der Demo - aus der Sitzung des Besuchers.
+
+   Die Kachel selbst bleibt die vorhandene .widget-box. Das Rasterfeld
+   drumherum ist bewusst durchsichtig und ohne eigenen Rahmen: sonst
+   saessen zwei Kaesten ineinander.
+   ===================================================================== */
+
+.grid-stack { margin: 0 calc(var(--space-3) * -1) var(--space-5); }
+
+/* overflow sichtbar lassen, damit der Schatten der Kachel und der
+   ueberstehende Ausblendknopf nicht am Feldrand abgeschnitten werden.
+   Das Scrollen uebernimmt die .widget-box eine Ebene tiefer. */
+.grid-stack-item-content {
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+}
+.grid-stack-item-content > .widget-box,
+.grid-stack-item-content > a > .widget-box { overflow: auto; }
+.grid-stack-item-content > a { flex: 1 1 auto; min-height: 0; }
+.grid-stack-item-content > .widget-box { flex: 1 1 auto; min-height: 0; }
+
+/* Waehrend des Ziehens: die Kachel hebt sich ab, der Zielplatz wird als
+   Umriss angedeutet. */
+.grid-stack-item.ui-draggable-dragging .widget-box { box-shadow: var(--elev-raised); cursor: grabbing; }
+.grid-stack > .grid-stack-placeholder > .placeholder-content {
+    background: var(--accent-soft);
+    border: 1px dashed var(--color-primary);
+    border-radius: var(--radius-lg);
+}
+
+/* Griff fuer Widgets ohne Titelzeile. Liegt im oberen Innenabstand der
+   Kachel, ueberdeckt also keinen Inhalt, und zeigt sich erst beim
+   Darueberfahren. */
+.dash-drag-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 18px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-faint);
+    font-size: var(--text-2xs);
+    opacity: 0;
+    transition: opacity .15s ease;
+    cursor: grab;
+    user-select: none;
+    z-index: 3;
+}
+.grid-stack-item:hover .dash-drag-bar { opacity: .7; }
+.dash-drag-bar:active { cursor: grabbing; }
+
+/* Die Titelzeile ist bei allen anderen Widgets der Griff. Ohne
+   user-select markiert ein Zug daran den Text, statt zu ziehen. */
+.grid-stack-item .widget-title { cursor: grab; user-select: none; }
+.grid-stack-item .widget-title:active { cursor: grabbing; }
+.grid-stack-item .widget-title a,
+.grid-stack-item .widget-title button,
+.grid-stack-item .widget-title select { cursor: pointer; }
+
+/* Ausblenden. Sitzt ueber der Kachelecke statt in der Titelzeile: die
+   Titelzeilen tragen schon eigene Schaltflaechen, und drei Widgets haben
+   gar keine. */
+.dash-hide-btn {
+    position: absolute; top: -7px; right: -7px;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    background: var(--surface-card);
+    color: var(--text-muted);
+    font-size: 9px;
+    box-shadow: var(--elev-rest);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, color .15s ease, border-color .15s ease;
+    z-index: 4;
+}
+.grid-stack-item:hover .dash-hide-btn { opacity: 1; pointer-events: auto; }
+.dash-hide-btn:hover { color: var(--accent-danger); border-color: var(--accent-danger); }
+.dash-hide-btn:focus-visible { opacity: 1; pointer-events: auto; outline: var(--focus-ring); }
+
+/* Groessenanfasser: Gridstacks eigener, nur zurueckhaltender gefaerbt. */
+.grid-stack-item > .ui-resizable-se {
+    right: 4px; bottom: 4px;
+    width: 14px; height: 14px;
+    background: none;
+    opacity: 0;
+    transition: opacity .15s ease;
+}
+.grid-stack-item > .ui-resizable-se::after {
+    content: ""; position: absolute; right: 2px; bottom: 2px;
+    width: 8px; height: 8px;
+    border-right: 2px solid var(--text-faint);
+    border-bottom: 2px solid var(--text-faint);
+    border-bottom-right-radius: 3px;
+}
+.grid-stack-item:hover > .ui-resizable-se { opacity: 1; }
+
+/* Menue zum Ein- und Ausblenden. */
+.dash-menu { min-width: 250px; padding: var(--space-2); }
+.dash-menu .dropdown-header { padding-left: var(--space-2); padding-top: 0; }
+.dash-menu-item {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: 5px var(--space-2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: var(--text-sm);
+}
+.dash-menu-item input { margin: 0; flex: 0 0 auto; }
+.dash-menu-reset { font-size: var(--text-sm); border-radius: var(--radius-sm); }
+
+/* Auf schmalen Geraeten steht alles untereinander. Das Ziehen ist dort
+   aus (siehe index.php): eine Einspaltenansicht kennt keine Plaetze, die
+   sich zu merken lohnten - und ein Zug wuerde sonst die Anordnung fuer
+   den grossen Bildschirm ueberschreiben. */
+@media (max-width: 767.98px) {
+    .grid-stack { margin-left: 0; margin-right: 0; }
+    .dash-drag-bar,
+    .dash-hide-btn,
+    .grid-stack-item > .ui-resizable-se { display: none; }
+    .grid-stack-item .widget-title { cursor: default; }
+}

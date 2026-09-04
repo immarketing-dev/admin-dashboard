@@ -1456,4 +1456,19 @@ return [
         => 'Just cleaned up:',
     ' Tage'
         => ' days',
+    // Verschiebbare Widgets auf der Startseite
+    "Widgets"
+        => "Widgets",
+    "Widgets ein- und ausblenden"
+        => "Show and hide widgets",
+    "Auf der Startseite zeigen"
+        => "Show on the dashboard",
+    "Standard wiederherstellen"
+        => "Restore default",
+    "Widget ausblenden"
+        => "Hide widget",
+    "Projekte (Kennzahl)"
+        => "Projects (metric)",
+    "Kontakte (Kennzahl)"
+        => "Contacts (metric)",
 ];

@@ -2,12 +2,34 @@
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
+require_once 'includes/dashboard_layout.php';
 
 // ==========================================
 // AKTIONEN (Inbox, Portal & Monitoring)
 // ==========================================
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     csrf_check();
+
+    // 0. Anordnung der Widgets auf der Startseite.
+    //
+    // Antwortet mit JSON und beendet die Anfrage sofort: der Aufrufer ist ein
+    // fetch() aus dem Dashboard, keine Formularsendung. Im Demo-Modus laesst der
+    // Riegel in auth.php die beiden Aktionen durch, weil dashboard_layout_save()
+    // dort in die Sitzung schreibt statt in die Datenbank - siehe
+    // DEMO_ERLAUBTE_AKTIONEN in includes/demo.php.
+    $dash_action = $_POST['action'] ?? '';
+    if ($dash_action === 'save_dashboard_layout' || $dash_action === 'reset_dashboard_layout') {
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            if ($dash_action === 'reset_dashboard_layout') dashboard_layout_reset($pdo);
+            else                                           dashboard_layout_save($pdo, $_POST['layout'] ?? '');
+            echo json_encode(['ok' => true]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Anordnung konnte nicht gespeichert werden.']);
+        }
+        exit();
+    }
 
     // 1. Posteingang (Leads)
     if (isset($_POST['inbox_action'])) {
@@ -383,6 +405,17 @@ $count_ms_comments = count($portal_ms_comments);
 $page_title   = 'Dashboard';
 $page_heading = 'Übersicht';
 $current_page = basename($_SERVER['PHP_SELF']);
+// Menue zum Ein- und Ausblenden der Widgets.
+//
+// Hier gebaut und nicht im JavaScript: die Haekchen stimmen damit schon im
+// ersten Bild, ohne dass die Seite nach dem Laden noch einmal umspringt.
+$dash_menu = '';
+foreach (dash_layout()['items'] as $dash_id => $dash_i) {
+    $dash_menu .= '<label class="dropdown-item dash-menu-item">'
+        . '<input class="form-check-input" type="checkbox" data-dash-toggle="'
+        . htmlspecialchars($dash_id, ENT_QUOTES) . '"' . ($dash_i['hidden'] ? '' : ' checked') . '>'
+        . '<span>' . htmlspecialchars($dash_i['title']) . '</span></label>';
+}
 $header_actions = '
       <div class="d-flex align-items-center gap-3">
         <span id="live_indicator" title="Daten werden automatisch aktualisiert"
@@ -390,10 +423,27 @@ $header_actions = '
           <span id="live_dot" style="width:7px;height:7px;border-radius:50%;background:var(--accent-success);display:inline-block;"></span>
           <span id="live_label">Live</span>
         </span>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside" aria-expanded="false"
+                  title="' . te('Widgets ein- und ausblenden') . '">
+            <i class="bi bi-grid-1x2"></i> <span class="btn-label">' . te('Widgets') . '</span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end shadow dash-menu">
+            <h6 class="dropdown-header">' . te('Auf der Startseite zeigen') . '</h6>
+            ' . $dash_menu . '
+            <hr class="dropdown-divider">
+            <button type="button" class="dropdown-item dash-menu-reset" id="dashResetBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> ' . te('Standard wiederherstellen') . '
+            </button>
+          </div>
+        </div>
         <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Zu den Projekten</span></a>
       </div>';
-$extra_head = <<<'CSS'
-CSS;
+$extra_head = <<<'HTML'
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@13.2.0/dist/gridstack.min.css">
+<script src="https://cdn.jsdelivr.net/npm/gridstack@13.2.0/dist/gridstack-all.js"></script>
+HTML;
 
 require 'includes/head.php';
 require 'includes/layout_start.php';
@@ -473,10 +523,10 @@ require 'includes/layout_start.php';
       <?php endif; ?>
   </div>
 
-    <div class="row g-4 mb-4 align-items-stretch">
+    <div class="grid-stack" id="dashGrid">
 
       <!-- Projekte KPI -->
-      <div class="col-6 col-xl-2">
+      <?php dash_widget_open('kpi_projects'); ?>
         <a href="tasks" class="text-decoration-none d-flex h-100">
           <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
             <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-briefcase"></i></div>
@@ -485,10 +535,10 @@ require 'includes/layout_start.php';
             <div class="small text-muted d-none d-md-block"><?= te('offene Aufgaben') ?></div>
           </div>
         </a>
-      </div>
+      <?php dash_widget_close(); ?>
 
       <!-- CRM KPI -->
-      <div class="col-6 col-xl-2">
+      <?php dash_widget_open('kpi_contacts'); ?>
         <a href="contacts" class="text-decoration-none d-flex h-100">
           <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
             <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-people"></i></div>
@@ -497,10 +547,10 @@ require 'includes/layout_start.php';
             <div class="small text-muted d-none d-md-block"><?= te('Kontakte') ?></div>
           </div>
         </a>
-      </div>
+      <?php dash_widget_close(); ?>
 
       <!-- Website-Anfragen -->
-      <div class="col-12 col-md-6 col-xl-4">
+      <?php dash_widget_open('leads'); ?>
         <div class="widget-box widget-accent-left h-100">
            <div class="widget-title">
                <span><i class="bi bi-envelope-paper-fill"></i> <?= te('Neue Website-Anfragen') ?></span>
@@ -530,9 +580,9 @@ require 'includes/layout_start.php';
            <?php endif; ?>
            </div>
         </div>
-      </div>
+      <?php dash_widget_close(); ?>
 
-      <div class="col-12 col-md-6 col-xl-4">
+      <?php dash_widget_open('tickets'); ?>
         <div class="widget-box widget-accent-left h-100">
            <div class="widget-title">
                <span><i class="bi bi-life-preserver"></i> <?= te('Offene Support-Tickets') ?></span>
@@ -565,11 +615,9 @@ require 'includes/layout_start.php';
            <?php endif; ?>
            </div>
         </div>
-      </div>
-    </div>
+      <?php dash_widget_close(); ?>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
+      <?php dash_widget_open('portal_activity'); ?>
             <div class="widget-box widget-accent-left">
                 <div class="widget-title"><span><i class="bi bi-magic"></i> <?= te('Portal Aktivitäten') ?></span></div>
                 
@@ -684,9 +732,9 @@ require 'includes/layout_start.php';
                     </div>
                 </div>
             </div>
-        </div>
+      <?php dash_widget_close(); ?>
 
-        <div class="col-lg-4">
+      <?php dash_widget_open('monitor'); ?>
             <div class="widget-box widget-accent-left">
                 <div class="widget-title">
                     <span><i class="bi bi-hdd-network"></i> <?= te('System-Monitor') ?></span>
@@ -717,13 +765,11 @@ require 'includes/layout_start.php';
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
-    </div>
+      <?php dash_widget_close(); ?>
 
-    <div class="row g-3 mb-4 row-cols-1 row-cols-md-3 align-items-stretch">
 
       <!-- Deadlines -->
-      <div class="col">
+      <?php dash_widget_open('deadlines'); ?>
         <div class="widget-box widget-accent-left">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="d-flex align-items-center gap-2">
@@ -752,10 +798,10 @@ require 'includes/layout_start.php';
           <?php endif; ?>
           </div>
         </div>
-      </div>
+      <?php dash_widget_close(); ?>
 
       <!-- Termine -->
-      <div class="col">
+      <?php dash_widget_open('appointments'); ?>
         <?php $all_apts = array_merge($today_appointments, $week_appointments); ?>
         <div class="widget-box widget-accent-left">
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -784,10 +830,10 @@ require 'includes/layout_start.php';
           <?php endif; ?>
           </div>
         </div>
-      </div>
+      <?php dash_widget_close(); ?>
 
       <!-- Webspace -->
-      <div class="col">
+      <?php dash_widget_open('webspace'); ?>
         <?php
           // Der Balken faerbt sich erst, wenn der Platz wirklich knapp wird.
           $ws_pct  = (float)$percent_used;
@@ -803,12 +849,10 @@ require 'includes/layout_start.php';
             <div class="small text-muted" style="font-size:var(--text-xs);"><?= te('von 200 GB belegt') ?></div>
           </div>
         </div>
-      </div>
+      <?php dash_widget_close(); ?>
 
-    </div>
 
-    <div class="row g-4 flex-grow-1 pb-4">
-        <div class="col-lg-8">
+      <?php dash_widget_open('projects'); ?>
             <div class="widget-box mt-0 h-100 d-flex flex-column">
                 <div class="widget-title flex-wrap gap-2">
                     <span><i class="bi bi-kanban me-2"></i> <?= te('Laufende Projekte') ?></span>
@@ -878,8 +922,8 @@ require 'includes/layout_start.php';
                     <?php endif; ?>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-4">
+      <?php dash_widget_close(); ?>
+      <?php dash_widget_open('notes'); ?>
             <div class="widget-box mt-0 h-100 d-flex flex-column">
                 <div class="widget-title">
                     <span><i class="bi bi-pen me-2"></i> <?= te('Notizen') ?></span>
@@ -889,7 +933,7 @@ require 'includes/layout_start.php';
                 </div>
                 <textarea id="quickNotes" class="form-control flex-grow-1 shadow-sm border bg-subtle p-3" style="font-size: 14px; resize: none; min-height: 250px;" placeholder="<?= te('Wird automatisch gespeichert...') ?>"></textarea>
             </div>
-        </div>
+      <?php dash_widget_close(); ?>
     </div>
 
   <div class="modal fade" id="viewLeadModal" tabindex="-1">
@@ -1380,3 +1424,193 @@ require 'includes/layout_start.php';
 
   </script>
 <?php require 'includes/layout_end.php'; ?>
+  <script>
+  /* =====================================================================
+     Verschiebbare Widgets
+     ---------------------------------------------------------------------
+     Die Plaetze stehen bereits als gs-Attribute im Markup (siehe
+     includes/dashboard_layout.php) - Gridstack liest sie hier nur noch
+     ein. Deshalb steht die Seite sofort richtig da, statt kurz im
+     Standardlayout aufzublitzen und dann zu springen.
+     ===================================================================== */
+  (function () {
+      const gridEl = document.getElementById('dashGrid');
+      if (!gridEl || typeof GridStack === 'undefined') return;
+
+      const SCHMAL = window.matchMedia('(max-width: 767.98px)');
+      const ZIEL   = window.location.pathname;
+      const TOKEN  = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+      const grid = GridStack.init({
+          column: 12,
+          cellHeight: 76,
+          margin: 12,
+          animate: true,
+          // Angefasst wird die Titelzeile - oder, wo es keine gibt, der
+          // schmale Streifen im oberen Innenabstand der Kachel.
+          handle: '.widget-title, .dash-drag-bar',
+          // Ohne diese Ausnahmen gaelte jeder Klick auf eine Schaltflaeche
+          // in der Titelzeile als Beginn einer Ziehbewegung.
+          draggable: { cancel: 'input,textarea,button,select,option,a,.btn-close' },
+          resizable: { handles: 'se' },
+          // Unter 768 px steht alles untereinander.
+          columnOpts: { breakpointForWindow: true, breakpoints: [{ w: 768, c: 1 }] }
+      }, gridEl);
+
+      // Der Name des Widgets muss den Ausflug in den Vorrat ueberleben -
+      // removeWidget() raeumt die gs-Attribute ab.
+      gridEl.querySelectorAll('.grid-stack-item').forEach(function (el) {
+          el.dataset.dashId = el.getAttribute('gs-id') || '';
+      });
+
+      // Vorrat fuer ausgeblendete Widgets. Sie bleiben im Dokument, damit
+      // das Haekchen im Menue sie ohne Neuladen zurueckholen kann.
+      const vorrat = document.createElement('div');
+      vorrat.id = 'dashStash';
+      vorrat.hidden = true;
+      gridEl.parentNode.insertBefore(vorrat, gridEl.nextSibling);
+
+      grid.batchUpdate();
+      gridEl.querySelectorAll('[data-dash-hidden="1"]').forEach(function (el) {
+          el.style.display = '';
+          el.removeAttribute('data-dash-hidden');
+          grid.removeWidget(el, false);
+          vorrat.appendChild(el);
+      });
+      // Gegenstueck zu batchUpdate() - das fruehere commit() gibt es seit
+      // Gridstack 11 nicht mehr.
+      grid.batchUpdate(false);
+
+      // ---------------------------------------------------------------
+      // Speichern
+      // ---------------------------------------------------------------
+
+      function aktuellerStand() {
+          const items = {};
+          gridEl.querySelectorAll('.grid-stack-item').forEach(function (el) {
+              const n = el.gridstackNode;
+              if (!n || !el.dataset.dashId) return;
+              items[el.dataset.dashId] = { x: n.x, y: n.y, w: n.w, h: n.h };
+          });
+          const hidden = Array.prototype.map.call(vorrat.children, function (el) {
+              return el.dataset.dashId;
+          }).filter(Boolean);
+          return { v: 1, items: items, hidden: hidden };
+      }
+
+      let wartend = null;
+      function speichern() {
+          // In der Einspaltenansicht gibt es keine Plaetze, die sich zu
+          // merken lohnten - und ein Zug dort wuerde die Anordnung fuer
+          // den grossen Bildschirm ueberschreiben.
+          if (grid.getColumn() !== 12) return;
+          clearTimeout(wartend);
+          wartend = setTimeout(function () {
+              senden('save_dashboard_layout', { layout: JSON.stringify(aktuellerStand()) })
+                  .catch(function () { meldung('Anordnung konnte nicht gespeichert werden.'); });
+          }, 600);
+      }
+
+      function senden(aktion, felder) {
+          const daten = { action: aktion, csrf_token: TOKEN };
+          for (const k in (felder || {})) daten[k] = felder[k];
+          return fetch(ZIEL, {
+              method: 'POST',
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
+              body: new URLSearchParams(daten)
+          }).then(function (r) { return r.json(); }).then(function (d) {
+              if (!d || d.ok !== true) throw new Error((d && d.error) || 'Fehler');
+              return d;
+          });
+      }
+
+      // Ein Zug loest mehrere Ereignisse aus; das Entprellen oben fasst
+      // sie zu einer Sendung zusammen.
+      grid.on('change added removed', speichern);
+
+      // ---------------------------------------------------------------
+      // Aus- und Einblenden
+      // ---------------------------------------------------------------
+
+      function zeigen(id, sichtbar) {
+          const wo = sichtbar ? vorrat : gridEl;
+          const el = Array.prototype.find.call(
+              wo.querySelectorAll('.grid-stack-item'),
+              function (e) { return e.dataset.dashId === id; }
+          );
+          if (!el) return;
+
+          if (sichtbar) {
+              gridEl.appendChild(el);
+              grid.makeWidget(el);
+          } else {
+              grid.removeWidget(el, false);
+              vorrat.appendChild(el);
+          }
+
+          const kasten = document.querySelector('[data-dash-toggle="' + id + '"]');
+          if (kasten && kasten.checked !== sichtbar) kasten.checked = sichtbar;
+          speichern();
+      }
+
+      gridEl.addEventListener('click', function (e) {
+          const knopf = e.target.closest('[data-dash-hide]');
+          if (!knopf) return;
+          e.preventDefault();
+          zeigen(knopf.getAttribute('data-dash-hide'), false);
+      });
+
+      document.querySelectorAll('[data-dash-toggle]').forEach(function (kasten) {
+          kasten.addEventListener('change', function () {
+              zeigen(this.getAttribute('data-dash-toggle'), this.checked);
+          });
+      });
+
+      const zuruecksetzen = document.getElementById('dashResetBtn');
+      if (zuruecksetzen) {
+          zuruecksetzen.addEventListener('click', function () {
+              // Neu laden statt im Browser zurueckbauen: der Standard steht
+              // in PHP, und die Seite holt ihn beim naechsten Aufbau.
+              senden('reset_dashboard_layout')
+                  .then(function () { window.location.reload(); })
+                  .catch(function () { meldung('Zuruecksetzen fehlgeschlagen.'); });
+          });
+      }
+
+      // ---------------------------------------------------------------
+      // Schmale Bildschirme
+      // ---------------------------------------------------------------
+
+      function anpassen() {
+          const aus = SCHMAL.matches;
+          grid.enableMove(!aus);
+          grid.enableResize(!aus);
+      }
+      anpassen();
+      SCHMAL.addEventListener('change', anpassen);
+
+      // ---------------------------------------------------------------
+
+      function meldung(text) {
+          const behaelter = document.querySelector('.toast-container-dash');
+          if (!behaelter) { console.warn(text); return; }
+          const el = document.createElement('div');
+          el.className = 'toast align-items-center text-bg-danger border-0 mb-2 shadow-lg';
+          el.setAttribute('role', 'alert');
+          const zeile = document.createElement('div');
+          zeile.className = 'd-flex';
+          const rumpf = document.createElement('div');
+          rumpf.className = 'toast-body fw-bold';
+          rumpf.textContent = text;
+          const zu = document.createElement('button');
+          zu.type = 'button';
+          zu.className = 'btn-close btn-close-white me-2 m-auto';
+          zu.setAttribute('data-bs-dismiss', 'toast');
+          zeile.appendChild(rumpf);
+          zeile.appendChild(zu);
+          el.appendChild(zeile);
+          behaelter.appendChild(el);
+          new bootstrap.Toast(el, { delay: 5000 }).show();
+      }
+  })();
+  </script>

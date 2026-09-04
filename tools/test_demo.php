@@ -230,15 +230,33 @@ $_SESSION = [];
 pruefe('Eine frische Sitzung sieht wieder den Standard',
        demo_einstellung('color_primary', '#149ddd') === '#149ddd');
 
-// Nur die drei vorgesehenen Schluessel, sonst waere es ein Schlupfloch.
+// Nur die vorgesehenen Schluessel, sonst waere es ein Schlupfloch.
 demo_einstellung_setzen('company_name', 'Fremdfirma');
 pruefe('Ein nicht vorgesehener Schluessel wird abgewiesen',
        ($_SESSION['demo_company_name'] ?? null) === null);
 pruefe('Und liefert weiter den Standard',
        demo_einstellung('company_name', 'Musterwerk') === 'Musterwerk');
 
-pruefe('Genau drei Einstellungen sind freigegeben',
-       count(DEMO_EIGENE_EINSTELLUNGEN) === 3,
+// Die Anordnung der Startseiten-Widgets geht denselben Weg wie Sprache und
+// Farben: in die Sitzung. Waere es die Datenbank, saehe der naechste
+// Besucher die verschobenen Kacheln des vorherigen - und der SELECT-only-
+// Benutzer der Demo scheiterte ohnehin beim Schreiben.
+$_SESSION = [];
+$anordnung = '{"v":1,"items":{"leads":{"x":0,"y":0,"w":6,"h":5}},"hidden":[]}';
+demo_einstellung_setzen('dashboard_layout', $anordnung);
+pruefe('Die Anordnung der Widgets landet in der Sitzung',
+       ($_SESSION['demo_dashboard_layout'] ?? null) === $anordnung);
+pruefe('Und wird dem Besucher zurueckgegeben',
+       demo_einstellung('dashboard_layout', '') === $anordnung);
+$_SESSION = [];
+pruefe('Der naechste Besucher sieht wieder den Standard',
+       demo_einstellung('dashboard_layout', 'standard') === 'standard');
+
+// Die Liste ist ein Waechter: waechst sie unbemerkt, waechst die Flaeche,
+// die den Schreibschutz umgeht. Deshalb steht sie hier ausgeschrieben und
+// nicht bloss als Anzahl.
+pruefe('Nur die vorgesehenen Einstellungen sind freigegeben',
+       DEMO_EIGENE_EINSTELLUNGEN === ['ui_language', 'color_primary', 'color_sidebar', 'dashboard_layout'],
        implode(', ', DEMO_EIGENE_EINSTELLUNGEN));
 
 $_SESSION = [];

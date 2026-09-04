@@ -260,27 +260,52 @@ echo "=== Pruefung 5: die Ausnahmeliste bleibt klein ===\n";
 // DEMO_ERLAUBTE_AKTIONEN laesst einzelne POSTs durch. Dort darf nur
 // stehen, was allein die Sitzung beruehrt - eine Aktion mit
 // Datenbankzugriff waere ein Loch im Schreibschutz.
+// Je Aktion: wo ihr Handler steht, und wo die Verzweigung auf den
+// Demo-Modus steht. Meist dieselbe Datei - beim Dashboard-Layout nicht:
+// index.php nimmt die Sendung entgegen, die Fallunterscheidung sitzt in
+// includes/dashboard_layout.php, wo auch die Datenbank angefasst wuerde.
 $bekannt = [
     // Beruehrt nur die Sitzung (portal.php ueberspringt im Demo-Modus
     // zusaetzlich den Fehlversuchszaehler).
-    'verify_portal_pin',
+    'verify_portal_pin'       => null,
     // Sprache und Farben darf ein Besucher fuer sich aendern. Die
     // Handler in settings.php schreiben dann in die Sitzung statt in
     // die Datenbank - genau das prueft die Schleife darunter.
-    'save_language', 'save_design', 'reset_design',
+    'save_language'           => ['settings.php', 'settings.php'],
+    'save_design'             => ['settings.php', 'settings.php'],
+    'reset_design'            => ['settings.php', 'settings.php'],
+    // Die Anordnung der Widgets auf der Startseite - derselbe Gedanke:
+    // in der Demo landet sie in der Sitzung, nicht in der Datenbank.
+    'save_dashboard_layout'   => ['index.php', 'includes/dashboard_layout.php'],
+    'reset_dashboard_layout'  => ['index.php', 'includes/dashboard_layout.php'],
 ];
 
 // Eine durchgelassene Aktion, deren Handler nicht auf den Demo-Modus
 // verzweigt, schriebe dort in die Datenbank - und scheiterte am
 // SELECT-only-Benutzer, mitten in der Verarbeitung.
-$settings = code_ohne_kommentare($wurzel . '/settings.php');
-foreach (['save_language', 'save_design', 'reset_design'] as $aktion) {
-    $pos = strpos($settings, "=== '$aktion'");
-    if ($pos === false) continue;
-    $block = substr($settings, $pos, 1400);
+foreach ($bekannt as $aktion => $dateien) {
+    if ($dateien === null) continue;
+    [$handler_datei, $verzweigung_datei] = $dateien;
+
+    $handler = code_ohne_kommentare($wurzel . '/' . $handler_datei);
+    if (strpos($handler, "=== '$aktion'") === false) {
+        echo "FEHLER: kein Handler fuer $aktion in $handler_datei gefunden.\n";
+        $fail = 1;
+        continue;
+    }
+
+    // Steht die Verzweigung in derselben Datei, muss sie in Reichweite des
+    // Handlers liegen; liegt sie in einer eigenen Datei, genuegt dort ihre
+    // Anwesenheit - die Datei tut nichts anderes.
+    if ($verzweigung_datei === $handler_datei) {
+        $pos   = strpos($handler, "=== '$aktion'");
+        $block = substr($handler, $pos, 1400);
+    } else {
+        $block = code_ohne_kommentare($wurzel . '/' . $verzweigung_datei);
+    }
     if (strpos($block, 'demo_mode()') === false) {
-        echo "FEHLER: Handler $aktion laesst den Demo-Modus unberuecksichtigt.
-";
+        echo "FEHLER: Handler $aktion laesst den Demo-Modus unberuecksichtigt"
+           . " (erwartet in $verzweigung_datei).\n";
         $fail = 1;
     }
 }
@@ -288,7 +313,7 @@ require_once $wurzel . '/includes/env.php';
 if (!defined('DEMO_MODE')) define('DEMO_MODE', false);
 require_once $wurzel . '/includes/demo.php';
 
-$unbekannt = array_diff(DEMO_ERLAUBTE_AKTIONEN, $bekannt);
+$unbekannt = array_diff(DEMO_ERLAUBTE_AKTIONEN, array_keys($bekannt));
 if ($unbekannt === []) {
     echo 'OK: ' . count(DEMO_ERLAUBTE_AKTIONEN) . " durchgelassene Aktion(en), alle bekannt: "
        . implode(', ', DEMO_ERLAUBTE_AKTIONEN) . "\n";
