@@ -440,10 +440,10 @@ $header_actions = '
         </div>
         <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Zu den Projekten</span></a>
       </div>';
-$extra_head = <<<'HTML'
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@13.2.0/dist/gridstack.min.css">
-<script src="https://cdn.jsdelivr.net/npm/gridstack@13.2.0/dist/gridstack-all.js"></script>
-HTML;
+// Verkettung statt Nowdoc: die Einbindungen brauchen den Zeitstempel aus
+// asset(), und ein Nowdoc setzt nichts ein.
+$extra_head = '<link rel="stylesheet" href="' . asset('assets/vendor/gridstack/gridstack.min.css') . '">' . "\n"
+            . '<script src="' . asset('assets/vendor/gridstack/gridstack-all.js') . '"></script>';
 
 require 'includes/head.php';
 require 'includes/layout_start.php';

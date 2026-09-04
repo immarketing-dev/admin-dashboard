@@ -26,9 +26,9 @@
       }
   })();
   </script>
-  <script src="assets/js/sticky-header.js" defer></script>
+  <script src="<?= asset('assets/js/sticky-header.js') ?>" defer></script>
 <?php if (demo_mode()): ?>
-  <script src="assets/js/demo.js" defer></script>
+  <script src="<?= asset('assets/js/demo.js') ?>" defer></script>
 <?php endif; ?>
 </body>
 </html>

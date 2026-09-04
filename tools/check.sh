@@ -144,7 +144,24 @@ if [ -n "$creds" ]; then
   fail=1
 fi
 
-# --- 3. Unversionierte CDN-Referenzen -----------------------------------
+# --- 3. Keine fremden Herkuenfte im Ladepfad ----------------------------
+# Alle Bibliotheken liegen unter assets/vendor/. Das ist die Voraussetzung
+# fuer die Content-Security-Policy in .htaccess: sie erlaubt ausser der
+# eigenen Herkunft nichts mehr. Schleicht sich wieder eine CDN-Einbindung
+# ein, laedt sie im Betrieb schlicht nicht - und zwar still, weil ein
+# blockiertes Skript keine sichtbare Fehlermeldung erzeugt, sondern nur
+# eine Schaltflaeche, die nicht mehr reagiert.
+extern=$(grep -rnE '(href|src)=["'"'"'][^"'"'"']*//(cdn|cdnjs|fonts\.googleapis|fonts\.gstatic|unpkg|ajax\.googleapis)' . \
+          --include='*.php' --include='*.html' --include='*.js' \
+          "${SCAN_EXCLUDES[@]}" 2>/dev/null)
+if [ -n "$extern" ]; then
+  echo "EXTERN: Einbindung von fremder Herkunft (gehoert nach assets/vendor/):"
+  echo "$extern"
+  fail=1
+fi
+
+# Unversionierte Referenzen bleiben verboten - auch in Kommentaren und
+# Dokumentation, wo sie als Vorlage zum Kopieren dienen koennten.
 cdn=$(grep -rn '@latest' . \
           --include='*.php' --include='*.ini' --include='*.yml' --include='*.yaml' --include='*.conf' \
           "${SCAN_EXCLUDES[@]}" 2>/dev/null)

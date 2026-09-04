@@ -8,7 +8,57 @@ private history.
 
 ## [Unreleased]
 
+### Security
+- **Every library is served from the panel itself now, and a
+  Content-Security-Policy enforces it.** Bootstrap, Bootstrap Icons,
+  Chart.js, Prism, SortableJS, Gridstack, qrcode.js and CKEditor came from
+  four foreign origins on every page load, none of them with an
+  `integrity` hash — a compromised CDN meant arbitrary code running inside
+  an authenticated admin session. Chart.js was pulled without any version
+  at all, so two deploys could get different releases.
+
+  All of it lives under `assets/vendor/` (2.4 MB, committed), Chart.js
+  pinned at 4.4.1. Google Fonts moved too: loading them from
+  `fonts.googleapis.com` sent every visitor's IP address — in the client
+  portal, the *customers'* IP addresses — to a third party outside the EU,
+  for five files that now sit in `assets/vendor/fonts/`.
+
+  Only with nothing left to load externally does a CSP become possible:
+  `default-src 'self'`, with `connect-src`, `img-src` and `form-action`
+  limited to the same origin. Its value is less in preventing XSS —
+  escaping does that — than in cutting off the exit: injected code has
+  nowhere to send what it reads. `'unsafe-inline'` is still required and
+  remains the weak spot; roughly 2900 lines of inline script and the
+  `onclick` attributes have to move to `assets/js/` before it can go.
+
+  It is set with `Header always setifempty`, not `set`, so it cannot
+  overwrite the much stricter policy `file.php` sends with customer
+  documents (`default-src 'none'; sandbox`).
+
+  Verified with Playwright against a real HTTP server under that exact
+  policy: all ten library checks pass, both font families load locally,
+  and there are no CSP violations.
+
+- **HSTS is on** (`max-age=31536000`, without `preload` or
+  `includeSubDomains` — both commit longer than is sensible here), and
+  responses are compressed via `mod_deflate`.
+
+### Fixed
+- **PHP code was never syntax-highlighted in the wiki or the portal.**
+  Prism's PHP grammar builds on `markup-templating`, which was never
+  loaded — the first `highlightElement` on a PHP block threw
+  "buildPlaceholders of undefined". It failed silently, because an
+  uncoloured code block still looks like a code block. Found while
+  verifying the libraries under CSP.
+
 ### Added
+- **Static assets are cached for a year** instead of being re-fetched on
+  every page load — 2.4 MB of libraries plus a 57 kB stylesheet, noticeable
+  on a phone connection. That is only safe because every reference now
+  carries a timestamp: `asset()` in `config.php` appends `?v=<filemtime>`,
+  so a changed file has a changed address. The rules sit in a separate
+  `assets/.htaccess`; in the root one they would also have hit the PHP
+  responses, which carry session content.
 - **The page header and the filter bar stay put while scrolling**, on every
   page and at every width. Both were part of the normal flow, so on a long
   list the page title, its buttons, the global search and the whole filter

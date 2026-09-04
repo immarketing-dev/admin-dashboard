@@ -980,6 +980,6 @@ function confirmDeleteQuote(btn, id) {
 }
 </script>
 <?php ?>
-<script src="assets/js/mail-templates.js"></script>
+<script src="<?= asset('assets/js/mail-templates.js') ?>"></script>
 <?php
 require 'includes/layout_end.php'; ?>

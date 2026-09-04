@@ -202,7 +202,7 @@ $page_heading = 'Wiki & Snippets';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '<button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> Neuer Eintrag</button>';
 // Prism-Theme (Code-Highlighting) wird nur hier gebraucht, daher hier statt in head.php.
-$extra_head = '<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />';
+$extra_head = '<link href="' . asset('assets/vendor/prism/prism-tomorrow.min.css') . '" rel="stylesheet" />';
 
 require 'includes/head.php';
 require 'includes/layout_start.php';
@@ -463,11 +463,18 @@ require 'includes/layout_start.php';
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
-  <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+  <script src="<?= asset('assets/vendor/prism/prism.min.js') ?>"></script>
+  <!-- markup-templating MUSS vor prism-php stehen: die PHP-Definition
+       baut darauf auf und wirft sonst beim ersten Hervorheben
+       "buildPlaceholders of undefined". Die Abhaengigkeit fehlte hier
+       von Anfang an - der Fehler fiel nicht auf, weil er erst beim
+       Anzeigen eines PHP-Blocks auftritt und dort nur still nicht
+       einfaerbt. -->
+  <script src="<?= asset('assets/vendor/prism/components/prism-markup-templating.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/prism/components/prism-php.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/prism/components/prism-javascript.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/prism/components/prism-css.min.js') ?>"></script>
+  <script src="<?= asset('assets/vendor/ckeditor/ckeditor.js') ?>"></script>
 
   <script>
     let wikiEditor;

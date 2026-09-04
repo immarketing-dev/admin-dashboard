@@ -92,6 +92,27 @@ function setting(string $key, string $default = ''): string {
     return $cache[$key] ?? $default;
 }
 
+/**
+ * Adresse einer eigenen Auslieferungsdatei, mit Zeitstempel.
+ *
+ * assets/.htaccess laesst den Browser alles unter assets/ ein Jahr lang
+ * behalten. Das geht nur gut, solange sich die Adresse aendert, sobald
+ * sich die Datei aendert - sonst erreicht eine Korrektur an app.css
+ * niemanden mehr, der die Seite schon einmal geladen hat.
+ *
+ * filemtime() statt einer Versionsnummer von Hand: tools/deploy.php
+ * kopiert die Dateien, der Zeitstempel wandert dabei mit, und niemand
+ * muss an eine Nummer denken.
+ */
+function asset(string $pfad): string {
+    static $cache = [];
+    if (!isset($cache[$pfad])) {
+        $zeit = @filemtime(__DIR__ . '/' . $pfad);
+        $cache[$pfad] = $pfad . ($zeit ? '?v=' . $zeit : '');
+    }
+    return $cache[$pfad];
+}
+
 function status_badge(string $status, string $extra_classes = ''): string {
     static $map = [
         'Offen'          => 'status-offen',

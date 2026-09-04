@@ -404,11 +404,11 @@ if (!$_is_auth) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= te('Zugang') ?> · <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/tokens.css">
-  <?php if (demo_mode()): ?><link rel="stylesheet" href="assets/css/demo.css"><?php endif; ?>
+  <link href="<?= asset('assets/vendor/bootstrap/bootstrap.min.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/fonts/fonts.css') ?>" rel="stylesheet">
+  <link rel="stylesheet" href="<?= asset('assets/css/tokens.css') ?>">
+  <?php if (demo_mode()): ?><link rel="stylesheet" href="<?= asset('assets/css/demo.css') ?>"><?php endif; ?>
   <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
     *{box-sizing:border-box}
@@ -684,14 +684,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= $is_partner ? 'Partner-Portal' : te('Kundenportal') ?> | <?= setting('company_short', COMPANY_SHORT) ?></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link href="<?= asset('assets/vendor/bootstrap/bootstrap.min.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/fonts/fonts.css') ?>" rel="stylesheet">
+  <link href="<?= asset('assets/vendor/prism/prism-tomorrow.min.css') ?>" rel="stylesheet">
+  <link rel="stylesheet" href="<?= asset('assets/css/tokens.css') ?>">
   <?php if (demo_mode()): ?>
-  <link rel="stylesheet" href="assets/css/demo.css">
-  <script src="assets/js/demo.js" defer></script>
+  <link rel="stylesheet" href="<?= asset('assets/css/demo.css') ?>">
+  <script src="<?= asset('assets/js/demo.js') ?>" defer></script>
   <?php endif; ?>
   <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
@@ -1952,15 +1952,21 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <p class="mb-0">&copy; <?= date('Y') ?> <?= setting('company_name', COMPANY_NAME) ?> &bull; <a href="<?= setting('main_website', MAIN_WEBSITE) ?>" class="text-decoration-none text-muted fw-bold"><?= str_replace(['http://','https://','www.'],'',setting('main_website', MAIN_WEBSITE)) ?></a></p>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+<script src="<?= asset('assets/vendor/bootstrap/bootstrap.bundle.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/qrcode/qrcode.min.js') ?>"
         integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="assets/js/payment-qr.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="<?= asset('assets/js/payment-qr.js') ?>" defer></script>
+<script src="<?= asset('assets/vendor/prism/prism.min.js') ?>"></script>
+<!-- markup-templating MUSS vor prism-php stehen: die PHP-Definition baut
+     darauf auf und wirft sonst "buildPlaceholders of undefined". Die
+     Abhaengigkeit fehlte von Anfang an; der Fehler faellt nicht auf, weil
+     er erst beim Anzeigen eines PHP-Blocks auftritt und dort nur still
+     nicht einfaerbt. -->
+<script src="<?= asset('assets/vendor/prism/components/prism-markup-templating.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/prism/components/prism-php.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/prism/components/prism-javascript.min.js') ?>"></script>
+<script src="<?= asset('assets/vendor/prism/components/prism-css.min.js') ?>"></script>
 <script>
 /* Umschalter für das dunkle Design.
    Ohne gespeicherte Wahl folgt das Portal der Systemeinstellung des

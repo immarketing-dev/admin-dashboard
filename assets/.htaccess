@@ -1,0 +1,48 @@
+# Zwischenspeicherung der unveraenderlichen Dateien.
+#
+# Alles hier ist statisch: die eigenen Stylesheets und Skripte unter
+# css/ und js/, die Bibliotheken unter vendor/. Bisher trug nichts davon
+# eine Ablaufzeit, der Browser fragte also bei jedem Seitenaufruf erneut
+# nach - bei rund 2 MB Bibliotheken und einem 57 kB grossen app.css ist
+# das auf einer Mobilverbindung spuerbar.
+#
+# Ein Jahr ist nur deshalb gefahrlos, weil jede Einbindung einen
+# Zeitstempel traegt: asset() in config.php haengt "?v=<filemtime>" an.
+# Aendert sich eine Datei, aendert sich die Adresse, und der Browser
+# holt sie neu. Ohne diesen Zusatz waere ein Jahr ein Jahr - und eine
+# Korrektur an app.css erreichte niemanden mehr.
+#
+# Bewusst hier und nicht in der Wurzel-.htaccess: dort wuerde dieselbe
+# Regel auch die PHP-Antworten treffen, und die tragen Sitzungsinhalte.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=31536000"
+</IfModule>
+
+# Schriften werden von einer anderen Herkunft geladen, sobald jemand das
+# Panel hinter einem Zwischenspeicher oder einer zweiten Adresse
+# betreibt. Ohne diesen Kopf verweigert der Browser sie dann.
+<FilesMatch "\.(woff2?|ttf|eot)$">
+    <IfModule mod_headers.c>
+        Header set Access-Control-Allow-Origin "*"
+    </IfModule>
+</FilesMatch>
+
+# In assets/ liegt ausschliesslich Auslieferungsmaterial. Selbst wenn
+# ueber einen Fehler anderswo eine .php hier landete, darf sie nicht
+# ausgefuehrt werden.
+<FilesMatch "\.(php[0-9]?|phtml|phar)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+Options -Indexes

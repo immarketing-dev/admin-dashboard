@@ -565,7 +565,7 @@ if ($active_tab === 'quotes') {
       </div>';
 }
 // Chart.js wird nur hier gebraucht, daher hier statt in head.php.
-$extra_head = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+$extra_head = '<script src="' . asset('assets/vendor/chartjs/chart.umd.min.js') . '"></script>';
 
 require 'includes/head.php';
 require 'includes/layout_start.php';
@@ -1402,6 +1402,6 @@ require 'includes/layout_start.php';
     }
   </script>
 <?php ?>
-<script src="assets/js/mail-templates.js"></script>
+<script src="<?= asset('assets/js/mail-templates.js') ?>"></script>
 <?php
 require 'includes/layout_end.php'; ?>
