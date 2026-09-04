@@ -340,7 +340,7 @@ require 'includes/layout_start.php';
         animation: 200,  
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        easing: "cubic-bezier(1, 0, 0, 1)",
+        easing: 'cubic-bezier(1, 0, 0, 1)',
         filter: '.empty-state', // Platzhalter darf nicht gezogen werden
         onEnd: function (evt) {
             const itemEl = evt.item;  
@@ -412,16 +412,16 @@ require 'includes/layout_start.php';
         document.getElementById('vt_title').innerText = task.title;
         
         let badges = '';
-        const _sc = {'Offen':'status-offen','In Bearbeitung':'status-in-bearbeitung','Erledigt':'status-erledigt','Storniert':'status-storniert'};
+        const _sc = {'Offen':'status-offen',<?= tjs('In Bearbeitung') ?>:'status-in-bearbeitung','Erledigt':'status-erledigt','Storniert':'status-storniert'};
         badges += `<span class="status-badge ${_sc[task.status] || 'status-offen'}">${task.status}</span>`;
         if(task.category) badges += `<span class="badge border border-primary text-primary">${task.category}</span>`;
         if(task.client_name) badges += `<span class="badge bg-dark"><i class="bi bi-person"></i> ${task.client_name}</span>`;
         document.getElementById('vt_badges').innerHTML = badges;
 
-        document.getElementById('vt_start').innerText = task.start_date && !task.start_date.includes('0000') ? formatDate(task.start_date) : 'Nicht gesetzt';
-        document.getElementById('vt_deadline').innerText = task.deadline && !task.deadline.includes('0000') ? formatDate(task.deadline) : 'Nicht gesetzt';
+        document.getElementById('vt_start').innerText = task.start_date && !task.start_date.includes('0000') ? formatDate(task.start_date) : <?= tjs('Nicht gesetzt') ?>;
+        document.getElementById('vt_deadline').innerText = task.deadline && !task.deadline.includes('0000') ? formatDate(task.deadline) : <?= tjs('Nicht gesetzt') ?>;
         
-        document.getElementById('vt_desc').innerText = task.description || 'Keine Beschreibung vorhanden.';
+        document.getElementById('vt_desc').innerText = task.description || <?= tjs('Keine Beschreibung vorhanden.') ?>;
         
         // Fortschrittsbalken im Modal
         document.getElementById('vt_progress_text').innerText = task.progress + '%';
@@ -443,7 +443,7 @@ require 'includes/layout_start.php';
                 msHtml += `<div class="list-group-item d-flex align-items-center gap-3 py-2 bg-surface"><span style="font-size:1.2rem;">${icon}</span> <span class="${strike}">${m.title}</span></div>`;
             });
         } else {
-            msHtml = '<div class="list-group-item text-muted small py-3 text-center bg-surface">Noch keine Meilensteine angelegt.</div>';
+            msHtml = '<div class="list-group-item text-muted small py-3 text-center bg-surface"><?= te('Noch keine Meilensteine angelegt.') ?></div>';
         }
         document.getElementById('vt_milestones').innerHTML = msHtml;
 

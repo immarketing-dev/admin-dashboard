@@ -480,7 +480,7 @@ require 'includes/layout_start.php';
     // Formulardaten zurücksetzen (Hinzufügen)
     function prepareAdd() {
         document.getElementById('form_action').value = 'add_article';
-        document.getElementById('form_title_label').innerHTML = '<i class="bi bi-journal-plus me-2"></i> Neuer Eintrag';
+        document.getElementById('form_title_label').innerHTML = '<i class="bi bi-journal-plus me-2"></i> <?= te('Neuer Eintrag') ?>';
         document.getElementById('form_title').value = '';
         document.getElementById('form_category').value = '';
         document.getElementById('form_tags').value = '';
@@ -572,7 +572,7 @@ require 'includes/layout_start.php';
               
               attHtml += `<div class="btn-group shadow-sm me-2 mb-2">`;
               if (isViewable) {
-                  attHtml += `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Im Browser ansehen"><i class="bi bi-eye"></i></a>`;
+                  attHtml += `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary" title=<?= tjs('Im Browser ansehen') ?>><i class="bi bi-eye"></i></a>`;
               }
               attHtml += `<a href="${a.file_path}" download class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-download me-1"></i> ${a.file_name}</a>`;
               attHtml += `</div>`;
@@ -600,7 +600,7 @@ require 'includes/layout_start.php';
             btn.classList.replace('text-danger', 'btn-danger');
             btn.classList.remove('btn-icon');
             btn.classList.add('btn', 'btn-sm', 'text-white', 'fw-bold', 'px-2');
-            btn.innerHTML = 'Sicher?';
+            btn.innerHTML = <?= tjs('Sicher?') ?>;
             
             setTimeout(() => { 
                 if(btn.parentNode) { 
@@ -627,7 +627,7 @@ require 'includes/layout_start.php';
         } else {
             btn.dataset.confirmed = "1";
             btn.classList.replace('btn-outline-danger', 'btn-danger');
-            btn.innerHTML = 'Sicher? Klick noch mal!';
+            btn.innerHTML = <?= tjs('Sicher? Klick noch mal!') ?>;
             
             setTimeout(() => { 
                 btn.dataset.confirmed = "0"; 
@@ -653,7 +653,7 @@ require 'includes/layout_start.php';
                 });
         } else {
             btn.dataset.confirmed = "1";
-            btn.innerHTML = 'Sicher?';
+            btn.innerHTML = <?= tjs('Sicher?') ?>;
             btn.classList.replace('btn-outline-danger', 'btn-danger');
             
             setTimeout(() => { 
@@ -701,12 +701,12 @@ require 'includes/layout_start.php';
                 try {
                     const resp = JSON.parse(xhr.responseText);
                     if (resp.status === 'partial' && resp.errors && resp.errors.length) {
-                        alert('Gespeichert, aber einige Dateien wurden abgelehnt:\n\n' + resp.errors.join('\n'));
+                        alert(<?= tjs('Gespeichert, aber einige Dateien wurden abgelehnt:') ?> + '\n\n' + resp.errors.join('\n'));
                     }
                 } catch(e) {} // "OK" ist kein JSON → alles gut
                 window.location.reload();
             } else {
-                alert('Es gab einen Fehler beim Upload!');
+                alert(<?= tjs('Es gab einen Fehler beim Upload!') ?>);
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="bi bi-save me-1"></i> Speichern';
             }

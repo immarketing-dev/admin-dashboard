@@ -203,3 +203,24 @@ function datenwert(string $wert): string
 
     return $tabellen[$sprache][$wert] ?? $wert;
 }
+
+/**
+ * Uebersetzter Text als fertiges JavaScript-Literal, mit Anfuehrungszeichen.
+ *
+ *   alert(<?= tjs('Wirklich löschen?') ?>);
+ *
+ * te() waere hier falsch: es maskiert fuer HTML, und ein &#039; mitten in
+ * einer JavaScript-Zeichenkette erscheint dem Benutzer woertlich. json_encode
+ * erzeugt dagegen ein gueltiges Literal samt Anfuehrungszeichen.
+ *
+ * Die HEX-Schalter sind kein Zierrat: ohne JSON_HEX_TAG beendet ein
+ * </script> im Text den Script-Block, und der Rest der Seite landet als
+ * Text im Browser.
+ */
+function tjs(string $text, ...$werte): string
+{
+    return json_encode(
+        t($text, ...$werte),
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+    );
+}

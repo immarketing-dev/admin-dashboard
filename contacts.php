@@ -453,7 +453,7 @@ require 'includes/layout_start.php';
             btn.classList.replace('text-danger', 'btn-danger');
             btn.classList.remove('btn-icon');
             btn.classList.add('btn', 'btn-sm', 'text-white', 'fw-bold', 'px-2');
-            btn.innerHTML = 'Sicher?';
+            btn.innerHTML = <?= tjs('Sicher?') ?>;
             
             setTimeout(() => { 
                 if(btn.parentNode) {
@@ -478,7 +478,7 @@ require 'includes/layout_start.php';
         } else {
             btn.dataset.confirmed = "1";
             btn.classList.replace('btn-outline-danger', 'btn-danger');
-            btn.innerHTML = 'Sicher? Klick noch mal!';
+            btn.innerHTML = <?= tjs('Sicher? Klick noch mal!') ?>;
             
             setTimeout(() => { 
                 btn.dataset.confirmed = "0"; 

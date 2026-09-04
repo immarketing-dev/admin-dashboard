@@ -540,11 +540,11 @@ require 'includes/layout_start.php';
 
         document.getElementById('tm_subject').textContent       = t.subject;
         document.getElementById('tm_sender').textContent        = t.contact_name || '–';
-        document.getElementById('tm_email_display').textContent = t.contact_email || 'Keine E-Mail hinterlegt';
+        document.getElementById('tm_email_display').textContent = t.contact_email || <?= tjs('Keine E-Mail hinterlegt') ?>;
 
         const d = new Date(t.created_at);
         document.getElementById('tm_date').textContent = d.toLocaleDateString('de-DE') + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' Uhr';
-        document.getElementById('tm_age').textContent  = (t.age_days || 0) + ' Tage alt';
+        document.getElementById('tm_age').textContent  = (t.age_days || 0) + <?= tjs(' Tage alt') ?>;
 
         document.getElementById('tm_message').textContent = t.message;
 
@@ -559,7 +559,7 @@ require 'includes/layout_start.php';
         // Status-Select im Header
         const sSel = document.getElementById('tm_status_sel');
         sSel.innerHTML = '';
-        ['Offen', 'In Bearbeitung', 'Erledigt'].forEach(s => {
+        ['Offen', <?= tjs('In Bearbeitung') ?>, 'Erledigt'].forEach(s => {
             const o = new Option(s, s, s === t.status, s === t.status);
             sSel.appendChild(o);
         });
@@ -570,7 +570,7 @@ require 'includes/layout_start.php';
         document.getElementById('tm_reply_body').value    = '';
         document.getElementById('tm_reply_status').textContent = '';
         document.getElementById('tm_mailto_link').href =
-            `mailto:${t.contact_email || ''}?subject=${encodeURIComponent('Re: ' + t.subject)}&body=${encodeURIComponent('\n\n\n--- Ursprüngliche Anfrage ---\n' + t.message)}`;
+            `mailto:${t.contact_email || ''}?subject=${encodeURIComponent('Re: ' + t.subject)}&body=${encodeURIComponent('\n\n' + <?= tjs('--- Ursprüngliche Anfrage ---') ?> + '\n' + t.message)}`;
 
         document.getElementById('tm_profile_btn').href = 'contacts?search=' + encodeURIComponent(t.contact_name || '');
 
@@ -586,7 +586,7 @@ require 'includes/layout_start.php';
                 const count = document.getElementById('tm_notes_count');
                 count.textContent = notes.length > 0 ? `(${notes.length})` : '';
                 if (notes.length === 0) {
-                    list.innerHTML = '<div class="text-muted small text-center py-2 border rounded bg-surface">Noch keine Notizen.</div>';
+                    list.innerHTML = '<div class="text-muted small text-center py-2 border rounded bg-surface"><?= te('Noch keine Notizen.') ?></div>';
                     return;
                 }
                 list.innerHTML = notes.map(n => {
@@ -643,16 +643,16 @@ require 'includes/layout_start.php';
         const sendEmail = document.getElementById('tm_send_email').checked;
         const statusEl  = document.getElementById('tm_reply_status');
         if (!body) {
-            statusEl.textContent = 'Bitte Antworttext eingeben.';
+            statusEl.textContent = <?= tjs('Bitte Antworttext eingeben.') ?>;
             statusEl.className   = 'text-danger small';
             return;
         }
         if (sendEmail && !to) {
-            statusEl.textContent = 'Bitte E-Mail-Adresse angeben.';
+            statusEl.textContent = <?= tjs('Bitte E-Mail-Adresse angeben.') ?>;
             statusEl.className   = 'text-danger small';
             return;
         }
-        statusEl.textContent = sendEmail ? 'Wird gesendet…' : 'Wird gespeichert…';
+        statusEl.textContent = sendEmail ? <?= tjs('Wird gesendet…') ?> : <?= tjs('Wird gespeichert…') ?>;
         statusEl.className   = 'text-muted small';
         fetch('tickets', {
             method: 'POST',
@@ -662,24 +662,24 @@ require 'includes/layout_start.php';
             let resp;
             try { resp = JSON.parse(raw); }
             catch (e) {
-                statusEl.textContent = 'Serverfehler – bitte Logs prüfen.';
+                statusEl.textContent = <?= tjs('Serverfehler – bitte Logs prüfen.') ?>;
                 statusEl.className   = 'text-danger small';
                 console.error('send_reply: ungültige Serverantwort', raw);
                 return;
             }
             if (resp.ok) {
-                statusEl.textContent = resp.email_sent ? '✓ Gesendet & gespeichert' : '✓ Im Portal gespeichert';
+                statusEl.textContent = resp.email_sent ? <?= tjs('✓ Gesendet & gespeichert') ?> : <?= tjs('✓ Im Portal gespeichert') ?>;
                 statusEl.className   = 'text-success small fw-bold';
                 document.getElementById('tm_reply_body').value = '';
                 loadNotes(_ticket.id);
-                updateRowBadge(_ticket.id, 'In Bearbeitung');
-                document.getElementById('tm_status_sel').value = 'In Bearbeitung';
+                updateRowBadge(_ticket.id, <?= tjs('In Bearbeitung') ?>);
+                document.getElementById('tm_status_sel').value = <?= tjs('In Bearbeitung') ?>;
             } else {
-                statusEl.textContent = 'Fehler: ' + (resp.err || 'Unbekannter Fehler');
+                statusEl.textContent = <?= tjs('Fehler: ') ?> + (resp.err || <?= tjs('Unbekannter Fehler') ?>);
                 statusEl.className   = 'text-danger small';
             }
         }).catch(err => {
-            statusEl.textContent = 'Netzwerkfehler: ' + err.message;
+            statusEl.textContent = <?= tjs('Netzwerkfehler: ') ?> + err.message;
             statusEl.className   = 'text-danger small';
         });
     }

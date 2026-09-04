@@ -1016,4 +1016,254 @@ return [
         => 'Server',
     'Zeitzone'
         => 'Time zone',
+    // ── Portal und JavaScript-Meldungen ──────────────────────────────
+    'Ganztägig'
+        => 'All day',
+    'ICS-Einladungslink kopieren'
+        => 'Copy ICS invitation link',
+    'ICS-Link kopieren:'
+        => 'Copy ICS link:',
+    'Einladung per E-Mail senden'
+        => 'Send invitation by e-mail',
+    'Einladung per E-Mail an diesen Kontakt senden?'
+        => 'Send an invitation to this contact by e-mail?',
+    'Einladungen an alle Kontakte dieses Termins senden?'
+        => 'Send invitations to every contact for this appointment?',
+    'Nicht gesetzt'
+        => 'Not set',
+    'Keine Beschreibung vorhanden.'
+        => 'No description.',
+    'Sicher?'
+        => 'Are you sure?',
+    'Sicher? Klick noch mal!'
+        => 'Are you sure? Click again.',
+    'Leistungsbeschreibung...'
+        => 'Description of work…',
+    'Beschreibung...'
+        => 'Description…',
+    'Gesamt: '
+        => 'Total: ',
+    'Service: '
+        => 'Service: ',
+    'Fehler: '
+        => 'Error: ',
+    'Netzwerkfehler: '
+        => 'Network error: ',
+    'Unbekannter Fehler'
+        => 'Unknown error',
+    'Serverfehler – bitte Logs prüfen.'
+        => 'Server error — please check the logs.',
+    'Keine Angabe'
+        => 'Not specified',
+    'Keine Nachricht hinterlassen.'
+        => 'No message left.',
+    'Keine E-Mail hinterlegt'
+        => 'No e-mail on file',
+    'Kein Feedback.'
+        => 'No feedback.',
+    'Keine Dokumente'
+        => 'No documents',
+    'Bitte Antworttext eingeben.'
+        => 'Please enter a reply.',
+    'Bitte E-Mail-Adresse angeben.'
+        => 'Please enter an e-mail address.',
+    'Wird gesendet…'
+        => 'Sending…',
+    'Wird gespeichert…'
+        => 'Saving…',
+    '✓ Gesendet & gespeichert'
+        => '✓ Sent and saved',
+    '✓ Im Portal gespeichert'
+        => '✓ Saved in the portal',
+    'Im Browser ansehen'
+        => 'View in the browser',
+    'Upload erfolgreich!'
+        => 'Upload complete.',
+    'Fehler beim Upload!'
+        => 'Upload failed.',
+    'Es gab einen Fehler beim Upload!'
+        => 'The upload failed.',
+    'Gespeichert, aber einige Dateien wurden abgelehnt:'
+        => 'Saved, but some files were rejected:',
+    'Bitte speichern Sie das Projekt zuerst, bevor Sie Dateien hochladen!'
+        => 'Please save the project before uploading files.',
+    'Noch niemand zugeordnet.'
+        => 'Nobody assigned yet.',
+    ' · kein Portal-Zugang'
+        => ' · no portal access',
+    ' aus diesem Projekt entfernen?'
+        => ' from this project?',
+    ' Tage alt'
+        => ' days old',
+    '--- Ursprüngliche Anfrage ---'
+        => '--- Original enquiry ---',
+    'Dateityp .'
+        => 'File type .',
+    ' ist zu groß (max. 100 MB).'
+        => ' is too large (max. 100 MB).',
+    'Datei zu groß (max. 100 MB).'
+        => 'File too large (max. 100 MB).',
+    'Dieser Dateityp ist gesperrt.'
+        => 'This file type is blocked.',
+    'Für dieses Projekt haben Sie keine Berechtigung.'
+        => 'You do not have permission for this project.',
+    '&ndash; Zugangscode'
+        => '&ndash; access code',
+    'Alle Daten sind erfunden, Änderungen werden nicht gespeichert.'
+        => 'Every record is invented, and nothing you change is saved.',
+    'Willkommen zurück'
+        => 'Welcome back',
+    'Portal einrichten'
+        => 'Set up your portal',
+    'Legen Sie einmalig einen persönlichen Zugangscode für Ihr Portal fest.'
+        => 'Choose a personal access code for your portal. You only do this once.',
+    'Zugang vorübergehend gesperrt'
+        => 'Access temporarily locked',
+    'Bitte kontaktieren Sie'
+        => 'Please contact',
+    'zum Zurücksetzen.'
+        => 'to have it reset.',
+    'Zugangscode'
+        => 'Access code',
+    'Zugangscode wählen'
+        => 'Choose an access code',
+    '(mind. 4 Zeichen)'
+        => '(at least 4 characters)',
+    'Neuer Zugangscode'
+        => 'New access code',
+    'Zugangscode bestätigen'
+        => 'Confirm access code',
+    'Wiederholen'
+        => 'Repeat',
+    'Zugangscode festlegen'
+        => 'Set access code',
+    'Bereitgestellt von'
+        => 'Provided by',
+    '✓ Übereinstimmend'
+        => '✓ Match',
+    '✗ Stimmt nicht überein'
+        => '✗ Does not match',
+    'PARTNER'
+        => 'PARTNER',
+    'Aktive Projekte'
+        => 'Active projects',
+    'Projekte gesamt'
+        => 'Projects in total',
+    'Offene Rechnungen'
+        => 'Open invoices',
+    'Mein Profil'
+        => 'My profile',
+    'Projekt suchen...'
+        => 'Search projects…',
+    'Zum hellen Design wechseln'
+        => 'Switch to the light theme',
+    'Zum dunklen Design wechseln'
+        => 'Switch to the dark theme',
+    'Schließen Sie erledigte Schritte mit "Absegnen" ab, damit wir mit dem nächsten beginnen können.'
+        => 'Mark finished steps as approved so we can start the next one.',
+    'Warten auf Ihre Freigabe'
+        => 'Waiting for your approval',
+    'Absegnen'
+        => 'Approve',
+    'Ihre Anmerkung zu diesem Schritt...'
+        => 'Your note on this step…',
+    'Noch keine Meilensteine für dieses Projekt.'
+        => 'No milestones for this project yet.',
+    'Ansehen'
+        => 'View',
+    'Dateien hochladen'
+        => 'Upload files',
+    'Klicken oder Dateien hierher ziehen · max. 100 MB'
+        => 'Click or drop files here · max. 100 MB',
+    'Beitrag'
+        => 'message',
+    'Etwas mitteilen oder nachfragen …'
+        => 'Share something or ask a question …',
+    'Zuletzt geschrieben von'
+        => 'Last written by',
+    'Allgemeines Feedback'
+        => 'General feedback',
+    'Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?'
+        => 'Any questions or corrections on where things stand?',
+    'Ihre Anmerkungen...'
+        => 'Your remarks…',
+    'Feedback speichern'
+        => 'Save feedback',
+    'Aktuell liegt kein Angebot vor.'
+        => 'There is no quote at the moment.',
+    'Angebot als PDF'
+        => 'Quote as PDF',
+    'Angebot annehmen'
+        => 'Accept quote',
+    'Rückfrage stellen'
+        => 'Ask a question',
+    'Die Frist ist abgelaufen — melden Sie sich gern, wir machen Ihnen ein neues Angebot.'
+        => 'This quote has expired — get in touch and we will send you a new one.',
+    'Angenommen — vielen Dank!'
+        => 'Accepted — thank you.',
+    'Ihre Rückfrage'
+        => 'Your question',
+    'Was möchten Sie wissen oder anders haben?'
+        => 'What would you like to know or have changed?',
+    'Rückfrage senden'
+        => 'Send question',
+    'Eine Rückfrage ändert am Angebot nichts — sie erreicht uns als Nachricht.'
+        => 'Asking a question changes nothing about the quote — it simply reaches us as a message.',
+    'Noch keine Rechnungen vorhanden.'
+        => 'No invoices yet.',
+    'Zahlung'
+        => 'Payment',
+    'Empfänger'
+        => 'Payee',
+    'Verwendungszweck'
+        => 'Reference',
+    'PDF auf Anfrage'
+        => 'PDF on request',
+    'Worum geht es?'
+        => 'What is it about?',
+    'Beschreiben Sie Ihr Anliegen...'
+        => 'Describe your request…',
+    'Noch keine Anfragen gestellt.'
+        => 'No requests yet.',
+    'Antwort oder Rückfrage hinzufügen…'
+        => 'Add a reply or a question…',
+    'Absenden'
+        => 'Send',
+    'Priorität:'
+        => 'Priority:',
+    'Wissensdatenbank'
+        => 'Knowledge base',
+    'Ihre bei uns hinterlegten Stammdaten — werden u.a. für die Rechnungsstellung verwendet.'
+        => 'The details we hold for you — used for invoicing, among other things.',
+    'Kontaktdaten'
+        => 'Contact details',
+    'Vor- & Nachname *'
+        => 'First and last name *',
+    'Firmenname'
+        => 'Company name',
+    'E-Mail *'
+        => 'E-mail *',
+    'Rechnungsadresse'
+        => 'Billing address',
+    'Straße & Hausnummer'
+        => 'Street and number',
+    'Daten speichern'
+        => 'Save details',
+    // ── Von JavaScript erzeugtes HTML ────────────────────────────────
+    'Noch keine Meilensteine angelegt.'
+        => 'No milestones yet.',
+    'Keine Einträge für diesen Tag.'
+        => 'Nothing on this day.',
+    'Keine Dokumente.'
+        => 'No documents.',
+    'Noch keine Notizen.'
+        => 'No notes yet.',
+    'Alle einladen'
+        => 'Invite everyone',
+    'und'
+        => 'and',
+    'Hier stellen Sie ein, was unter jeder Nachricht steht.'
+        => 'Here you set what appears below every message.',
+    'angepasst'
+        => 'edited',
 ];

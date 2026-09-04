@@ -827,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const quoteModal = new bootstrap.Modal(document.getElementById('quoteModal'));
 
 function prepareNewQuote() {
-    document.getElementById('quoteModalTitle').innerHTML = '<i class="bi bi-file-earmark-plus me-2"></i> Neues Angebot';
+    document.getElementById('quoteModalTitle').innerHTML = '<i class="bi bi-file-earmark-plus me-2"></i> <?= te('Neues Angebot') ?>';
     document.getElementById('q_action').value = 'create_quote';
     document.getElementById('q_id').value = '';
     document.getElementById('q_contact').value = '';
@@ -878,7 +878,7 @@ function addItem(desc = '', qty = 1, price = 0, unit = '') {
     row.className = 'row g-2 mb-2 align-items-center item-row';
     row.innerHTML = `
         <div class="col-md-5">
-            <input type="text" name="item_desc[]" class="form-control form-control-sm" placeholder="Beschreibung..." value="${escHtml(desc)}" required>
+            <input type="text" name="item_desc[]" class="form-control form-control-sm" placeholder=<?= tjs('Beschreibung...') ?> value="${escHtml(desc)}" required>
         </div>
         <div class="col-md-2">
             <input type="text" name="item_unit[]" class="form-control form-control-sm" placeholder="Einheit" value="${escHtml(unit)}" list="q_unit_options">
@@ -893,7 +893,7 @@ function addItem(desc = '', qty = 1, price = 0, unit = '') {
             </div>
         </div>
         <div class="col-md-1 text-end">
-            <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" onclick="this.closest('.item-row').remove(); calcTotal()"><i class="bi bi-trash3"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" onclick='this.closest(\'.item-row\').remove(); calcTotal()'><i class="bi bi-trash3"></i></button>
         </div>`;
     document.getElementById('items-container').appendChild(row);
 }
@@ -911,7 +911,7 @@ function calcTotal() {
         if (!isNaN(qty) && !isNaN(price)) netto += qty * price;
     });
     const brutto = taxType === 'regel' ? netto * 1.19 : netto;
-    document.getElementById('total-display').textContent = 'Gesamt: ' + brutto.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+    document.getElementById('total-display').textContent = <?= tjs('Gesamt: ') ?> + brutto.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
 }
 
 document.getElementById('q_tax_type').addEventListener('change', calcTotal);
@@ -962,7 +962,7 @@ function confirmDeleteQuote(btn, id) {
         document.getElementById('del_q_' + id).submit();
     } else {
         btn.dataset.confirmed = '1';
-        btn.innerHTML = 'Sicher?';
+        btn.innerHTML = <?= tjs('Sicher?') ?>;
         btn.classList.replace('btn-outline-danger', 'btn-danger');
         btn.classList.add('text-white');
         setTimeout(() => {

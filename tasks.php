@@ -1240,7 +1240,7 @@ require 'includes/layout_start.php';
             feedbackEl.textContent = task.client_feedback;
             feedbackEl.innerHTML = feedbackEl.innerHTML.replace(/\n/g, '<br>');
         } else {
-            feedbackEl.textContent = 'Kein Feedback.';
+            feedbackEl.textContent = <?= tjs('Kein Feedback.') ?>;
         }
         
         let assetHtml = '';
@@ -1254,7 +1254,7 @@ require 'includes/layout_start.php';
                     
                 assetHtml += `<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">${badge} ${a.file_name}</span><div class="d-flex gap-2"><a href="${a.file_path}" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(${a.id})"><i class="bi bi-trash"></i></button></div></div>`;
             });
-        } else { assetHtml = '<span class="small text-muted">Keine Dokumente.</span>'; }
+        } else { assetHtml = '<span class="small text-muted"><?= te('Keine Dokumente.') ?></span>'; }
         document.getElementById('e_assets').innerHTML = assetHtml;
         
         document.getElementById('adminAssetUpload').value = '';
@@ -1279,7 +1279,7 @@ require 'includes/layout_start.php';
 
         const taskId = document.getElementById('e_id').value;
         if(!taskId) {
-            alert("Bitte speichern Sie das Projekt zuerst, bevor Sie Dateien hochladen!");
+            alert(<?= tjs('Bitte speichern Sie das Projekt zuerst, bevor Sie Dateien hochladen!') ?>);
             this.value = '';
             return;
         }
@@ -1324,11 +1324,11 @@ require 'includes/layout_start.php';
         xhr.onload = () => { 
             if(xhr.status === 200) {
                 pBar.classList.replace('bg-primary', 'bg-success');
-                pBar.innerText = 'Upload erfolgreich!';
+                pBar.innerText = <?= tjs('Upload erfolgreich!') ?>;
                 
                 let html = xhr.responseText.trim();
                 let container = document.getElementById('e_assets');
-                if(container.innerHTML.includes('Keine Dokumente')) {
+                if(container.innerHTML.includes(<?= tjs('Keine Dokumente') ?>)) {
                     container.innerHTML = '';
                 }
                 container.innerHTML += html;
@@ -1341,7 +1341,7 @@ require 'includes/layout_start.php';
                 }, 2000);
 
             } else {
-                alert('Fehler beim Upload!');
+                alert(<?= tjs('Fehler beim Upload!') ?>);
                 document.getElementById('adminUploadProgressContainer').style.display = 'none';
             }
         };
@@ -1362,7 +1362,7 @@ require 'includes/layout_start.php';
     function addInvoiceRow(desc = '', qty = 1, price = 60) {
       const container = document.getElementById('invoice-items-container');
       const row = document.createElement('div'); row.className = 'row g-2 mb-2 pb-2 border-bottom inv-item-row';
-      row.innerHTML = `<div class="col-7"><input type="text" name="item_desc[]" class="form-control form-control-sm" value="${desc}"></div><div class="col-2"><input type="number" step="0.01" name="item_qty[]" class="form-control form-control-sm inv-qty" value="${qty}" oninput="calcInv()"></div><div class="col-2"><input type="number" step="0.01" name="item_price[]" class="form-control form-control-sm inv-price" value="${price}" oninput="calcInv()"></div><div class="col-1"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.remove(); calcInv();">X</button></div>`;
+      row.innerHTML = `<div class="col-7"><input type="text" name="item_desc[]" class="form-control form-control-sm" value="${desc}"></div><div class="col-2"><input type="number" step="0.01" name="item_qty[]" class="form-control form-control-sm inv-qty" value="${qty}" oninput="calcInv()"></div><div class="col-2"><input type="number" step="0.01" name="item_price[]" class="form-control form-control-sm inv-price" value="${price}" oninput="calcInv()"></div><div class="col-1"><button type="button" class="btn btn-sm btn-danger" onclick='this.parentElement.parentElement.remove(); calcInv();'>X</button></div>`;
       container.appendChild(row);
       calcInv();
     }
@@ -1405,7 +1405,7 @@ require 'includes/layout_start.php';
               document.getElementById('inv_client_city').value = (c.zip || '') + " " + (c.city || '');
           }
           document.getElementById('invoice-items-container').innerHTML = '';
-          addInvoiceRow("Service: " + this.getAttribute('data-task-title'), this.getAttribute('data-hours'), 60);
+          addInvoiceRow(<?= tjs('Service: ') ?> + this.getAttribute('data-task-title'), this.getAttribute('data-hours'), 60);
       });
     });
 
@@ -1552,7 +1552,7 @@ require 'includes/layout_start.php';
       if (!leute.length) {
           const p = document.createElement('p');
           p.className = 'text-muted small mb-0';
-          p.textContent = 'Noch niemand zugeordnet.';
+          p.textContent = <?= tjs('Noch niemand zugeordnet.') ?>;
           liste.appendChild(p);
           return;
       }
@@ -1571,7 +1571,7 @@ require 'includes/layout_start.php';
           meta.style.fontSize = 'var(--text-2xs)';
           meta.textContent = (m.role === 'owner' ? 'Hauptansprechpartner' : 'Beteiligt')
                            + (m.company ? ' · ' + m.company : '')
-                           + (m.portal_token ? '' : ' · kein Portal-Zugang');
+                           + (m.portal_token ? '' : <?= tjs(' · kein Portal-Zugang') ?>);
           links.appendChild(name); links.appendChild(meta);
 
           zeile.appendChild(links);
@@ -1580,7 +1580,7 @@ require 'includes/layout_start.php';
               const f = document.createElement('form');
               f.method = 'POST';
               f.className = 'm-0';
-              f.onsubmit = function () { return confirm(m.name + ' aus diesem Projekt entfernen?'); };
+              f.onsubmit = function () { return confirm(m.name + <?= tjs(' aus diesem Projekt entfernen?') ?>); };
               [['csrf_token', MEMBERS_CSRF], ['action', 'remove_task_contact'],
                ['task_id', taskId], ['contact_id', m.contact_id], ['back_q', MEMBERS_BACK]
               ].forEach(function (kv) {
