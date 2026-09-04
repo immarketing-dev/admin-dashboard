@@ -1,5 +1,10 @@
 # Admin Dashboard
 
+[![CI](https://github.com/immarketing-dev/admin-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/immarketing-dev/admin-dashboard/actions/workflows/ci.yml)
+[![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](https://www.php.net/)
+[![No build step](https://img.shields.io/badge/build%20step-none-lightgrey)](#installation)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Self-hosted admin panel for freelancers and small agencies. Projects with
 milestones and time tracking, a CRM, invoicing and quotes with PDF output,
 support tickets, a wiki, and a client portal your customers log into with a
@@ -17,6 +22,10 @@ and enter the access code `1234`, which the page shows you anyway.
 Every name, company, invoice and address in it is invented. How the demo
 mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
 
+---
+
+**Contents** — [Features](#features) · [Screenshots](#screenshots) · [Requirements](#requirements) · [Installation](#installation) · [Configuration](#configuration) · [Security](#security) · [Tooling](#tooling)
+
 ## Features
 
 - **Dashboard** — KPIs, upcoming deadlines, parallel uptime monitoring for a
@@ -33,6 +42,8 @@ mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
 - **Wiki** — articles with attachments, selectively shareable with clients
 - **Client portal** — projects, milestone approval, file upload, tickets,
   invoices and shared wiki articles, reached with a token and a PIN
+- **German or English**, switchable in the settings; the client portal
+  follows each contact's own language
 - **Dark mode**, responsive down to phone width
 
 ## Screenshots
@@ -272,37 +283,61 @@ Report a vulnerability as described in [SECURITY.md](SECURITY.md).
 
 ## Tooling
 
+Every check exits 0 when it passes. All must pass before a pull request —
+see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ```bash
-bash tools/check.sh          # syntax, credential/identifier leak scan,
-                              # unpinned CDN references, stray upload
-                              # files, and CSS structural checks
-php tools/check_schema.php   # table coverage and structural DDL validation
-                              # for install/schema.sql
-php tools/check_css.php [path/to/old/design.css]
-                              # CSS checks; the baseline argument is
-                              # optional — without it, only the structural
-                              # checks run and the parity checks are skipped
-php tools/test_env.php       # unit tests for the .env parser
-php tools/test_seed_demo.php # runs the demo seed against SQLite and
-                              # checks the result
-php tools/check_demo.php     # verifies the demo-mode write guard holds
-php tools/export_demo_sql.php <file.sql>
-                              # writes the demo data as an importable
-                              # MySQL file, for hosting without a shell
-php tools/test_demo.php      # unit tests for the guard itself
+bash tools/check.sh            # the whole suite (see below)
+php tools/check_schema.php     # install/schema.sql: tables, keys, foreign
+                               #   key targets, stray commas
+php tools/test_env.php         # unit tests for the .env parser
 ```
 
-`bash tools/check.sh` runs `check_css.php`, `check_demo.php`,
-`test_demo.php` and `test_seed_demo.php` internally; run `check_schema.php`
-and `test_env.php` separately. All must exit 0 before you open a pull request — see
-[CONTRIBUTING.md](CONTRIBUTING.md).
+`tools/check.sh` runs these internally:
 
+| Check | What it catches |
+|---|---|
+| `check_css.php` | raw colours, undefined tokens, misplaced `[data-theme]` rules |
+| `check_php_tags.php` | PHP code outside its tags — a page serving its own source |
+| `check_includes.php` | a function called but never loaded (HTTP 500 at runtime) |
+| `check_i18n.php` | untranslated strings, orphaned entries, mismatched placeholders |
+| `check_demo.php` | the demo-mode write guard, and writes on the display path |
+| `test_session.php` | session cookie name, path and flags |
+| `test_i18n.php` | renders the navigation in both languages and compares |
+| `test_demo.php` | which requests the demo guard lets through |
+| `test_seed_demo.php` | runs the demo seed against SQLite and checks the result |
+
+Run separately when you need them:
+
+```bash
+php tools/check_soft_delete.php   # every SELECT filters deleted_at
+php tools/check_forms.php         # no form tag swallows its own CSRF field
+php tools/test_csrf.php           # CSRF helpers
+php tools/test_upload.php         # upload validation
+php tools/test_mail_templates.php # mail templates render without CSS variables
+php tools/export_demo_sql.php <file.sql>
+                                  # demo data as an importable MySQL file,
+                                  #   for hosting without a shell
+php tools/deploy.php <dir>        # build an upload folder, keeping .env
+                                  #   and uploads/ in place
+```
 ## Language
 
-The interface is German. Code comments are German; documentation is
-English. There is no translation layer — changing the interface language
-means editing the strings.
+The interface runs in **German or English**, chosen on the settings page.
+The client portal follows each contact's own language, so you can work in
+German while an English-speaking client sees their portal in English.
 
+Translations live in `lang/en.php`, keyed by the German source text:
+`t('Speichern')` looks up `'Speichern'`. A missing entry falls back to the
+German original, so the interface is never empty and never shows a raw key.
+`includes/i18n.php` explains why database values — `'Offen'`, `'Bezahlt'` —
+are translated for display only and never on write.
+
+Translation is being done in stages; anything not yet covered stays German.
+`php tools/check_i18n.php` reports what is still missing.
+
+Code comments are German. Documentation, commit messages and pull request
+descriptions are English.
 ## License
 
 MIT — see [LICENSE](LICENSE).
