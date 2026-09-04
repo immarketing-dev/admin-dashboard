@@ -254,7 +254,7 @@ $page_title   = 'Support-Tickets';
 $page_heading = 'Support Zentrale';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
-      <button class="btn btn-primary btn-sm shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+      <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#newTicketModal">
         <i class="bi bi-plus-lg"></i> Neues Ticket
       </button>';
 
@@ -298,8 +298,8 @@ require 'includes/layout_start.php';
     </div>
 
     <!-- Filter -->
-    <form class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
-      <div class="input-group input-group-sm search-box" style="flex-grow:1;max-width:380px;">
+    <form class="filter-bar">
+      <div class="input-group input-group-sm search-box">
         <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
         <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Kunde, Betreff oder Nachricht…" value="<?= htmlspecialchars($search_query) ?>">
       </div>
@@ -494,7 +494,7 @@ require 'includes/layout_start.php';
                 </select>
               </div>
               <div class="mt-auto pt-3 border-top">
-                <a href="#" id="tm_profile_btn" class="btn btn-outline-dark btn-sm w-100 fw-bold">
+                <a href="#" id="tm_profile_btn" class="btn btn-outline-secondary btn-sm w-100 fw-bold">
                   <i class="bi bi-person-badge me-1"></i>Kundenprofil öffnen
                 </a>
               </div>

@@ -2,8 +2,13 @@
 /**
  * Öffnet den Seitenrumpf: Sidebar, Overlay, Top-Header.
  * Erwartet $current_page und $page_heading, optional $header_actions
- * und $header_class (zusätzliche CSS-Klasse(n) am .top-header-Div,
- * z.B. "flex-wrap" bei vielen Header-Buttons).
+ * und $header_class (zusätzliche CSS-Klasse(n) am .top-header-Div).
+ *
+ * $header_actions wird in <div class="header-actions"> gefasst. Dort
+ * regelt app.css Umbruch und Abstände zentral - die Seiten liefern nur
+ * noch die Schaltflächen, nicht mehr deren Anordnung. Zum Ausblenden
+ * einer Beschriftung auf sehr schmalen Geräten die Beschriftung einer
+ * Nebenaktion in <span class="btn-label"> setzen.
  */
 $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 ?>
@@ -17,5 +22,7 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
       <i class="bi bi-list mobile-toggle" id="mobile-toggle-btn"></i>
       <?= htmlspecialchars($page_heading ?? '') ?>
     </h2>
-    <?= $header_actions ?? '' ?>
+    <?php if (!empty($header_actions)): ?>
+      <div class="header-actions"><?= $header_actions ?></div>
+    <?php endif; ?>
   </div>

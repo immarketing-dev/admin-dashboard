@@ -199,7 +199,7 @@ foreach($articles as $art) {
 $page_title   = 'Wiki & Snippets';
 $page_heading = 'Wiki & Snippets';
 $current_page = basename($_SERVER['PHP_SELF']);
-$header_actions = '<button class="btn btn-primary btn-sm shadow-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> Neuer Eintrag</button>';
+$header_actions = '<button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> Neuer Eintrag</button>';
 // Prism-Theme (Code-Highlighting) wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />';
 
@@ -207,8 +207,8 @@ require 'includes/head.php';
 require 'includes/layout_start.php';
 ?>
 
-    <form method="GET" action="wiki" class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center mb-4">
-        <div class="input-group input-group-sm w-auto search-box" style="flex-grow: 1; max-width: 400px;">
+    <form method="GET" action="wiki" class="filter-bar">
+        <div class="input-group input-group-sm search-box">
             <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
             <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Wiki durchsuchen..." value="<?=htmlspecialchars($search_query)?>">
         </div>

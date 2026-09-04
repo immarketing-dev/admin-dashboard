@@ -98,12 +98,12 @@ $page_title   = 'Kanban Board';
 $page_heading = 'Projekt Board';
 $current_page = basename($_SERVER['PHP_SELF']);
 $header_actions = '
-      <div class="d-flex gap-3 align-items-center w-100 flex-wrap" style="max-width: 450px;">
+      <div class="d-flex gap-2 align-items-center flex-wrap" style="max-width: 560px;">
           <div class="input-group input-group-sm search-box" style="flex-grow: 1;">
               <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
               <input type="text" id="boardSearch" class="form-control border-start-0 ps-0" placeholder="Board durchsuchen...">
           </div>
-          <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold shadow-sm text-nowrap"><i class="bi bi-card-list"></i> Listenansicht</a>
+          <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Listenansicht</span></a>
       </div>';
 // Sortable.js (Drag & Drop) wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>';

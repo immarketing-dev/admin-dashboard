@@ -146,7 +146,7 @@ $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $page_title   = 'Kontakte';
 $page_heading = 'CRM & Kontakte';
 $current_page = basename($_SERVER['PHP_SELF']);
-$header_actions = '<button class="btn btn-primary btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#addContactModal" onclick="prepareAdd()"><i class="bi bi-person-plus-fill"></i> Neu anlegen</button>';
+$header_actions = '<button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addContactModal" onclick="prepareAdd()"><i class="bi bi-person-plus-fill"></i> Neu anlegen</button>';
 // QR-Code-Bibliothek wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>';
 
@@ -156,21 +156,17 @@ require 'includes/layout_start.php';
 
     <div class="row mb-4">
         <div class="col-12">
-            <form method="GET" action="contacts" class="bg-surface p-3 rounded shadow-sm d-flex flex-wrap gap-2 align-items-center">
-                <div style="flex-grow: 1; min-width: 250px;">
-                    <div class="input-group input-group-sm search-box">
-                        <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suche nach Name, Firma, E-Mail oder Notiz..." value="<?=htmlspecialchars($search_query)?>">
-                    </div>
+            <form method="GET" action="contacts" class="filter-bar mb-0">
+                <div class="input-group input-group-sm search-box">
+                    <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suche nach Name, Firma, E-Mail oder Notiz..." value="<?=htmlspecialchars($search_query)?>">
                 </div>
-                <div style="min-width: 150px;">
-                    <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="type" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
                         <option value="all">Alle Typen</option>
                         <option value="Kunde" <?= $filter_type === 'Kunde' ? 'selected' : '' ?>>Kunden</option>
                         <option value="Interessent" <?= $filter_type === 'Interessent' ? 'selected' : '' ?>>Interessenten</option>
                         <option value="Geschäftspartner" <?= $filter_type === 'Geschäftspartner' ? 'selected' : '' ?>>Geschäftspartner</option>
-                    </select>
-                </div>
+                </select>
                 <button type="submit" class="btn btn-primary btn-sm" style="display: none;">Filtern</button>
                 <?php if($search_query !== '' || $filter_type !== 'all'): ?>
                     <a href="contacts" class="btn btn-outline-secondary btn-sm" title="Filter zurücksetzen"><i class="bi bi-x-circle"></i> Reset</a>
@@ -365,7 +361,7 @@ require 'includes/layout_start.php';
         <div class="modal-body p-4 text-center bg-subtle">
             <div id="qrcode" class="mb-3 d-flex justify-content-center p-3 bg-surface rounded shadow-sm d-inline-block border"></div>
             <br>
-            <button class="btn btn-outline-dark btn-sm mb-4 fw-bold shadow-sm" onclick="downloadQR()"><i class="bi bi-download"></i> QR-Code speichern (.png)</button>
+            <button class="btn btn-outline-secondary btn-sm mb-4 fw-bold shadow-sm" onclick="downloadQR()"><i class="bi bi-download"></i> QR-Code speichern (.png)</button>
             
             <div class="card border-0 shadow-sm text-start">
                 <div class="card-body">
