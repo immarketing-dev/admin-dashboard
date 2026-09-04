@@ -875,7 +875,7 @@ require 'includes/layout_start.php';
                                           <?=htmlspecialchars($a['file_name'])?>
                                       </span>
                                       <div class="d-flex gap-2">
-                                          <a href="<?=$a['file_path']?>" download class="text-primary"><i class="bi bi-download"></i></a>
+                                          <a href="file?type=asset&amp;id=<?=(int)$a['id']?>&amp;dl=1" download class="text-primary"><i class="bi bi-download"></i></a>
                                           <button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(<?=$a['id']?>)"><i class="bi bi-trash"></i></button>
                                       </div>
                                   </div>
@@ -1219,7 +1219,7 @@ require 'includes/layout_start.php';
                     ? '<span class="badge bg-primary me-2" style="font-size:9px; padding:3px 5px;">Admin</span>' 
                     : '<span class="badge bg-secondary me-2" style="font-size:9px; padding:3px 5px;">' + (lader || 'Kunde') + '</span>';
                     
-                assetHtml += `<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">${badge} ${a.file_name}</span><div class="d-flex gap-2"><a href="${a.file_path}" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(${a.id})"><i class="bi bi-trash"></i></button></div></div>`;
+                assetHtml += `<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">${badge} ${a.file_name}</span><div class="d-flex gap-2"><a href="file?type=asset&id=${a.id}&dl=1" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(${a.id})"><i class="bi bi-trash"></i></button></div></div>`;
             });
         } else { assetHtml = '<span class="small text-muted"><?= te('Keine Dokumente.') ?></span>'; }
         document.getElementById('e_assets').innerHTML = assetHtml;

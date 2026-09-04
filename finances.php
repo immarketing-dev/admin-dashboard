@@ -851,8 +851,8 @@ require 'includes/layout_start.php';
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
                                     <?php if(!empty($row['invoice_pdf_path'])): ?>
-                                    <a href="<?=$row['invoice_pdf_path']?>" target="_blank" class="btn-icon text-primary" title="<?= te('Rechnung ansehen') ?>"><i class="bi bi-file-earmark-pdf-fill"></i></a>
-                                    <a href="<?=$row['invoice_pdf_path']?>" download class="btn-icon text-muted" title="<?= te('Herunterladen') ?>"><i class="bi bi-download"></i></a>
+                                    <a href="file?type=invoice&amp;id=<?=(int)$row['id']?>" target="_blank" class="btn-icon text-primary" title="<?= te('Rechnung ansehen') ?>"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                                    <a href="file?type=invoice&amp;id=<?=(int)$row['id']?>&amp;dl=1" download class="btn-icon text-muted" title="<?= te('Herunterladen') ?>"><i class="bi bi-download"></i></a>
                                     <button class="btn-icon text-info" title="<?= te('Per E-Mail senden') ?>" onclick='openInvEmailModal(<?= $row['id'] ?>, <?= json_encode($row['title'], JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_name'] ?: ($row['custom_name'] ?: ''), JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_email'] ?? '', JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= $row['amount'] ?>)'><i class="bi bi-envelope-fill"></i></button>
                                 <?php endif; ?>
                                     <button class="btn-icon" onclick='openFinanceModal(<?=$safe_json?>)'><i class="bi bi-pencil-square"></i></button>

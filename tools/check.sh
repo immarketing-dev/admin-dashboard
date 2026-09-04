@@ -174,6 +174,35 @@ for dir in uploads/*/; do
     fail=1
   fi
 done
+
+# --- 4c. Kundenunterlagen sind gesperrt ----------------------------------
+# Die vier Verzeichnisse mit Kundendaten duerfen vom Webserver gar nicht
+# ausgeliefert werden - der einzige Weg hinein ist file.php, das vorher
+# prueft, wer fragt. Eine blosse Anwesenheitspruefung wie oben genuegt
+# hier nicht: die alte .htaccess war vorhanden und sperrte trotzdem nur
+# die PHP-Ausfuehrung, waehrend jede Rechnung als PDF offen im Netz lag.
+for dir in client_assets invoices quotes wiki; do
+  pfad="uploads/$dir/.htaccess"
+  if [ ! -f "$pfad" ]; then
+    echo "UPLOADS: $pfad fehlt - Kundenunterlagen waeren oeffentlich abrufbar."
+    fail=1
+  elif ! grep -q 'Require all denied' "$pfad" || ! grep -q 'Deny from all' "$pfad"; then
+    echo "UPLOADS: $pfad sperrt nicht (erwartet: 'Require all denied' UND 'Deny from all')."
+    fail=1
+  fi
+done
+# --- 4d. Keine direkten Links auf gesperrte Verzeichnisse ---------------
+# Ein href="uploads/invoices/…" umgeht file.php und damit die
+# Zugriffspruefung. Nach der Sperre oben laeuft er ohnehin ins Leere - ein
+# toter Link faellt aber erst dem Kunden auf, dieser Scan schon vorher.
+direkt=$(grep -rnE '(href|src)=("|'"'"'|`)?(\.\./)*uploads/(client_assets|invoices|quotes|wiki)' . \
+           --include='*.php' --include='*.js' "${SCAN_EXCLUDES[@]}" 2>/dev/null)
+if [ -n "$direkt" ]; then
+  echo "UPLOADS: direkter Link auf ein gesperrtes Verzeichnis (file.php benutzen):"
+  echo "$direkt"
+  fail=1
+fi
+
 # --- 5. Demo-Modus -------------------------------------------------------
 # check_demo prueft die Annahmen des Schreibschutzes (jede POST-Seite
 # gedeckt, kein Schreibzugriff im Anzeigepfad). test_seed_demo laesst die
@@ -219,6 +248,13 @@ if command -v php >/dev/null 2>&1; then
   # also gegen die echten Tabellen samt Fremdschluesseln.
   if ! out=$(php tools/test_task_members.php 2>&1); then
     echo "BETEILIGTE: $out"
+    fail=1
+  fi
+  # Wer welche hochgeladene Datei bekommt. Ein Fehler darin gibt Kunden
+  # die Unterlagen anderer Kunden - und faellt im Betrieb nie auf, weil
+  # niemand die Rechnung sieht, die er faelschlich sehen duerfte.
+  if ! out=$(php tools/test_file_access.php 2>&1); then
+    echo "DATEIZUGRIFF: $out"
     fail=1
   fi
   if ! out=$(php tools/test_seed_demo.php 2>&1); then

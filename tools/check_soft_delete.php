@@ -43,6 +43,16 @@ const AUSNAHMEN = [
     // dieselbe Stelle angehaengt wird. Der Pruefer sieht nur Zeichenketten,
     // keine Variableninhalte - siehe finances.php an der Zuweisung.
     'finances.php' => ['SELECT type, status, amount FROM finances'],
+
+    // Die beiden Verwalter-Zweige holen bewusst auch Geloeschtes: der
+    // Papierkorb stellt eine Rechnung wieder her, und dazu gehoert ihr
+    // PDF. Fuer den Kunden gilt das NICHT - dessen Zweige tragen
+    // deleted_at IS NULL und stehen deshalb nicht in dieser Liste.
+    // tools/test_file_access.php haelt beide Faelle einzeln nach.
+    'includes/file_access.php' => [
+        'SELECT invoice_pdf_path AS pfad FROM finances WHERE id = ?',
+        'SELECT quote_pdf_path AS pfad FROM quotes WHERE id = ?',
+    ],
 ];
 
 $wurzel  = dirname(__DIR__);

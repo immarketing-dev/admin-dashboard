@@ -8,8 +8,43 @@ private history.
 
 ## [Unreleased]
 
-### Added
-- **Draggable dashboard.** The eleven widgets on the start page sat in four
+### Security
+- **Uploaded files are no longer served directly.** Everything under
+  `uploads/` was delivered by the web server to anyone who knew the path.
+  For invoices the path did not even have to be guessed: they were named
+  `Rechnung_RE-2026-001.pdf`, so counting from 001 upwards handed out every
+  invoice of every customer — name, address and amount. Project files and
+  wiki attachments (contracts, powers of attorney) were reachable the same
+  way, protected only by a timestamp in the filename.
+
+  The four directories holding customer data — `client_assets`, `invoices`,
+  `quotes` and `wiki` — now deny web access outright, and `file.php` is the
+  only way in. It resolves a database id rather than a path and asks
+  `includes/file_access.php` who may see it, applying exactly the rule the
+  client portal already uses for its lists: project files go to everyone on
+  the project (`task_contacts`), invoices and quotes to the contact they are
+  addressed to, quote drafts to nobody, and wiki attachments only for
+  articles explicitly shared with that contact. A request that fails the
+  check gets the same 404 as a missing file, so the response cannot be used
+  to count how many invoices exist.
+
+  `uploads/logos` and `uploads/favicons` stay public on purpose — the login
+  page shows them before anyone has authenticated.
+
+  Anything the browser might interpret as HTML now goes out as a download
+  with `application/octet-stream`, never inline. The files come from the
+  same origin as the panel, so a script inside one would run with the
+  session of whoever opened it. Uploads reject SVG already; this keeps the
+  decision correct even if that list ever grows.
+
+  Three checks keep it that way: `tools/test_file_access.php` (21 access
+  cases plus 10 delivery cases, run against the SQLite mirror of the real
+  schema), a `tools/check.sh` rule that the four `.htaccess` files actually
+  deny rather than merely exist — the old ones were present and still only
+  blocked PHP execution — and a scan for `href="uploads/…"` links that would
+  bypass `file.php`.
+
+### Added- **Draggable dashboard.** The eleven widgets on the start page sat in four
   fixed Bootstrap rows; they now sit in a twelve-column Gridstack grid and
   can be moved and resized with the mouse. Drag by the widget title bar, or
   by a slim grip in the top padding for the five widgets that have no title

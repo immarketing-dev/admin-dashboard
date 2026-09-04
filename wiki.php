@@ -528,7 +528,7 @@ require 'includes/layout_start.php';
                 let ext = a.file_name.split('.').pop().toLowerCase();
                 let isViewable = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
                 
-                let viewBtn = isViewable ? `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" title="Ansehen"><i class="bi bi-eye"></i></a>` : '';
+                let viewBtn = isViewable ? `<a href="file?type=wiki&id=${a.id}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" title="Ansehen"><i class="bi bi-eye"></i></a>` : '';
 
                 assetHtml += `
                 <div class="d-flex align-items-center bg-surface border rounded p-1 pe-2 shadow-sm w-100" id="asset_row_${a.id}">
@@ -573,9 +573,9 @@ require 'includes/layout_start.php';
               
               attHtml += `<div class="btn-group shadow-sm me-2 mb-2">`;
               if (isViewable) {
-                  attHtml += `<a href="${a.file_path}" target="_blank" class="btn btn-sm btn-outline-secondary" title=<?= tjs('Im Browser ansehen') ?>><i class="bi bi-eye"></i></a>`;
+                  attHtml += `<a href="file?type=wiki&id=${a.id}" target="_blank" class="btn btn-sm btn-outline-secondary" title=<?= tjs('Im Browser ansehen') ?>><i class="bi bi-eye"></i></a>`;
               }
-              attHtml += `<a href="${a.file_path}" download class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-download me-1"></i> ${a.file_name}</a>`;
+              attHtml += `<a href="file?type=wiki&id=${a.id}&dl=1" download class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-download me-1"></i> ${a.file_name}</a>`;
               attHtml += `</div>`;
           });
           document.getElementById('view_attachments_list').innerHTML = attHtml;
