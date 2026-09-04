@@ -210,22 +210,22 @@ require 'includes/layout_start.php';
     <form method="GET" action="wiki" class="filter-bar">
         <div class="input-group input-group-sm search-box">
             <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Wiki durchsuchen..." value="<?=htmlspecialchars($search_query)?>">
+            <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="<?= te('Wiki durchsuchen...') ?>" value="<?=htmlspecialchars($search_query)?>">
         </div>
 
         <select name="category" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-            <option value="all">Alle Kategorien</option>
+            <option value="all"><?= te('Alle Kategorien') ?></option>
             <?php foreach($all_categories as $cat): ?>
                 <option value="<?=htmlspecialchars($cat)?>" <?=$filter_category==$cat?'selected':''?>><?=htmlspecialchars($cat)?></option>
             <?php endforeach; ?>
         </select>
         
         <select name="sort" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-            <option value="newest" <?=$sort_by=='newest'?'selected':''?>>Neueste zuerst</option>
+            <option value="newest" <?=$sort_by=='newest'?'selected':''?>><?= te('Neueste zuerst') ?></option>
             <option value="az" <?=$sort_by=='az'?'selected':''?>>A-Z</option>
         </select>
         
-        <button type="submit" class="btn btn-primary btn-sm ms-auto" style="display: none;">Suchen</button>
+        <button type="submit" class="btn btn-primary btn-sm ms-auto" style="display: none;"><?= te('Suchen') ?></button>
         <?php if($search_query !== '' || $filter_category !== 'all'): ?>
             <a href="wiki" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-x-circle"></i> Reset</a>
         <?php endif; ?>
@@ -236,7 +236,7 @@ require 'includes/layout_start.php';
       <?php if(empty($grouped_articles)): ?>
           <div class="text-center py-5 text-muted bg-surface rounded shadow-sm border">
               <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
-              <p>Keine Wiki-Einträge gefunden.</p>
+              <p><?= te('Keine Wiki-Einträge gefunden.') ?></p>
           </div>
       <?php endif; ?>
 
@@ -279,7 +279,7 @@ require 'includes/layout_start.php';
                                       <?php endif; ?>
 
                                       <?php if(count($article['attachments']) > 0): ?>
-                                          <i class="bi bi-paperclip text-primary ms-1" title="Hat Anhänge"></i>
+                                          <i class="bi bi-paperclip text-primary ms-1" title="<?= te('Hat Anhänge') ?>"></i>
                                       <?php endif; ?>
 
                                       <?php if(!empty($article['tags'])):
@@ -294,11 +294,11 @@ require 'includes/layout_start.php';
                               </div>
 
                               <div class="card-actions">
-                                  <button type="button" class="btn-icon text-success" onclick='event.stopPropagation(); openShareModal(<?= $article["id"] ?>, <?= $shared_ids_js ?>)' title="Im Kundenportal freigeben">
+                                  <button type="button" class="btn-icon text-success" onclick='event.stopPropagation(); openShareModal(<?= $article["id"] ?>, <?= $shared_ids_js ?>)' title="<?= te('Im Kundenportal freigeben') ?>">
                                       <i class="bi bi-share" style="font-size: 1.2rem;"></i>
                                   </button>
 
-                                  <button type="button" class="btn-icon" onclick='event.stopPropagation(); prepareEdit(<?= $safe_json; ?>)' title="Bearbeiten">
+                                  <button type="button" class="btn-icon" onclick='event.stopPropagation(); prepareEdit(<?= $safe_json; ?>)' title="<?= te('Bearbeiten') ?>">
                                       <i class="bi bi-pencil-square" style="font-size: 1.2rem;"></i>
                                   </button>
 
@@ -306,7 +306,7 @@ require 'includes/layout_start.php';
                                       <?= csrf_field() ?>
                                       <input type="hidden" name="action" value="delete_article">
                                       <input type="hidden" name="article_id" value="<?= $article['id'] ?>">
-                                      <button type="button" class="btn-icon text-danger" data-confirmed="0" onclick="event.stopPropagation(); confirmDeleteArticle(this, <?= $article['id'] ?>)" title="Löschen">
+                                      <button type="button" class="btn-icon text-danger" data-confirmed="0" onclick="event.stopPropagation(); confirmDeleteArticle(this, <?= $article['id'] ?>)" title="<?= te('Löschen') ?>">
                                           <i class="bi bi-trash3-fill" style="font-size: 1.2rem;"></i>
                                       </button>
                                   </form>
@@ -329,7 +329,7 @@ require 'includes/layout_start.php';
     <div class="modal-dialog modal-xl">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-dark text-white">
-            <h5 class="modal-title fw-bold m-0" id="form_title_label"><i class="bi bi-journal-plus me-2"></i> Neuer Eintrag</h5>
+            <h5 class="modal-title fw-bold m-0" id="form_title_label"><i class="bi bi-journal-plus me-2"></i> <?= te('Neuer Eintrag') ?></h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 bg-subtle">
@@ -339,12 +339,12 @@ require 'includes/layout_start.php';
             <input type="hidden" name="article_id" id="form_article_id">
             
             <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
-              <div class="col-md-8"><label class="form-label fw-bold small">Titel *</label><input type="text" name="title" id="form_title" class="form-control" required></div>
-              <div class="col-md-4"><label class="form-label fw-bold small">Kategorie *</label><input class="form-control" list="catList" name="category" id="form_category" required><datalist id="catList"><?php foreach($all_categories as $cat): ?><option value="<?=htmlspecialchars($cat)?>"><?php endforeach; ?></datalist></div>
+              <div class="col-md-8"><label class="form-label fw-bold small"><?= te('Titel *') ?></label><input type="text" name="title" id="form_title" class="form-control" required></div>
+              <div class="col-md-4"><label class="form-label fw-bold small"><?= te('Kategorie *') ?></label><input class="form-control" list="catList" name="category" id="form_category" required><datalist id="catList"><?php foreach($all_categories as $cat): ?><option value="<?=htmlspecialchars($cat)?>"><?php endforeach; ?></datalist></div>
             </div>
             
             <div class="mb-3 bg-surface p-3 rounded shadow-sm border">
-                <label class="form-label fw-bold small">Inhalt</label>
+                <label class="form-label fw-bold small"><?= te('Inhalt') ?></label>
                 <!-- form-control und rows als Rueckfallebene: startet CKEditor nicht -->
                 <!-- (CDN nicht erreichbar, JS-Fehler davor), bleibt sonst ein -->
                 <!-- nacktes Textfeld in Browser-Standardbreite stehen. -->
@@ -353,17 +353,17 @@ require 'includes/layout_start.php';
             
             <div class="row bg-surface p-3 rounded shadow-sm border mx-0 align-items-end">
               <div class="col-md-5">
-                  <label class="form-label fw-bold small">Dateien / Bilder anhängen</label>
+                  <label class="form-label fw-bold small"><?= te('Dateien / Bilder anhängen') ?></label>
                   <input type="file" name="attachments[]" id="fileInput" class="form-control form-control-sm" multiple>
               </div>
               <div class="col-md-5 mt-3 mt-md-0">
-                  <label class="form-label fw-bold small">Tags (Kommagetrennt)</label>
-                  <input type="text" name="tags" id="form_tags" class="form-control form-control-sm" placeholder="z.B. CSS, Login, API">
+                  <label class="form-label fw-bold small"><?= te('Tags (Kommagetrennt)') ?></label>
+                  <input type="text" name="tags" id="form_tags" class="form-control form-control-sm" placeholder="<?= te('z.B. CSS, Login, API') ?>">
               </div>
               <div class="col-md-2 mt-3 mt-md-0 d-flex align-items-center">
                   <div class="form-check mb-1">
                       <input class="form-check-input" type="checkbox" name="is_pinned" id="form_pinCheck" value="1">
-                      <label class="form-check-label text-warning fw-bold small">Oben anpinnen</label>
+                      <label class="form-check-label text-warning fw-bold small"><?= te('Oben anpinnen') ?></label>
                   </div>
               </div>
               
@@ -374,7 +374,7 @@ require 'includes/layout_start.php';
               </div>
               
               <div class="col-12 mt-3" id="edit_attachments_container" style="display:none;">
-                  <label class="form-label fw-bold small text-muted">Vorhandene Anhänge (Klick auf Mülleimer zum Löschen)</label>
+                  <label class="form-label fw-bold small text-muted"><?= te('Vorhandene Anhänge (Klick auf Mülleimer zum Löschen)') ?></label>
                   <div id="e_wiki_assets" class="d-flex flex-column gap-1"></div>
               </div>
             </div>
@@ -382,10 +382,10 @@ require 'includes/layout_start.php';
         </div>
         <div class="modal-footer p-3 bg-subtle d-flex justify-content-between">
             <button type="button" class="btn btn-outline-danger fw-bold" id="modalDeleteBtn" style="display:none;" data-confirmed="0" onclick="confirmDeleteFromEdit(this)">
-                <i class="bi bi-trash3-fill"></i> Löschen
+                <i class="bi bi-trash3-fill"></i> <?= te('Löschen') ?>
             </button>
             <button type="submit" form="wikiMainForm" class="btn btn-primary px-5 fw-bold" id="saveWikiBtn">
-                <i class="bi bi-save me-1"></i> Speichern
+                <i class="bi bi-save me-1"></i> <?= te('Speichern') ?>
             </button>
         </div>
       </div>
@@ -407,7 +407,7 @@ require 'includes/layout_start.php';
           <div id="view_content" style="font-size: 15px; color: var(--text-body); line-height: 1.7;"></div>
           
           <div id="view_attachments" class="mt-5 pt-4 border-top" style="display:none;">
-              <h6 class="fw-bold mb-3 text-strong-c"><i class="bi bi-paperclip me-1"></i> Angehängte Dateien</h6>
+              <h6 class="fw-bold mb-3 text-strong-c"><i class="bi bi-paperclip me-1"></i> <?= te('Angehängte Dateien') ?></h6>
               <div id="view_attachments_list" class="d-flex flex-wrap gap-2"></div>
           </div>
         </div>
@@ -420,7 +420,7 @@ require 'includes/layout_start.php';
     <div class="modal-dialog">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-success text-white">
-          <h5 class="modal-title fw-bold m-0"><i class="bi bi-share me-2"></i> Artikel im Kundenportal freigeben</h5>
+          <h5 class="modal-title fw-bold m-0"><i class="bi bi-share me-2"></i> <?= te('Artikel im Kundenportal freigeben') ?></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <form action="wiki" method="POST" id="shareWikiForm">
@@ -431,11 +431,11 @@ require 'includes/layout_start.php';
             <?php if (empty($portal_contacts)): ?>
               <div class="alert alert-warning mb-0">
                 <i class="bi bi-exclamation-triangle me-2"></i>
-                Es gibt noch keine Kontakte mit Portalzugang.<br>
-                <small class="text-muted">Weise einem Kontakt zuerst ein Portal-Token zu (Kontakte-Seite).</small>
+                <?= te('Es gibt noch keine Kontakte mit Portalzugang.') ?><br>
+                <small class="text-muted"><?= te('Weise einem Kontakt zuerst ein Portal-Token zu (Kontakte-Seite).') ?></small>
               </div>
             <?php else: ?>
-              <p class="text-muted small mb-3">Wähle, welche Kunden diesen Artikel in ihrem Portal lesen können:</p>
+              <p class="text-muted small mb-3"><?= te('Wähle, welche Kunden diesen Artikel in ihrem Portal lesen können:') ?></p>
               <div class="list-group" id="share_contact_list">
                 <?php foreach($portal_contacts as $pc): ?>
                   <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer" style="cursor:pointer;">
@@ -452,9 +452,9 @@ require 'includes/layout_start.php';
             <?php endif; ?>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
             <?php if (!empty($portal_contacts)): ?>
-              <button type="submit" class="btn btn-success fw-bold"><i class="bi bi-check-lg me-1"></i> Freigaben speichern</button>
+              <button type="submit" class="btn btn-success fw-bold"><i class="bi bi-check-lg me-1"></i> <?= te('Freigaben speichern') ?></button>
             <?php endif; ?>
           </div>
         </form>

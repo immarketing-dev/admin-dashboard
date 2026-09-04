@@ -557,7 +557,7 @@ require 'includes/layout_start.php';
                 <div class="d-flex gap-2 align-items-center">
                     <div class="input-group" style="flex-grow:1; min-width:150px;">
                         <span class="input-group-text bg-surface"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Suche..." value="<?=htmlspecialchars($search_query)?>">
+                        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="<?= te('Suche...') ?>" value="<?=htmlspecialchars($search_query)?>">
                     </div>
                     <button type="button"
                             class="btn btn-outline-secondary d-md-none position-relative"
@@ -577,7 +577,7 @@ require 'includes/layout_start.php';
 
                         <div style="min-width:140px; flex:1 1 140px;">
                             <select name="contact" class="form-select">
-                                <option value="all">Alle Kunden</option>
+                                <option value="all"><?= te('Alle Kunden') ?></option>
                                 <?php foreach($all_contacts as $c): ?>
                                     <option value="<?=$c['id']?>" <?= $filter_contact == $c['id'] ? 'selected' : '' ?>><?=htmlspecialchars($c['name'])?></option>
                                 <?php endforeach; ?>
@@ -586,17 +586,17 @@ require 'includes/layout_start.php';
 
                         <div style="min-width:130px; flex:1 1 130px;">
                             <select name="status" class="form-select">
-                                <option value="all">Alle Status</option>
-                                <option value="Offen" <?= $filter_status === 'Offen' ? 'selected' : '' ?>>Offen</option>
-                                <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>>In Bearbeitung</option>
-                                <option value="Erledigt" <?= $filter_status === 'Erledigt' ? 'selected' : '' ?>>Erledigt</option>
-                                <option value="Storniert" <?= $filter_status === 'Storniert' ? 'selected' : '' ?>>Storniert</option>
+                                <option value="all"><?= te('Alle Status') ?></option>
+                                <option value="Offen" <?= $filter_status === 'Offen' ? 'selected' : '' ?>><?= te('Offen') ?></option>
+                                <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
+                                <option value="Erledigt" <?= $filter_status === 'Erledigt' ? 'selected' : '' ?>><?= te('Erledigt') ?></option>
+                                <option value="Storniert" <?= $filter_status === 'Storniert' ? 'selected' : '' ?>><?= te('Storniert') ?></option>
                             </select>
                         </div>
 
                         <div style="min-width:140px; flex:1 1 140px;">
                             <select name="start_month" class="form-select">
-                                <option value="all">Startmonat egal</option>
+                                <option value="all"><?= te('Startmonat egal') ?></option>
                                 <?php
                                 foreach($available_months as $ym):
                                     if(!$ym) continue;
@@ -610,25 +610,25 @@ require 'includes/layout_start.php';
 
                         <div style="min-width:130px; flex:1 1 130px;">
                             <select name="created" class="form-select">
-                                <option value="all">Start egal</option>
-                                <option value="7" <?= $filter_created === '7' ? 'selected' : '' ?>>Letzte 7 Tage</option>
-                                <option value="30" <?= $filter_created === '30' ? 'selected' : '' ?>>Letzte 30 Tage</option>
+                                <option value="all"><?= te('Start egal') ?></option>
+                                <option value="7" <?= $filter_created === '7' ? 'selected' : '' ?>><?= te('Letzte 7 Tage') ?></option>
+                                <option value="30" <?= $filter_created === '30' ? 'selected' : '' ?>><?= te('Letzte 30 Tage') ?></option>
                             </select>
                         </div>
 
                         <div style="min-width:130px; flex:1 1 130px;">
                             <select name="deadline_filter" class="form-select">
-                                <option value="all">Deadline egal</option>
-                                <option value="overdue" <?= $filter_deadline === 'overdue' ? 'selected' : '' ?>>Überfällig</option>
-                                <option value="7" <?= $filter_deadline === '7' ? 'selected' : '' ?>>Nächste 7 Tage</option>
-                                <option value="30" <?= $filter_deadline === '30' ? 'selected' : '' ?>>Nächste 30 Tage</option>
+                                <option value="all"><?= te('Deadline egal') ?></option>
+                                <option value="overdue" <?= $filter_deadline === 'overdue' ? 'selected' : '' ?>><?= te('Überfällig') ?></option>
+                                <option value="7" <?= $filter_deadline === '7' ? 'selected' : '' ?>><?= te('Nächste 7 Tage') ?></option>
+                                <option value="30" <?= $filter_deadline === '30' ? 'selected' : '' ?>><?= te('Nächste 30 Tage') ?></option>
                             </select>
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-dark px-3">Filtern</button>
+                            <button type="submit" class="btn btn-dark px-3"><?= te('Filtern') ?></button>
                             <?php if($any_filter_active): ?>
-                                <a href="tasks" class="btn btn-outline-secondary" title="Filter zurücksetzen"><i class="bi bi-x-circle"></i></a>
+                                <a href="tasks" class="btn btn-outline-secondary" title="<?= te('Filter zurücksetzen') ?>"><i class="bi bi-x-circle"></i></a>
                             <?php endif; ?>
                         </div>
 
@@ -643,7 +643,7 @@ require 'includes/layout_start.php';
       <?php if(empty($tasks)): ?>
           <div class="col-12 text-center py-5 text-muted">
               <i class="bi bi-folder-x fs-1"></i>
-              <p class="mt-2">Keine Projekte gefunden, die diesen Kriterien entsprechen.</p>
+              <p class="mt-2"><?= te('Keine Projekte gefunden, die diesen Kriterien entsprechen.') ?></p>
           </div>
       <?php endif; ?>
       <?php foreach($tasks as $task):
@@ -675,7 +675,7 @@ require 'includes/layout_start.php';
                         <?php if($task['contact_name']): ?>
                             <span role="button" data-bs-toggle="modal" data-bs-target="#membersModal"
                                   onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'
-                                  title="Beteiligte verwalten">
+                                  title="<?= te('Beteiligte verwalten') ?>">
                               <i class="bi bi-person"></i> <?=$task['contact_name']?><?php
                                 if ($weitere > 0) echo ' <span class="badge rounded-pill bg-subtle text-strong-c" style="font-size:var(--text-2xs);">+' . $weitere . '</span>';
                               ?>
@@ -683,7 +683,7 @@ require 'includes/layout_start.php';
                         <?php else: ?>
                             <span role="button" class="text-muted" data-bs-toggle="modal" data-bs-target="#membersModal"
                                   onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'>
-                              <i class="bi bi-person-plus"></i> Beteiligte
+                              <i class="bi bi-person-plus"></i> <?= te('Beteiligte') ?>
                             </span>
                         <?php endif; ?>
                         
@@ -710,18 +710,18 @@ require 'includes/layout_start.php';
                     <?php $_sc = ['Offen'=>'status-offen','In Bearbeitung'=>'status-in-bearbeitung','Erledigt'=>'status-erledigt','Storniert'=>'status-storniert'][$task['status']] ?? 'status-offen'; ?>
                     <button class="status-badge <?=$_sc?> dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= htmlspecialchars($task['status']); ?></button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-strong-c text-start p-0 text-decoration-none w-100">Offen</button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-strong-c text-start p-0 text-decoration-none w-100">In Bearbeitung</button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Erledigt"><button type="submit" class="btn-sm btn btn-link text-success text-start p-0 text-decoration-none w-100">Erledigt</button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Storniert"><button type="submit" class="btn-sm btn btn-link text-secondary text-start p-0 text-decoration-none w-100">Storniert</button></form></li>
+                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('Offen') ?></button></form></li>
+                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('In Bearbeitung') ?></button></form></li>
+                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Erledigt"><button type="submit" class="btn-sm btn btn-link text-success text-start p-0 text-decoration-none w-100"><?= te('Erledigt') ?></button></form></li>
+                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Storniert"><button type="submit" class="btn-sm btn btn-link text-secondary text-start p-0 text-decoration-none w-100"><?= te('Storniert') ?></button></form></li>
                     </ul>
                   </div>
                   
-                  <button type="button" class="btn-icon p-1" onclick='openEditModal(<?= json_encode($task, JSON_HEX_APOS); ?>)' title="Bearbeiten">
+                  <button type="button" class="btn-icon p-1" onclick='openEditModal(<?= json_encode($task, JSON_HEX_APOS); ?>)' title="<?= te('Bearbeiten') ?>">
                       <i class="bi bi-pencil-square fs-5"></i>
                   </button>
                   
-                  <button type="button" class="btn-icon text-danger p-1" title="Löschen" onclick="openDeleteModal(<?= $task['id']; ?>)">
+                  <button type="button" class="btn-icon text-danger p-1" title="<?= te('Löschen') ?>" onclick="openDeleteModal(<?= $task['id']; ?>)">
                       <i class="bi bi-trash3-fill fs-5"></i>
                   </button>
                 </div>
@@ -756,15 +756,15 @@ require 'includes/layout_start.php';
                                         <input type="hidden" name="milestone_id" value="<?=$ms['id']?>">
                                         <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
                                         <select name="waiting_on" class="form-select form-select-sm waiting-select"
-                                                onchange="this.form.submit()" title="Auf wen wartet dieser Schritt?">
+                                                onchange="this.form.submit()" title="<?= te('Auf wen wartet dieser Schritt?') ?>">
                                             <option value=""     <?= ($ms['waiting_on'] ?? '') === ''     ? 'selected' : '' ?>>—</option>
-                                            <option value="us"   <?= ($ms['waiting_on'] ?? '') === 'us'   ? 'selected' : '' ?>>wir</option>
-                                            <option value="them" <?= ($ms['waiting_on'] ?? '') === 'them' ? 'selected' : '' ?>>Kunde</option>
+                                            <option value="us"   <?= ($ms['waiting_on'] ?? '') === 'us'   ? 'selected' : '' ?>><?= te('wir') ?></option>
+                                            <option value="them" <?= ($ms['waiting_on'] ?? '') === 'them' ? 'selected' : '' ?>><?= te('Kunde') ?></option>
                                         </select>
                                     </form>
                                     <?php endif; ?>
                                     <?php if($ms_com_count > 0): ?>
-                                        <a class="ms-com-toggle" onclick="toggleMsComments(<?=$ms['id']?>)" title="Kommentare anzeigen">
+                                        <a class="ms-com-toggle" onclick="toggleMsComments(<?=$ms['id']?>)" title="<?= te('Kommentare anzeigen') ?>">
                                             <i class="bi bi-chat-dots<?=$ms_has_client?' text-primary':''?>"></i> <?=$ms_com_count?>
                                         </a>
                                     <?php endif; ?>
@@ -781,13 +781,13 @@ require 'includes/layout_start.php';
                                 <?php endforeach; ?>
                                 </div>
                                 <div class="ms-reply-row">
-                                    <input type="text" class="form-control form-control-sm" id="ms-reply-<?=$ms['id']?>" placeholder="Antworten…">
+                                    <input type="text" class="form-control form-control-sm" id="ms-reply-<?=$ms['id']?>" placeholder="<?= te('Antworten…') ?>">
                                     <button class="btn btn-sm btn-success" onclick="sendAdminComment(<?=$ms['id']?>)"><i class="bi bi-send"></i></button>
                                 </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
-                    <form method="POST" class="mt-2"><?= csrf_field() ?><input type="hidden" name="action" value="add_milestone"><input type="hidden" name="task_id" value="<?=$task['id']?>"><div class="input-group input-group-sm"><input type="text" name="milestone_title" class="form-control border-light" placeholder="Neuer Meilenstein..."><button class="btn btn-light border">+</button></div></form>
+                    <form method="POST" class="mt-2"><?= csrf_field() ?><input type="hidden" name="action" value="add_milestone"><input type="hidden" name="task_id" value="<?=$task['id']?>"><div class="input-group input-group-sm"><input type="text" name="milestone_title" class="form-control border-light" placeholder="<?= te('Neuer Meilenstein...') ?>"><button class="btn btn-light border">+</button></div></form>
                   </div>
                   <?php $talk = $project_talk[$task['id']] ?? []; ?>
                   <div class="proj-talk-admin mt-2">
@@ -806,7 +806,7 @@ require 'includes/layout_start.php';
                         </div>
                       <?php endforeach; ?>
                       <?php if(!$talk): ?>
-                        <div class="text-muted" style="font-size:11px;">Noch kein Austausch.</div>
+                        <div class="text-muted" style="font-size:11px;"><?= te('Noch kein Austausch.') ?></div>
                       <?php endif; ?>
                       <form method="POST" class="ms-reply-row">
                         <?= csrf_field() ?>
@@ -814,7 +814,7 @@ require 'includes/layout_start.php';
                         <input type="hidden" name="task_id" value="<?=$task['id']?>">
                         <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
                         <input type="text" name="message" class="form-control form-control-sm"
-                               placeholder="Antworten …" required>
+                               placeholder="<?= te('Antworten …') ?>" required>
                         <button class="btn btn-sm btn-primary"><i class="bi bi-send"></i></button>
                       </form>
                     </div>
@@ -823,7 +823,7 @@ require 'includes/layout_start.php';
 
               <div class="mt-auto border-top pt-3 w-100">
                   <div class="d-flex justify-content-between align-items-end mb-1">
-                      <small class="text-muted fw-bold" style="font-size: 10px; text-transform: uppercase;">Fortschritt</small>
+                      <small class="text-muted fw-bold" style="font-size: 10px; text-transform: uppercase;"><?= te('Fortschritt') ?></small>
                       <span class="small fw-bold <?=$task['progress']==100?'text-success':''?>"><?=$task['progress']?>%</span>
                   </div>
                   <div class="progress mb-3" style="height:6px;">
@@ -842,17 +842,17 @@ require 'includes/layout_start.php';
                               data-task-title="<?= htmlspecialchars($task['title']) ?>" 
                               data-hours="<?= round($task['tracked_minutes']/60,2) ?>" 
                               data-bs-toggle="modal" data-bs-target="#invoiceModal">
-                          <i class="bi bi-receipt"></i> Rechnung
+                          <i class="bi bi-receipt"></i> <?= te('Rechnung') ?>
                       </button>
                   </div>
 
                   <div class="collapse <?=$task['is_timer_running']?'show':''?> mb-2" id="t_<?=$task['id']?>">
                       <div class="d-flex gap-2">
                         <?php if($task['is_timer_running']): ?>
-                            <button class="btn btn-sm btn-danger w-100 fw-bold" onclick="toggleTimer(<?=$task['id']?>, 'stop_timer')">Stop</button>
+                            <button class="btn btn-sm btn-danger w-100 fw-bold" onclick="toggleTimer(<?=$task['id']?>, 'stop_timer')"><?= te('Stop') ?></button>
                         <?php else: ?>
-                            <button class="btn btn-sm btn-success w-50 fw-bold" onclick="toggleTimer(<?=$task['id']?>, 'start_timer')">Start</button>
-                            <button class="btn btn-sm btn-outline-secondary w-50" data-bs-toggle="modal" data-bs-target="#manualTimeModal_<?= $task['id'] ?>">Manuell</button>
+                            <button class="btn btn-sm btn-success w-50 fw-bold" onclick="toggleTimer(<?=$task['id']?>, 'start_timer')"><?= te('Start') ?></button>
+                            <button class="btn btn-sm btn-outline-secondary w-50" data-bs-toggle="modal" data-bs-target="#manualTimeModal_<?= $task['id'] ?>"><?= te('Manuell') ?></button>
                         <?php endif; ?>
                       </div>
                   </div>
@@ -923,15 +923,15 @@ require 'includes/layout_start.php';
                         <input type="hidden" name="action" value="add_manual_time">
                         <input type="hidden" name="task_id" value="<?= $task['id'] ?>">
                         <div class="modal-header">
-                            <h6>Zeit nachtragen</h6>
+                            <h6><?= te('Zeit nachtragen') ?></h6>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <label class="form-label small">Minuten eingeben:</label>
+                            <label class="form-label small"><?= te('Minuten eingeben:') ?></label>
                             <input type="number" name="minutes" class="form-control" placeholder="z.B. 45" required min="1">
                         </div>
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">Speichern</button>
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><?= te('Speichern') ?></button>
                         </div>
                     </form>
                 </div>
@@ -941,27 +941,27 @@ require 'includes/layout_start.php';
       <?php endforeach; ?>
     </div>
 
-  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5>Neues Projekt</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label">Titel *</label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label">Kategorie</label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label">Kunde</label><select name="contact_id" class="form-select"><option value="">-- Ohne Kunde --</option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label">Start</label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label">Deadline</label><input type="date" name="deadline" class="form-control"></div><div class="col-12"><label class="form-label">Beschreibung</label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold">Projekt anlegen</button></div></form></div></div></div>
+  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div></form></div></div></div>
 
   <div class="modal fade" id="editTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header bg-dark text-white"><h5>Projekt bearbeiten</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header bg-dark text-white"><h5><?= te('Projekt bearbeiten') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
             <form method="POST" id="editTaskForm" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="edit_task">
                 <input type="hidden" name="task_id" id="e_id">
                 <div class="row g-3">
-                    <div class="col-md-8"><label class="form-label">Titel</label><input type="text" name="title" id="e_title" class="form-control" required></div>
-                    <div class="col-md-4"><label class="form-label">Kategorie</label><input type="text" name="category" id="e_cat" class="form-control"></div>
-                    <div class="col-md-12"><label class="form-label text-warning fw-bold">Feedback vom Portal</label><div id="e_feedback" class="p-3 bg-subtle rounded border scroll-box-sm" style="min-height:80px;"></div></div>
-                    <div class="col-md-12"><label class="form-label fw-bold">Projekt-Dateien</label><div id="e_assets" class="p-2 bg-subtle rounded border scroll-box-sm"></div></div>
+                    <div class="col-md-8"><label class="form-label"><?= te('Titel') ?></label><input type="text" name="title" id="e_title" class="form-control" required></div>
+                    <div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" id="e_cat" class="form-control"></div>
+                    <div class="col-md-12"><label class="form-label text-warning fw-bold"><?= te('Feedback vom Portal') ?></label><div id="e_feedback" class="p-3 bg-subtle rounded border scroll-box-sm" style="min-height:80px;"></div></div>
+                    <div class="col-md-12"><label class="form-label fw-bold"><?= te('Projekt-Dateien') ?></label><div id="e_assets" class="p-2 bg-subtle rounded border scroll-box-sm"></div></div>
                     
                     <div class="col-md-12 border-top pt-3 mt-2">
-                        <label class="form-label fw-bold">Eigene Dateien hinzufügen</label>
+                        <label class="form-label fw-bold"><?= te('Eigene Dateien hinzufügen') ?></label>
                         <input type="file" id="adminAssetUpload" class="form-control form-control-sm border-primary" multiple>
-                        <small class="text-muted" style="font-size:11px;">Der Upload startet sofort nach der Auswahl. Die Dateien sind für den Kunden im Portal sofort sichtbar.</small>
+                        <small class="text-muted" style="font-size:11px;"><?= te('Der Upload startet sofort nach der Auswahl. Die Dateien sind für den Kunden im Portal sofort sichtbar.') ?></small>
                         
                         <div class="progress mt-2 shadow-sm" id="adminUploadProgressContainer" style="display:none; height:15px; border-radius: 4px;">
                             <div id="adminUploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%; font-size:10px; font-weight:bold;">0%</div>
@@ -969,7 +969,7 @@ require 'includes/layout_start.php';
                     </div>
 
                     <div class="col-12">
-                      <label class="form-label" for="e_members">Weitere Beteiligte</label>
+                      <label class="form-label" for="e_members"><?= te('Weitere Beteiligte') ?></label>
                       <select name="member_ids[]" id="e_members" class="form-select" multiple size="5">
                         <?php foreach($all_contacts as $c): ?>
                           <option value="<?=$c['id']?>">
@@ -980,20 +980,20 @@ require 'includes/layout_start.php';
                       <div class="form-text">
                         Mit Strg bzw. ⌘ mehrere wählen. Jeder Beteiligte sieht das Projekt in
                         seinem eigenen Portal — dafür braucht er unter
-                        <a href="contacts" target="_blank" rel="noopener">Kontakte</a> einen
+                        <a href="contacts" target="_blank" rel="noopener"><?= te('Kontakte') ?></a> einen
                         Portal-Zugang. Der Kunde oben ist immer dabei.
                       </div>
                     </div>
-                    <div class="col-12"><label class="form-label">Kunde</label><select name="contact_id" id="e_contact" class="form-select"><option value="">-- Ohne Kunde --</option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
-                    <div class="col-md-6"><label class="form-label">Start</label><input type="date" name="start_date" id="e_start" class="form-control"></div>
-                    <div class="col-md-6"><label class="form-label">Deadline</label><input type="date" name="deadline" id="e_deadline" class="form-control"></div>
-                    <div class="col-12"><label class="form-label">Beschreibung</label><textarea name="description" id="e_desc" class="form-control" rows="4"></textarea></div>
+                    <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
+                    <div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" id="e_start" class="form-control"></div>
+                    <div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" id="e_deadline" class="form-control"></div>
+                    <div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" id="e_desc" class="form-control" rows="4"></textarea></div>
                 </div>
             </form>
         </div>
         <div class="modal-footer d-flex justify-content-between bg-subtle">
-            <button type="button" class="btn btn-outline-danger fw-bold" onclick="triggerDeleteFromEdit()"><i class="bi bi-trash3-fill"></i> Löschen</button>
-            <button type="submit" form="editTaskForm" class="btn btn-primary px-4 fw-bold">Speichern</button>
+            <button type="button" class="btn btn-outline-danger fw-bold" onclick="triggerDeleteFromEdit()"><i class="bi bi-trash3-fill"></i> <?= te('Löschen') ?></button>
+            <button type="submit" form="editTaskForm" class="btn btn-primary px-4 fw-bold"><?= te('Speichern') ?></button>
         </div>
       </div>
     </div>
@@ -1007,15 +1007,15 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="action" value="delete_asset">
                   <input type="hidden" name="asset_id" id="delete_asset_id">
                   <div class="modal-header bg-danger text-white">
-                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Datei löschen</h6>
+                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Datei löschen') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-center py-4">
-                      <p class="mb-0 fw-bold">Möchtest du diese Datei wirklich endgültig löschen?</p>
+                      <p class="mb-0 fw-bold"><?= te('Möchtest du diese Datei wirklich endgültig löschen?') ?></p>
                   </div>
                   <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button>
                   </div>
               </form>
           </div>
@@ -1030,15 +1030,15 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="action" value="delete_milestone">
                   <input type="hidden" name="milestone_id" id="delete_milestone_id">
                   <div class="modal-header bg-danger text-white">
-                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Meilenstein löschen</h6>
+                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Meilenstein löschen') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-center py-4">
-                      <p class="mb-0 fw-bold">Möchtest du diesen Meilenstein wirklich löschen?</p>
+                      <p class="mb-0 fw-bold"><?= te('Möchtest du diesen Meilenstein wirklich löschen?') ?></p>
                   </div>
                   <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button>
                   </div>
               </form>
           </div>
@@ -1050,14 +1050,14 @@ require 'includes/layout_start.php';
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
               <div class="modal-header border-0 pb-0">
-                  <h6 class="modal-title fw-bold"><i class="bi bi-envelope-fill text-primary me-2"></i>Kunde benachrichtigen?</h6>
+                  <h6 class="modal-title fw-bold"><i class="bi bi-envelope-fill text-primary me-2"></i><?= te('Kunde benachrichtigen?') ?></h6>
               </div>
               <div class="modal-body text-center py-3">
-                  <p class="mb-0 text-muted small">Soll der Kunde per E-Mail über den abgeschlossenen Meilenstein informiert werden?</p>
+                  <p class="mb-0 text-muted small"><?= te('Soll der Kunde per E-Mail über den abgeschlossenen Meilenstein informiert werden?') ?></p>
               </div>
               <div class="modal-footer p-2 d-flex gap-2 justify-content-center border-0 bg-subtle">
-                  <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" id="msNotifyYes"><i class="bi bi-send me-1"></i>Ja, senden</button>
-                  <button type="button" class="btn btn-outline-secondary btn-sm px-4" id="msNotifyNo">Nein</button>
+                  <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" id="msNotifyYes"><i class="bi bi-send me-1"></i><?= te('Ja, senden') ?></button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm px-4" id="msNotifyNo"><?= te('Nein') ?></button>
               </div>
           </div>
       </div>
@@ -1071,15 +1071,15 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="action" value="delete_task">
                   <input type="hidden" name="task_id" id="delete_confirm_id">
                   <div class="modal-header bg-danger text-white">
-                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Projekt löschen</h6>
+                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Projekt löschen') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-center py-4">
-                      <p class="mb-0 fw-bold">Möchtest du dieses Projekt wirklich endgültig löschen?</p>
+                      <p class="mb-0 fw-bold"><?= te('Möchtest du dieses Projekt wirklich endgültig löschen?') ?></p>
                   </div>
                   <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button>
                   </div>
               </form>
           </div>
@@ -1092,74 +1092,74 @@ require 'includes/layout_start.php';
         <form action="invoice" method="POST" target="_blank">
           <input type="hidden" name="contact_id" id="inv_contact_id">
           
-          <div class="modal-header bg-dark text-white"><h5><i class="bi bi-file-earmark-pdf me-2"></i> Rechnung konfigurieren</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-header bg-dark text-white"><h5><i class="bi bi-file-earmark-pdf me-2"></i> <?= te('Rechnung konfigurieren') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
           <div class="modal-body p-4 bg-subtle">
             <div class="row mb-4">
               <div class="col-md-6">
                 <div class="card border-0 shadow-sm p-3 h-100">
-                  <h6 class="fw-bold text-primary mb-2">Absender (Meine Daten)</h6>
+                  <h6 class="fw-bold text-primary mb-2"><?= te('Absender (Meine Daten)') ?></h6>
                   <input type="text" name="sender_name" class="form-control form-control-sm mb-1" value="<?= COMPANY_NAME ?>">
-                  <input type="text" name="sender_street" class="form-control form-control-sm mb-1" placeholder="Straße & Hausnr. (optional)">
-                  <input type="text" name="sender_city" class="form-control form-control-sm mb-1" placeholder="PLZ & Ort (optional)">
+                  <input type="text" name="sender_street" class="form-control form-control-sm mb-1" placeholder="<?= te('Straße & Hausnr. (optional)') ?>">
+                  <input type="text" name="sender_city" class="form-control form-control-sm mb-1" placeholder="<?= te('PLZ & Ort (optional)') ?>">
                   <input type="text" name="sender_email" class="form-control form-control-sm mb-1" value="<?= ADMIN_EMAIL ?>">
                   <input type="text" name="sender_website" class="form-control form-control-sm mb-1" value="<?= str_replace(['http://', 'https://', 'www.'], '', MAIN_WEBSITE) ?>">
-                  <input type="text" name="sender_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 1 (z.B. Steuernummer)">
-                  <input type="text" name="sender_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 2 (Optional)">
+                  <input type="text" name="sender_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 1 (z.B. Steuernummer)') ?>">
+                  <input type="text" name="sender_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 2 (Optional)') ?>">
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="card border-0 shadow-sm p-3 h-100">
-                  <h6 class="fw-bold text-primary mb-2">Empfänger (Kunde)</h6>
+                  <h6 class="fw-bold text-primary mb-2"><?= te('Empfänger (Kunde)') ?></h6>
                   
                   <select class="form-select form-select-sm mb-2" onchange="autoFillInv(this)">
-                      <option value="">-- Kunde aus CRM laden --</option>
+                      <option value=""><?= te('-- Kunde aus CRM laden --') ?></option>
                       <?php foreach($all_contacts as $c): ?>
                           <option value="<?=$c['id']?>" data-name="<?=$c['company']?:$c['name']?>" data-street="<?=$c['street']?>" data-city="<?=$c['zip'].' '.$c['city']?>"><?=$c['name']?></option>
                       <?php endforeach; ?>
                   </select>
 
-                  <input type="text" name="client_name" id="inv_client_name" class="form-control form-control-sm mb-1" placeholder="Name/Firma" required>
-                  <input type="text" name="client_street" id="inv_client_street" class="form-control form-control-sm mb-1" placeholder="Straße">
-                  <input type="text" name="client_city" id="inv_client_city" class="form-control form-control-sm mb-1" placeholder="PLZ & Ort">
+                  <input type="text" name="client_name" id="inv_client_name" class="form-control form-control-sm mb-1" placeholder="<?= te('Name/Firma') ?>" required>
+                  <input type="text" name="client_street" id="inv_client_street" class="form-control form-control-sm mb-1" placeholder="<?= te('Straße') ?>">
+                  <input type="text" name="client_city" id="inv_client_city" class="form-control form-control-sm mb-1" placeholder="<?= te('PLZ & Ort') ?>">
                   <input type="text" name="client_country" value="Deutschland" class="form-control form-control-sm mb-1">
-                  <input type="text" name="client_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 1 (z.B. Abteilung)">
-                  <input type="text" name="client_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 2 (Optional)">
+                  <input type="text" name="client_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 1 (z.B. Abteilung)') ?>">
+                  <input type="text" name="client_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 2 (Optional)') ?>">
                 </div>
               </div>
             </div>
             <div class="row mb-4">
-              <div class="col-md-3"><label class="fw-bold small">Rechnungsnummer</label><input type="text" name="invoice_number" id="inv_number" class="form-control fw-bold text-primary" readonly></div>
-              <div class="col-md-3"><label class="fw-bold small">Datum</label><input type="date" name="invoice_date" class="form-control" value="<?=date('Y-m-d')?>"></div>
-              <div class="col-md-3"><label class="fw-bold small">MwSt-Regel</label><select name="tax_type" id="inv_tax" class="form-select" onchange="calcInv()"><option value="kleinunternehmer" selected>Kleinunternehmer (0%)</option><option value="regel">Regelbesteuerung (19%)</option></select></div>
-              <div class="col-md-3"><label class="fw-bold small">Modalität</label><select name="installments" class="form-select"><option value="1">Einmalzahlung</option><option value="2">2 Raten</option><option value="3">3 Raten</option><option value="abo">Monatliches Abo</option></select></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('Rechnungsnummer') ?></label><input type="text" name="invoice_number" id="inv_number" class="form-control fw-bold text-primary" readonly></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('Datum') ?></label><input type="date" name="invoice_date" class="form-control" value="<?=date('Y-m-d')?>"></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('MwSt-Regel') ?></label><select name="tax_type" id="inv_tax" class="form-select" onchange="calcInv()"><option value="kleinunternehmer" selected><?= te('Kleinunternehmer (0%)') ?></option><option value="regel"><?= te('Regelbesteuerung (19%)') ?></option></select></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('Modalität') ?></label><select name="installments" class="form-select"><option value="1"><?= te('Einmalzahlung') ?></option><option value="2"><?= te('2 Raten') ?></option><option value="3"><?= te('3 Raten') ?></option><option value="abo"><?= te('Monatliches Abo') ?></option></select></div>
             </div>
             
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <h6>Positionen</h6>
+                    <h6><?= te('Positionen') ?></h6>
                     <div id="invoice-items-container"></div>
-                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addInvoiceRow('', 1, 60)">+ Hinzufügen</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addInvoiceRow('', 1, 60)"><?= te('+ Hinzufügen') ?></button>
                     
                     <div class="mt-4 pt-3 border-top">
                         <div class="row justify-content-end text-end g-2">
-                            <div class="col-md-4 col-6 fw-bold">Netto:</div><div class="col-md-3 col-6" id="inv_netto">0,00 €</div>
+                            <div class="col-md-4 col-6 fw-bold"><?= te('Netto:') ?></div><div class="col-md-3 col-6" id="inv_netto">0,00 €</div>
                         </div>
                         <div class="row justify-content-end text-end g-2" id="inv_tax_row" style="display:none;">
-                            <div class="col-md-4 col-6 fw-bold">MwSt (19%):</div><div class="col-md-3 col-6" id="inv_tax_val">0,00 €</div>
+                            <div class="col-md-4 col-6 fw-bold"><?= te('MwSt (19%):') ?></div><div class="col-md-3 col-6" id="inv_tax_val">0,00 €</div>
                         </div>
                         <div class="row justify-content-end text-end g-2 mt-1">
-                            <div class="col-md-4 col-6 fw-bold text-primary fs-5">Brutto:</div><div class="col-md-3 col-6 fw-bold text-primary fs-5"><span id="inv_total">0,00</span> €</div>
+                            <div class="col-md-4 col-6 fw-bold text-primary fs-5"><?= te('Brutto:') ?></div><div class="col-md-3 col-6 fw-bold text-primary fs-5"><span id="inv_total">0,00</span> €</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3"><label class="fw-bold small">Bankverbindung (IBAN)</label><input type="text" name="iban" class="form-control form-control-sm" placeholder="DE12 3456..."></div>
-                <div class="col-md-6 mb-3"><label class="fw-bold small">PayPal / Notiz</label><input type="text" name="paypal" class="form-control form-control-sm mb-2" placeholder="PayPal Adresse (Optional)"><textarea name="notes" class="form-control form-control-sm" placeholder="Z.B. Vielen Dank für das Vertrauen!" rows="2"></textarea></div>
+                <div class="col-md-6 mb-3"><label class="fw-bold small"><?= te('Bankverbindung (IBAN)') ?></label><input type="text" name="iban" class="form-control form-control-sm" placeholder="<?= te('DE12 3456...') ?>"></div>
+                <div class="col-md-6 mb-3"><label class="fw-bold small"><?= te('PayPal / Notiz') ?></label><input type="text" name="paypal" class="form-control form-control-sm mb-2" placeholder="<?= te('PayPal Adresse (Optional)') ?>"><textarea name="notes" class="form-control form-control-sm" placeholder="<?= te('Z.B. Vielen Dank für das Vertrauen!') ?>" rows="2"></textarea></div>
             </div>
           </div>
-          <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold" onclick="setTimeout(()=>window.location.reload(), 1500)">PDF erstellen & verbuchen</button></div>
+          <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold" onclick="setTimeout(()=>window.location.reload(), 1500)"><?= te('PDF erstellen & verbuchen') ?></button></div>
         </form>
       </div>
     </div>
@@ -1494,7 +1494,7 @@ require 'includes/layout_start.php';
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h6 class="modal-title m-0 fw-bold"><i class="bi bi-people me-2"></i>Beteiligte am Projekt</h6>
+          <h6 class="modal-title m-0 fw-bold"><i class="bi bi-people me-2"></i><?= te('Beteiligte am Projekt') ?></h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -1513,9 +1513,9 @@ require 'includes/layout_start.php';
             <input type="hidden" name="task_id" id="mm_task_add">
             <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
             <div style="flex:1 1 220px;min-width:0;">
-              <label class="fw-bold small mb-1" for="mm_contact">Person hinzufügen</label>
+              <label class="fw-bold small mb-1" for="mm_contact"><?= te('Person hinzufügen') ?></label>
               <select name="contact_id" id="mm_contact" class="form-select form-select-sm" required>
-                <option value="">Kontakt wählen …</option>
+                <option value=""><?= te('Kontakt wählen …') ?></option>
                 <?php foreach($all_contacts as $c): ?>
                   <option value="<?= (int)$c['id'] ?>">
                     <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?>
@@ -1524,11 +1524,11 @@ require 'includes/layout_start.php';
                 <?php endforeach; ?>
               </select>
             </div>
-            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-plus-lg me-1"></i>Hinzufügen</button>
+            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-plus-lg me-1"></i><?= te('Hinzufügen') ?></button>
           </form>
           <div class="form-text mt-2">
             Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie
-            unter <a href="contacts">Kontakte</a>.
+            unter <a href="contacts"><?= te('Kontakte') ?></a>.
           </div>
         </div>
       </div>

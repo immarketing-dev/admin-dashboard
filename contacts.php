@@ -179,17 +179,17 @@ require 'includes/layout_start.php';
             <form method="GET" action="contacts" class="filter-bar mb-0">
                 <div class="input-group input-group-sm search-box">
                     <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suche nach Name, Firma, E-Mail oder Notiz..." value="<?=htmlspecialchars($search_query)?>">
+                    <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="<?= te('Suche nach Name, Firma, E-Mail oder Notiz...') ?>" value="<?=htmlspecialchars($search_query)?>">
                 </div>
                 <select name="type" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                        <option value="all">Alle Typen</option>
-                        <option value="Kunde" <?= $filter_type === 'Kunde' ? 'selected' : '' ?>>Kunden</option>
-                        <option value="Interessent" <?= $filter_type === 'Interessent' ? 'selected' : '' ?>>Interessenten</option>
-                        <option value="Geschäftspartner" <?= $filter_type === 'Geschäftspartner' ? 'selected' : '' ?>>Geschäftspartner</option>
+                        <option value="all"><?= te('Alle Typen') ?></option>
+                        <option value="Kunde" <?= $filter_type === 'Kunde' ? 'selected' : '' ?>><?= te('Kunden') ?></option>
+                        <option value="Interessent" <?= $filter_type === 'Interessent' ? 'selected' : '' ?>><?= te('Interessenten') ?></option>
+                        <option value="Geschäftspartner" <?= $filter_type === 'Geschäftspartner' ? 'selected' : '' ?>><?= te('Geschäftspartner') ?></option>
                 </select>
-                <button type="submit" class="btn btn-primary btn-sm" style="display: none;">Filtern</button>
+                <button type="submit" class="btn btn-primary btn-sm" style="display: none;"><?= te('Filtern') ?></button>
                 <?php if($search_query !== '' || $filter_type !== 'all'): ?>
-                    <a href="contacts" class="btn btn-outline-secondary btn-sm" title="Filter zurücksetzen"><i class="bi bi-x-circle"></i> Reset</a>
+                    <a href="contacts" class="btn btn-outline-secondary btn-sm" title="<?= te('Filter zurücksetzen') ?>"><i class="bi bi-x-circle"></i> Reset</a>
                 <?php endif; ?>
             </form>
         </div>
@@ -199,7 +199,7 @@ require 'includes/layout_start.php';
       <?php if(count($contacts) === 0): ?>
           <div class="col-12 text-center text-muted py-5">
               <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-              <p>Keine Kontakte für diese Suchkriterien gefunden.</p>
+              <p><?= te('Keine Kontakte für diese Suchkriterien gefunden.') ?></p>
           </div>
       <?php endif; ?>
 
@@ -207,7 +207,7 @@ require 'includes/layout_start.php';
           <div class="col-lg-4 col-md-6 mb-4">
             <div class="contact-card shadow-sm">
               <div class="card-actions">
-                <button type="button" class="btn-icon" onclick='openEditModal(<?=json_encode($c, JSON_HEX_TAG|JSON_HEX_APOS)?>)' title="Bearbeiten">
+                <button type="button" class="btn-icon" onclick='openEditModal(<?=json_encode($c, JSON_HEX_TAG|JSON_HEX_APOS)?>)' title="<?= te('Bearbeiten') ?>">
                     <i class="bi bi-pencil-square" style="font-size:1.2rem;"></i>
                 </button>
                 
@@ -215,7 +215,7 @@ require 'includes/layout_start.php';
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="delete_contact">
                     <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
-                    <button type="button" class="btn-icon text-danger" data-confirmed="0" onclick="confirmDelete(this, <?= $c['id'] ?>)" title="Löschen">
+                    <button type="button" class="btn-icon text-danger" data-confirmed="0" onclick="confirmDelete(this, <?= $c['id'] ?>)" title="<?= te('Löschen') ?>">
                         <i class="bi bi-trash3-fill" style="font-size:1.2rem;"></i>
                     </button>
                 </form>
@@ -273,20 +273,20 @@ require 'includes/layout_start.php';
 
               <div class="mt-auto d-grid gap-2">
                 <?php if(empty($c['portal_token'])): ?>
-                    <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="generate_token"><input type="hidden" name="contact_id" value="<?=$c['id']?>"><button type="submit" class="btn btn-sm btn-outline-primary w-100 fw-bold">Portal erstellen</button></form>
+                    <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="generate_token"><input type="hidden" name="contact_id" value="<?=$c['id']?>"><button type="submit" class="btn btn-sm btn-outline-primary w-100 fw-bold"><?= te('Portal erstellen') ?></button></form>
                 <?php else: 
                     $magic_url = BASE_URL . "/portal?token=".$c['portal_token']; ?>
                     
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-success shadow-sm flex-fill" onclick="navigator.clipboard.writeText('<?=$magic_url?>').then(()=>alert('Kopiert!'))"><i class="bi bi-clipboard"></i> Link kopieren</button>
-                        <button class="btn btn-sm btn-info text-white fw-bold shadow-sm flex-fill" onclick="openQR('<?=$magic_url?>', <?=$c['id']?>, '<?=htmlspecialchars($c['name'], ENT_QUOTES)?>')" data-bs-toggle="modal" data-bs-target="#qrModal"><i class="bi bi-qr-code-scan"></i> QR & Mail</button>
+                        <button class="btn btn-sm btn-success shadow-sm flex-fill" onclick="navigator.clipboard.writeText('<?=$magic_url?>').then(()=>alert('Kopiert!'))"><i class="bi bi-clipboard"></i> <?= te('Link kopieren') ?></button>
+                        <button class="btn btn-sm btn-info text-white fw-bold shadow-sm flex-fill" onclick="openQR('<?=$magic_url?>', <?=$c['id']?>, '<?=htmlspecialchars($c['name'], ENT_QUOTES)?>')" data-bs-toggle="modal" data-bs-target="#qrModal"><i class="bi bi-qr-code-scan"></i> <?= te('QR & Mail') ?></button>
                     </div>
                     <?php if (!empty($c['portal_pin'])): ?>
                     <form method="POST" onsubmit="return confirm('Portal-Zugangscode von <?= htmlspecialchars($c['name'], ENT_QUOTES) ?> wirklich zurücksetzen?')">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="reset_portal_pin">
                         <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-warning w-100"><i class="bi bi-key me-1"></i>PIN zurücksetzen</button>
+                        <button type="submit" class="btn btn-sm btn-outline-warning w-100"><i class="bi bi-key me-1"></i><?= te('PIN zurücksetzen') ?></button>
                     </form>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -302,31 +302,31 @@ require 'includes/layout_start.php';
         <form action="contacts" method="POST">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_contact">
-            <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-person-plus-fill me-2"></i>Neuen Kontakt anlegen</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-person-plus-fill me-2"></i><?= te('Neuen Kontakt anlegen') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
             <div class="modal-body p-4 bg-subtle">
               <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
-                  <h6 class="fw-bold text-primary border-bottom pb-2">Stammdaten</h6>
-                  <div class="col-md-6"><label class="form-label small fw-bold">Name *</label><input type="text" name="name" class="form-control form-control-sm" required></div>
-                  <div class="col-md-6"><label class="form-label small fw-bold">Firma</label><input type="text" name="company" class="form-control form-control-sm"></div>
+                  <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Stammdaten') ?></h6>
+                  <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Name *') ?></label><input type="text" name="name" class="form-control form-control-sm" required></div>
+                  <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Firma') ?></label><input type="text" name="company" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold">E-Mail</label><input type="email" name="email" class="form-control form-control-sm"></div>
-                  <div class="col-md-4"><label class="form-label small fw-bold">Telefon</label><input type="text" name="phone" class="form-control form-control-sm"></div>
-                  <div class="col-md-4"><label class="form-label small fw-bold">Website</label><input type="text" name="website" class="form-control form-control-sm" placeholder="www.seite.de"></div>
+                  <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Telefon') ?></label><input type="text" name="phone" class="form-control form-control-sm"></div>
+                  <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Website') ?></label><input type="text" name="website" class="form-control form-control-sm" placeholder="www.seite.de"></div>
               </div>
               <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
-                  <h6 class="fw-bold text-primary border-bottom pb-2">Adresse</h6>
-                  <div class="col-12"><label class="form-label small fw-bold">Straße</label><input type="text" name="street" class="form-control form-control-sm"></div>
-                  <div class="col-md-4"><label class="form-label small fw-bold">PLZ</label><input type="text" name="zip" class="form-control form-control-sm"></div>
-                  <div class="col-md-4"><label class="form-label small fw-bold">Ort</label><input type="text" name="city" class="form-control form-control-sm"></div>
-                  <div class="col-md-4"><label class="form-label small fw-bold">Land</label><input type="text" name="country" class="form-control form-control-sm" value="Deutschland"></div>
+                  <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Adresse') ?></h6>
+                  <div class="col-12"><label class="form-label small fw-bold"><?= te('Straße') ?></label><input type="text" name="street" class="form-control form-control-sm"></div>
+                  <div class="col-md-4"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" class="form-control form-control-sm"></div>
+                  <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" class="form-control form-control-sm"></div>
+                  <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control form-control-sm" value="Deutschland"></div>
               </div>
               <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
-                  <h6 class="fw-bold text-primary border-bottom pb-2">Meta & CRM</h6>
-                  <div class="col-md-6"><label class="form-label small fw-bold">Typ</label><select name="contact_type" class="form-select form-select-sm"><option value="Kunde">Kunde</option><option value="Interessent">Interessent</option><option value="Geschäftspartner">Geschäftspartner</option></select></div>
-                  <div class="col-md-6"><label class="form-label small fw-bold">Quelle</label><input name="source" class="form-control form-control-sm" value="Direktkontakt"></div>
-                  <div class="col-12"><label class="form-label small fw-bold">Interne Notizen</label><textarea name="notes" class="form-control form-control-sm" rows="3"></textarea></div>
+                  <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Meta & CRM') ?></h6>
+                  <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Typ') ?></label><select name="contact_type" class="form-select form-select-sm"><option value="Kunde"><?= te('Kunde') ?></option><option value="Interessent"><?= te('Interessent') ?></option><option value="Geschäftspartner"><?= te('Geschäftspartner') ?></option></select></div>
+                  <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Quelle') ?></label><input name="source" class="form-control form-control-sm" value="Direktkontakt"></div>
+                  <div class="col-12"><label class="form-label small fw-bold"><?= te('Interne Notizen') ?></label><textarea name="notes" class="form-control form-control-sm" rows="3"></textarea></div>
               </div>
             </div>
-            <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold">Speichern</button></div>
+            <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Speichern') ?></button></div>
         </form>
       </div>
     </div>
@@ -335,7 +335,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="editContactModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-pencil-square me-2"></i>Kontakt bearbeiten</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-pencil-square me-2"></i><?= te('Kontakt bearbeiten') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4 bg-subtle">
             <form action="contacts" method="POST" id="editContactForm">
                 <?= csrf_field() ?>
@@ -343,33 +343,33 @@ require 'includes/layout_start.php';
                 <input type="hidden" name="contact_id" id="edit_id">
                 
                 <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
-                    <h6 class="fw-bold text-primary border-bottom pb-2">Stammdaten</h6>
-                    <div class="col-md-6"><label class="form-label small fw-bold">Name *</label><input type="text" name="name" id="edit_name" class="form-control form-control-sm" required></div>
-                    <div class="col-md-6"><label class="form-label small fw-bold">Firma</label><input type="text" name="company" id="edit_company" class="form-control form-control-sm"></div>
+                    <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Stammdaten') ?></h6>
+                    <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Name *') ?></label><input type="text" name="name" id="edit_name" class="form-control form-control-sm" required></div>
+                    <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Firma') ?></label><input type="text" name="company" id="edit_company" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold">E-Mail</label><input type="email" name="email" id="edit_email" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small fw-bold">Telefon</label><input type="text" name="phone" id="edit_phone" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small fw-bold">Website</label><input type="text" name="website" id="edit_website" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Telefon') ?></label><input type="text" name="phone" id="edit_phone" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Website') ?></label><input type="text" name="website" id="edit_website" class="form-control form-control-sm"></div>
                 </div>
                 
                 <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
-                    <h6 class="fw-bold text-primary border-bottom pb-2">Adresse</h6>
-                    <div class="col-12"><label class="form-label small fw-bold">Straße</label><input type="text" name="street" id="edit_street" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small fw-bold">PLZ</label><input type="text" name="zip" id="edit_zip" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small fw-bold">Ort</label><input type="text" name="city" id="edit_city" class="form-control form-control-sm"></div>
-                    <div class="col-md-4"><label class="form-label small fw-bold">Land</label><input type="text" name="country" id="edit_country" class="form-control form-control-sm"></div>
+                    <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Adresse') ?></h6>
+                    <div class="col-12"><label class="form-label small fw-bold"><?= te('Straße') ?></label><input type="text" name="street" id="edit_street" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" id="edit_zip" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" id="edit_city" class="form-control form-control-sm"></div>
+                    <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" id="edit_country" class="form-control form-control-sm"></div>
                 </div>
                 
                 <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
-                    <h6 class="fw-bold text-primary border-bottom pb-2">Meta & CRM</h6>
-                    <div class="col-md-6"><label class="form-label small fw-bold">Typ</label><select name="contact_type" id="edit_contact_type" class="form-select form-select-sm"><option value="Kunde">Kunde</option><option value="Interessent">Interessent</option><option value="Geschäftspartner">Geschäftspartner</option></select></div>
-                    <div class="col-md-6"><label class="form-label small fw-bold">Quelle</label><input type="text" name="source" id="edit_source" class="form-control form-control-sm"></div>
-                    <div class="col-12"><label class="form-label small fw-bold">Interne Notizen</label><textarea name="notes" id="edit_notes" class="form-control form-control-sm" rows="3"></textarea></div>
+                    <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Meta & CRM') ?></h6>
+                    <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Typ') ?></label><select name="contact_type" id="edit_contact_type" class="form-select form-select-sm"><option value="Kunde"><?= te('Kunde') ?></option><option value="Interessent"><?= te('Interessent') ?></option><option value="Geschäftspartner"><?= te('Geschäftspartner') ?></option></select></div>
+                    <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Quelle') ?></label><input type="text" name="source" id="edit_source" class="form-control form-control-sm"></div>
+                    <div class="col-12"><label class="form-label small fw-bold"><?= te('Interne Notizen') ?></label><textarea name="notes" id="edit_notes" class="form-control form-control-sm" rows="3"></textarea></div>
                 </div>
             </form>
         </div>
         <div class="modal-footer d-flex justify-content-between bg-subtle">
-            <button type="button" class="btn btn-outline-danger" id="modalDeleteBtn" data-confirmed="0" onclick="confirmDeleteFromEdit(this)"><i class="bi bi-trash3-fill"></i> Löschen</button>
-            <button type="submit" form="editContactForm" class="btn btn-primary px-4 fw-bold">Speichern</button>
+            <button type="button" class="btn btn-outline-danger" id="modalDeleteBtn" data-confirmed="0" onclick="confirmDeleteFromEdit(this)"><i class="bi bi-trash3-fill"></i> <?= te('Löschen') ?></button>
+            <button type="submit" form="editContactForm" class="btn btn-primary px-4 fw-bold"><?= te('Speichern') ?></button>
         </div>
       </div>
     </div>
@@ -377,11 +377,11 @@ require 'includes/layout_start.php';
 
   <div class="modal fade" id="qrModal" tabindex="-1">
     <div class="modal-dialog"><div class="modal-content border-0 shadow">
-        <div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold">Portal-Zugang: <span id="qr_name" class="text-info"></span></h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header bg-dark text-white"><h6 class="modal-title fw-bold"><?= te('Portal-Zugang:') ?> <span id="qr_name" class="text-info"></span></h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4 text-center bg-subtle">
             <div id="qrcode" class="mb-3 d-flex justify-content-center p-3 bg-surface rounded shadow-sm d-inline-block border"></div>
             <br>
-            <button class="btn btn-outline-secondary btn-sm mb-4 fw-bold shadow-sm" onclick="downloadQR()"><i class="bi bi-download"></i> QR-Code speichern (.png)</button>
+            <button class="btn btn-outline-secondary btn-sm mb-4 fw-bold shadow-sm" onclick="downloadQR()"><i class="bi bi-download"></i> <?= te('QR-Code speichern (.png)') ?></button>
             
             <div class="card border-0 shadow-sm text-start">
                 <div class="card-body">
@@ -389,9 +389,9 @@ require 'includes/layout_start.php';
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="send_portal_mail">
                         <input type="hidden" name="contact_id" id="qr_id">
-                        <label class="form-label small fw-bold text-primary" style="color: var(--color-primary) !important;">Begleittext der E-Mail:</label>
-                        <textarea name="mail_text" class="form-control form-control-sm mb-3" rows="4">Hier ist Ihr persönlicher Zugang zum Projekt-Portal. Dort können Sie jederzeit den Fortschritt Ihres Projekts oder Dienstleistung einsehen, mitwirken oder Feedback dalassen.</textarea>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-send me-1"></i> E-Mail mit Link & QR-Code senden</button>
+                        <label class="form-label small fw-bold text-primary" style="color: var(--color-primary) !important;"><?= te('Begleittext der E-Mail:') ?></label>
+                        <textarea name="mail_text" class="form-control form-control-sm mb-3" rows="4"><?= te('Hier ist Ihr persönlicher Zugang zum Projekt-Portal. Dort können Sie jederzeit den Fortschritt Ihres Projekts oder Dienstleistung einsehen, mitwirken oder Feedback dalassen.') ?></textarea>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold"><i class="bi bi-send me-1"></i> <?= te('E-Mail mit Link & QR-Code senden') ?></button>
                     </form>
                 </div>
             </div>

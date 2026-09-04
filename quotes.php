@@ -534,7 +534,7 @@ require 'includes/layout_start.php';
 <div class="position-fixed top-0 end-0 p-3" style="z-index:1090;">
   <?php if(isset($_GET['msg']) && $_GET['msg'] === 'email_sent'): ?>
   <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
-    <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i>Angebot erfolgreich per E-Mail gesendet!</div>
+    <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i><?= te('Angebot erfolgreich per E-Mail gesendet!') ?></div>
     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
   </div>
   <?php endif; ?>
@@ -556,25 +556,25 @@ require 'includes/layout_start.php';
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
         <div class="fw-bold fs-3 text-primary"><?= $kpi['total'] ?></div>
-        <div class="text-muted small">Gesamt</div>
+        <div class="text-muted small"><?= te('Gesamt') ?></div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
         <div class="fw-bold fs-3 text-success"><?= $kpi['accepted'] ?></div>
-        <div class="text-muted small">Angenommen</div>
+        <div class="text-muted small"><?= te('Angenommen') ?></div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
         <div class="fw-bold fs-3 text-warning"><?= $kpi['sent'] ?></div>
-        <div class="text-muted small">Gesendet / Offen</div>
+        <div class="text-muted small"><?= te('Gesendet / Offen') ?></div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
         <div class="fw-bold fs-3" style="color:var(--color-primary);"><?= number_format((float)$kpi['revenue'], 2, ',', '.') ?> €</div>
-        <div class="text-muted small">Angenommenes Volumen</div>
+        <div class="text-muted small"><?= te('Angenommenes Volumen') ?></div>
       </div>
     </div>
   </div>
@@ -592,20 +592,20 @@ require 'includes/layout_start.php';
     <?php if(empty($quotes)): ?>
       <div class="text-center py-5 text-muted">
         <i class="bi bi-file-earmark-text" style="font-size:3rem;"></i>
-        <h5 class="mt-3 fw-bold">Noch keine Angebote vorhanden.</h5>
+        <h5 class="mt-3 fw-bold"><?= te('Noch keine Angebote vorhanden.') ?></h5>
       </div>
     <?php else: ?>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead class="bg-subtle small text-uppercase text-muted fw-bold">
           <tr>
-            <th class="py-3 ps-3">Angebots-Nr.</th>
-            <th class="py-3">Kunde</th>
-            <th class="py-3">Datum</th>
-            <th class="py-3">Gültig bis</th>
-            <th class="py-3">Betrag</th>
+            <th class="py-3 ps-3"><?= te('Angebots-Nr.') ?></th>
+            <th class="py-3"><?= te('Kunde') ?></th>
+            <th class="py-3"><?= te('Datum') ?></th>
+            <th class="py-3"><?= te('Gültig bis') ?></th>
+            <th class="py-3"><?= te('Betrag') ?></th>
             <th class="py-3">Status</th>
-            <th class="py-3 text-end pe-3">Aktionen</th>
+            <th class="py-3 text-end pe-3"><?= te('Aktionen') ?></th>
           </tr>
         </thead>
         <tbody>
@@ -639,11 +639,11 @@ require 'includes/layout_start.php';
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="generate_pdf">
                   <input type="hidden" name="quote_id" value="<?= $q['id'] ?>">
-                  <button type="submit" class="btn btn-sm btn-outline-primary px-2" title="PDF generieren & anzeigen"><i class="bi bi-file-earmark-pdf"></i></button>
+                  <button type="submit" class="btn btn-sm btn-outline-primary px-2" title="<?= te('PDF generieren & anzeigen') ?>"><i class="bi bi-file-earmark-pdf"></i></button>
                 </form>
 
                 <!-- Per E-Mail senden -->
-                <button type="button" class="btn btn-sm btn-outline-info px-2" title="Per E-Mail senden"
+                <button type="button" class="btn btn-sm btn-outline-info px-2" title="<?= te('Per E-Mail senden') ?>"
                         onclick='openEmailModal(<?= htmlspecialchars(json_encode([
                             "id"=>$q["id"],"quote_number"=>$q["quote_number"],"total_amount"=>$q["total_amount"],
                             "client"=>($q["contact_name"]?:$q["custom_name"]?:""),"email"=>($q["contact_email"]?:""),
@@ -653,7 +653,7 @@ require 'includes/layout_start.php';
                 </button>
 
                 <!-- Bearbeiten -->
-                <button type="button" class="btn btn-sm btn-outline-secondary px-2" title="Bearbeiten"
+                <button type="button" class="btn btn-sm btn-outline-secondary px-2" title="<?= te('Bearbeiten') ?>"
                         onclick='prepareEditQuote(<?= htmlspecialchars(json_encode($q, JSON_HEX_TAG|JSON_HEX_APOS), ENT_QUOTES) ?>)'><i class="bi bi-pencil-square"></i></button>
 
                 <!-- Zu Rechnung konvertieren -->
@@ -663,7 +663,7 @@ require 'includes/layout_start.php';
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="convert_to_invoice">
                   <input type="hidden" name="quote_id" value="<?= $q['id'] ?>">
-                  <button type="submit" class="btn btn-sm btn-outline-success px-2" title="Zu Rechnung konvertieren"><i class="bi bi-arrow-right-circle"></i></button>
+                  <button type="submit" class="btn btn-sm btn-outline-success px-2" title="<?= te('Zu Rechnung konvertieren') ?>"><i class="bi bi-arrow-right-circle"></i></button>
                 </form>
                 <?php endif; ?>
 
@@ -672,7 +672,7 @@ require 'includes/layout_start.php';
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete_quote">
                   <input type="hidden" name="quote_id" value="<?= $q['id'] ?>">
-                  <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Löschen"
+                  <button type="button" class="btn btn-sm btn-outline-danger px-2" title="<?= te('Löschen') ?>"
                           data-confirmed="0" onclick="confirmDeleteQuote(this, <?= $q['id'] ?>)"><i class="bi bi-trash3"></i></button>
                 </form>
               </div>
@@ -691,7 +691,7 @@ require 'includes/layout_start.php';
   <div class="modal-dialog modal-xl">
     <div class="modal-content border-0 shadow">
       <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold m-0" id="quoteModalTitle"><i class="bi bi-file-earmark-text me-2"></i> Neues Angebot</h5>
+        <h5 class="modal-title fw-bold m-0" id="quoteModalTitle"><i class="bi bi-file-earmark-text me-2"></i> <?= te('Neues Angebot') ?></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-4 bg-subtle">
@@ -702,9 +702,9 @@ require 'includes/layout_start.php';
 
           <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
             <div class="col-md-5">
-              <label class="form-label small fw-bold">Kunde (aus Kontakten)</label>
+              <label class="form-label small fw-bold"><?= te('Kunde (aus Kontakten)') ?></label>
               <select name="contact_id" id="q_contact" class="form-select" onchange="fillClientName(this)">
-                <option value="">— Kein Kontakt ausgewählt —</option>
+                <option value=""><?= te('— Kein Kontakt ausgewählt —') ?></option>
                 <?php foreach($contacts as $c): ?>
                   <option value="<?= $c['id'] ?>" data-name="<?= htmlspecialchars($c['name']) ?>">
                     <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' (' . htmlspecialchars($c['company']) . ')' : '' ?>
@@ -713,18 +713,18 @@ require 'includes/layout_start.php';
               </select>
             </div>
             <div class="col-md-4">
-              <label class="form-label small fw-bold">Oder: Freitext-Name</label>
-              <input type="text" name="custom_name" id="q_custom_name" class="form-control" placeholder="z.B. Mustermann GmbH">
+              <label class="form-label small fw-bold"><?= te('Oder: Freitext-Name') ?></label>
+              <input type="text" name="custom_name" id="q_custom_name" class="form-control" placeholder="<?= te('z.B. Mustermann GmbH') ?>">
             </div>
             <div class="col-md-3">
-              <label class="form-label small fw-bold">Gültig bis</label>
+              <label class="form-label small fw-bold"><?= te('Gültig bis') ?></label>
               <input type="date" name="valid_until" id="q_valid_until" class="form-control">
             </div>
             <div class="col-md-4">
-              <label class="form-label small fw-bold">Steuer</label>
+              <label class="form-label small fw-bold"><?= te('Steuer') ?></label>
               <select name="tax_type" id="q_tax_type" class="form-select">
-                <option value="kleinunternehmer">Kleinunternehmer (§19 UStG, keine MwSt.)</option>
-                <option value="regel">Regelbesteuerung (19% MwSt.)</option>
+                <option value="kleinunternehmer"><?= te('Kleinunternehmer (§19 UStG, keine MwSt.)') ?></option>
+                <option value="regel"><?= te('Regelbesteuerung (19% MwSt.)') ?></option>
               </select>
             </div>
             <?php $status_opts = ['Entwurf','Gesendet','Angenommen','Abgelehnt']; ?>
@@ -737,38 +737,38 @@ require 'includes/layout_start.php';
               </select>
             </div>
             <div class="col-12">
-              <label class="form-label small fw-bold">Betreff <span class="text-muted fw-normal">(erscheint im PDF)</span></label>
-              <input type="text" name="subject" id="q_subject" class="form-control" placeholder="z.B. Webseitenentwicklung – Angebot für Ihr Projekt">
+              <label class="form-label small fw-bold"><?= te('Betreff') ?> <span class="text-muted fw-normal"><?= te('(erscheint im PDF)') ?></span></label>
+              <input type="text" name="subject" id="q_subject" class="form-control" placeholder="<?= te('z.B. Webseitenentwicklung – Angebot für Ihr Projekt') ?>">
             </div>
             <div class="col-12">
-              <label class="form-label small fw-bold">Einleitungstext <span class="text-muted fw-normal">(optional)</span></label>
-              <textarea name="intro_text" id="q_intro_text" class="form-control form-control-sm" rows="2" placeholder="z.B. Hiermit unterbreiten wir Ihnen folgendes Angebot für das besprochene Projekt..."></textarea>
+              <label class="form-label small fw-bold"><?= te('Einleitungstext') ?> <span class="text-muted fw-normal"><?= te('(optional)') ?></span></label>
+              <textarea name="intro_text" id="q_intro_text" class="form-control form-control-sm" rows="2" placeholder="<?= te('z.B. Hiermit unterbreiten wir Ihnen folgendes Angebot für das besprochene Projekt...') ?>"></textarea>
             </div>
           </div>
 
           <!-- Positionen -->
           <div class="bg-surface p-3 rounded shadow-sm border mb-3">
             <label class="form-label small fw-bold d-flex justify-content-between">
-              <span>Positionen</span>
-              <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" onclick="addItem()"><i class="bi bi-plus-lg"></i> Position</button>
+              <span><?= te('Positionen') ?></span>
+              <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" onclick="addItem()"><i class="bi bi-plus-lg"></i> <?= te('Position') ?></button>
             </label>
             <div id="items-container">
               <!-- Positionen werden per JS eingefügt -->
             </div>
             <div class="d-flex justify-content-end mt-2">
-              <div class="text-end fw-bold fs-5 text-strong-c" id="total-display">Gesamt: 0,00 €</div>
+              <div class="text-end fw-bold fs-5 text-strong-c" id="total-display"><?= te('Gesamt: 0,00 €') ?></div>
             </div>
           </div>
 
           <!-- Notizen -->
           <div class="bg-surface p-3 rounded shadow-sm border mb-3">
-            <label class="form-label small fw-bold">Notizen / Anmerkungen</label>
-            <textarea name="notes" id="q_notes" class="form-control" rows="3" placeholder="z.B. Zahlungsbedingungen, Hinweise..."></textarea>
+            <label class="form-label small fw-bold"><?= te('Notizen / Anmerkungen') ?></label>
+            <textarea name="notes" id="q_notes" class="form-control" rows="3" placeholder="<?= te('z.B. Zahlungsbedingungen, Hinweise...') ?>"></textarea>
           </div>
 
           <div class="d-flex justify-content-end gap-2">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i> Speichern</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i> <?= te('Speichern') ?></button>
           </div>
         </form>
       </div>
@@ -781,7 +781,7 @@ require 'includes/layout_start.php';
   <div class="modal-dialog modal-lg">
     <div class="modal-content border-0 shadow">
       <div class="modal-header" style="background:var(--color-sidebar);">
-        <h5 class="modal-title fw-bold text-white m-0"><i class="bi bi-envelope-arrow-up me-2"></i>Angebot per E-Mail senden</h5>
+        <h5 class="modal-title fw-bold text-white m-0"><i class="bi bi-envelope-arrow-up me-2"></i><?= te('Angebot per E-Mail senden') ?></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST">
@@ -792,24 +792,24 @@ require 'includes/layout_start.php';
           <div class="bg-surface rounded-3 border p-3 mb-3 shadow-sm">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label small fw-bold">An (E-Mail) *</label>
-                <input type="email" name="to_email" id="eq_to" class="form-control" required placeholder="kunde@example.com" style="border-radius:8px;">
+                <label class="form-label small fw-bold"><?= te('An (E-Mail) *') ?></label>
+                <input type="email" name="to_email" id="eq_to" class="form-control" required placeholder="<?= te('kunde@example.com') ?>" style="border-radius:8px;">
               </div>
               <div class="col-md-6">
-                <label class="form-label small fw-bold">Betreff *</label>
+                <label class="form-label small fw-bold"><?= te('Betreff *') ?></label>
                 <input type="text" name="email_subject" id="eq_subject" class="form-control" required style="border-radius:8px;">
               </div>
             </div>
           </div>
           <div class="bg-surface rounded-3 border p-3 shadow-sm">
-            <label class="form-label small fw-bold">Nachricht</label>
+            <label class="form-label small fw-bold"><?= te('Nachricht') ?></label>
             <textarea name="email_body" id="eq_body" class="form-control" rows="9" style="font-size:13px;resize:none;border-radius:8px;font-family:inherit;"></textarea>
           </div>
-          <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i>Das Angebot-PDF wird automatisch angehängt.</div>
+          <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i><?= te('Das Angebot-PDF wird automatisch angehängt.') ?></div>
         </div>
         <div class="modal-footer bg-subtle">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-          <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-send me-1"></i>Senden</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+          <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-send me-1"></i><?= te('Senden') ?></button>
         </div>
       </form>
     </div>

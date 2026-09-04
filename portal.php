@@ -25,6 +25,18 @@ if (!$client) { die("Zugang abgelaufen oder ungültig."); }
 $_sess_key  = 'portal_auth_' . $client['id'];
 $_pin_error = '';
 
+/* Sprachwahl im Portal.
+   Bewusst ueber die Adresszeile und die Sitzung, nicht ueber die
+   Datenbank: so funktioniert der Umschalter auch in der Demo, wo jeder
+   Schreibzugriff abgewiesen wird. Und der Kunde entscheidet selbst,
+   ohne dass jemand im Panel etwas fuer ihn einstellen muss. */
+if (isset($_GET['lang']) && in_array($_GET['lang'], SPRACHEN, true)) {
+    $_SESSION['portal_lang_' . $client['id']] = $_GET['lang'];
+}
+if (!empty($_SESSION['portal_lang_' . $client['id']])) {
+    sprache_setzen($_SESSION['portal_lang_' . $client['id']]);
+}
+
 /**
  * Darf dieser Kontakt in diesem Projekt handeln?
  *
@@ -783,6 +795,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     .portal-theme-toggle:focus-visible {
       outline: 2px solid var(--color-primary); outline-offset: 2px;
     }
+    /* Der Sprachknopf teilt sich Form und Verhalten mit dem Theme-Knopf,
+       traegt aber Buchstaben statt eines Symbols. */
+    .portal-lang-toggle {
+      margin-right: 0; font-size: 12px; font-weight: 700;
+      letter-spacing: .5px; text-decoration: none;
+    }
     .portal-pill {
       white-space: nowrap; border-radius: 8px;
       padding: 8px 18px; font-size: 13px; font-weight: 600;
@@ -1113,9 +1131,15 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <i class="bi bi-person-fill"></i> Mein Profil
       </button>
       </div>
+      <a class="portal-theme-toggle portal-lang-toggle"
+         href="portal?token=<?= urlencode($token) ?>&amp;lang=<?= lang() === 'de' ? 'en' : 'de' ?>"
+         title="<?= te('Sprache wechseln') ?>">
+        <span aria-hidden="true"><?= lang() === 'de' ? 'EN' : 'DE' ?></span>
+        <span class="visually-hidden"><?= te('Sprache wechseln') ?></span>
+      </a>
       <button type="button" class="portal-theme-toggle" id="portalThemeToggle" aria-pressed="false">
         <i class="bi bi-moon-stars" aria-hidden="true"></i>
-        <span class="visually-hidden">Dunkles Design umschalten</span>
+        <span class="visually-hidden"><?= te('Dunkles Design umschalten') ?></span>
       </button>
     </div>
   </div>

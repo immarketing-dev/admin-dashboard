@@ -250,7 +250,7 @@ require 'includes/layout_start.php';
 
     <?php if($saved): ?>
       <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-        <i class="bi bi-check-circle me-2"></i> Einstellungen gespeichert.
+        <i class="bi bi-check-circle me-2"></i> <?= te('Einstellungen gespeichert.') ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     <?php endif; ?>
@@ -259,27 +259,27 @@ require 'includes/layout_start.php';
     <ul class="nav nav-tabs mb-0" style="border-radius:10px 10px 0 0; background:var(--surface-card); padding:10px 10px 0; box-shadow:0 2px 10px rgba(0,0,0,0.02);">
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='design' ? 'active' : '' ?>" href="?tab=design">
-          <i class="bi bi-palette me-1"></i> Darstellung
+          <i class="bi bi-palette me-1"></i> <?= te('Darstellung') ?>
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='company' ? 'active' : '' ?>" href="?tab=company">
-          <i class="bi bi-building me-1"></i> Firma
+          <i class="bi bi-building me-1"></i> <?= te('Firma') ?>
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='notifications' ? 'active' : '' ?>" href="?tab=notifications">
-          <i class="bi bi-bell me-1"></i> Benachrichtigungen
+          <i class="bi bi-bell me-1"></i> <?= te('Benachrichtigungen') ?>
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='mail' ? 'active' : '' ?>" href="?tab=mail">
-          <i class="bi bi-envelope-paper me-1"></i> E-Mail-Vorlagen
+          <i class="bi bi-envelope-paper me-1"></i> <?= te('E-Mail-Vorlagen') ?>
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='system' ? 'active' : '' ?>" href="?tab=system">
-          <i class="bi bi-gear me-1"></i> System
+          <i class="bi bi-gear me-1"></i> <?= te('System') ?>
         </a>
       </li>
     </ul>
@@ -313,13 +313,13 @@ require 'includes/layout_start.php';
       </form>
 
       <!-- Dark Mode -->
-      <div class="settings-section-title"><i class="bi bi-moon-stars me-2"></i>Dark Mode</div>
+      <div class="settings-section-title"><i class="bi bi-moon-stars me-2"></i><?= te('Dark Mode') ?></div>
       <div class="d-flex align-items-center gap-3 mb-4">
         <div class="form-check form-switch mb-0">
           <input class="form-check-input" type="checkbox" id="darkModeToggle" role="switch" style="width:3em;height:1.5em;">
-          <label class="form-check-label ms-2 fw-semibold" for="darkModeToggle">Dark Mode aktivieren</label>
+          <label class="form-check-label ms-2 fw-semibold" for="darkModeToggle"><?= te('Dark Mode aktivieren') ?></label>
         </div>
-        <small class="text-muted">Wird lokal im Browser gespeichert.</small>
+        <small class="text-muted"><?= te('Wird lokal im Browser gespeichert.') ?></small>
       </div>
 
       <!-- Colors -->
@@ -327,10 +327,10 @@ require 'includes/layout_start.php';
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="save_design">
 
-        <div class="settings-section-title mt-3"><i class="bi bi-droplet me-2"></i>Farben</div>
+        <div class="settings-section-title mt-3"><i class="bi bi-droplet me-2"></i><?= te('Farben') ?></div>
         <div class="row g-4 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Primärfarbe (Akzent)</label>
+            <label class="form-label fw-semibold"><?= te('Primärfarbe (Akzent)') ?></label>
             <div class="color-row">
               <input type="color" name="color_primary" id="cpPicker" class="color-preview" value="<?= htmlspecialchars($s_color_primary) ?>" oninput="updatePreview()">
               <input type="text" id="cpHex" class="form-control form-control-sm" value="<?= htmlspecialchars($s_color_primary) ?>" maxlength="7" placeholder="#149ddd" oninput="syncHex('cpPicker','cpHex')">
@@ -338,7 +338,7 @@ require 'includes/layout_start.php';
             <div class="mt-2 live-preview-bar" id="prevPrimary" style="background:<?= htmlspecialchars($s_color_primary) ?>;"></div>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Sidebar-Farbe</label>
+            <label class="form-label fw-semibold"><?= te('Sidebar-Farbe') ?></label>
             <div class="color-row">
               <input type="color" name="color_sidebar" id="csPicker" class="color-preview" value="<?= htmlspecialchars($s_color_sidebar) ?>" oninput="updatePreview()">
               <input type="text" id="csHex" class="form-control form-control-sm" value="<?= htmlspecialchars($s_color_sidebar) ?>" maxlength="7" placeholder="#040b14" oninput="syncHex('csPicker','csHex')">
@@ -352,8 +352,8 @@ require 'includes/layout_start.php';
         </div>
 
         <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> Farben speichern</button>
-          <button type="submit" form="resetForm" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise me-1"></i> Zurücksetzen</button>
+          <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> <?= te('Farben speichern') ?></button>
+          <button type="submit" form="resetForm" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise me-1"></i> <?= te('Zurücksetzen') ?></button>
         </div>
       </form>
       <form method="POST" id="resetForm" style="display:none">
@@ -369,43 +369,43 @@ require 'includes/layout_start.php';
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="save_company">
 
-        <div class="settings-section-title"><i class="bi bi-building me-2"></i>Unternehmensangaben</div>
+        <div class="settings-section-title"><i class="bi bi-building me-2"></i><?= te('Unternehmensangaben') ?></div>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label">Vollständiger Name</label>
+            <label class="form-label"><?= te('Vollständiger Name') ?></label>
             <input type="text" name="company_name" class="form-control" value="<?= htmlspecialchars($s_company_name) ?>">
-            <div class="form-text">Wird auf Rechnungen und im Footer verwendet.</div>
+            <div class="form-text"><?= te('Wird auf Rechnungen und im Footer verwendet.') ?></div>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Kurzname</label>
+            <label class="form-label"><?= te('Kurzname') ?></label>
             <input type="text" name="company_short" class="form-control" value="<?= htmlspecialchars($s_company_short) ?>">
-            <div class="form-text">Wird im Seitentitel und Portal-Header verwendet.</div>
+            <div class="form-text"><?= te('Wird im Seitentitel und Portal-Header verwendet.') ?></div>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Admin-Panel URL</label>
+            <label class="form-label"><?= te('Admin-Panel URL') ?></label>
             <input type="url" name="base_url" class="form-control" value="<?= htmlspecialchars($s_base_url) ?>">
-            <div class="form-text">Wichtig für QR-Codes und Links.</div>
+            <div class="form-text"><?= te('Wichtig für QR-Codes und Links.') ?></div>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Hauptwebsite</label>
+            <label class="form-label"><?= te('Hauptwebsite') ?></label>
             <input type="url" name="main_website" class="form-control" value="<?= htmlspecialchars($s_main_website) ?>">
           </div>
           <div class="col-md-6">
-            <label class="form-label">Admin-E-Mail</label>
+            <label class="form-label"><?= te('Admin-E-Mail') ?></label>
             <input type="email" name="admin_email" class="form-control" value="<?= htmlspecialchars($s_admin_email) ?>">
           </div>
           <div class="col-md-6">
-            <label class="form-label">Support-E-Mail</label>
+            <label class="form-label"><?= te('Support-E-Mail') ?></label>
             <input type="email" name="support_email" class="form-control" value="<?= htmlspecialchars($s_support_email) ?>">
           </div>
         </div>
 
         <div class="alert alert-info d-flex gap-2 align-items-start py-2" style="font-size:13px;">
           <i class="bi bi-info-circle-fill mt-1"></i>
-          <span>Diese Werte überschreiben die Konstanten in <code>config.php</code> und werden sofort auf allen Seiten wirksam.</span>
+          <span><?= te('Diese Werte überschreiben die Konstanten in') ?> <code>config.php</code> <?= te('und werden sofort auf allen Seiten wirksam.') ?></span>
         </div>
 
-        <div class="settings-section-title mt-4"><i class="bi bi-bank me-2"></i>Bankverbindung</div>
+        <div class="settings-section-title mt-4"><i class="bi bi-bank me-2"></i><?= te('Bankverbindung') ?></div>
         <p class="text-muted small mb-3">
           Erscheint im Kundenportal bei offenen Rechnungen, zusammen mit einem
           Überweisungs-Code zum Scannen. Leer lassen blendet den Bereich aus.
@@ -414,7 +414,7 @@ require 'includes/layout_start.php';
         </p>
         <div class="row g-3 mb-2">
           <div class="col-md-6">
-            <label class="fw-bold small mb-1" for="bank_holder">Kontoinhaber</label>
+            <label class="fw-bold small mb-1" for="bank_holder"><?= te('Kontoinhaber') ?></label>
             <input type="text" name="bank_holder" id="bank_holder" class="form-control" maxlength="70"
                    value="<?= htmlspecialchars(setting('bank_holder', '')) ?>"
                    placeholder="<?= htmlspecialchars(setting('company_name', COMPANY_NAME)) ?>">
@@ -426,41 +426,41 @@ require 'includes/layout_start.php';
                    placeholder="DE00 0000 0000 0000 0000 00">
           </div>
           <div class="col-md-6">
-            <label class="fw-bold small mb-1" for="bank_bic">BIC <span class="text-muted fw-normal">(optional)</span></label>
+            <label class="fw-bold small mb-1" for="bank_bic">BIC <span class="text-muted fw-normal"><?= te('(optional)') ?></span></label>
             <input type="text" name="bank_bic" id="bank_bic" class="form-control" maxlength="11"
                    value="<?= htmlspecialchars(setting('bank_bic', '')) ?>">
           </div>
           <div class="col-md-6">
-            <label class="fw-bold small mb-1" for="payment_note">Hinweis zur Zahlung <span class="text-muted fw-normal">(optional)</span></label>
+            <label class="fw-bold small mb-1" for="payment_note"><?= te('Hinweis zur Zahlung') ?> <span class="text-muted fw-normal"><?= te('(optional)') ?></span></label>
             <input type="text" name="payment_note" id="payment_note" class="form-control" maxlength="140"
                    value="<?= htmlspecialchars(setting('payment_note', '')) ?>"
-                   placeholder="z. B. Zahlbar innerhalb von 14 Tagen ohne Abzug.">
+                   placeholder="<?= te('z. B. Zahlbar innerhalb von 14 Tagen ohne Abzug.') ?>">
           </div>
         </div>
-        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> Speichern</button>
+        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
       </form>
 
       <!-- Logo Upload (eigenes Formular wegen enctype) -->
       <hr class="my-4">
-      <div class="settings-section-title"><i class="bi bi-image me-2"></i>Firmenlogo (für Rechnungen)</div>
+      <div class="settings-section-title"><i class="bi bi-image me-2"></i><?= te('Firmenlogo (für Rechnungen)') ?></div>
       <div class="row g-4 align-items-start">
         <div class="col-md-5">
           <?php if ($s_company_logo && file_exists(__DIR__ . '/' . $s_company_logo)): ?>
             <div class="p-3 border rounded-3 bg-subtle text-center mb-3" style="max-width:280px;">
               <img src="<?= htmlspecialchars($s_company_logo) ?>?v=<?= filemtime(__DIR__ . '/' . $s_company_logo) ?>"
-                   alt="Firmenlogo" style="max-height:70px; max-width:100%; object-fit:contain;">
+                   alt="<?= te('Firmenlogo') ?>" style="max-height:70px; max-width:100%; object-fit:contain;">
             </div>
             <form method="POST">
               <?= csrf_field() ?>
               <input type="hidden" name="action" value="delete_logo">
               <button type="submit" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-trash3 me-1"></i>Logo entfernen
+                <i class="bi bi-trash3 me-1"></i><?= te('Logo entfernen') ?>
               </button>
             </form>
           <?php else: ?>
             <div class="text-muted small p-3 border rounded-3 bg-subtle" style="max-width:280px;">
               <i class="bi bi-image text-muted" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-              Noch kein Logo hinterlegt. Ohne Logo erscheint nur der Firmenname auf Rechnungen.
+              <?= te('Noch kein Logo hinterlegt. Ohne Logo erscheint nur der Firmenname auf Rechnungen.') ?>
             </div>
           <?php endif; ?>
         </div>
@@ -468,11 +468,11 @@ require 'includes/layout_start.php';
           <form method="POST" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="upload_logo">
-            <label class="form-label fw-semibold">Logo hochladen</label>
+            <label class="form-label fw-semibold"><?= te('Logo hochladen') ?></label>
             <input type="file" name="company_logo" class="form-control mb-2" accept="image/png,image/jpeg,image/gif,image/webp" required>
-            <div class="form-text mb-3">PNG, JPG, GIF oder WebP · max. 2 MB · Empfehlung: transparenter Hintergrund, ca. 400×120 px</div>
+            <div class="form-text mb-3"><?= te('PNG, JPG, GIF oder WebP · max. 2 MB · Empfehlung: transparenter Hintergrund, ca. 400×120 px') ?></div>
             <button type="submit" class="btn btn-primary btn-sm px-3">
-              <i class="bi bi-upload me-1"></i>Hochladen & speichern
+              <i class="bi bi-upload me-1"></i><?= te('Hochladen & speichern') ?>
             </button>
           </form>
         </div>
@@ -480,26 +480,26 @@ require 'includes/layout_start.php';
 
       <!-- Favicon Upload -->
       <hr class="my-4">
-      <div class="settings-section-title"><i class="bi bi-window me-2"></i>Tab-Icon (Favicon)</div>
+      <div class="settings-section-title"><i class="bi bi-window me-2"></i><?= te('Tab-Icon (Favicon)') ?></div>
       <div class="row g-4 align-items-start">
         <div class="col-md-5">
           <?php if ($s_favicon && file_exists(__DIR__ . '/' . $s_favicon)): ?>
             <div class="p-3 border rounded-3 bg-subtle text-center mb-3" style="max-width:280px;">
               <img src="<?= htmlspecialchars($s_favicon) ?>?v=<?= filemtime(__DIR__ . '/' . $s_favicon) ?>"
-                   alt="Favicon" style="max-height:48px; max-width:96px; object-fit:contain; image-rendering:auto;">
+                   alt="<?= te('Favicon') ?>" style="max-height:48px; max-width:96px; object-fit:contain; image-rendering:auto;">
               <div class="text-muted small mt-2"><?= htmlspecialchars(basename($s_favicon)) ?></div>
             </div>
             <form method="POST">
               <?= csrf_field() ?>
               <input type="hidden" name="action" value="delete_favicon">
               <button type="submit" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-trash3 me-1"></i>Favicon entfernen
+                <i class="bi bi-trash3 me-1"></i><?= te('Favicon entfernen') ?>
               </button>
             </form>
           <?php else: ?>
             <div class="text-muted small p-3 border rounded-3 bg-subtle" style="max-width:280px;">
               <i class="bi bi-window text-muted" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-              Noch kein Favicon hinterlegt. Browser zeigen dann das Standard-Icon.
+              <?= te('Noch kein Favicon hinterlegt. Browser zeigen dann das Standard-Icon.') ?>
             </div>
           <?php endif; ?>
         </div>
@@ -507,11 +507,11 @@ require 'includes/layout_start.php';
           <form method="POST" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="upload_favicon">
-            <label class="form-label fw-semibold">Favicon hochladen</label>
+            <label class="form-label fw-semibold"><?= te('Favicon hochladen') ?></label>
             <input type="file" name="favicon_file" class="form-control mb-2" accept=".ico,.png" required>
-            <div class="form-text mb-3">ICO oder PNG · max. 512 KB · Empfehlung: 32×32 px oder 64×64 px</div>
+            <div class="form-text mb-3"><?= te('ICO oder PNG · max. 512 KB · Empfehlung: 32×32 px oder 64×64 px') ?></div>
             <button type="submit" class="btn btn-primary btn-sm px-3">
-              <i class="bi bi-upload me-1"></i>Hochladen & speichern
+              <i class="bi bi-upload me-1"></i><?= te('Hochladen & speichern') ?>
             </button>
           </form>
         </div>
@@ -525,7 +525,7 @@ require 'includes/layout_start.php';
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="save_notifications">
 
-        <div class="settings-section-title"><i class="bi bi-bell me-2"></i>E-Mail-Benachrichtigungen</div>
+        <div class="settings-section-title"><i class="bi bi-bell me-2"></i><?= te('E-Mail-Benachrichtigungen') ?></div>
         <div class="d-flex flex-column gap-3 mb-4">
 
           <div class="d-flex align-items-start gap-3 p-3 border rounded-3">
@@ -533,8 +533,8 @@ require 'includes/layout_start.php';
               <input class="form-check-input" type="checkbox" name="notify_milestone_email" id="notMs" role="switch" style="width:3em;height:1.5em;" <?= $s_notify_ms === '1' ? 'checked' : '' ?>>
             </div>
             <div>
-              <label class="fw-semibold form-check-label" for="notMs">Meilenstein-E-Mail-Bestätigung</label>
-              <p class="text-muted mb-0" style="font-size:13px;">Beim Abschließen eines Meilensteins im Portal wird der Kunde per E-Mail gefragt, ob er den Meilenstein offiziell bestätigen möchte.</p>
+              <label class="fw-semibold form-check-label" for="notMs"><?= te('Meilenstein-E-Mail-Bestätigung') ?></label>
+              <p class="text-muted mb-0" style="font-size:13px;"><?= te('Beim Abschließen eines Meilensteins im Portal wird der Kunde per E-Mail gefragt, ob er den Meilenstein offiziell bestätigen möchte.') ?></p>
             </div>
           </div>
 
@@ -543,13 +543,13 @@ require 'includes/layout_start.php';
               <input class="form-check-input" type="checkbox" name="notify_quote_email" id="notQt" role="switch" style="width:3em;height:1.5em;" <?= $s_notify_quote === '1' ? 'checked' : '' ?>>
             </div>
             <div>
-              <label class="fw-semibold form-check-label" for="notQt">Angebots-E-Mail beim Versand</label>
-              <p class="text-muted mb-0" style="font-size:13px;">Beim Versand eines Angebots wird automatisch eine E-Mail an den Kunden generiert.</p>
+              <label class="fw-semibold form-check-label" for="notQt"><?= te('Angebots-E-Mail beim Versand') ?></label>
+              <p class="text-muted mb-0" style="font-size:13px;"><?= te('Beim Versand eines Angebots wird automatisch eine E-Mail an den Kunden generiert.') ?></p>
             </div>
           </div>
 
         </div>
-        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> Speichern</button>
+        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
       </form>
     </div>
 
@@ -568,33 +568,33 @@ require 'includes/layout_start.php';
     <div class="settings-card" style="border-radius:0 10px 10px 10px;">
 
       <!-- ── Rahmen: gilt für alle HTML-Mails ── -->
-      <div class="settings-section-title"><i class="bi bi-window-sidebar me-2"></i>Rahmen aller E-Mails</div>
+      <div class="settings-section-title"><i class="bi bi-window-sidebar me-2"></i><?= te('Rahmen aller E-Mails') ?></div>
       <p class="text-muted small mb-3">
-        Kopfbereich, Farben und Logo kommen aus <a href="?tab=design">Darstellung</a> und
-        <a href="?tab=company">Firma</a>. Hier stellen Sie ein, was unter jeder Nachricht steht.
+        <?= te('Kopfbereich, Farben und Logo kommen aus') ?> <a href="?tab=design"><?= te('Darstellung') ?></a> und
+        <a href="?tab=company"><?= te('Firma') ?></a>. Hier stellen Sie ein, was unter jeder Nachricht steht.
       </p>
       <form method="POST" class="row g-3 mb-4">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="save_mail_frame">
         <div class="col-md-6">
-          <label class="fw-bold small mb-1" for="mail_signature">Signatur</label>
+          <label class="fw-bold small mb-1" for="mail_signature"><?= te('Signatur') ?></label>
           <textarea class="form-control" id="mail_signature" name="mail_signature" rows="3"
                     placeholder="Mit freundlichen Grüßen&#10;David Imminger"><?= htmlspecialchars(setting('mail_signature', '')) ?></textarea>
-          <div class="form-text">Steht am Ende jeder Nachricht, vor der Fußzeile.</div>
+          <div class="form-text"><?= te('Steht am Ende jeder Nachricht, vor der Fußzeile.') ?></div>
         </div>
         <div class="col-md-6">
-          <label class="fw-bold small mb-1" for="mail_footer">Fußzeile</label>
+          <label class="fw-bold small mb-1" for="mail_footer"><?= te('Fußzeile') ?></label>
           <textarea class="form-control" id="mail_footer" name="mail_footer" rows="3"
                     placeholder="<?= htmlspecialchars(setting('company_name', COMPANY_NAME) . ' · ' . setting('main_website', MAIN_WEBSITE)) ?>"><?= htmlspecialchars(setting('mail_footer', '')) ?></textarea>
-          <div class="form-text">Die kleine Zeile ganz unten. Leer lassen für Firmenname und Website.</div>
+          <div class="form-text"><?= te('Die kleine Zeile ganz unten. Leer lassen für Firmenname und Website.') ?></div>
         </div>
         <div class="col-12">
-          <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-save me-1"></i>Rahmen speichern</button>
+          <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-save me-1"></i><?= te('Rahmen speichern') ?></button>
         </div>
       </form>
 
       <!-- ── Vorlagen ── -->
-      <div class="settings-section-title"><i class="bi bi-envelope-paper me-2"></i>Vorlagen</div>
+      <div class="settings-section-title"><i class="bi bi-envelope-paper me-2"></i><?= te('Vorlagen') ?></div>
 
       <div class="row g-4">
         <!-- Liste -->
@@ -613,7 +613,7 @@ require 'includes/layout_start.php';
                 </span>
               </span>
               <?php if($angepasst): ?>
-                <span class="badge <?= $k === $tpl_key ? 'bg-light text-dark' : 'bg-primary' ?>" title="Von Ihnen angepasst">angepasst</span>
+                <span class="badge <?= $k === $tpl_key ? 'bg-light text-dark' : 'bg-primary' ?>" title="<?= te('Von Ihnen angepasst') ?>">angepasst</span>
               <?php endif; ?>
             </a>
             <?php endforeach; ?>
@@ -635,19 +635,19 @@ require 'includes/layout_start.php';
               <?php if($ist_angepasst): ?>
               <button type="submit" form="reset_tpl_form" class="btn btn-outline-secondary btn-sm"
                       onclick="return confirm('Diese Vorlage auf den Standardtext zurücksetzen?')">
-                <i class="bi bi-arrow-counterclockwise me-1"></i>Auf Standard zurücksetzen
+                <i class="bi bi-arrow-counterclockwise me-1"></i><?= te('Auf Standard zurücksetzen') ?>
               </button>
               <?php endif; ?>
             </div>
 
             <div class="mb-3">
-              <label class="fw-bold small mb-1" for="tpl_subject">Betreff</label>
+              <label class="fw-bold small mb-1" for="tpl_subject"><?= te('Betreff') ?></label>
               <input type="text" class="form-control" id="tpl_subject" name="tpl_subject"
                      value="<?= htmlspecialchars(mail_template_subject($tpl_key)) ?>">
             </div>
 
             <div class="mb-2">
-              <label class="fw-bold small mb-1" for="tpl_body">Nachricht</label>
+              <label class="fw-bold small mb-1" for="tpl_body"><?= te('Nachricht') ?></label>
               <textarea class="form-control" id="tpl_body" name="tpl_body" rows="11"
                         style="font-family:var(--font-mono);font-size:13px;line-height:1.6;"><?= htmlspecialchars(mail_template_body($tpl_key)) ?></textarea>
               <div class="form-text">
@@ -657,7 +657,7 @@ require 'includes/layout_start.php';
             </div>
 
             <div class="mb-3">
-              <div class="label-xs mb-1">Platzhalter — anklicken zum Einfügen</div>
+              <div class="label-xs mb-1"><?= te('Platzhalter — anklicken zum Einfügen') ?></div>
               <div class="d-flex flex-wrap gap-1">
                 <?php foreach($tpl['vars'] as $v): ?>
                 <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tpl-var"
@@ -667,7 +667,7 @@ require 'includes/layout_start.php';
               </div>
             </div>
 
-            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-save me-1"></i>Vorlage speichern</button>
+            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-save me-1"></i><?= te('Vorlage speichern') ?></button>
           </form>
 
           <form method="POST" id="reset_tpl_form" class="d-none">
@@ -677,11 +677,11 @@ require 'includes/layout_start.php';
           </form>
 
           <!-- Vorschau -->
-          <div class="settings-section-title mt-4"><i class="bi bi-eye me-2"></i>Vorschau mit Beispieldaten</div>
-          <div class="mb-2 small"><span class="text-muted">Betreff:</span>
+          <div class="settings-section-title mt-4"><i class="bi bi-eye me-2"></i><?= te('Vorschau mit Beispieldaten') ?></div>
+          <div class="mb-2 small"><span class="text-muted"><?= te('Betreff:') ?></span>
             <span class="fw-semibold"><?= htmlspecialchars($vorschau['subject']) ?></span></div>
           <?php if($vorschau['html'] !== ''): ?>
-            <iframe title="Vorschau der E-Mail" style="width:100%;height:520px;border:1px solid var(--border-base);border-radius:var(--radius-md);background:#fff;"
+            <iframe title="<?= te('Vorschau der E-Mail') ?>" style="width:100%;height:520px;border:1px solid var(--border-base);border-radius:var(--radius-md);background:#fff;"
                     srcdoc="<?= htmlspecialchars($vorschau['html'], ENT_QUOTES) ?>"></iframe>
             <div class="form-text">
               Die Vorschau zeigt die Mail so, wie sie beim Empfänger ankommt — immer hell,
@@ -702,39 +702,39 @@ require 'includes/layout_start.php';
     <?php elseif($active_tab === 'system'): ?>
     <div class="settings-card" style="border-radius:0 10px 10px 10px;">
 
-      <div class="settings-section-title"><i class="bi bi-sliders me-2"></i>Log-Einstellungen</div>
+      <div class="settings-section-title"><i class="bi bi-sliders me-2"></i><?= te('Log-Einstellungen') ?></div>
       <form method="POST" class="mb-4">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="save_system">
         <div class="row g-3 align-items-end">
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Log-Anzeigelimit</label>
+            <label class="form-label fw-semibold"><?= te('Log-Anzeigelimit') ?></label>
             <input type="number" name="log_limit" class="form-control" min="50" max="2000" step="50" value="<?= htmlspecialchars($s_log_limit) ?>">
-            <div class="form-text">Maximale Anzahl Logs auf der Log-Seite (Standard: 200, max. 2000).</div>
+            <div class="form-text"><?= te('Maximale Anzahl Logs auf der Log-Seite (Standard: 200, max. 2000).') ?></div>
           </div>
           <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-1"></i> Speichern</button>
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
           </div>
         </div>
       </form>
 
-      <div class="settings-section-title mt-2"><i class="bi bi-info-circle me-2"></i>Systeminfo</div>
+      <div class="settings-section-title mt-2"><i class="bi bi-info-circle me-2"></i><?= te('Systeminfo') ?></div>
       <table class="table table-borderless" style="max-width:400px;">
         <tbody>
           <tr>
-            <td class="text-muted fw-semibold" style="width:160px;">PHP Version</td>
+            <td class="text-muted fw-semibold" style="width:160px;"><?= te('PHP Version') ?></td>
             <td><code><?= htmlspecialchars($php_version) ?></code></td>
           </tr>
           <tr>
-            <td class="text-muted fw-semibold">MySQL Version</td>
+            <td class="text-muted fw-semibold"><?= te('MySQL Version') ?></td>
             <td><code><?= htmlspecialchars($db_version) ?></code></td>
           </tr>
           <tr>
-            <td class="text-muted fw-semibold">Server</td>
+            <td class="text-muted fw-semibold"><?= te('Server') ?></td>
             <td><code><?= htmlspecialchars($_SERVER['SERVER_SOFTWARE'] ?? 'n/a') ?></code></td>
           </tr>
           <tr>
-            <td class="text-muted fw-semibold">Zeitzone</td>
+            <td class="text-muted fw-semibold"><?= te('Zeitzone') ?></td>
             <td><code><?= htmlspecialchars(date_default_timezone_get()) ?></code></td>
           </tr>
         </tbody>

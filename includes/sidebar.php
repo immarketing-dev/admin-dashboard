@@ -12,7 +12,7 @@ try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM project_comments WHE
 $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status IN ('Offen','Überfällig')")->fetchColumn();
 ?>
 <script>if(localStorage.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');</script>
-<button id="sidebarCollapseBtn" aria-label="Sidebar einklappen" title="Sidebar einklappen"><i class="bi bi-chevron-left ci"></i></button>
+<button id="sidebarCollapseBtn" aria-label="<?= te('Seitenleiste einklappen') ?>" title="<?= te('Seitenleiste einklappen') ?>"><i class="bi bi-chevron-left ci"></i></button>
 <div class="sidebar" id="sidebar">
   <div class="brand">
     <i class="bi bi-grid brand-icon"></i>
@@ -53,7 +53,7 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at
       </a>
     </li>
 
-    <li class="nav-group">System</li>
+    <li class="nav-group"><?= te('System') ?></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text"><?= te('System-Logs') ?></span></a></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'trash.php') ? 'active' : '' ?>" href="trash"><i class="bi bi-trash3"></i> <span class="nav-text"><?= te('Papierkorb') ?></span></a></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text"><?= te('Einstellungen') ?></span></a></li>

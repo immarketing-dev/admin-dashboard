@@ -188,7 +188,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             $row['status'], 
             $row['contact_name'] ?: $row['custom_name'], 
             $row['notes'],
-            $row['is_recurring'] ? 'Ja' : 'Nein'
+            $row['is_recurring'] ? t('Ja') : t('Nein')
         ], ';');
     }
     fclose($output); exit();
@@ -574,19 +574,19 @@ require 'includes/layout_start.php';
   <div class="position-fixed top-0 end-0 p-3" style="z-index:1090;">
     <?php if(isset($_GET['msg']) && $_GET['msg'] === 'quote_email_sent'): ?>
     <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
-      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i>Angebot erfolgreich per E-Mail gesendet!</div>
+      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i><?= te('Angebot erfolgreich per E-Mail gesendet!') ?></div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
     <?php endif; ?>
     <?php if(isset($_GET['msg']) && $_GET['msg'] === 'invoice_created'): ?>
     <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
-      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Angebot erfolgreich als Rechnung verbucht!</div>
+      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-check-circle-fill me-2"></i><?= te('Angebot erfolgreich als Rechnung verbucht!') ?></div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
     <?php endif; ?>
     <?php if(isset($_GET['msg']) && $_GET['msg'] === 'email_sent'): ?>
     <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
-      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i>Rechnung erfolgreich per E-Mail gesendet!</div>
+      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i><?= te('Rechnung erfolgreich per E-Mail gesendet!') ?></div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
     <?php endif; ?>
@@ -614,7 +614,7 @@ require 'includes/layout_start.php';
       </li>
       <li class="nav-item">
         <a class="nav-link <?= $active_tab === 'quotes' ? 'active fw-bold' : '' ?>" href="finances?tab=quotes">
-          <i class="bi bi-file-earmark-text me-1"></i> Angebote
+          <i class="bi bi-file-earmark-text me-1"></i> <?= te('Angebote') ?>
         </a>
       </li>
     </ul>
@@ -627,25 +627,25 @@ require 'includes/layout_start.php';
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
           <div class="fw-bold fs-3 text-primary"><?= $kpi_q['total'] ?></div>
-          <div class="text-muted small">Gesamt</div>
+          <div class="text-muted small"><?= te('Gesamt') ?></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
           <div class="fw-bold fs-3 text-success"><?= $kpi_q['accepted'] ?></div>
-          <div class="text-muted small">Angenommen</div>
+          <div class="text-muted small"><?= te('Angenommen') ?></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
           <div class="fw-bold fs-3 text-warning"><?= $kpi_q['sent'] ?></div>
-          <div class="text-muted small">Gesendet / Offen</div>
+          <div class="text-muted small"><?= te('Gesendet / Offen') ?></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="card border-0 shadow-sm rounded-3 p-3 text-center">
           <div class="fw-bold fs-3" style="color:var(--color-primary);"><?= number_format((float)$kpi_q['revenue'],2,',','.') ?> €</div>
-          <div class="text-muted small">Angenommenes Volumen</div>
+          <div class="text-muted small"><?= te('Angenommenes Volumen') ?></div>
         </div>
       </div>
     </div>
@@ -663,20 +663,20 @@ require 'includes/layout_start.php';
       <?php if(empty($quotes)): ?>
         <div class="text-center py-5 text-muted">
           <i class="bi bi-file-earmark-text" style="font-size:3rem;"></i>
-          <h5 class="mt-3 fw-bold">Noch keine Angebote vorhanden.</h5>
+          <h5 class="mt-3 fw-bold"><?= te('Noch keine Angebote vorhanden.') ?></h5>
         </div>
       <?php else: ?>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="bg-subtle small text-uppercase text-muted fw-bold">
             <tr>
-              <th class="py-3 ps-3">Angebots-Nr.</th>
-              <th class="py-3">Kunde</th>
-              <th class="py-3">Datum</th>
-              <th class="py-3">Gültig bis</th>
-              <th class="py-3">Betrag</th>
+              <th class="py-3 ps-3"><?= te('Angebots-Nr.') ?></th>
+              <th class="py-3"><?= te('Kunde') ?></th>
+              <th class="py-3"><?= te('Datum') ?></th>
+              <th class="py-3"><?= te('Gültig bis') ?></th>
+              <th class="py-3"><?= te('Betrag') ?></th>
               <th class="py-3">Status</th>
-              <th class="py-3 text-end pe-3">Aktionen</th>
+              <th class="py-3 text-end pe-3"><?= te('Aktionen') ?></th>
             </tr>
           </thead>
           <tbody>
@@ -702,25 +702,25 @@ require 'includes/layout_start.php';
                   <form method="POST" class="d-inline">
                     <?= csrf_field() ?><input type="hidden" name="action" value="generate_pdf">
                     <input type="hidden" name="quote_id" value="<?= $q_row['id'] ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-primary px-2" title="PDF generieren"><i class="bi bi-file-earmark-pdf"></i></button>
+                    <button type="submit" class="btn btn-sm btn-outline-primary px-2" title="<?= te('PDF generieren') ?>"><i class="bi bi-file-earmark-pdf"></i></button>
                   </form>
-                  <button type="button" class="btn btn-sm btn-outline-info px-2" title="Per E-Mail senden"
+                  <button type="button" class="btn btn-sm btn-outline-info px-2" title="<?= te('Per E-Mail senden') ?>"
                           onclick='openQuoteEmailModal(<?= htmlspecialchars(json_encode(["id"=>$q_row["id"],"quote_number"=>$q_row["quote_number"],"total_amount"=>$q_row["total_amount"],"client"=>($q_row["contact_name"]?:$q_row["custom_name"]?:""),"email"=>($q_row["contact_email"]?:""),"notes"=>$q_row["notes"]], JSON_HEX_TAG|JSON_HEX_APOS), ENT_QUOTES) ?>)'>
                     <i class="bi bi-envelope-arrow-up"></i>
                   </button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary px-2" title="Bearbeiten"
+                  <button type="button" class="btn btn-sm btn-outline-secondary px-2" title="<?= te('Bearbeiten') ?>"
                           onclick='prepareEditQuote(<?= htmlspecialchars(json_encode($q_row, JSON_HEX_TAG|JSON_HEX_APOS), ENT_QUOTES) ?>)'><i class="bi bi-pencil-square"></i></button>
                   <?php if($q_row['status'] !== 'Angenommen' && $q_row['status'] !== 'Abgelehnt'): ?>
                   <form method="POST" class="d-inline" onsubmit="return confirm('Angebot <?= htmlspecialchars($q_row['quote_number']) ?> in eine Rechnung umwandeln?')">
                     <?= csrf_field() ?><input type="hidden" name="action" value="convert_to_invoice">
                     <input type="hidden" name="quote_id" value="<?= $q_row['id'] ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-success px-2" title="Zu Rechnung konvertieren"><i class="bi bi-arrow-right-circle"></i></button>
+                    <button type="submit" class="btn btn-sm btn-outline-success px-2" title="<?= te('Zu Rechnung konvertieren') ?>"><i class="bi bi-arrow-right-circle"></i></button>
                   </form>
                   <?php endif; ?>
                   <form method="POST" class="d-inline" id="del_q_<?= $q_row['id'] ?>">
                     <?= csrf_field() ?><input type="hidden" name="action" value="delete_quote">
                     <input type="hidden" name="quote_id" value="<?= $q_row['id'] ?>">
-                    <button type="button" class="btn btn-sm btn-outline-danger px-2" title="Löschen"
+                    <button type="button" class="btn btn-sm btn-outline-danger px-2" title="<?= te('Löschen') ?>"
                             data-confirmed="0" onclick="confirmDeleteQuote(this, <?= $q_row['id'] ?>)"><i class="bi bi-trash3"></i></button>
                   </form>
                 </div>
@@ -737,11 +737,11 @@ require 'includes/layout_start.php';
     <!-- ======================= FINANZEN TAB ======================= -->
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold m-0 text-muted small text-uppercase">Statistiken</h6>
+        <h6 class="fw-bold m-0 text-muted small text-uppercase"><?= te('Statistiken') ?></h6>
         <div class="btn-group shadow-sm">
-            <a href="?period=month&month=<?= $filter_month ?>&type=<?= $filter_type ?>&status=<?= $filter_status ?>" class="btn btn-sm btn-white border <?= $period=='month'?'active bg-primary text-white':'' ?>">Diesen Monat</a>
-            <a href="?period=year&month=<?= $filter_month ?>&type=<?= $filter_type ?>&status=<?= $filter_status ?>" class="btn btn-sm btn-white border <?= $period=='year'?'active bg-primary text-white':'' ?>">Dieses Jahr</a>
-            <a href="?period=all&month=<?= $filter_month ?>&type=<?= $filter_type ?>&status=<?= $filter_status ?>" class="btn btn-sm btn-white border <?= $period=='all'?'active bg-primary text-white':'' ?>">Gesamt</a>
+            <a href="?period=month&month=<?= $filter_month ?>&type=<?= $filter_type ?>&status=<?= $filter_status ?>" class="btn btn-sm btn-white border <?= $period=='month'?'active bg-primary text-white':'' ?>"><?= te('Diesen Monat') ?></a>
+            <a href="?period=year&month=<?= $filter_month ?>&type=<?= $filter_type ?>&status=<?= $filter_status ?>" class="btn btn-sm btn-white border <?= $period=='year'?'active bg-primary text-white':'' ?>"><?= te('Dieses Jahr') ?></a>
+            <a href="?period=all&month=<?= $filter_month ?>&type=<?= $filter_type ?>&status=<?= $filter_status ?>" class="btn btn-sm btn-white border <?= $period=='all'?'active bg-primary text-white':'' ?>"><?= te('Gesamt') ?></a>
         </div>
     </div>
 
@@ -749,25 +749,25 @@ require 'includes/layout_start.php';
         <div class="col-md-3">
             <div class="kpi-card kpi-income">
                 <div class="kpi-icon bg-success bg-opacity-10 text-success"><i class="bi bi-arrow-down-left"></i></div>
-                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;">Einnahmen</h4><h3 class="fw-bold mb-0 fs-5"><?= number_format($sum_income, 2, ',', '.') ?> €</h3></div>
+                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;"><?= te('Einnahmen') ?></h4><h3 class="fw-bold mb-0 fs-5"><?= number_format($sum_income, 2, ',', '.') ?> €</h3></div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="kpi-card kpi-expense">
                 <div class="kpi-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-arrow-up-right"></i></div>
-                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;">Ausgaben</h4><h3 class="fw-bold mb-0 fs-5"><?= number_format($sum_expense, 2, ',', '.') ?> €</h3></div>
+                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;"><?= te('Ausgaben') ?></h4><h3 class="fw-bold mb-0 fs-5"><?= number_format($sum_expense, 2, ',', '.') ?> €</h3></div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="kpi-card kpi-profit">
                 <div class="kpi-icon bg-primary bg-opacity-10 text-primary" style="background-color: var(--color-primary) !important; color: white !important;"><i class="bi bi-piggy-bank"></i></div>
-                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;">Saldo</h4><h3 class="fw-bold mb-0 fs-5 <?= $profit >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format($profit, 2, ',', '.') ?> €</h3></div>
+                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;"><?= te('Saldo') ?></h4><h3 class="fw-bold mb-0 fs-5 <?= $profit >= 0 ? 'text-success' : 'text-danger' ?>"><?= number_format($profit, 2, ',', '.') ?> €</h3></div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="kpi-card kpi-open">
                 <div class="kpi-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-hourglass-split"></i></div>
-                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;">Offene Forderung</h4><h3 class="fw-bold mb-0 fs-5"><?= number_format($sum_open, 2, ',', '.') ?> €</h3></div>
+                <div><h4 class="small text-muted mb-1 text-uppercase" style="font-size:10px;"><?= te('Offene Forderung') ?></h4><h3 class="fw-bold mb-0 fs-5"><?= number_format($sum_open, 2, ',', '.') ?> €</h3></div>
             </div>
         </div>
     </div>
@@ -782,44 +782,44 @@ require 'includes/layout_start.php';
         
         <div class="input-group input-group-sm search-box">
             <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Suchen..." value="<?=htmlspecialchars($search_query)?>">
+            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="<?= te('Suchen...') ?>" value="<?=htmlspecialchars($search_query)?>">
         </div>
 
         <select name="month" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-            <option value="all_time" <?= $filter_month === 'all_time' ? 'selected' : '' ?>>Zeitraum: Gesamt</option>
-            <option value="year" <?= $filter_month === 'year' ? 'selected' : '' ?>>Zeitraum: Aktuelles Jahr</option>
+            <option value="all_time" <?= $filter_month === 'all_time' ? 'selected' : '' ?>><?= te('Zeitraum: Gesamt') ?></option>
+            <option value="year" <?= $filter_month === 'year' ? 'selected' : '' ?>><?= te('Zeitraum: Aktuelles Jahr') ?></option>
             <option disabled>──────────</option>
             <?php foreach($available_months as $ym): ?>
                 <option value="<?=$ym?>" <?=$filter_month==$ym?'selected':''?>><?=$german_months[substr($ym,5,2)]?> <?=substr($ym,0,4)?></option>
             <?php endforeach; ?>
         </select>
         <select name="type" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-            <option value="all">Alle Typen</option>
-            <option value="INCOME" <?=$filter_type=='INCOME'?'selected':''?>>Einnahmen</option>
-            <option value="EXPENSE" <?=$filter_type=='EXPENSE'?'selected':''?>>Ausgaben</option>
+            <option value="all"><?= te('Alle Typen') ?></option>
+            <option value="INCOME" <?=$filter_type=='INCOME'?'selected':''?>><?= te('Einnahmen') ?></option>
+            <option value="EXPENSE" <?=$filter_type=='EXPENSE'?'selected':''?>><?= te('Ausgaben') ?></option>
         </select>
         <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-            <option value="all">Alle Status</option>
-            <option value="Offen" <?=$filter_status=='Offen'?'selected':''?>>Offen</option>
-            <option value="Bezahlt" <?=$filter_status=='Bezahlt'?'selected':''?>>Bezahlt</option>
-            <option value="Überfällig" <?=$filter_status=='Überfällig'?'selected':''?>>Überfällig</option>
+            <option value="all"><?= te('Alle Status') ?></option>
+            <option value="Offen" <?=$filter_status=='Offen'?'selected':''?>><?= te('Offen') ?></option>
+            <option value="Bezahlt" <?=$filter_status=='Bezahlt'?'selected':''?>><?= te('Bezahlt') ?></option>
+            <option value="Überfällig" <?=$filter_status=='Überfällig'?'selected':''?>><?= te('Überfällig') ?></option>
         </select>
         <div class="form-check ms-2 me-2">
             <input type="checkbox" name="only_recurring" class="form-check-input" id="checkFix" onchange="this.form.submit()" <?=$filter_recurring?'checked':''?>>
-            <label class="form-check-label small fw-bold" for="checkFix" style="padding-top:2px;">Fixkosten</label>
+            <label class="form-check-label small fw-bold" for="checkFix" style="padding-top:2px;"><?= te('Fixkosten') ?></label>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm ms-auto" style="display: none;">Suchen</button> <a href="finances" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-x-circle"></i> Reset</a>
+        <button type="submit" class="btn btn-primary btn-sm ms-auto" style="display: none;"><?= te('Suchen') ?></button> <a href="finances" class="btn btn-outline-secondary btn-sm ms-auto"><i class="bi bi-x-circle"></i> Reset</a>
     </form>
 
     <div class="bg-surface rounded shadow-sm overflow-hidden p-0 mb-4">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-subtle text-uppercase small fw-bold">
-                    <tr><th style="width: 50px;"></th><th>Datum</th><th>Bezeichnung</th><th>Kunde</th><th>Status</th><th class="text-end">Betrag</th><th class="text-center">Aktionen</th></tr>
+                    <tr><th style="width: 50px;"></th><th><?= te('Datum') ?></th><th><?= te('Bezeichnung') ?></th><th><?= te('Kunde') ?></th><th>Status</th><th class="text-end"><?= te('Betrag') ?></th><th class="text-center"><?= te('Aktionen') ?></th></tr>
                 </thead>
                 <tbody>
                     <?php if(empty($records)): ?>
-                        <tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i>Keine Einträge für diese Filter gefunden.</td></tr>
+                        <tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i><?= te('Keine Einträge für diese Filter gefunden.') ?></td></tr>
                     <?php endif; ?>
                     <?php foreach($records as $row): 
                         $is_income = $row['type'] === 'INCOME';
@@ -832,7 +832,7 @@ require 'includes/layout_start.php';
                             <td><span class="small"><?=date('d.m.Y', strtotime($row['record_date']))?></span></td>
                             <td>
                                 <span class="fw-bold text-strong-c"><?=htmlspecialchars($row['title'])?></span>
-                                <?php if($row['is_recurring']): ?> <span class="badge bg-info ms-1" style="font-size:9px;"><i class="bi bi-arrow-repeat"></i> Fix</span> <?php endif; ?>
+                                <?php if($row['is_recurring']): ?> <span class="badge bg-info ms-1" style="font-size:9px;"><i class="bi bi-arrow-repeat"></i> <?= te('Fix') ?></span> <?php endif; ?>
                                 <?php if($row['notes']): ?> <i class="bi bi-chat-text text-muted ms-1" title="<?=htmlspecialchars($row['notes'])?>"></i> <?php endif; ?>
                             </td>
                             <td><span class="small"><?=$display_name?></span></td>
@@ -840,9 +840,9 @@ require 'includes/layout_start.php';
                                 <div class="dropdown">
                                   <span class="status-badge <?= $status_class ?> dropdown-toggle" role="button" data-bs-toggle="dropdown"><?= $row['status'] ?></span>
                                   <ul class="dropdown-menu shadow-sm">
-                                    <li><a class="dropdown-item py-1 small" href="#" onclick="quickStatus(<?=$row['id']?>, 'Offen'); return false;">Offen</a></li>
-                                    <li><a class="dropdown-item py-1 small text-success" href="#" onclick="quickStatus(<?=$row['id']?>, 'Bezahlt'); return false;">Bezahlt</a></li>
-                                    <li><a class="dropdown-item py-1 small text-muted" href="#" onclick="quickStatus(<?=$row['id']?>, 'Storniert'); return false;">Storniert</a></li>
+                                    <li><a class="dropdown-item py-1 small" href="#" onclick="quickStatus(<?=$row['id']?>, 'Offen'); return false;"><?= te('Offen') ?></a></li>
+                                    <li><a class="dropdown-item py-1 small text-success" href="#" onclick="quickStatus(<?=$row['id']?>, 'Bezahlt'); return false;"><?= te('Bezahlt') ?></a></li>
+                                    <li><a class="dropdown-item py-1 small text-muted" href="#" onclick="quickStatus(<?=$row['id']?>, 'Storniert'); return false;"><?= te('Storniert') ?></a></li>
                                   </ul>
                                 </div>
                             </td>
@@ -850,9 +850,9 @@ require 'includes/layout_start.php';
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
                                     <?php if(!empty($row['invoice_pdf_path'])): ?>
-                                    <a href="<?=$row['invoice_pdf_path']?>" target="_blank" class="btn-icon text-primary" title="Rechnung ansehen"><i class="bi bi-file-earmark-pdf-fill"></i></a>
-                                    <a href="<?=$row['invoice_pdf_path']?>" download class="btn-icon text-muted" title="Herunterladen"><i class="bi bi-download"></i></a>
-                                    <button class="btn-icon text-info" title="Per E-Mail senden" onclick='openInvEmailModal(<?= $row['id'] ?>, <?= json_encode($row['title'], JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_name'] ?: ($row['custom_name'] ?: ''), JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_email'] ?? '', JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= $row['amount'] ?>)'><i class="bi bi-envelope-fill"></i></button>
+                                    <a href="<?=$row['invoice_pdf_path']?>" target="_blank" class="btn-icon text-primary" title="<?= te('Rechnung ansehen') ?>"><i class="bi bi-file-earmark-pdf-fill"></i></a>
+                                    <a href="<?=$row['invoice_pdf_path']?>" download class="btn-icon text-muted" title="<?= te('Herunterladen') ?>"><i class="bi bi-download"></i></a>
+                                    <button class="btn-icon text-info" title="<?= te('Per E-Mail senden') ?>" onclick='openInvEmailModal(<?= $row['id'] ?>, <?= json_encode($row['title'], JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_name'] ?: ($row['custom_name'] ?: ''), JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_email'] ?? '', JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= $row['amount'] ?>)'><i class="bi bi-envelope-fill"></i></button>
                                 <?php endif; ?>
                                     <button class="btn-icon" onclick='openFinanceModal(<?=$safe_json?>)'><i class="bi bi-pencil-square"></i></button>
                                     <button class="btn-icon text-danger" onclick="triggerDelete(<?=$row['id']?>)"><i class="bi bi-trash3-fill"></i></button>
@@ -864,7 +864,7 @@ require 'includes/layout_start.php';
                 <?php if(!empty($records)): ?>
                 <tfoot class="bg-subtle">
                     <tr>
-                        <td colspan="5" class="text-end fw-bold small text-muted text-uppercase">Summe der gefilterten Liste:</td>
+                        <td colspan="5" class="text-end fw-bold small text-muted text-uppercase"><?= te('Summe der gefilterten Liste:') ?></td>
                         <td class="text-end fw-bold">
                             <?php if($filtered_income > 0): ?><span class="text-success d-block">+ <?=number_format($filtered_income,2,',','.')?> €</span><?php endif; ?>
                             <?php if($filtered_expense > 0): ?><span class="text-danger d-block">- <?=number_format($filtered_expense,2,',','.')?> €</span><?php endif; ?>
@@ -885,81 +885,81 @@ require 'includes/layout_start.php';
           <?= csrf_field() ?>
           <input type="hidden" name="contact_id" id="inv_contact_id">
           
-          <div class="modal-header bg-dark text-white"><h5><i class="bi bi-file-earmark-pdf me-2"></i> Rechnung konfigurieren</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-header bg-dark text-white"><h5><i class="bi bi-file-earmark-pdf me-2"></i> <?= te('Rechnung konfigurieren') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
           <div class="modal-body p-4 bg-subtle">
             <div class="row mb-4">
               <div class="col-md-6">
                 <div class="card border-0 shadow-sm p-3 h-100">
-                  <h6 class="fw-bold text-primary mb-2">Absender (Meine Daten)</h6>
+                  <h6 class="fw-bold text-primary mb-2"><?= te('Absender (Meine Daten)') ?></h6>
                   <input type="text" name="sender_name" class="form-control form-control-sm mb-1" value="<?= COMPANY_NAME ?>">
-                  <input type="text" name="sender_street" class="form-control form-control-sm mb-1" placeholder="Straße & Hausnr. (optional)">
-                  <input type="text" name="sender_city" class="form-control form-control-sm mb-1" placeholder="PLZ & Ort (optional)">
+                  <input type="text" name="sender_street" class="form-control form-control-sm mb-1" placeholder="<?= te('Straße & Hausnr. (optional)') ?>">
+                  <input type="text" name="sender_city" class="form-control form-control-sm mb-1" placeholder="<?= te('PLZ & Ort (optional)') ?>">
                   <input type="text" name="sender_email" class="form-control form-control-sm mb-1" value="<?= ADMIN_EMAIL ?>">
                   <input type="text" name="sender_website" class="form-control form-control-sm mb-1" value="<?= str_replace(['http://', 'https://', 'www.'], '', MAIN_WEBSITE) ?>">
-                  <input type="text" name="sender_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 1 (z.B. Steuernummer)">
-                  <input type="text" name="sender_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 2 (Optional)">
+                  <input type="text" name="sender_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 1 (z.B. Steuernummer)') ?>">
+                  <input type="text" name="sender_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 2 (Optional)') ?>">
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="card border-0 shadow-sm p-3 h-100">
-                  <h6 class="fw-bold text-primary mb-2">Empfänger (Kunde)</h6>
+                  <h6 class="fw-bold text-primary mb-2"><?= te('Empfänger (Kunde)') ?></h6>
                   
                   <select class="form-select form-select-sm mb-2" onchange="autoFillInv(this)">
-                      <option value="">-- Kunde aus CRM laden --</option>
+                      <option value=""><?= te('-- Kunde aus CRM laden --') ?></option>
                       <?php foreach($all_contacts as $c): ?>
                           <option value="<?=$c['id']?>" data-name="<?=$c['company']?:$c['name']?>" data-street="<?=$c['street']?>" data-city="<?=$c['zip'].' '.$c['city']?>"><?=$c['name']?></option>
                       <?php endforeach; ?>
                   </select>
 
-                  <input type="text" name="client_name" id="inv_client_name" class="form-control form-control-sm mb-1" placeholder="Name/Firma" required>
-                  <input type="text" name="client_street" id="inv_client_street" class="form-control form-control-sm mb-1" placeholder="Straße">
-                  <input type="text" name="client_city" id="inv_client_city" class="form-control form-control-sm mb-1" placeholder="PLZ & Ort">
+                  <input type="text" name="client_name" id="inv_client_name" class="form-control form-control-sm mb-1" placeholder="<?= te('Name/Firma') ?>" required>
+                  <input type="text" name="client_street" id="inv_client_street" class="form-control form-control-sm mb-1" placeholder="<?= te('Straße') ?>">
+                  <input type="text" name="client_city" id="inv_client_city" class="form-control form-control-sm mb-1" placeholder="<?= te('PLZ & Ort') ?>">
                   <input type="text" name="client_country" value="Deutschland" class="form-control form-control-sm mb-1">
-                  <input type="text" name="client_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 1 (z.B. Abteilung)">
-                  <input type="text" name="client_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="Zusatzzeile 2 (Optional)">
+                  <input type="text" name="client_line1" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 1 (z.B. Abteilung)') ?>">
+                  <input type="text" name="client_line2" class="form-control form-control-sm mb-1 border-info-subtle" placeholder="<?= te('Zusatzzeile 2 (Optional)') ?>">
                 </div>
               </div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-3"><label class="fw-bold small">Rechnungsnummer</label><input type="text" name="invoice_number" id="inv_number" class="form-control fw-bold text-primary" value="<?= htmlspecialchars($next_inv_number) ?>"></div>
-              <div class="col-md-3"><label class="fw-bold small">Datum</label><input type="date" name="invoice_date" id="inv_date" class="form-control" value="<?=date('Y-m-d')?>" oninput="updateInvDueDate()"></div>
-              <div class="col-md-3"><label class="fw-bold small">Zahlbar bis</label><input type="date" name="due_date" id="inv_due_date" class="form-control"></div>
-              <div class="col-md-3"><label class="fw-bold small">MwSt-Regel</label><select name="tax_type" id="inv_tax" class="form-select" onchange="calcInv()"><option value="kleinunternehmer" selected>Kleinunternehmer (0%)</option><option value="regel">Regelbesteuerung (19%)</option></select></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('Rechnungsnummer') ?></label><input type="text" name="invoice_number" id="inv_number" class="form-control fw-bold text-primary" value="<?= htmlspecialchars($next_inv_number) ?>"></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('Datum') ?></label><input type="date" name="invoice_date" id="inv_date" class="form-control" value="<?=date('Y-m-d')?>" oninput="updateInvDueDate()"></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('Zahlbar bis') ?></label><input type="date" name="due_date" id="inv_due_date" class="form-control"></div>
+              <div class="col-md-3"><label class="fw-bold small"><?= te('MwSt-Regel') ?></label><select name="tax_type" id="inv_tax" class="form-select" onchange="calcInv()"><option value="kleinunternehmer" selected><?= te('Kleinunternehmer (0%)') ?></option><option value="regel"><?= te('Regelbesteuerung (19%)') ?></option></select></div>
             </div>
             <div class="row mb-3">
-              <div class="col-md-8"><label class="fw-bold small">Betreff <span class="text-muted fw-normal">(erscheint im PDF)</span></label><input type="text" name="subject" class="form-control" placeholder="z.B. Webdesign – Projektabschluss"></div>
-              <div class="col-md-4"><label class="fw-bold small">Modalität</label><select name="installments" class="form-select"><option value="1">Einmalzahlung</option><option value="2">2 Raten</option><option value="3">3 Raten</option><option value="abo">Monatliches Abo</option></select></div>
+              <div class="col-md-8"><label class="fw-bold small"><?= te('Betreff') ?> <span class="text-muted fw-normal"><?= te('(erscheint im PDF)') ?></span></label><input type="text" name="subject" class="form-control" placeholder="<?= te('z.B. Webdesign – Projektabschluss') ?>"></div>
+              <div class="col-md-4"><label class="fw-bold small"><?= te('Modalität') ?></label><select name="installments" class="form-select"><option value="1"><?= te('Einmalzahlung') ?></option><option value="2"><?= te('2 Raten') ?></option><option value="3"><?= te('3 Raten') ?></option><option value="abo"><?= te('Monatliches Abo') ?></option></select></div>
             </div>
             <div class="row mb-4">
-              <div class="col-12"><label class="fw-bold small">Einleitungstext <span class="text-muted fw-normal">(optional)</span></label><textarea name="intro_text" class="form-control form-control-sm" rows="2" placeholder="z.B. Vielen Dank für Ihr Vertrauen. Bitte überweisen Sie den Betrag bis zum oben genannten Datum."></textarea></div>
+              <div class="col-12"><label class="fw-bold small"><?= te('Einleitungstext') ?> <span class="text-muted fw-normal"><?= te('(optional)') ?></span></label><textarea name="intro_text" class="form-control form-control-sm" rows="2" placeholder="<?= te('z.B. Vielen Dank für Ihr Vertrauen. Bitte überweisen Sie den Betrag bis zum oben genannten Datum.') ?>"></textarea></div>
             </div>
             
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <h6>Positionen</h6>
+                    <h6><?= te('Positionen') ?></h6>
                     <div id="invoice-items-container"></div>
-                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addInvoiceRow('', 1, 60)">+ Hinzufügen</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addInvoiceRow('', 1, 60)"><?= te('+ Hinzufügen') ?></button>
                     
                     <div class="mt-4 pt-3 border-top">
                         <div class="row justify-content-end text-end g-2">
-                            <div class="col-md-4 col-6 fw-bold">Netto:</div><div class="col-md-3 col-6" id="inv_netto">0,00 €</div>
+                            <div class="col-md-4 col-6 fw-bold"><?= te('Netto:') ?></div><div class="col-md-3 col-6" id="inv_netto">0,00 €</div>
                         </div>
                         <div class="row justify-content-end text-end g-2" id="inv_tax_row" style="display:none;">
-                            <div class="col-md-4 col-6 fw-bold">MwSt (19%):</div><div class="col-md-3 col-6" id="inv_tax_val">0,00 €</div>
+                            <div class="col-md-4 col-6 fw-bold"><?= te('MwSt (19%):') ?></div><div class="col-md-3 col-6" id="inv_tax_val">0,00 €</div>
                         </div>
                         <div class="row justify-content-end text-end g-2 mt-1">
-                            <div class="col-md-4 col-6 fw-bold text-primary fs-5">Brutto:</div><div class="col-md-3 col-6 fw-bold text-primary fs-5"><span id="inv_total">0,00</span> €</div>
+                            <div class="col-md-4 col-6 fw-bold text-primary fs-5"><?= te('Brutto:') ?></div><div class="col-md-3 col-6 fw-bold text-primary fs-5"><span id="inv_total">0,00</span> €</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3"><label class="fw-bold small">Bankverbindung (IBAN)</label><input type="text" name="iban" class="form-control form-control-sm" placeholder="DE12 3456..."></div>
-                <div class="col-md-6 mb-3"><label class="fw-bold small">PayPal / Notiz</label><input type="text" name="paypal" class="form-control form-control-sm mb-2" placeholder="PayPal Adresse (Optional)"><textarea name="notes" class="form-control form-control-sm" placeholder="Z.B. Vielen Dank für das Vertrauen!" rows="2"></textarea></div>
+                <div class="col-md-6 mb-3"><label class="fw-bold small"><?= te('Bankverbindung (IBAN)') ?></label><input type="text" name="iban" class="form-control form-control-sm" placeholder="<?= te('DE12 3456...') ?>"></div>
+                <div class="col-md-6 mb-3"><label class="fw-bold small"><?= te('PayPal / Notiz') ?></label><input type="text" name="paypal" class="form-control form-control-sm mb-2" placeholder="<?= te('PayPal Adresse (Optional)') ?>"><textarea name="notes" class="form-control form-control-sm" placeholder="<?= te('Z.B. Vielen Dank für das Vertrauen!') ?>" rows="2"></textarea></div>
             </div>
           </div>
-          <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold">PDF erstellen & verbuchen</button></div>
+          <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('PDF erstellen & verbuchen') ?></button></div>
         </form>
       </div>
     </div>
@@ -968,25 +968,25 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="financeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content border-0 shadow">
-        <div class="modal-header bg-subtle"><h5 class="fw-bold" id="fm_modal_title">Eintrag</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header bg-subtle"><h5 class="fw-bold" id="fm_modal_title"><?= te('Eintrag') ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4">
           <form method="POST" id="fm_form">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="save_record"><input type="hidden" name="record_id" id="fm_id"><input type="hidden" name="type" id="fm_type">
             <div class="row g-3">
-                <div class="col-md-8"><label class="form-label small fw-bold" id="label_title">Bezeichnung *</label><input type="text" name="title" id="fm_label" class="form-control" required></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Betrag (€) *</label><input type="text" name="amount" id="fm_amt" class="form-control fw-bold" required></div>
-                <div class="col-md-6"><label class="form-label small fw-bold" id="label_contact_man">Kunde (CRM)</label><select name="contact_id" id="fm_contact" class="form-select"><option value="">-- Ohne Zuordnung --</option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Manueller Name</label><input type="text" name="custom_name" id="fm_custom" class="form-control"></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Datum *</label><input type="date" name="record_date" id="fm_date" class="form-control" required></div>
-                <div class="col-md-4" id="div_due_man"><label class="form-label small fw-bold">Fällig am</label><input type="date" name="due_date" id="fm_due" class="form-control"></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Status *</label><select name="status" id="fm_stat" class="form-select"><option value="Offen">Offen</option><option value="Bezahlt">Bezahlt</option><option value="Überfällig">Überfällig</option><option value="Storniert">Storniert</option></select></div>
-                <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_recurring" id="fm_rec"><label class="form-check-label fw-bold">Monatliche Fixkosten</label></div></div>
-                <div class="col-12"><label class="form-label small fw-bold">Notiz</label><textarea name="notes" id="fm_notes" class="form-control" rows="2"></textarea></div>
+                <div class="col-md-8"><label class="form-label small fw-bold" id="label_title"><?= te('Bezeichnung *') ?></label><input type="text" name="title" id="fm_label" class="form-control" required></div>
+                <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Betrag (€) *') ?></label><input type="text" name="amount" id="fm_amt" class="form-control fw-bold" required></div>
+                <div class="col-md-6"><label class="form-label small fw-bold" id="label_contact_man"><?= te('Kunde (CRM)') ?></label><select name="contact_id" id="fm_contact" class="form-select"><option value=""><?= te('-- Ohne Zuordnung --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Manueller Name') ?></label><input type="text" name="custom_name" id="fm_custom" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Datum *') ?></label><input type="date" name="record_date" id="fm_date" class="form-control" required></div>
+                <div class="col-md-4" id="div_due_man"><label class="form-label small fw-bold"><?= te('Fällig am') ?></label><input type="date" name="due_date" id="fm_due" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Status *') ?></label><select name="status" id="fm_stat" class="form-select"><option value="Offen"><?= te('Offen') ?></option><option value="Bezahlt"><?= te('Bezahlt') ?></option><option value="Überfällig"><?= te('Überfällig') ?></option><option value="Storniert"><?= te('Storniert') ?></option></select></div>
+                <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_recurring" id="fm_rec"><label class="form-check-label fw-bold"><?= te('Monatliche Fixkosten') ?></label></div></div>
+                <div class="col-12"><label class="form-label small fw-bold"><?= te('Notiz') ?></label><textarea name="notes" id="fm_notes" class="form-control" rows="2"></textarea></div>
             </div>
           </form>
         </div>
-        <div class="modal-footer bg-subtle"><button type="submit" form="fm_form" class="btn btn-primary px-4 fw-bold">Speichern</button></div>
+        <div class="modal-footer bg-subtle"><button type="submit" form="fm_form" class="btn btn-primary px-4 fw-bold"><?= te('Speichern') ?></button></div>
       </div>
     </div>
   </div>
@@ -997,9 +997,9 @@ require 'includes/layout_start.php';
               <form action="finances" method="POST">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete_record"><input type="hidden" name="record_id" id="del_id">
-                  <div class="modal-header bg-danger text-white"><h6 class="modal-title">Eintrag löschen?</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-                  <div class="modal-body text-center py-4"><p class="mb-0 fw-bold">Diesen Eintrag wirklich löschen?</p></div>
-                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button></div>
+                  <div class="modal-header bg-danger text-white"><h6 class="modal-title"><?= te('Eintrag löschen?') ?></h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+                  <div class="modal-body text-center py-4"><p class="mb-0 fw-bold"><?= te('Diesen Eintrag wirklich löschen?') ?></p></div>
+                  <div class="modal-footer p-2 d-flex justify-content-between bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button><button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button></div>
               </form>
           </div>
       </div>
@@ -1013,13 +1013,13 @@ require 'includes/layout_start.php';
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="send_invoice_email">
           <input type="hidden" name="record_id" id="inv_email_record_id">
-          <div class="modal-header bg-info text-white"><h5><i class="bi bi-envelope me-2"></i>Rechnung per E-Mail senden</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-header bg-info text-white"><h5><i class="bi bi-envelope me-2"></i><?= te('Rechnung per E-Mail senden') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
           <div class="modal-body p-4">
-            <div class="mb-3"><label class="fw-bold small">Empfänger-E-Mail *</label><input type="email" name="to_email" id="inv_email_to" class="form-control" required></div>
-            <div class="mb-3"><label class="fw-bold small">Betreff *</label><input type="text" name="email_subject" id="inv_email_subject" class="form-control" required></div>
-            <div class="mb-3"><label class="fw-bold small">Nachricht</label><textarea name="email_body" id="inv_email_body" class="form-control" rows="6"></textarea></div>
+            <div class="mb-3"><label class="fw-bold small"><?= te('Empfänger-E-Mail *') ?></label><input type="email" name="to_email" id="inv_email_to" class="form-control" required></div>
+            <div class="mb-3"><label class="fw-bold small"><?= te('Betreff *') ?></label><input type="text" name="email_subject" id="inv_email_subject" class="form-control" required></div>
+            <div class="mb-3"><label class="fw-bold small"><?= te('Nachricht') ?></label><textarea name="email_body" id="inv_email_body" class="form-control" rows="6"></textarea></div>
           </div>
-          <div class="modal-footer bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button><button type="submit" class="btn btn-info btn-sm px-4 fw-bold text-white"><i class="bi bi-send me-1"></i>Senden</button></div>
+          <div class="modal-footer bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button><button type="submit" class="btn btn-info btn-sm px-4 fw-bold text-white"><i class="bi bi-send me-1"></i><?= te('Senden') ?></button></div>
         </form>
       </div>
     </div>
@@ -1030,7 +1030,7 @@ require 'includes/layout_start.php';
     <div class="modal-dialog modal-xl">
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-dark text-white">
-          <h5 class="modal-title fw-bold m-0" id="quoteModalTitle"><i class="bi bi-file-earmark-text me-2"></i> Neues Angebot</h5>
+          <h5 class="modal-title fw-bold m-0" id="quoteModalTitle"><i class="bi bi-file-earmark-text me-2"></i> <?= te('Neues Angebot') ?></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 bg-subtle">
@@ -1040,9 +1040,9 @@ require 'includes/layout_start.php';
             <input type="hidden" name="quote_id" id="q_id">
             <div class="row g-3 bg-surface p-3 rounded shadow-sm border mb-3">
               <div class="col-md-5">
-                <label class="form-label small fw-bold">Kunde (aus Kontakten)</label>
+                <label class="form-label small fw-bold"><?= te('Kunde (aus Kontakten)') ?></label>
                 <select name="contact_id" id="q_contact" class="form-select">
-                  <option value="">— Kein Kontakt ausgewählt —</option>
+                  <option value=""><?= te('— Kein Kontakt ausgewählt —') ?></option>
                   <?php foreach($contacts_q as $c): ?>
                     <option value="<?= $c['id'] ?>" data-name="<?= htmlspecialchars($c['name']) ?>">
                       <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' ('.htmlspecialchars($c['company']).')' : '' ?>
@@ -1051,53 +1051,53 @@ require 'includes/layout_start.php';
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold">Oder: Freitext-Name</label>
-                <input type="text" name="custom_name" id="q_custom_name" class="form-control" placeholder="z.B. Mustermann GmbH">
+                <label class="form-label small fw-bold"><?= te('Oder: Freitext-Name') ?></label>
+                <input type="text" name="custom_name" id="q_custom_name" class="form-control" placeholder="<?= te('z.B. Mustermann GmbH') ?>">
               </div>
               <div class="col-md-3">
-                <label class="form-label small fw-bold">Gültig bis</label>
+                <label class="form-label small fw-bold"><?= te('Gültig bis') ?></label>
                 <input type="date" name="valid_until" id="q_valid_until" class="form-control">
               </div>
               <div class="col-md-4">
-                <label class="form-label small fw-bold">Steuer</label>
+                <label class="form-label small fw-bold"><?= te('Steuer') ?></label>
                 <select name="tax_type" id="q_tax_type" class="form-select">
-                  <option value="kleinunternehmer">Kleinunternehmer (§19 UStG, keine MwSt.)</option>
-                  <option value="regel">Regelbesteuerung (19% MwSt.)</option>
+                  <option value="kleinunternehmer"><?= te('Kleinunternehmer (§19 UStG, keine MwSt.)') ?></option>
+                  <option value="regel"><?= te('Regelbesteuerung (19% MwSt.)') ?></option>
                 </select>
               </div>
               <div class="col-md-4" id="q_status_container" style="display:none;">
                 <label class="form-label small fw-bold">Status</label>
                 <select name="status" id="q_status" class="form-select">
-                  <option value="Entwurf">Entwurf</option><option value="Gesendet">Gesendet</option>
-                  <option value="Angenommen">Angenommen</option><option value="Abgelehnt">Abgelehnt</option>
+                  <option value="Entwurf"><?= te('Entwurf') ?></option><option value="Gesendet"><?= te('Gesendet') ?></option>
+                  <option value="Angenommen"><?= te('Angenommen') ?></option><option value="Abgelehnt"><?= te('Abgelehnt') ?></option>
                 </select>
               </div>
               <div class="col-12">
-                <label class="form-label small fw-bold">Betreff <span class="text-muted fw-normal">(erscheint im PDF)</span></label>
-                <input type="text" name="subject" id="q_subject" class="form-control" placeholder="z.B. Webseitenentwicklung – Angebot für Ihr Projekt">
+                <label class="form-label small fw-bold"><?= te('Betreff') ?> <span class="text-muted fw-normal"><?= te('(erscheint im PDF)') ?></span></label>
+                <input type="text" name="subject" id="q_subject" class="form-control" placeholder="<?= te('z.B. Webseitenentwicklung – Angebot für Ihr Projekt') ?>">
               </div>
               <div class="col-12">
-                <label class="form-label small fw-bold">Einleitungstext <span class="text-muted fw-normal">(optional)</span></label>
+                <label class="form-label small fw-bold"><?= te('Einleitungstext') ?> <span class="text-muted fw-normal"><?= te('(optional)') ?></span></label>
                 <textarea name="intro_text" id="q_intro_text" class="form-control form-control-sm" rows="2"></textarea>
               </div>
             </div>
             <div class="bg-surface p-3 rounded shadow-sm border mb-3">
               <label class="form-label small fw-bold d-flex justify-content-between">
-                <span>Positionen</span>
-                <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" onclick="addQuoteItem()"><i class="bi bi-plus-lg"></i> Position</button>
+                <span><?= te('Positionen') ?></span>
+                <button type="button" class="btn btn-sm btn-outline-primary px-2 py-0" onclick="addQuoteItem()"><i class="bi bi-plus-lg"></i> <?= te('Position') ?></button>
               </label>
               <div id="q-items-container"></div>
               <div class="d-flex justify-content-end mt-2">
-                <div class="text-end fw-bold fs-5 text-strong-c" id="q-total-display">Gesamt: 0,00 €</div>
+                <div class="text-end fw-bold fs-5 text-strong-c" id="q-total-display"><?= te('Gesamt: 0,00 €') ?></div>
               </div>
             </div>
             <div class="bg-surface p-3 rounded shadow-sm border mb-3">
-              <label class="form-label small fw-bold">Notizen / Anmerkungen</label>
+              <label class="form-label small fw-bold"><?= te('Notizen / Anmerkungen') ?></label>
               <textarea name="notes" id="q_notes" class="form-control" rows="3"></textarea>
             </div>
             <div class="d-flex justify-content-end gap-2">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button>
-              <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i> Speichern</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+              <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i> <?= te('Speichern') ?></button>
             </div>
           </form>
         </div>
@@ -1110,7 +1110,7 @@ require 'includes/layout_start.php';
     <div class="modal-dialog modal-lg">
       <div class="modal-content border-0 shadow">
         <div class="modal-header" style="background:var(--color-sidebar);">
-          <h5 class="modal-title fw-bold text-white m-0"><i class="bi bi-envelope-arrow-up me-2"></i>Angebot per E-Mail senden</h5>
+          <h5 class="modal-title fw-bold text-white m-0"><i class="bi bi-envelope-arrow-up me-2"></i><?= te('Angebot per E-Mail senden') ?></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <form method="POST">
@@ -1121,24 +1121,24 @@ require 'includes/layout_start.php';
             <div class="bg-surface rounded-3 border p-3 mb-3 shadow-sm">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label small fw-bold">An (E-Mail) *</label>
-                  <input type="email" name="to_email" id="qeq_to" class="form-control" required placeholder="kunde@example.com">
+                  <label class="form-label small fw-bold"><?= te('An (E-Mail) *') ?></label>
+                  <input type="email" name="to_email" id="qeq_to" class="form-control" required placeholder="<?= te('kunde@example.com') ?>">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label small fw-bold">Betreff *</label>
+                  <label class="form-label small fw-bold"><?= te('Betreff *') ?></label>
                   <input type="text" name="email_subject" id="qeq_subject" class="form-control" required>
                 </div>
               </div>
             </div>
             <div class="bg-surface rounded-3 border p-3 shadow-sm">
-              <label class="form-label small fw-bold">Nachricht</label>
+              <label class="form-label small fw-bold"><?= te('Nachricht') ?></label>
               <textarea name="email_body" id="qeq_body" class="form-control" rows="9" style="font-size:13px;resize:none;font-family:inherit;"></textarea>
             </div>
-            <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i>Das Angebot-PDF wird automatisch angehängt.</div>
+            <div class="mt-2 small text-muted"><i class="bi bi-paperclip me-1"></i><?= te('Das Angebot-PDF wird automatisch angehängt.') ?></div>
           </div>
           <div class="modal-footer bg-subtle">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-send me-1"></i>Senden</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-send me-1"></i><?= te('Senden') ?></button>
           </div>
         </form>
       </div>
