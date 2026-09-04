@@ -247,7 +247,8 @@ if (!$_is_auth) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
-  <?php require_once 'includes/theme.php'; ?>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
     *{box-sizing:border-box}
     body{min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center;font-family:'Open Sans',sans-serif;padding:20px;
@@ -255,30 +256,30 @@ if (!$_is_auth) {
       position:relative;overflow:hidden;}
     body::before{content:'';position:fixed;inset:0;pointer-events:none;
       background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
-    .pin-card{background:#fff;border-radius:24px;padding:44px 40px 36px;width:100%;max-width:430px;
+    .pin-card{background:var(--surface-card);border-radius:24px;padding:44px 40px 36px;width:100%;max-width:430px;
       box-shadow:0 24px 72px rgba(0,0,0,.4);position:relative;z-index:1;
       animation:fadeUp .35s cubic-bezier(.22,.68,0,1.2);}
     @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
     .pin-avatar{width:76px;height:76px;border-radius:22px;background:var(--color-primary);
-      display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;
+      display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:var(--text-invert);
       font-family:'Poppins',sans-serif;margin:0 auto 20px;
       box-shadow:0 8px 28px color-mix(in srgb,var(--color-primary) 55%,transparent);}
     .pin-wrap{position:relative}
     .pin-input{border-radius:12px;font-size:17px;letter-spacing:3px;padding:13px 48px 13px 18px;
-      border:2px solid #e9ecef;width:100%;transition:border-color .2s,box-shadow .2s;
-      font-family:'Poppins',sans-serif;background:#fafbfc;outline:none;}
-    .pin-input:focus{background:#fff;border-color:var(--color-primary);
+      border:2px solid var(--border-subtle);width:100%;transition:border-color .2s,box-shadow .2s;
+      font-family:'Poppins',sans-serif;background:var(--surface-subtle);outline:none;}
+    .pin-input:focus{background:var(--surface-card);border-color:var(--color-primary);
       box-shadow:0 0 0 4px color-mix(in srgb,var(--color-primary) 14%,transparent);}
-    .pin-input.err{border-color:#dc3545;}
+    .pin-input.err{border-color:var(--accent-danger);}
     .pin-toggle{position:absolute;right:14px;top:50%;transform:translateY(-50%);
-      background:none;border:none;color:#adb5bd;cursor:pointer;font-size:18px;padding:4px;
+      background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:18px;padding:4px;
       line-height:1;transition:color .15s;}
     .pin-toggle:hover{color:var(--color-primary)}
-    .btn-pin{background:var(--color-primary);color:#fff;border:none;border-radius:12px;padding:14px;
+    .btn-pin{background:var(--color-primary);color:var(--text-invert);border:none;border-radius:12px;padding:14px;
       width:100%;font-size:15px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;
       letter-spacing:.3px;transition:opacity .2s,transform .1s;}
     .btn-pin:hover{opacity:.88}.btn-pin:active{transform:scale(.98)}
-    .strength-bar{height:4px;border-radius:2px;background:#e9ecef;margin-top:6px;overflow:hidden}
+    .strength-bar{height:4px;border-radius:2px;background:var(--surface-sunken);margin-top:6px;overflow:hidden}
     .strength-fill{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s}
     .match-msg{font-size:12px;margin-top:4px;min-height:16px}
   </style>
@@ -288,10 +289,10 @@ if (!$_is_auth) {
   <div class="pin-avatar"><?= $_avatar ?></div>
 
   <?php if ($_pin_is_set): ?>
-    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:#1a1a2e;">Willkommen zurück</h4>
+    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);">Willkommen zurück</h4>
     <p class="text-muted text-center mb-4" style="font-size:13.5px;">Hallo <?= $_first_name ?>, geben Sie Ihren Zugangscode ein.</p>
   <?php else: ?>
-    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:#1a1a2e;">Portal einrichten</h4>
+    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);">Portal einrichten</h4>
     <p class="text-muted text-center mb-4" style="font-size:13.5px;">Legen Sie einmalig einen persönlichen Zugangscode für Ihr Portal fest.</p>
   <?php endif; ?>
 
@@ -304,7 +305,7 @@ if (!$_is_auth) {
 
   <?php if ($_locked): ?>
     <div class="text-center py-3 text-muted">
-      <i class="bi bi-shield-lock-fill mb-3 d-block" style="font-size:3rem;color:#dc3545;opacity:.7;"></i>
+      <i class="bi bi-shield-lock-fill mb-3 d-block" style="font-size:3rem;color:var(--accent-danger);opacity:.7;"></i>
       <p class="fw-bold mb-1">Zugang vorübergehend gesperrt</p>
       <p class="small mb-0">Bitte kontaktieren Sie <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong> zum Zurücksetzen.</p>
     </div>
@@ -353,8 +354,8 @@ if (!$_is_auth) {
 </div>
 <script>
 function tv(id,btn){const f=document.getElementById(id),s=f.type==='password';f.type=s?'text':'password';btn.innerHTML=s?'<i class="bi bi-eye-slash"></i>':'<i class="bi bi-eye"></i>';}
-function updStr(v){const f=document.getElementById('sf');let w=0,c='#dc3545';if(v.length>=4){w=33;c='#ffc107';}if(v.length>=7){w=66;c='#fd7e14';}if(v.length>=10||v.length>=6&&/[^a-zA-Z0-9]/.test(v)){w=100;c='#28a745';}f.style.width=w+'%';f.style.background=c;}
-function liveMatch(){const p1=document.getElementById('pi1').value,p2=document.getElementById('pi2'),mm=document.getElementById('mm'),ok=p2.value===p1&&p2.value.length>0;mm.style.color=ok?'#28a745':'#dc3545';mm.textContent=p2.value?(ok?'✓ Übereinstimmend':'✗ Stimmt nicht überein'):'';p2.classList.toggle('err',!ok&&p2.value.length>0);}
+function updStr(v){const f=document.getElementById('sf');let w=0,c='var(--accent-danger)';if(v.length>=4){w=33;c='var(--accent-warning)';}if(v.length>=7){w=66;c='var(--accent-warning)';}if(v.length>=10||v.length>=6&&/[^a-zA-Z0-9]/.test(v)){w=100;c='var(--accent-success)';}f.style.width=w+'%';f.style.background=c;}
+function liveMatch(){const p1=document.getElementById('pi1').value,p2=document.getElementById('pi2'),mm=document.getElementById('mm'),ok=p2.value===p1&&p2.value.length>0;mm.style.color=ok?'var(--accent-success)':'var(--accent-danger)';mm.textContent=p2.value?(ok?'✓ Übereinstimmend':'✗ Stimmt nicht überein'):'';p2.classList.toggle('err',!ok&&p2.value.length>0);}
 function chkMatch(){const ok=document.getElementById('pi1').value===document.getElementById('pi2').value;if(!ok){liveMatch();return false;}return true;}
 </script>
 </body>
@@ -461,13 +462,39 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-  <?php require_once 'includes/theme.php'; ?>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
-    :root {
-      --portal-bg: #f4f6f9;
-    }
+    /* Die Textfarbe gehoert an den Rumpf. Ohne sie erben alle Elemente
+       ohne eigene Farbe die Browservorgabe - im dunklen Thema also
+       schwarze Schrift auf dunklem Grund. */
+    body { background: var(--surface-page); color: var(--text-body); font-family: 'Open Sans', sans-serif; }
 
-    body { background: var(--portal-bg); font-family: 'Open Sans', sans-serif; }
+    /* ── Bootstrap im dunklen Thema ──────────────────────────────────
+       portal.php laedt app.css nicht und hat deshalb auch dessen
+       [data-theme]-Block nicht. Hier steht nur, was diese Seite
+       wirklich benutzt. */
+    [data-theme="dark"] .text-muted { color: var(--text-faint) !important; }
+    [data-theme="dark"] .text-dark  { color: var(--text-body) !important; }
+    [data-theme="dark"] .bg-white   { background: var(--surface-card) !important; }
+    [data-theme="dark"] .border,
+    [data-theme="dark"] .border-top,
+    [data-theme="dark"] .border-bottom { border-color: var(--border-base) !important; }
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] .form-select {
+      background: var(--surface-subtle); border-color: var(--border-strong); color: var(--text-body);
+    }
+    [data-theme="dark"] .form-control:focus,
+    [data-theme="dark"] .form-select:focus {
+      background: var(--surface-sunken); border-color: var(--color-primary); color: var(--text-strong);
+    }
+    [data-theme="dark"] .form-control::placeholder { color: var(--text-faint); }
+    [data-theme="dark"] .form-label { color: var(--text-body); }
+    [data-theme="dark"] .modal-content { background: var(--surface-card); border-color: var(--border-base); }
+    [data-theme="dark"] .modal-header,
+    [data-theme="dark"] .modal-footer { border-color: var(--border-base); }
+    [data-theme="dark"] .btn-close { filter: invert(1); }
+    [data-theme="dark"] hr { border-color: var(--border-base); }
 
     /* ── HEADER ── */
     .portal-header {
@@ -487,7 +514,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       border: 3px solid rgba(255,255,255,.35);
       box-shadow: 0 0 0 6px rgba(255,255,255,.1);
       display: flex; align-items: center; justify-content: center;
-      font-size: 30px; font-weight: 800; color: #fff;
+      font-size: 30px; font-weight: 800; color: var(--text-invert);
       font-family: 'Poppins', sans-serif;
       flex-shrink: 0;
     }
@@ -504,13 +531,13 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       transition: background .2s;
     }
     .portal-header-stat:hover { background: rgba(255,255,255,.18); }
-    .portal-header-stat .stat-val { font-size: 26px; font-weight: 800; color: #fff; line-height: 1; font-family: 'Poppins', sans-serif; }
+    .portal-header-stat .stat-val { font-size: 26px; font-weight: 800; color: var(--text-invert); line-height: 1; font-family: 'Poppins', sans-serif; }
     .portal-header-stat .stat-lbl { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 4px; letter-spacing: .3px; }
 
     /* ── NAV PILLS ── */
     .portal-nav-wrap {
-      background: #fff;
-      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+      background: var(--surface-card);
+      box-shadow: var(--elev-raised);
       position: sticky; top: 0; z-index: 100;
       margin-top: -36px;
     }
@@ -519,20 +546,39 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       padding: 10px 16px; scrollbar-width: none;
     }
     .portal-nav-inner::-webkit-scrollbar { display: none; }
+
+    /* Die Pillen scrollen waagerecht, der Schalter bleibt rechts stehen. */
+    .portal-nav-row { display: flex; align-items: center; gap: 8px; }
+    .portal-nav-row .portal-nav-inner { flex: 1 1 auto; min-width: 0; }
+    .portal-theme-toggle {
+      flex-shrink: 0; width: 36px; height: 36px; margin-right: 16px;
+      border-radius: 8px; border: 1px solid var(--border-subtle);
+      background: transparent; color: var(--text-muted);
+      font-size: 16px; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .2s, background .2s, border-color .2s;
+    }
+    .portal-theme-toggle:hover {
+      color: var(--color-primary); border-color: var(--color-primary);
+      background: var(--accent-soft);
+    }
+    .portal-theme-toggle:focus-visible {
+      outline: 2px solid var(--color-primary); outline-offset: 2px;
+    }
     .portal-pill {
       white-space: nowrap; border-radius: 8px;
       padding: 8px 18px; font-size: 13px; font-weight: 600;
-      color: #6c757d; border: none; background: transparent;
+      color: var(--text-muted); border: none; background: transparent;
       cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 6px;
     }
-    .portal-pill:hover { background: #f0f7ff; color: var(--color-primary); }
-    .portal-pill.active { background: var(--color-primary); color: #fff; }
+    .portal-pill:hover { background: var(--accent-soft); color: var(--color-primary); }
+    .portal-pill.active { background: var(--color-primary); color: var(--text-invert); }
     .portal-pill .pill-badge {
-      background: rgba(255,255,255,.3); color: #fff;
+      background: rgba(255,255,255,.3); color: var(--text-invert);
       font-size: 10px; border-radius: 10px; padding: 1px 6px; font-weight: 700;
     }
-    .portal-pill:not(.active) .pill-badge { background: #e9ecef; color: #495057; }
-    .portal-pill.active .pill-badge-danger { background: #dc3545; }
+    .portal-pill:not(.active) .pill-badge { background: var(--surface-sunken); color: var(--text-body); }
+    .portal-pill.active .pill-badge-danger { background: var(--accent-danger); }
 
     /* ── CONTENT ── */
     .portal-content { padding: 32px 0 60px; }
@@ -541,25 +587,25 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
     /* ── PROJECT CARDS ── */
     .project-card {
-      background: #fff; border-radius: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.07);
-      border: 1px solid #e9ecef;
+      background: var(--surface-card); border-radius: 16px;
+      box-shadow: var(--elev-rest);
+      border: 1px solid var(--border-subtle);
       overflow: hidden; margin-bottom: 24px;
     }
     .project-card-header {
       padding: 20px 24px 16px;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--border-subtle);
     }
     .project-progress-bar {
       height: 6px; border-radius: 3px;
-      background: #e9ecef; overflow: hidden;
+      background: var(--surface-sunken); overflow: hidden;
     }
     .project-progress-fill {
       height: 100%; border-radius: 3px;
       background: var(--color-primary);
       transition: width .5s ease;
     }
-    .project-progress-fill.complete { background: #28a745; }
+    .project-progress-fill.complete { background: var(--accent-success); }
 
     /* ── MILESTONE TIMELINE ── */
     .timeline { padding: 4px 0; }
@@ -571,35 +617,35 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     .tl-left { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 28px; }
     .tl-dot {
       width: 28px; height: 28px; border-radius: 50%;
-      border: 2px solid #dee2e6; background: #fff;
+      border: 2px solid var(--border-base); background: var(--surface-card);
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; flex-shrink: 0; transition: all .2s; z-index: 1;
     }
-    .tl-dot.done    { background: #28a745; border-color: #28a745; color: #fff; }
-    .tl-dot.pending { background: #fff3cd; border-color: #ffc107; color: #856404; }
-    .tl-dot.approved { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+    .tl-dot.done    { background: var(--accent-success); border-color: var(--accent-success); color: var(--text-invert); }
+    .tl-dot.pending { background: var(--state-warn-bg); border-color: var(--accent-warning); color: var(--state-warn-fg); }
+    .tl-dot.approved { background: var(--color-primary); border-color: var(--color-primary); color: var(--text-invert); }
     .tl-line {
       display: none; flex: 1; width: 2px;
-      background: #e9ecef; margin: 4px 0;
+      background: var(--surface-sunken); margin: 4px 0;
       min-height: 16px;
     }
     .tl-body { flex: 1; padding-bottom: 16px; }
-    .tl-title { font-weight: 600; font-size: 14px; color: #212529; line-height: 1.4; }
-    .tl-title.done-text { text-decoration: line-through; color: #adb5bd; font-weight: 400; }
-    .tl-meta { font-size: 11px; color: #adb5bd; margin-top: 2px; }
+    .tl-title { font-weight: 600; font-size: 14px; color: var(--text-strong); line-height: 1.4; }
+    .tl-title.done-text { text-decoration: line-through; color: var(--text-faint); font-weight: 400; }
+    .tl-meta { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 
     /* ── MILESTONE COMMENTS ── */
     .ms-comments { margin-top: 10px; }
     .ms-comment-bubble {
-      background: #f0f7ff; border-radius: 0 10px 10px 10px;
+      background: var(--accent-soft); border-radius: 0 10px 10px 10px;
       padding: 9px 13px; margin-bottom: 6px; font-size: 13px;
-      border: 1px solid #d0e8f9; position: relative;
+      border: 1px solid var(--state-info-fg); position: relative;
     }
     .ms-comment-bubble.self {
-      background: #f0fff4; border-color: #b2dfdb; border-radius: 10px 10px 10px 0;
+      background: var(--state-success-bg); border-color: var(--state-success-fg); border-radius: 10px 10px 10px 0;
     }
-    .ms-comment-meta { font-size: 11px; color: #6c757d; margin-bottom: 4px; font-weight: 600; }
-    .ms-comment-text { color: #343a40; line-height: 1.5; }
+    .ms-comment-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+    .ms-comment-text { color: var(--text-body); line-height: 1.5; }
     .ms-comment-form { display: none; margin-top: 8px; }
     .ms-comment-form.open { display: block; }
     .ms-comment-toggle {
@@ -614,73 +660,73 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     .project-card-header {
       cursor: pointer; user-select: none;
     }
-    .project-card-header:hover { background: #fafbfc; }
-    .proj-chevron { transition: transform .3s ease; color: #adb5bd; flex-shrink: 0; }
+    .project-card-header:hover { background: var(--surface-subtle); }
+    .proj-chevron { transition: transform .3s ease; color: var(--text-faint); flex-shrink: 0; }
     .project-card-header[aria-expanded="false"] .proj-chevron { transform: rotate(-90deg); }
 
     /* ── APPROVE BUTTON ── */
     .btn-approve {
-      background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+      background: var(--state-success-bg); color: var(--state-success-fg); border: 1px solid var(--state-success-fg);
       border-radius: 8px; padding: 5px 14px; font-size: 12px; font-weight: 700;
       cursor: pointer; transition: all .2s; white-space: nowrap;
     }
-    .btn-approve:hover { background: #28a745; color: #fff; border-color: #28a745; }
+    .btn-approve:hover { background: var(--accent-success); color: var(--text-invert); border-color: var(--accent-success); }
 
     /* ── FILES ZONE ── */
     .upload-zone {
-      border: 2px dashed #cbd5e0; border-radius: 12px;
+      border: 2px dashed var(--border-strong); border-radius: 12px;
       padding: 24px 16px; text-align: center; cursor: pointer;
-      transition: all .2s; background: #fafbfc;
+      transition: all .2s; background: var(--surface-subtle);
     }
     .upload-zone:hover, .upload-zone.dragover {
-      border-color: var(--color-primary); background: #f0f8ff;
+      border-color: var(--color-primary); background: var(--accent-soft);
     }
     .file-row {
       display: flex; align-items: center; gap: 8px;
       padding: 8px 10px; border-radius: 8px;
-      background: #f8f9fa; border: 1px solid #e9ecef;
+      background: var(--surface-subtle); border: 1px solid var(--border-subtle);
       margin-bottom: 6px; font-size: 13px;
     }
-    .file-row .file-name { flex: 1; min-width: 0; font-weight: 600; color: #343a40; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-badge-admin { background: #cfe2ff; color: #0a58ca; font-size: 10px; border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
-    .file-badge-client { background: #e2e3e5; color: #41464b; font-size: 10px; border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
+    .file-row .file-name { flex: 1; min-width: 0; font-weight: 600; color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-badge-admin { background: var(--state-info-bg); color: var(--state-info-fg); font-size: 10px; border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
+    .file-badge-client { background: var(--state-neutral-bg); color: var(--state-neutral-fg); font-size: 10px; border-radius: 4px; padding: 1px 6px; font-weight: 700; white-space: nowrap; }
 
     /* ── INVOICE CARDS ── */
     .invoice-card {
-      background: #fff; border-radius: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.06);
-      border: 1px solid #e9ecef; padding: 20px;
+      background: var(--surface-card); border-radius: 14px;
+      box-shadow: var(--elev-rest);
+      border: 1px solid var(--border-subtle); padding: 20px;
       transition: box-shadow .2s; height: 100%;
     }
-    .invoice-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.1); }
-    .invoice-amount { font-size: 26px; font-weight: 800; font-family: 'Poppins', sans-serif; color: #212529; }
-    .invoice-overdue .invoice-amount { color: #dc3545; }
+    .invoice-card:hover { box-shadow: var(--elev-raised); }
+    .invoice-amount { font-size: 26px; font-weight: 800; font-family: 'Poppins', sans-serif; color: var(--text-strong); }
+    .invoice-overdue .invoice-amount { color: var(--accent-danger); }
 
     /* ── TICKET CARDS ── */
     .ticket-card {
-      background: #fff; border-radius: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-      border: 1px solid #e9ecef;
+      background: var(--surface-card); border-radius: 14px;
+      box-shadow: var(--elev-rest);
+      border: 1px solid var(--border-subtle);
       margin-bottom: 14px;
-      border-left: 4px solid #dee2e6;
+      border-left: 4px solid var(--border-base);
       overflow: hidden;
     }
-    .ticket-card.open   { border-left-color: #ffc107; }
+    .ticket-card.open   { border-left-color: var(--accent-warning); }
     .ticket-card.active { border-left-color: var(--color-primary); }
-    .ticket-card.done   { border-left-color: #28a745; opacity: .8; }
+    .ticket-card.done   { border-left-color: var(--accent-success); opacity: .8; }
     .ticket-header { padding: 16px 20px; cursor: pointer; user-select: none; transition: background .15s; }
-    .ticket-header:hover { background: #fafbfc; }
-    .ticket-chevron { font-size: 13px; transition: transform .3s ease; color: #adb5bd; flex-shrink: 0; }
+    .ticket-header:hover { background: var(--surface-subtle); }
+    .ticket-chevron { font-size: 13px; transition: transform .3s ease; color: var(--text-faint); flex-shrink: 0; }
     [data-bs-toggle="collapse"][aria-expanded="true"] .ticket-chevron { transform: rotate(180deg); }
-    .ticket-body { padding: 0 20px 16px; background: #fafbfc; border-top: 1px solid #f0f0f0; }
+    .ticket-body { padding: 0 20px 16px; background: var(--surface-subtle); border-top: 1px solid var(--border-subtle); }
 
     /* ── TOAST ── */
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1090; }
 
     /* ── MISC ── */
-    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: #adb5bd; margin-bottom: 10px; }
-    .feedback-card { background: #fffbf0; border-radius: 14px; border: 1px solid #fde8a1; padding: 20px; }
-    .empty-state { text-align: center; padding: 48px 20px; color: #adb5bd; }
+    .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--text-faint); margin-bottom: 10px; }
+    .feedback-card { background: var(--state-warn-bg); border-radius: 14px; border: 1px solid var(--accent-warning); padding: 20px; }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-faint); }
     .empty-state i { font-size: 48px; display: block; margin-bottom: 12px; }
     .empty-state p { font-weight: 600; margin: 0; }
 
@@ -733,7 +779,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <p class="text-white-50 small mb-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
         <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
         <?php if($is_partner): ?>
-          <span style="background:rgba(255,193,7,0.25);color:#ffd54f;border:1px solid rgba(255,193,7,0.4);border-radius:20px;padding:1px 10px;font-size:10px;font-weight:700;letter-spacing:0.5px;">PARTNER</span>
+          <span style="background:rgba(255,193,7,0.25);color:var(--accent-warning);border:1px solid rgba(255,193,7,0.4);border-radius:20px;padding:1px 10px;font-size:10px;font-weight:700;letter-spacing:0.5px;">PARTNER</span>
         <?php endif; ?>
       </p>
       <h1 class="text-white fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:clamp(22px,5vw,36px);">
@@ -753,12 +799,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       </div>
       <?php else: ?>
       <div class="portal-header-stat">
-        <div class="stat-val" style="<?= $open_inv_count > 0 ? 'color:#ffd54f;' : '' ?>"><?= $open_inv_count ?></div>
+        <div class="stat-val" style="<?= $open_inv_count > 0 ? 'color:var(--accent-warning);' : '' ?>"><?= $open_inv_count ?></div>
         <div class="stat-lbl">Offene Rechnungen</div>
       </div>
       <?php endif; ?>
       <div class="portal-header-stat">
-        <div class="stat-val" style="<?= $open_ticket_count > 0 ? 'color:#ff8a65;' : '' ?>"><?= $open_ticket_count ?></div>
+        <div class="stat-val" style="<?= $open_ticket_count > 0 ? 'color:var(--accent-danger);' : '' ?>"><?= $open_ticket_count ?></div>
         <div class="stat-lbl"><?= $is_partner ? 'Offene Anfragen' : 'Support-Tickets' ?></div>
       </div>
     </div><!-- /stats -->
@@ -768,7 +814,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 <!-- NAV PILLS -->
 <div class="portal-nav-wrap">
   <div class="container">
-    <div class="portal-nav-inner" id="portalNav">
+    <div class="portal-nav-row">
+      <div class="portal-nav-inner" id="portalNav">
       <button class="portal-pill active" data-tab="projects">
         <i class="bi bi-<?= $is_partner ? 'diagram-3-fill' : 'kanban-fill' ?>"></i> <?= $is_partner ? 'Zusammenarbeit' : 'Projekte' ?>
         <?php if($active_proj_count > 0): ?><span class="pill-badge"><?= $active_proj_count ?></span><?php endif; ?>
@@ -789,6 +836,11 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <?php endif; ?>
       <button class="portal-pill" data-tab="profile">
         <i class="bi bi-person-fill"></i> Mein Profil
+      </button>
+      </div>
+      <button type="button" class="portal-theme-toggle" id="portalThemeToggle" aria-pressed="false">
+        <i class="bi bi-moon-stars" aria-hidden="true"></i>
+        <span class="visually-hidden">Dunkles Design umschalten</span>
       </button>
     </div>
   </div>
@@ -825,8 +877,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
           $total = count($milestones);
           $done  = count(array_filter($milestones, fn($m) => $m['is_completed']));
           $prog  = $total > 0 ? round($done / $total * 100) : 0;
-          $status_colors = ['In Bearbeitung'=>'#149ddd','Erledigt'=>'#28a745','Pausiert'=>'#ffc107','Planung'=>'#6f42c1'];
-          $s_color = $status_colors[$p['status']] ?? '#6c757d';
+          $status_colors = ['In Bearbeitung'=>'var(--color-primary)','Erledigt'=>'var(--accent-success)','Pausiert'=>'var(--accent-warning)','Planung'=>'var(--text-muted)'];
+          $s_color = $status_colors[$p['status']] ?? 'var(--text-muted)';
         ?>
         <div class="project-card project-card-item" data-title="<?= htmlspecialchars(strtolower($p['title'])) ?>">
 
@@ -835,20 +887,20 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                aria-expanded="<?= $p_idx === 0 ? 'true' : 'false' ?>" aria-controls="proj-body-<?= $p['id'] ?>">
             <div class="d-flex align-items-start justify-content-between gap-3 mb-3 flex-wrap">
               <div style="min-width:0;">
-                <h4 class="fw-bold mb-1 project-title-text" style="font-family:'Poppins',sans-serif;color:#1a1a2e;"><?= htmlspecialchars($p['title']) ?></h4>
+                <h4 class="fw-bold mb-1 project-title-text" style="font-family:'Poppins',sans-serif;color:var(--text-strong);"><?= htmlspecialchars($p['title']) ?></h4>
                 <?php if($p['category']): ?>
-                  <span class="badge rounded-pill small fw-normal" style="background:#e8f4fd;color:var(--color-primary);"><?= htmlspecialchars($p['category']) ?></span>
+                  <span class="badge rounded-pill small fw-normal" style="background:var(--accent-soft);color:var(--color-primary);"><?= htmlspecialchars($p['category']) ?></span>
                 <?php endif; ?>
               </div>
               <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                <span class="badge fw-semibold py-2 px-3 rounded-pill" style="background:<?= $s_color ?>1a;color:<?= $s_color ?>;border:1px solid <?= $s_color ?>44;white-space:nowrap;"><?= htmlspecialchars($p['status']) ?></span>
+                <span class="badge fw-semibold py-2 px-3 rounded-pill" style="background:color-mix(in srgb, <?= $s_color ?> 12%, transparent);color:<?= $s_color ?>;border:1px solid <?= $s_color ?>44;white-space:nowrap;"><?= htmlspecialchars($p['status']) ?></span>
                 <i class="bi bi-chevron-down proj-chevron" style="<?= $p_idx !== 0 ? 'transform:rotate(-90deg);' : '' ?>"></i>
               </div>
             </div>
             <!-- Progress -->
             <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
               <span style="color:var(--color-primary);">Fortschritt</span>
-              <span style="color:<?= $prog==100?'#28a745':'var(--color-primary)' ?>;"><?= $prog ?>%</span>
+              <span style="color:<?= $prog==100?'var(--accent-success)':'var(--color-primary)' ?>;"><?= $prog ?>%</span>
             </div>
             <div class="project-progress-bar">
               <div class="project-progress-fill <?= $prog==100?'complete':'' ?>" style="width:<?= $prog ?>%;"></div>
@@ -897,7 +949,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                             <div class="tl-meta"><i class="bi bi-patch-check-fill text-success me-1"></i><?= $is_partner ? 'Abgeschlossen am' : 'Freigegeben am' ?> <?= date('d.m.Y', strtotime($ms['approved_at'])) ?></div>
                           <?php elseif($ms['is_completed']): ?>
                             <?php if(!$is_partner): ?>
-                            <div class="tl-meta" style="color:#856404;"><i class="bi bi-hourglass me-1"></i>Warten auf Ihre Freigabe</div>
+                            <div class="tl-meta" style="color:var(--state-warn-fg);"><i class="bi bi-hourglass me-1"></i>Warten auf Ihre Freigabe</div>
                             <?php else: ?>
                             <div class="tl-meta text-success"><i class="bi bi-check2 me-1"></i>Abgeschlossen</div>
                             <?php endif; ?>
@@ -1006,11 +1058,11 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <?php if(!$is_partner): ?>
                 <!-- Allgemeines Feedback -->
                 <div class="feedback-card">
-                  <div class="section-label" style="color:#856404;"><i class="bi bi-chat-left-dots-fill me-1"></i>Allgemeines Feedback</div>
+                  <div class="section-label" style="color:var(--state-warn-fg);"><i class="bi bi-chat-left-dots-fill me-1"></i>Allgemeines Feedback</div>
                   <p class="text-muted small mb-3">Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?</p>
                   <form method="POST">
                     <input type="hidden" name="task_id" value="<?= $p['id'] ?>">
-                    <textarea name="feedback" rows="3" class="form-control mb-3" style="font-size:13px;border-radius:10px;resize:none;border-color:#fde8a1;background:#fff;" placeholder="Ihre Anmerkungen..."><?= htmlspecialchars($p['client_feedback'] ?? '') ?></textarea>
+                    <textarea name="feedback" rows="3" class="form-control mb-3" style="font-size:13px;border-radius:10px;resize:none;border-color:var(--accent-warning);background:var(--surface-card);" placeholder="Ihre Anmerkungen..."><?= htmlspecialchars($p['client_feedback'] ?? '') ?></textarea>
                     <button type="submit" name="send_feedback" class="btn btn-sm fw-bold w-100 text-white" style="background:var(--color-sidebar);border-radius:10px;"><i class="bi bi-send me-1"></i>Feedback speichern</button>
                   </form>
                 </div>
@@ -1115,7 +1167,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             </div>
           <?php else: ?>
             <?php
-            $_prio_map = ['Kritisch'=>'#dc3545','Hoch'=>'#fd7e14','Mittel'=>'#ffc107','Niedrig'=>'#adb5bd'];
+            $_prio_map = ['Kritisch'=>'var(--accent-danger)','Hoch'=>'var(--accent-warning)','Mittel'=>'var(--color-primary)','Niedrig'=>'var(--text-faint)'];
             foreach($tickets as $t):
               $is_open   = $t['status'] === 'Offen';
               $is_active = $t['status'] === 'In Bearbeitung';
@@ -1123,7 +1175,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               $t_badge   = $is_done ? 'bg-success' : ($is_active ? 'bg-primary' : 'bg-warning text-dark');
               $card_cls  = $is_done ? 'done' : ($is_active ? 'active' : 'open');
               $prio      = $t['priority'] ?? 'Mittel';
-              $pc        = $_prio_map[$prio] ?? '#adb5bd';
+              $pc        = $_prio_map[$prio] ?? 'var(--text-faint)';
               $pub_notes = $public_notes_by_ticket[$t['id']] ?? [];
               $reply_cnt = (int)($t['reply_count'] ?? 0);
             ?>
@@ -1261,7 +1313,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <button type="button" class="project-card w-100 text-start p-0 border-0 h-100" onclick='openPortalWikiModal(<?= $safe_art ?>)' style="cursor:pointer;">
               <div class="p-4">
                 <div class="d-flex align-items-start gap-3">
-                  <div style="width:40px;height:40px;border-radius:10px;background:#e8f5e9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <div style="width:40px;height:40px;border-radius:10px;background:var(--state-success-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                     <i class="bi bi-file-earmark-text text-success fs-5"></i>
                   </div>
                   <div style="min-width:0;flex:1;">
@@ -1325,12 +1377,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <div>
           <span class="badge bg-success text-uppercase" id="pw_category" style="letter-spacing:.5px;"></span>
           <span id="pw_tags" class="ms-2"></span>
-          <h2 id="pw_title" class="fw-bold mt-2 mb-0" style="color:#1a1a2e;font-family:'Poppins',sans-serif;font-size:clamp(18px,3vw,26px);"></h2>
+          <h2 id="pw_title" class="fw-bold mt-2 mb-0" style="color:var(--text-strong);font-family:'Poppins',sans-serif;font-size:clamp(18px,3vw,26px);"></h2>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body pt-3 px-4 pb-5">
-        <div id="pw_content" style="font-size:15px;color:#495057;line-height:1.8;"></div>
+        <div id="pw_content" style="font-size:15px;color:var(--text-body);line-height:1.8;"></div>
         <div id="pw_attachments" class="mt-5 pt-4 border-top" style="display:none;">
           <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-paperclip me-2"></i>Angehängte Dateien</h6>
           <div id="pw_attachments_list" class="d-flex flex-wrap gap-2"></div>
@@ -1350,6 +1402,32 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
 <script>
+/* Umschalter für das dunkle Design.
+   Ohne gespeicherte Wahl folgt das Portal der Systemeinstellung des
+   Geräts (siehe includes/theme.php). Ein Klick hier legt die Wahl fest
+   und hält sie im Browser des Kunden - der Wert liegt unter demselben
+   Schlüssel wie im Admin-Panel, gilt aber je Gerät. */
+(function () {
+    var btn = document.getElementById("portalThemeToggle");
+    if (!btn) return;
+    var icon = btn.querySelector("i");
+
+    function paint() {
+        var dark = document.documentElement.getAttribute("data-theme") === "dark";
+        icon.className = dark ? "bi bi-sun" : "bi bi-moon-stars";
+        btn.setAttribute("aria-pressed", dark ? "true" : "false");
+        btn.title = dark ? "Zum hellen Design wechseln" : "Zum dunklen Design wechseln";
+    }
+
+    paint();
+    btn.addEventListener("click", function () {
+        var dark = document.documentElement.getAttribute("data-theme") !== "dark";
+        document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+        try { localStorage.setItem("darkMode", dark ? "1" : "0"); } catch (e) {}
+        paint();
+    });
+})();
+
 const PORTAL_TOKEN = '<?= htmlspecialchars($token, ENT_QUOTES) ?>';
 
 // ── TAB-NAVIGATION ──
@@ -1453,7 +1531,7 @@ function confirmDeleteAsset(btn, id) {
         document.getElementById('del_asset_form_' + id).submit();
     } else {
         btn.dataset.confirmed = '1';
-        btn.style.color = '#dc3545';
+        btn.style.color = 'var(--accent-danger)';
         btn.innerHTML = '<i class="bi bi-trash3-fill"></i>';
         setTimeout(() => {
             if (document.getElementById('asset_row_' + id)) {
@@ -1506,8 +1584,8 @@ function updatePortalPrio(ticketId, sel) {
                 msg.style.display = 'inline';
                 setTimeout(() => { msg.style.display = 'none'; }, 2000);
                 // Prioritäts-Badge in der Kopfzeile aktualisieren
-                const map  = { Kritisch: '#dc3545', Hoch: '#fd7e14', Mittel: '#ffc107', Niedrig: '#adb5bd' };
-                const pc   = map[prio] || '#adb5bd';
+                const map  = { Kritisch: 'var(--accent-danger)', Hoch: 'var(--accent-warning)', Mittel: 'var(--color-primary)', Niedrig: 'var(--text-faint)' };
+                const pc   = map[prio] || 'var(--text-faint)';
                 const hdr  = sel.closest('.ticket-card')?.querySelector('.ticket-header [style*="border-radius:4px"]');
                 if (hdr) {
                     hdr.style.background = pc + '22';
