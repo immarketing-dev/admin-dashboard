@@ -116,11 +116,11 @@ require 'includes/layout_start.php';
       
       <div class="board-column">
         <div class="board-header header-todo">
-          <span class="text-secondary"><i class="bi bi-circle me-2"></i> Offen</span>
+          <span class="text-secondary"><i class="bi bi-circle me-2"></i> <?= te('Offen') ?></span>
           <span class="badge bg-secondary rounded-pill" id="count-todo"><?php echo count($tasks_todo); ?></span>
         </div>
         <div class="task-list" id="list-todo" data-status="Offen">
-          <div class="empty-state">Keine Aufgaben in dieser Spalte</div>
+          <div class="empty-state"><?= te('Keine Aufgaben in dieser Spalte') ?></div>
           <?php foreach($tasks_todo as $task): 
               $safe_json = htmlspecialchars(json_encode($task), ENT_QUOTES, 'UTF-8');
           ?>
@@ -165,11 +165,11 @@ require 'includes/layout_start.php';
 
       <div class="board-column">
         <div class="board-header header-doing">
-          <span style="color: var(--color-primary);"><i class="bi bi-play-circle-fill me-2"></i> In Bearbeitung</span>
+          <span style="color: var(--color-primary);"><i class="bi bi-play-circle-fill me-2"></i> <?= te('In Bearbeitung') ?></span>
           <span class="badge rounded-pill" style="background-color: var(--color-primary);" id="count-doing"><?php echo count($tasks_doing); ?></span>
         </div>
         <div class="task-list" id="list-doing" data-status="In Bearbeitung">
-          <div class="empty-state">Keine Aufgaben in dieser Spalte</div>
+          <div class="empty-state"><?= te('Keine Aufgaben in dieser Spalte') ?></div>
           <?php foreach($tasks_doing as $task): 
               $safe_json = htmlspecialchars(json_encode($task), ENT_QUOTES, 'UTF-8');
           ?>
@@ -214,11 +214,11 @@ require 'includes/layout_start.php';
 
       <div class="board-column">
         <div class="board-header header-done">
-          <span class="text-success"><i class="bi bi-check-circle-fill me-2"></i> Erledigt</span>
+          <span class="text-success"><i class="bi bi-check-circle-fill me-2"></i> <?= te('Erledigt') ?></span>
           <span class="badge bg-success rounded-pill" id="count-done"><?php echo count($tasks_done); ?></span>
         </div>
         <div class="task-list" id="list-done" data-status="Erledigt">
-          <div class="empty-state">Keine Aufgaben in dieser Spalte</div>
+          <div class="empty-state"><?= te('Keine Aufgaben in dieser Spalte') ?></div>
           <?php foreach($tasks_done as $task): 
               $safe_json = htmlspecialchars(json_encode($task), ENT_QUOTES, 'UTF-8');
           ?>
@@ -266,7 +266,7 @@ require 'includes/layout_start.php';
     <?php if ($count_storniert > 0): ?>
     <div class="text-center pb-3">
         <a href="tasks?filter_status=Storniert" class="text-muted small text-decoration-none">
-            <i class="bi bi-slash-circle me-1"></i><?= $count_storniert ?> stornierte Aufgabe(n) — in Listenansicht anzeigen
+            <i class="bi bi-slash-circle me-1"></i><?= $count_storniert ?> <?= te('stornierte Aufgabe(n) — in Listenansicht anzeigen') ?>
         </a>
     </div>
     <?php endif; ?>
@@ -283,36 +283,36 @@ require 'includes/layout_start.php';
           
           <div class="row mb-4 bg-surface p-3 rounded border shadow-sm mx-0">
               <div class="col-6">
-                  <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 10px;">Startdatum</small>
+                  <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 10px;"><?= te('Startdatum') ?></small>
                   <span id="vt_start" class="fw-bold text-strong-c">-</span>
               </div>
               <div class="col-6 border-start">
-                  <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 10px;">Deadline</small>
+                  <small class="text-muted fw-bold d-block text-uppercase" style="font-size: 10px;"><?= te('Deadline') ?></small>
                   <span id="vt_deadline" class="fw-bold text-strong-c">-</span>
               </div>
           </div>
 
           <div class="mb-4">
-              <small class="text-muted fw-bold d-block mb-1 text-uppercase" style="font-size: 10px;">Beschreibung</small>
+              <small class="text-muted fw-bold d-block mb-1 text-uppercase" style="font-size: 10px;"><?= te('Beschreibung') ?></small>
               <div id="vt_desc" class="p-3 border rounded bg-surface text-dark shadow-sm" style="min-height: 80px; white-space: pre-wrap; font-size: 14px;"></div>
           </div>
 
           <div class="bg-surface p-3 border rounded shadow-sm">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                  <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;">Fortschritt (<span id="vt_progress_text"></span>)</small>
+                  <small class="text-muted fw-bold text-uppercase" style="font-size: 10px;"><?= te('Fortschritt') ?> (<span id="vt_progress_text"></span>)</small>
               </div>
               <div class="progress mb-3" style="height: 8px;">
                   <div id="vt_progress_bar" class="progress-bar" style="width: 0%; background-color: var(--color-primary);"></div>
               </div>
               
-              <small class="text-muted fw-bold d-block mb-2 text-uppercase" style="font-size: 10px;">Meilensteine</small>
+              <small class="text-muted fw-bold d-block mb-2 text-uppercase" style="font-size: 10px;"><?= te('Meilensteine') ?></small>
               <div id="vt_milestones" class="list-group list-group-flush border rounded"></div>
           </div>
 
         </div>
         <div class="modal-footer bg-subtle d-flex justify-content-between border-top-0">
-            <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Schließen</button>
-            <a href="#" id="vt_edit_link" class="btn btn-primary fw-bold px-4"><i class="bi bi-pencil-square me-1"></i> In Liste bearbeiten</a>
+            <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal"><?= te('Schließen') ?></button>
+            <a href="#" id="vt_edit_link" class="btn btn-primary fw-bold px-4"><i class="bi bi-pencil-square me-1"></i> <?= te('In Liste bearbeiten') ?></a>
         </div>
       </div>
     </div>

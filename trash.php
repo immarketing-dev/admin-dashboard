@@ -145,17 +145,17 @@ require 'includes/layout_start.php';
   <?php if (!$rows): ?>
     <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c">
       <i class="bi bi-check2-circle d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
-      Nichts gelöscht.
+      <?= te('Nichts gelöscht.') ?>
     </div>
   <?php else: ?>
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
-            <th>Eintrag</th>
-            <th class="d-none d-md-table-cell">Gelöscht am</th>
-            <th class="d-none d-md-table-cell">Verbleibend</th>
-            <th class="text-end">Aktion</th>
+            <th><?= te('Eintrag') ?></th>
+            <th class="d-none d-md-table-cell"><?= te('Gelöscht am') ?></th>
+            <th class="d-none d-md-table-cell"><?= te('Verbleibend') ?></th>
+            <th class="text-end"><?= te('Aktion') ?></th>
           </tr>
         </thead>
         <tbody>
@@ -184,7 +184,7 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
                   <button class="btn btn-sm btn-outline-primary fw-bold">
                     <i class="bi bi-arrow-counterclockwise"></i>
-                    <span class="btn-label">Wiederherstellen</span>
+                    <span class="btn-label"><?= te('Wiederherstellen') ?></span>
                   </button>
                 </form>
                 <form method="POST" class="d-inline"
@@ -193,7 +193,7 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="action" value="purge">
                   <input type="hidden" name="bereich" value="<?= $tabelle ?>">
                   <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
-                  <button class="btn btn-sm btn-outline-danger" aria-label="Endgültig löschen">
+                  <button class="btn btn-sm btn-outline-danger" aria-label="<?= te('Endgültig löschen') ?>">
                     <i class="bi bi-trash3"></i>
                   </button>
                 </form>

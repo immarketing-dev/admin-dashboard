@@ -99,6 +99,17 @@ if (!is_file($sprachdatei)) {
 }
 $en = require $sprachdatei;
 
+// Beim Uebersetzen hilft die vollstaendige Liste - die Meldungen unten
+// kuerzen lange Texte ab, und ein gekuerzter Schluessel ist unbrauchbar.
+if (in_array("--fehlend", $argv, true)) {
+    foreach (array_keys(array_diff_key($benutzt, $en)) as $t) {
+        echo str_replace(["", "
+"], ["", " "], $t), "
+";
+    }
+    exit(0);
+}
+
 // ── 1. Ohne Uebersetzung ────────────────────────────────────────────
 echo "=== Pruefung 1: jede verpackte Zeichenkette ist uebersetzt ===\n";
 $ohne = [];

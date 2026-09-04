@@ -205,7 +205,7 @@ require 'includes/layout_start.php';
         <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
           <div class="icon-tile icon-tile-primary"><i class="bi bi-journal-text"></i></div>
           <div>
-            <div class="label-xs">Einträge gesamt</div>
+            <div class="label-xs"><?= te('Einträge gesamt') ?></div>
             <div class="fw-bold fs-5 lh-1 text-strong-c"><?= number_format($log_stats['gesamt'], 0, ',', '.') ?></div>
           </div>
         </div>
@@ -214,7 +214,7 @@ require 'includes/layout_start.php';
         <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
           <div class="icon-tile icon-tile-primary"><i class="bi bi-calendar-day"></i></div>
           <div>
-            <div class="label-xs">Heute</div>
+            <div class="label-xs"><?= te('Heute') ?></div>
             <div class="fw-bold fs-5 lh-1 text-strong-c"><?= number_format($log_stats['heute'], 0, ',', '.') ?></div>
           </div>
         </div>
@@ -226,7 +226,7 @@ require 'includes/layout_start.php';
             <i class="bi bi-shield-exclamation"></i>
           </div>
           <div>
-            <div class="label-xs">Fehlversuche (7 Tage)</div>
+            <div class="label-xs"><?= te('Fehlversuche (7 Tage)') ?></div>
             <div class="fw-bold fs-5 lh-1 <?= $warn ? 'text-danger' : 'text-strong-c' ?>">
               <?= number_format($log_stats['fehlversuche'], 0, ',', '.') ?>
             </div>
@@ -237,7 +237,7 @@ require 'includes/layout_start.php';
         <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
           <div class="icon-tile icon-tile-primary"><i class="bi bi-box-arrow-in-right"></i></div>
           <div style="min-width:0;">
-            <div class="label-xs">Letzte Anmeldung</div>
+            <div class="label-xs"><?= te('Letzte Anmeldung') ?></div>
             <div class="fw-bold lh-1 text-strong-c" style="font-size:var(--text-base-plus);">
               <?= $log_stats['letzte_anmeldung']
                     ? date('d.m.Y H:i', strtotime($log_stats['letzte_anmeldung']))
@@ -250,27 +250,27 @@ require 'includes/layout_start.php';
 
     <form method="GET" class="filter-bar">
       <select name="filter" class="form-select form-select-sm" style="max-width:180px;" onchange="this.form.submit()">
-        <option value="">Alle Typen</option>
+        <option value=""><?= te('Alle Typen') ?></option>
         <?php foreach($log_prefixes as $pre): ?>
           <option value="<?= htmlspecialchars($pre) ?>" <?= $log_filter === $pre ? 'selected' : '' ?>><?= htmlspecialchars($pre) ?>*</option>
         <?php endforeach; ?>
       </select>
       <select name="range" class="form-select form-select-sm w-auto" onchange="this.form.submit()"
-              aria-label="Zeitraum">
+              aria-label="<?= te('Zeitraum') ?>">
         <?php foreach(['1'=>'Heute','7'=>'7 Tage','30'=>'30 Tage','all'=>'Gesamter Zeitraum'] as $v=>$t): ?>
           <option value="<?= $v ?>" <?= $log_range === $v ? 'selected' : '' ?>><?= $t ?></option>
         <?php endforeach; ?>
       </select>
       <div class="input-group input-group-sm search-box" style="max-width:260px;">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="text" name="q" class="form-control" placeholder="In Beschreibung/IP suchen…" value="<?= htmlspecialchars($log_search) ?>">
+        <input type="text" name="q" class="form-control" placeholder="<?= te('In Beschreibung/IP suchen…') ?>" value="<?= htmlspecialchars($log_search) ?>">
       </div>
-      <button type="submit" class="btn btn-sm btn-primary fw-bold">Filtern</button>
+      <button type="submit" class="btn btn-sm btn-primary fw-bold"><?= te('Filtern') ?></button>
       <?php if($log_filter || $log_search || $log_range !== '30'): ?>
-        <a href="systemlogs" class="btn btn-sm btn-outline-secondary">Zurücksetzen</a>
+        <a href="systemlogs" class="btn btn-sm btn-outline-secondary"><?= te('Zurücksetzen') ?></a>
       <?php endif; ?>
       <span class="text-muted small ms-auto">
-        <?= number_format($log_total, 0, ',', '.') ?> Treffer<?php
+        <?= number_format($log_total, 0, ',', '.')  ?> <?= te('Treffer') ?><?php
           if ($page_count > 1) echo ' · Seite ' . $page . ' von ' . $page_count;
         ?>
       </span>
@@ -281,10 +281,10 @@ require 'includes/layout_start.php';
         <table class="table table-borderless log-table w-100 mb-0">
           <thead>
             <tr>
-              <th width="18%">Zeitpunkt</th>
-              <th width="18%">Aktion</th>
-              <th width="14%">IP-Adresse</th>
-              <th width="50%">Details</th>
+              <th width="18%"><?= te('Zeitpunkt') ?></th>
+              <th width="18%"><?= te('Aktion') ?></th>
+              <th width="14%"><?= te('IP-Adresse') ?></th>
+              <th width="50%"><?= te('Details') ?></th>
             </tr>
           </thead>
           <tbody>
@@ -321,10 +321,10 @@ require 'includes/layout_start.php';
           $von_ = max(1, $page - 2);
           $bis_ = min($page_count, $page + 2);
         ?>
-        <nav class="d-flex justify-content-center mt-3" aria-label="Seiten">
+        <nav class="d-flex justify-content-center mt-3" aria-label="<?= te('Seiten') ?>">
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-              <a class="page-link" href="<?= htmlspecialchars($qs(max(1, $page - 1))) ?>" aria-label="Zurück">
+              <a class="page-link" href="<?= htmlspecialchars($qs(max(1, $page - 1))) ?>" aria-label="<?= te('Zurück') ?>">
                 <i class="bi bi-chevron-left"></i>
               </a>
             </li>
@@ -348,7 +348,7 @@ require 'includes/layout_start.php';
               </li>
             <?php endif; ?>
             <li class="page-item <?= $page >= $page_count ? 'disabled' : '' ?>">
-              <a class="page-link" href="<?= htmlspecialchars($qs(min($page_count, $page + 1))) ?>" aria-label="Weiter">
+              <a class="page-link" href="<?= htmlspecialchars($qs(min($page_count, $page + 1))) ?>" aria-label="<?= te('Weiter') ?>">
                 <i class="bi bi-chevron-right"></i>
               </a>
             </li>
@@ -357,7 +357,7 @@ require 'includes/layout_start.php';
         <?php endif; ?>
         <div class="text-muted mt-3" style="font-size: 12px;"><i class="bi bi-info-circle"></i> <?= $log_filter || $log_search ? count($logs) . ' gefilterte Einträge (max. ' . ($_log_limit*2>2000?2000:$_log_limit*2) . ').' : 'Anzeige der letzten ' . $_log_limit . ' Einträge.' ?></div>
       <?php else: ?>
-        <div class="text-center py-5"><i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i><h4 class="mt-3 text-muted">Logbuch ist leer</h4></div>
+        <div class="text-center py-5"><i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i><h4 class="mt-3 text-muted"><?= te('Logbuch ist leer') ?></h4></div>
       <?php endif; ?>
     </div>
 
@@ -368,15 +368,15 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="action" value="clear_logs">
                   
                   <div class="modal-header bg-danger text-white">
-                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Logbuch leeren?</h6>
+                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Logbuch leeren?') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-center py-4">
-                      <p class="mb-0 fw-bold">Möchtest du alle bisherigen Einträge wirklich unwiderruflich löschen?</p>
+                      <p class="mb-0 fw-bold"><?= te('Möchtest du alle bisherigen Einträge wirklich unwiderruflich löschen?') ?></p>
                   </div>
                   <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, leeren</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, leeren') ?></button>
                   </div>
               </form>
           </div>

@@ -31,6 +31,8 @@ return [
     'Papierkorb'               => 'Trash',
     'Einstellungen'            => 'Settings',
     'Logout'                   => 'Log out',
+    'System'                   => 'System',
+    'Seitenleiste einklappen'  => 'Collapse sidebar',
     '%d Anfrage(n), %d Portal-Vorgang/-Vorgänge'
                                => '%d enquiry/enquiries, %d portal item(s)',
 
@@ -129,4 +131,889 @@ return [
     'Sprache speichern'        => 'Save language',
     'Gilt für das gesamte Panel. Das Kundenportal folgt der Sprache des jeweiligen Kontakts.'
                                => 'Applies to the whole panel. The client portal follows each contact\'s own language.',
+    // ── Stufen 2 bis 6: Seiten ───────────────────────────────────────
+    'Abbrechen'
+        => 'Cancel',
+    'Speichern'
+        => 'Save',
+    'Löschen'
+        => 'Delete',
+    'Bearbeiten'
+        => 'Edit',
+    'Hinzufügen'
+        => 'Add',
+    '+ Hinzufügen'
+        => '+ Add',
+    'Schließen'
+        => 'Close',
+    'Öffnen'
+        => 'Open',
+    'Zurück'
+        => 'Back',
+    'Weiter'
+        => 'Next',
+    'Senden'
+        => 'Send',
+    'Antworten'
+        => 'Reply',
+    'Antwort senden'
+        => 'Send reply',
+    'Herunterladen'
+        => 'Download',
+    'Zurücksetzen'
+        => 'Reset',
+    'Filter zurücksetzen'
+        => 'Clear filters',
+    'Filtern'
+        => 'Filter',
+    'Alle'
+        => 'All',
+    'Aktion'
+        => 'Action',
+    'Aktionen'
+        => 'Actions',
+    'Details'
+        => 'Details',
+    'Name'
+        => 'Name',
+    'Name *'
+        => 'Name *',
+    'Titel'
+        => 'Title',
+    'Titel *'
+        => 'Title *',
+    'Typ'
+        => 'Type',
+    'Datum'
+        => 'Date',
+    'Datum *'
+        => 'Date *',
+    'Betrag'
+        => 'Amount',
+    'Betreff'
+        => 'Subject',
+    'Betreff *'
+        => 'Subject *',
+    'Nachricht'
+        => 'Message',
+    'Nachricht *'
+        => 'Message *',
+    'Beschreibung'
+        => 'Description',
+    'Inhalt'
+        => 'Content',
+    'Kategorie'
+        => 'Category',
+    'Kategorie *'
+        => 'Category *',
+    'Priorität'
+        => 'Priority',
+    'Notiz'
+        => 'Note',
+    'Notizen'
+        => 'Notes',
+    'Quelle'
+        => 'Source',
+    'Position'
+        => 'Item',
+    'Positionen'
+        => 'Items',
+    'Gesamt'
+        => 'Total',
+    'Zeitpunkt'
+        => 'Time',
+    'Zeitraum'
+        => 'Period',
+    'Seiten'
+        => 'Pages',
+    'Treffer'
+        => 'results',
+    'Ja'
+        => 'Yes',
+    'Nein'
+        => 'No',
+    'Später'
+        => 'Later',
+    'Start'
+        => 'Start',
+    'Stop'
+        => 'Stop',
+    'Läuft'
+        => 'Running',
+    'Manuell'
+        => 'Manual',
+    'Fix'
+        => 'Fixed',
+    '(optional)'
+        => '(optional)',
+    'Suchen...'
+        => 'Search…',
+    'Suche...'
+        => 'Search…',
+    'Heute'
+        => 'Today',
+    'Neueste'
+        => 'Newest',
+    'Neueste zuerst'
+        => 'Newest first',
+    'Fortschritt'
+        => 'Progress',
+    'Fortschritt ↑'
+        => 'Progress ↑',
+    'Fortschritt ↓'
+        => 'Progress ↓',
+    'Statistiken'
+        => 'Statistics',
+    'Steuer'
+        => 'Tax',
+    'Modalität'
+        => 'Terms',
+    'Adresse'
+        => 'Address',
+    'Straße'
+        => 'Street',
+    'Straße & Hausnr. (optional)'
+        => 'Street and number (optional)',
+    'PLZ'
+        => 'Postcode',
+    'PLZ & Ort'
+        => 'Postcode and town',
+    'PLZ & Ort (optional)'
+        => 'Postcode and town (optional)',
+    'Ort'
+        => 'Town',
+    'Ort / Adresse'
+        => 'Location / address',
+    'Land'
+        => 'Country',
+    'Firma'
+        => 'Company',
+    'Telefon'
+        => 'Phone',
+    'Website'
+        => 'Website',
+    'Name/Firma'
+        => 'Name / company',
+    'Stammdaten'
+        => 'Master data',
+    'Portal Aktivitäten'
+        => 'Portal activity',
+    'Uploads'
+        => 'Uploads',
+    'Absegnungen'
+        => 'Approvals',
+    'Kommentare'
+        => 'Comments',
+    'Kommentare anzeigen'
+        => 'Show comments',
+    'Keine Uploads'
+        => 'No uploads',
+    'Keine Absegnungen'
+        => 'No approvals',
+    'Kein neues Feedback'
+        => 'No new feedback',
+    'Keine Kommentare'
+        => 'No comments',
+    'DATEI'
+        => 'FILE',
+    'BESTÄTIGT'
+        => 'APPROVED',
+    'NEUES FEEDBACK'
+        => 'NEW FEEDBACK',
+    'KOMMENTAR'
+        => 'COMMENT',
+    'Ausblenden'
+        => 'Dismiss',
+    'Neue Website-Anfragen'
+        => 'New website enquiries',
+    'Keine neuen Anfragen über die Website.'
+        => 'No new enquiries from the website.',
+    'Anfrage Details'
+        => 'Enquiry details',
+    'Anfrage löschen?'
+        => 'Delete this enquiry?',
+    'Die Nachricht unwiderruflich löschen?'
+        => 'Delete this message permanently?',
+    'Als Kontakt übernehmen'
+        => 'Add as contact',
+    'Offene Support-Tickets'
+        => 'Open support tickets',
+    'Keine offenen Support-Anfragen.'
+        => 'No open support requests.',
+    'Alle Tickets öffnen'
+        => 'Open all tickets',
+    'Laufende Projekte'
+        => 'Active projects',
+    'Aktuell keine laufenden Projekte.'
+        => 'No active projects at the moment.',
+    'Kein Projekt entspricht diesem Filter.'
+        => 'No project matches this filter.',
+    'offene Aufgaben'
+        => 'open tasks',
+    'Deadlines'
+        => 'Deadlines',
+    'Keine Deadlines'
+        => 'No deadlines',
+    'Termine'
+        => 'Appointments',
+    'Keine Termine'
+        => 'No appointments',
+    'System-Monitor'
+        => 'System monitor',
+    'Keine URLs im Monitor.'
+        => 'No URLs monitored.',
+    'URL hinzufügen'
+        => 'Add URL',
+    'URL zum Monitor hinzufügen'
+        => 'Add a URL to the monitor',
+    'URL entfernen?'
+        => 'Remove this URL?',
+    'Soll diese Domain aus der Überwachung entfernt werden?'
+        => 'Remove this domain from monitoring?',
+    'Status wird geprüft …'
+        => 'Checking status …',
+    'Webspace'
+        => 'Web space',
+    'Belegter Webspace'
+        => 'Web space used',
+    'von 200 GB belegt'
+        => 'of 200 GB used',
+    'Notizen leeren?'
+        => 'Clear the notepad?',
+    'Möchtest du den gesamten Text im Notizblock endgültig löschen?'
+        => 'Permanently delete everything in the notepad?',
+    'Wird automatisch gespeichert...'
+        => 'Saved automatically…',
+    'neue Website-Anfrage(n)!'
+        => 'new website enquiry/enquiries.',
+    'offene(s) Support-Ticket(s)!'
+        => 'open support ticket(s).',
+    'neue Datei(en) im Portal!'
+        => 'new file(s) in the portal.',
+    'abgesegnete(r) Meilenstein(e)!'
+        => 'approved milestone(s).',
+    'neues Kunden-Feedback!'
+        => 'new client feedback.',
+    'neue(r) Meilenstein-Kommentar(e)!'
+        => 'new milestone comment(s).',
+    'Kunde XYZ'
+        => 'Client name',
+    'Projekte'
+        => 'Projects',
+    'Neues Projekt'
+        => 'New project',
+    'Projekt anlegen'
+        => 'Create project',
+    'Projekt bearbeiten'
+        => 'Edit project',
+    'Projekt löschen'
+        => 'Delete project',
+    'Projekt / Name *'
+        => 'Project / name *',
+    'Möchtest du dieses Projekt wirklich endgültig löschen?'
+        => 'Permanently delete this project?',
+    'Keine Projekte gefunden, die diesen Kriterien entsprechen.'
+        => 'No projects match these criteria.',
+    'Meilensteine'
+        => 'Milestones',
+    'Neuer Meilenstein...'
+        => 'New milestone…',
+    'Meilenstein löschen'
+        => 'Delete milestone',
+    'Möchtest du diesen Meilenstein wirklich löschen?'
+        => 'Delete this milestone?',
+    'Auf wen wartet dieser Schritt?'
+        => 'Who is this step waiting on?',
+    'wir'
+        => 'us',
+    'Beteiligte'
+        => 'Participants',
+    'Beteiligte am Projekt'
+        => 'Project participants',
+    'Beteiligte verwalten'
+        => 'Manage participants',
+    'Weitere Beteiligte'
+        => 'Additional participants',
+    'Person hinzufügen'
+        => 'Add person',
+    'Projekt-Dateien'
+        => 'Project files',
+    'Eigene Dateien hinzufügen'
+        => 'Add your own files',
+    'Dateien / Bilder anhängen'
+        => 'Attach files or images',
+    'Datei löschen'
+        => 'Delete file',
+    'Möchtest du diese Datei wirklich endgültig löschen?'
+        => 'Permanently delete this file?',
+    'Der Upload startet sofort nach der Auswahl. Die Dateien sind für den Kunden im Portal sofort sichtbar.'
+        => 'The upload starts as soon as you choose a file. Clients see it in the portal immediately.',
+    'Feedback vom Portal'
+        => 'Feedback from the portal',
+    'Noch kein Austausch.'
+        => 'No messages yet.',
+    'Antworten …'
+        => 'Reply …',
+    'Antworten…'
+        => 'Reply…',
+    'Ihre Antwort…'
+        => 'Your reply…',
+    'Zeit nachtragen'
+        => 'Add time',
+    'Minuten eingeben:'
+        => 'Enter minutes:',
+    'Startdatum'
+        => 'Start date',
+    'Start egal'
+        => 'Any start',
+    'Startmonat egal'
+        => 'Any start month',
+    'Deadline egal'
+        => 'Any deadline',
+    'Detaillierte Beschreibung…'
+        => 'Detailed description…',
+    'Beschreibung / Notizen'
+        => 'Description / notes',
+    'Soll der Kunde per E-Mail über den abgeschlossenen Meilenstein informiert werden?'
+        => 'Notify the client by e-mail that this milestone is complete?',
+    'Kunde benachrichtigen?'
+        => 'Notify the client?',
+    'Ja, senden'
+        => 'Yes, send',
+    'stornierte Aufgabe(n) — in Listenansicht anzeigen'
+        => 'cancelled task(s) — show in list view',
+    'In Liste bearbeiten'
+        => 'Edit in list',
+    'Keine Aufgaben in dieser Spalte'
+        => 'No tasks in this column',
+    'Status *'
+        => 'Status *',
+    'Neuen Kontakt anlegen'
+        => 'Create contact',
+    'Kontakt bearbeiten'
+        => 'Edit contact',
+    'Kontakt suchen...'
+        => 'Search contacts…',
+    'Kontakt wählen …'
+        => 'Choose a contact …',
+    'Kunden'
+        => 'Clients',
+    'Interessenten'
+        => 'Prospects',
+    'Alle Typen'
+        => 'All types',
+    'Suche nach Name, Firma, E-Mail oder Notiz...'
+        => 'Search name, company, e-mail or note…',
+    'Keine Kontakte für diese Suchkriterien gefunden.'
+        => 'No contacts match this search.',
+    'Keine Kontakte vorhanden.'
+        => 'No contacts yet.',
+    'Es gibt noch keine Kontakte mit Portalzugang.'
+        => 'No contact has portal access yet.',
+    'Portal erstellen'
+        => 'Create portal',
+    'Portal-Zugang:'
+        => 'Portal access:',
+    'PIN zurücksetzen'
+        => 'Reset PIN',
+    'Link kopieren'
+        => 'Copy link',
+    'Kundenprofil öffnen'
+        => 'Open client profile',
+    'QR & Mail'
+        => 'QR and e-mail',
+    'QR-Code speichern (.png)'
+        => 'Save QR code (.png)',
+    'E-Mail mit Link & QR-Code senden'
+        => 'Send link and QR code by e-mail',
+    'Mailto'
+        => 'Mailto',
+    'Mailto öffnen'
+        => 'Open mailto',
+    'Hier ist Ihr persönlicher Zugang zum Projekt-Portal. Dort können Sie jederzeit den Fortschritt Ihres Projekts oder Dienstleistung einsehen, mitwirken oder Feedback dalassen.'
+        => 'Here is your personal access to the project portal. You can follow your project at any time, take part, and leave feedback.',
+    'Interne Notizen'
+        => 'Internal notes',
+    'Meta & CRM'
+        => 'Meta and CRM',
+    'Ja, entfernen'
+        => 'Yes, remove',
+    'Ja, löschen'
+        => 'Yes, delete',
+    'Ja, leeren'
+        => 'Yes, clear',
+    'Eintrag löschen?'
+        => 'Delete this entry?',
+    'Diesen Eintrag wirklich löschen?'
+        => 'Really delete this entry?',
+    'Einnahmen'
+        => 'Income',
+    'Ausgaben'
+        => 'Expenses',
+    'Saldo'
+        => 'Balance',
+    'Offene Forderung'
+        => 'Outstanding',
+    'Neuer Eintrag'
+        => 'New entry',
+    'Bezeichnung'
+        => 'Description',
+    'Bezeichnung *'
+        => 'Description *',
+    'Betrag (€) *'
+        => 'Amount (€) *',
+    'Kunde *'
+        => 'Client *',
+    'Kunde (CRM)'
+        => 'Client (CRM)',
+    'Kunde (aus Kontakten)'
+        => 'Client (from contacts)',
+    '-- Ohne Kunde --'
+        => '— No client —',
+    '-- Ohne Zuordnung --'
+        => '— Unassigned —',
+    '-- Kunde aus CRM laden --'
+        => '— Load client from CRM —',
+    'Oder: Freitext-Name'
+        => 'Or: free-text name',
+    'Manueller Name'
+        => 'Manual name',
+    'Alle Kunden'
+        => 'All clients',
+    'Alle Status'
+        => 'All statuses',
+    'Alle Kategorien'
+        => 'All categories',
+    'Fixkosten'
+        => 'Recurring',
+    'Monatliche Fixkosten'
+        => 'Monthly recurring costs',
+    'Monatliches Abo'
+        => 'Monthly subscription',
+    'Einmalzahlung'
+        => 'One-off payment',
+    '2 Raten'
+        => '2 instalments',
+    '3 Raten'
+        => '3 instalments',
+    'Diesen Monat'
+        => 'This month',
+    'Dieses Jahr'
+        => 'This year',
+    'Zeitraum: Aktuelles Jahr'
+        => 'Period: current year',
+    'Zeitraum: Gesamt'
+        => 'Period: all time',
+    'Letzte 7 Tage'
+        => 'Last 7 days',
+    'Letzte 30 Tage'
+        => 'Last 30 days',
+    'Nächste 7 Tage'
+        => 'Next 7 days',
+    'Nächste 14 Tage'
+        => 'Next 14 days',
+    'Nächste 30 Tage'
+        => 'Next 30 days',
+    'Monatsüberblick'
+        => 'Monthly overview',
+    'Summe der gefilterten Liste:'
+        => 'Total of the filtered list:',
+    'Keine Einträge für diese Filter gefunden.'
+        => 'No entries match these filters.',
+    'Rechnung'
+        => 'Invoice',
+    'Rechnung ansehen'
+        => 'View invoice',
+    'Rechnung konfigurieren'
+        => 'Configure invoice',
+    'Rechnungsnummer'
+        => 'Invoice number',
+    'Rechnungsfällig'
+        => 'Invoice due',
+    'Fällig am'
+        => 'Due on',
+    'Zahlbar bis'
+        => 'Payable by',
+    'Eingegangen'
+        => 'Received',
+    'Datum / Alter'
+        => 'Date / age',
+    'PDF erstellen & verbuchen'
+        => 'Create PDF and post',
+    'PDF generieren'
+        => 'Generate PDF',
+    'PDF generieren & anzeigen'
+        => 'Generate and open PDF',
+    'Rechnung per E-Mail senden'
+        => 'Send invoice by e-mail',
+    'Rechnung erfolgreich per E-Mail gesendet!'
+        => 'Invoice sent by e-mail.',
+    'Per E-Mail senden'
+        => 'Send by e-mail',
+    'Per E-Mail an Kunden senden'
+        => 'Send to the client by e-mail',
+    'Empfänger (Kunde)'
+        => 'Recipient (client)',
+    'Empfänger-E-Mail *'
+        => 'Recipient e-mail *',
+    'An (E-Mail) *'
+        => 'To (e-mail) *',
+    'An: E-Mail-Adresse'
+        => 'To: e-mail address',
+    'Begleittext der E-Mail:'
+        => 'Message body:',
+    'Absender'
+        => 'Sender',
+    'Absender (Meine Daten)'
+        => 'Sender (your details)',
+    'Bankverbindung (IBAN)'
+        => 'Bank account (IBAN)',
+    'DE12 3456...'
+        => 'DE12 3456…',
+    'PayPal / Notiz'
+        => 'PayPal / note',
+    'PayPal Adresse (Optional)'
+        => 'PayPal address (optional)',
+    'Zusatzzeile 1 (z.B. Abteilung)'
+        => 'Extra line 1 (e.g. department)',
+    'Zusatzzeile 1 (z.B. Steuernummer)'
+        => 'Extra line 1 (e.g. tax number)',
+    'Zusatzzeile 2 (Optional)'
+        => 'Extra line 2 (optional)',
+    '(erscheint im PDF)'
+        => '(appears in the PDF)',
+    'Netto:'
+        => 'Net:',
+    'Brutto:'
+        => 'Gross:',
+    'MwSt (19%):'
+        => 'VAT (19%):',
+    'MwSt-Regel'
+        => 'VAT rule',
+    'Kleinunternehmer (0%)'
+        => 'Small business (0%)',
+    'Kleinunternehmer (§19 UStG, keine MwSt.)'
+        => 'Small business (§19 UStG, no VAT)',
+    'Regelbesteuerung (19%)'
+        => 'Standard rate (19%)',
+    'Regelbesteuerung (19% MwSt.)'
+        => 'Standard rate (19% VAT)',
+    'Gesamt: 0,00 €'
+        => 'Total: €0.00',
+    'z.B. Vielen Dank für Ihr Vertrauen. Bitte überweisen Sie den Betrag bis zum oben genannten Datum.'
+        => 'e.g. Thank you for your business. Please transfer the amount by the date shown above.',
+    'z.B. Webdesign – Projektabschluss'
+        => 'e.g. Web design — project completion',
+    'z.B. Mustermann GmbH'
+        => 'e.g. Example Ltd',
+    'kunde@example.com'
+        => 'client@example.com',
+    'Neues Angebot'
+        => 'New quote',
+    'Angebots-Nr.'
+        => 'Quote no.',
+    'Noch keine Angebote vorhanden.'
+        => 'No quotes yet.',
+    'Angenommenes Volumen'
+        => 'Accepted volume',
+    'Gesendet / Offen'
+        => 'Sent / open',
+    'Gültig bis'
+        => 'Valid until',
+    'Einleitungstext'
+        => 'Introduction',
+    'Zu Rechnung konvertieren'
+        => 'Convert to invoice',
+    'Angebot erfolgreich als Rechnung verbucht!'
+        => 'Quote posted as an invoice.',
+    'Angebot per E-Mail senden'
+        => 'Send quote by e-mail',
+    'Angebot erfolgreich per E-Mail gesendet!'
+        => 'Quote sent by e-mail.',
+    'Das Angebot-PDF wird automatisch angehängt.'
+        => 'The quote PDF is attached automatically.',
+    'Notizen / Anmerkungen'
+        => 'Notes and remarks',
+    'z.B. Zahlungsbedingungen, Hinweise...'
+        => 'e.g. payment terms, remarks…',
+    'z.B. Hiermit unterbreiten wir Ihnen folgendes Angebot für das besprochene Projekt...'
+        => 'e.g. We are pleased to offer you the following for the project we discussed…',
+    'z.B. Webseitenentwicklung – Angebot für Ihr Projekt'
+        => 'e.g. Website development — quote for your project',
+    'Z.B. Vielen Dank für das Vertrauen!'
+        => 'e.g. Thank you for your trust.',
+    '– Kunde auswählen –'
+        => '— Select a client —',
+    'Neues Ticket anlegen'
+        => 'Create ticket',
+    'Ticket erstellen'
+        => 'Create ticket',
+    'Ticket wurde erfolgreich erstellt.'
+        => 'Ticket created.',
+    'Ticket löschen?'
+        => 'Delete this ticket?',
+    'Ticket und alle Notizen endgültig löschen?'
+        => 'Permanently delete this ticket and all its notes?',
+    'Keine Tickets gefunden.'
+        => 'No tickets found.',
+    'Alle Prioritäten'
+        => 'All priorities',
+    'Priorität ändern'
+        => 'Change priority',
+    'Kunde, Betreff oder Nachricht…'
+        => 'Client, subject or message…',
+    'Kurze Beschreibung des Problems'
+        => 'Short description of the problem',
+    'Nachricht des Kunden'
+        => 'Client message',
+    'Interne Notiz hinzufügen…'
+        => 'Add an internal note…',
+    '⚪ Niedrig'
+        => '⚪ Low',
+    '🟡 Mittel'
+        => '🟡 Medium',
+    '🟠 Hoch'
+        => '🟠 High',
+    '🔴 Kritisch'
+        => '🔴 Critical',
+    'z.B. CSS, Login, API'
+        => 'e.g. CSS, login, API',
+    'Wiki durchsuchen...'
+        => 'Search the wiki…',
+    'Keine Wiki-Einträge gefunden.'
+        => 'No wiki entries found.',
+    'Oben anpinnen'
+        => 'Pin to top',
+    'Tags (Kommagetrennt)'
+        => 'Tags (comma separated)',
+    'Angehängte Dateien'
+        => 'Attached files',
+    'Vorhandene Anhänge (Klick auf Mülleimer zum Löschen)'
+        => 'Existing attachments (click the bin to delete)',
+    'Hat Anhänge'
+        => 'Has attachments',
+    'Im Kundenportal freigeben'
+        => 'Share in the client portal',
+    'Artikel im Kundenportal freigeben'
+        => 'Share this article in the client portal',
+    'Wähle, welche Kunden diesen Artikel in ihrem Portal lesen können:'
+        => 'Choose which clients can read this article in their portal:',
+    'Freigaben speichern'
+        => 'Save sharing',
+    'Weise einem Kontakt zuerst ein Portal-Token zu (Kontakte-Seite).'
+        => 'Give a contact portal access first (on the Contacts page).',
+    'Neuer Termin'
+        => 'New appointment',
+    'Termin gespeichert!'
+        => 'Appointment saved.',
+    'Termin gespeichert.'
+        => 'Appointment saved.',
+    'Termin löschen?'
+        => 'Delete this appointment?',
+    'Termin und alle Einladungen löschen?'
+        => 'Delete this appointment and all its invitations?',
+    'Startzeit'
+        => 'Start time',
+    'Endzeit'
+        => 'End time',
+    'Farbe'
+        => 'Colour',
+    'Meeting-Link'
+        => 'Meeting link',
+    '(Zoom, Teams, Meet…)'
+        => '(Zoom, Teams, Meet…)',
+    'Büro, Online, Adresse...'
+        => 'Office, online, address…',
+    'Agenda, Infos, Themen...'
+        => 'Agenda, notes, topics…',
+    'Kontakte einladen'
+        => 'Invite contacts',
+    'Einladungen versenden?'
+        => 'Send invitations?',
+    'Einladung(en) wurden versendet.'
+        => 'Invitation(s) sent.',
+    'Einladungs-E-Mail mit ICS-Kalenderlink an'
+        => 'Invitation e-mail with an ICS calendar link to',
+    'Für jeden Kontakt wird ein ICS-Einladungslink generiert (öffnet direkt Outlook/Google Kalender).'
+        => 'Each contact gets an ICS invitation link that opens straight in Outlook or Google Calendar.',
+    'Ja, jetzt senden'
+        => 'Yes, send now',
+    'senden?'
+        => 'send?',
+    '— Kein Kontakt ausgewählt —'
+        => '— No contact selected —',
+    'z.B. Kundengespräch mit Firma XY'
+        => 'e.g. Client meeting with Example Ltd',
+    'Einträge gesamt'
+        => 'Entries in total',
+    'Fehlversuche (7 Tage)'
+        => 'Failed attempts (7 days)',
+    'Letzte Anmeldung'
+        => 'Last sign-in',
+    'IP-Adresse'
+        => 'IP address',
+    'In Beschreibung/IP suchen…'
+        => 'Search description or IP…',
+    'Logbuch ist leer'
+        => 'The log is empty',
+    'Logbuch leeren?'
+        => 'Clear the log?',
+    'Möchtest du alle bisherigen Einträge wirklich unwiderruflich löschen?'
+        => 'Permanently delete every entry so far?',
+    'Notiz speichern'
+        => 'Save note',
+    'Wiederherstellen'
+        => 'Restore',
+    'Endgültig löschen'
+        => 'Delete permanently',
+    'Verbleibend'
+        => 'Remaining',
+    'Gelöscht am'
+        => 'Deleted on',
+    'Eintrag'
+        => 'entry',
+    'Nichts gelöscht.'
+        => 'Nothing deleted.',
+    'URL / Domain *'
+        => 'URL / domain *',
+    // ── Kundenportal ─────────────────────────────────────────────────
+    'Sprache wechseln'         => 'Switch language',
+    'Dunkles Design umschalten' => 'Toggle dark mode',
+    // ── Einstellungsseite ────────────────────────────────────────────
+    'Einstellungen gespeichert.'
+        => 'Settings saved.',
+    'Darstellung'
+        => 'Appearance',
+    'Benachrichtigungen'
+        => 'Notifications',
+    'E-Mail-Vorlagen'
+        => 'E-mail templates',
+    'Dark Mode'
+        => 'Dark mode',
+    'Dark Mode aktivieren'
+        => 'Enable dark mode',
+    'Wird lokal im Browser gespeichert.'
+        => 'Stored locally in your browser.',
+    'Farben'
+        => 'Colours',
+    'Primärfarbe (Akzent)'
+        => 'Primary colour (accent)',
+    'Sidebar-Farbe'
+        => 'Sidebar colour',
+    'Farben speichern'
+        => 'Save colours',
+    'Unternehmensangaben'
+        => 'Company details',
+    'Vollständiger Name'
+        => 'Full name',
+    'Wird auf Rechnungen und im Footer verwendet.'
+        => 'Used on invoices and in the footer.',
+    'Kurzname'
+        => 'Short name',
+    'Wird im Seitentitel und Portal-Header verwendet.'
+        => 'Used in the page title and the portal header.',
+    'Admin-Panel URL'
+        => 'Admin panel URL',
+    'Wichtig für QR-Codes und Links.'
+        => 'Important for QR codes and links.',
+    'Hauptwebsite'
+        => 'Main website',
+    'Admin-E-Mail'
+        => 'Admin e-mail',
+    'Support-E-Mail'
+        => 'Support e-mail',
+    'Diese Werte überschreiben die Konstanten in'
+        => 'These values override the constants in',
+    'und werden sofort auf allen Seiten wirksam.'
+        => 'and take effect immediately on every page.',
+    'Bankverbindung'
+        => 'Bank details',
+    'Kontoinhaber'
+        => 'Account holder',
+    'Hinweis zur Zahlung'
+        => 'Payment note',
+    'z. B. Zahlbar innerhalb von 14 Tagen ohne Abzug.'
+        => 'e.g. Payable within 14 days, no deductions.',
+    'Firmenlogo (für Rechnungen)'
+        => 'Company logo (for invoices)',
+    'Firmenlogo'
+        => 'Company logo',
+    'Logo entfernen'
+        => 'Remove logo',
+    'Noch kein Logo hinterlegt. Ohne Logo erscheint nur der Firmenname auf Rechnungen.'
+        => 'No logo yet. Without one, invoices show only the company name.',
+    'Logo hochladen'
+        => 'Upload logo',
+    'PNG, JPG, GIF oder WebP · max. 2 MB · Empfehlung: transparenter Hintergrund, ca. 400×120 px'
+        => 'PNG, JPG, GIF or WebP · max. 2 MB · recommended: transparent background, about 400×120 px',
+    'Hochladen & speichern'
+        => 'Upload and save',
+    'Tab-Icon (Favicon)'
+        => 'Tab icon (favicon)',
+    'Favicon'
+        => 'Favicon',
+    'Favicon entfernen'
+        => 'Remove favicon',
+    'Noch kein Favicon hinterlegt. Browser zeigen dann das Standard-Icon.'
+        => 'No favicon yet. Browsers will show their default icon.',
+    'Favicon hochladen'
+        => 'Upload favicon',
+    'ICO oder PNG · max. 512 KB · Empfehlung: 32×32 px oder 64×64 px'
+        => 'ICO or PNG · max. 512 KB · recommended: 32×32 px or 64×64 px',
+    'E-Mail-Benachrichtigungen'
+        => 'E-mail notifications',
+    'Meilenstein-E-Mail-Bestätigung'
+        => 'Milestone confirmation e-mail',
+    'Beim Abschließen eines Meilensteins im Portal wird der Kunde per E-Mail gefragt, ob er den Meilenstein offiziell bestätigen möchte.'
+        => 'When a milestone is completed in the portal, the client is asked by e-mail whether to approve it formally.',
+    'Angebots-E-Mail beim Versand'
+        => 'Quote e-mail on sending',
+    'Beim Versand eines Angebots wird automatisch eine E-Mail an den Kunden generiert.'
+        => 'Sending a quote generates an e-mail to the client automatically.',
+    'Rahmen aller E-Mails'
+        => 'Frame around every e-mail',
+    'Kopfbereich, Farben und Logo kommen aus'
+        => 'Header, colours and logo come from',
+    'Signatur'
+        => 'Signature',
+    'Steht am Ende jeder Nachricht, vor der Fußzeile.'
+        => 'Appears at the end of every message, above the footer.',
+    'Fußzeile'
+        => 'Footer',
+    'Die kleine Zeile ganz unten. Leer lassen für Firmenname und Website.'
+        => 'The small line at the very bottom. Leave empty for company name and website.',
+    'Rahmen speichern'
+        => 'Save frame',
+    'Vorlagen'
+        => 'Templates',
+    'Von Ihnen angepasst'
+        => 'Edited by you',
+    'Auf Standard zurücksetzen'
+        => 'Reset to default',
+    'Platzhalter — anklicken zum Einfügen'
+        => 'Placeholders — click to insert',
+    'Vorlage speichern'
+        => 'Save template',
+    'Vorschau mit Beispieldaten'
+        => 'Preview with example data',
+    'Vorschau der E-Mail'
+        => 'E-mail preview',
+    'Betreff:'
+        => 'Subject:',
+    'Log-Einstellungen'
+        => 'Log settings',
+    'Log-Anzeigelimit'
+        => 'Log display limit',
+    'Maximale Anzahl Logs auf der Log-Seite (Standard: 200, max. 2000).'
+        => 'Maximum number of entries on the log page (default 200, max 2000).',
+    'Systeminfo'
+        => 'System information',
+    'PHP Version'
+        => 'PHP version',
+    'MySQL Version'
+        => 'MySQL version',
+    'Server'
+        => 'Server',
+    'Zeitzone'
+        => 'Time zone',
 ];

@@ -212,7 +212,7 @@ require 'includes/layout_start.php';
 
     <?php if (isset($_GET['msg']) && $_GET['msg'] === 'created'): ?>
     <div class="alert alert-success alert-dismissible fade show mb-3 shadow-sm">
-      <i class="bi bi-check-circle-fill me-2"></i> Ticket wurde erfolgreich erstellt.
+      <i class="bi bi-check-circle-fill me-2"></i> <?= te('Ticket wurde erfolgreich erstellt.') ?>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     <?php endif; ?>
@@ -222,25 +222,25 @@ require 'includes/layout_start.php';
       <div class="col-6 col-md-3">
         <div class="widget-box widget-accent-left text-center py-3">
           <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--accent-danger);"><?= $kpi_open ?></div>
-          <div class="label-xs">Offen</div>
+          <div class="label-xs"><?= te('Offen') ?></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="widget-box text-center py-3" style="border-top:4px solid var(--color-primary);">
           <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--color-primary);"><?= $kpi_wip ?></div>
-          <div class="label-xs">In Bearbeitung</div>
+          <div class="label-xs"><?= te('In Bearbeitung') ?></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="widget-box widget-accent-left text-center py-3">
           <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--accent-success);"><?= $kpi_done ?></div>
-          <div class="label-xs">Erledigt</div>
+          <div class="label-xs"><?= te('Erledigt') ?></div>
         </div>
       </div>
       <div class="col-6 col-md-3">
         <div class="widget-box widget-accent-left text-center py-3">
           <div class="fw-bold lh-1 mb-1" style="font-size:2rem;color:var(--text-muted);"><?= $kpi_total ?></div>
-          <div class="label-xs">Gesamt</div>
+          <div class="label-xs"><?= te('Gesamt') ?></div>
         </div>
       </div>
     </div>
@@ -249,24 +249,24 @@ require 'includes/layout_start.php';
     <form class="filter-bar">
       <div class="input-group input-group-sm search-box">
         <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
-        <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Kunde, Betreff oder Nachricht…" value="<?= htmlspecialchars($search_query) ?>">
+        <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="<?= te('Kunde, Betreff oder Nachricht…') ?>" value="<?= htmlspecialchars($search_query) ?>">
       </div>
       <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-        <option value="all">Alle Status</option>
-        <option value="Offen"          <?= $filter_status === 'Offen'          ? 'selected' : '' ?>>Offen</option>
-        <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>>In Bearbeitung</option>
-        <option value="Erledigt"       <?= $filter_status === 'Erledigt'       ? 'selected' : '' ?>>Erledigt</option>
+        <option value="all"><?= te('Alle Status') ?></option>
+        <option value="Offen"          <?= $filter_status === 'Offen'          ? 'selected' : '' ?>><?= te('Offen') ?></option>
+        <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
+        <option value="Erledigt"       <?= $filter_status === 'Erledigt'       ? 'selected' : '' ?>><?= te('Erledigt') ?></option>
       </select>
       <select name="priority" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-        <option value="all">Alle Prioritäten</option>
-        <option value="Kritisch" <?= $filter_prio === 'Kritisch' ? 'selected' : '' ?>>🔴 Kritisch</option>
-        <option value="Hoch"     <?= $filter_prio === 'Hoch'     ? 'selected' : '' ?>>🟠 Hoch</option>
-        <option value="Mittel"   <?= $filter_prio === 'Mittel'   ? 'selected' : '' ?>>🟡 Mittel</option>
-        <option value="Niedrig"  <?= $filter_prio === 'Niedrig'  ? 'selected' : '' ?>>⚪ Niedrig</option>
+        <option value="all"><?= te('Alle Prioritäten') ?></option>
+        <option value="Kritisch" <?= $filter_prio === 'Kritisch' ? 'selected' : '' ?>><?= te('🔴 Kritisch') ?></option>
+        <option value="Hoch"     <?= $filter_prio === 'Hoch'     ? 'selected' : '' ?>><?= te('🟠 Hoch') ?></option>
+        <option value="Mittel"   <?= $filter_prio === 'Mittel'   ? 'selected' : '' ?>><?= te('🟡 Mittel') ?></option>
+        <option value="Niedrig"  <?= $filter_prio === 'Niedrig'  ? 'selected' : '' ?>><?= te('⚪ Niedrig') ?></option>
       </select>
-      <button type="submit" class="btn btn-primary btn-sm">Suchen</button>
+      <button type="submit" class="btn btn-primary btn-sm"><?= te('Suchen') ?></button>
       <?php if ($search_query || $filter_status !== 'all' || $filter_prio !== 'all'): ?>
-        <a href="tickets" class="btn btn-outline-secondary btn-sm" title="Filter zurücksetzen"><i class="bi bi-x-circle"></i></a>
+        <a href="tickets" class="btn btn-outline-secondary btn-sm" title="<?= te('Filter zurücksetzen') ?>"><i class="bi bi-x-circle"></i></a>
       <?php endif; ?>
     </form>
 
@@ -276,12 +276,12 @@ require 'includes/layout_start.php';
         <table class="table table-hover align-middle mb-0">
           <thead class="bg-subtle small text-uppercase fw-bold text-muted">
             <tr>
-              <th style="width:130px;">Datum / Alter</th>
-              <th style="width:105px;">Priorität</th>
-              <th>Kunde</th>
-              <th>Betreff</th>
+              <th style="width:130px;"><?= te('Datum / Alter') ?></th>
+              <th style="width:105px;"><?= te('Priorität') ?></th>
+              <th><?= te('Kunde') ?></th>
+              <th><?= te('Betreff') ?></th>
               <th style="width:165px;">Status</th>
-              <th class="text-center" style="width:90px;">Aktionen</th>
+              <th class="text-center" style="width:90px;"><?= te('Aktionen') ?></th>
             </tr>
           </thead>
           <tbody>
@@ -289,7 +289,7 @@ require 'includes/layout_start.php';
               <tr>
                 <td colspan="6" class="text-center py-5 text-muted">
                   <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                  Keine Tickets gefunden.
+                  <?= te('Keine Tickets gefunden.') ?>
                 </td>
               </tr>
             <?php endif; ?>
@@ -328,15 +328,15 @@ require 'includes/layout_start.php';
                 <div class="dropdown">
                   <span class="status-badge <?= $s_class ?> dropdown-toggle" role="button" data-bs-toggle="dropdown"><?= $t['status'] ?></span>
                   <ul class="dropdown-menu shadow-sm">
-                    <li><a class="dropdown-item py-1 small" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'Offen'); return false;">Offen</a></li>
-                    <li><a class="dropdown-item py-1 small text-primary fw-bold" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'In Bearbeitung'); return false;">In Bearbeitung</a></li>
-                    <li><a class="dropdown-item py-1 small text-success fw-bold" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'Erledigt'); return false;">Erledigt</a></li>
+                    <li><a class="dropdown-item py-1 small" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'Offen'); return false;"><?= te('Offen') ?></a></li>
+                    <li><a class="dropdown-item py-1 small text-primary fw-bold" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'In Bearbeitung'); return false;"><?= te('In Bearbeitung') ?></a></li>
+                    <li><a class="dropdown-item py-1 small text-success fw-bold" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'Erledigt'); return false;"><?= te('Erledigt') ?></a></li>
                   </ul>
                 </div>
               </td>
               <td class="text-center">
-                <button class="btn-icon text-primary" onclick='viewTicket(<?= $safe_json ?>)' title="Öffnen"><i class="bi bi-eye-fill"></i></button>
-                <button class="btn-icon text-danger" onclick="triggerDelete(<?= $t['id'] ?>)" title="Löschen"><i class="bi bi-trash3-fill"></i></button>
+                <button class="btn-icon text-primary" onclick='viewTicket(<?= $safe_json ?>)' title="<?= te('Öffnen') ?>"><i class="bi bi-eye-fill"></i></button>
+                <button class="btn-icon text-danger" onclick="triggerDelete(<?= $t['id'] ?>)" title="<?= te('Löschen') ?>"><i class="bi bi-trash3-fill"></i></button>
               </td>
             </tr>
             <?php endforeach; ?>
@@ -366,52 +366,52 @@ require 'includes/layout_start.php';
             <div class="col-lg-8 p-4 border-end d-flex flex-column gap-4">
 
               <div>
-                <div class="label-xs mb-2">Nachricht des Kunden</div>
+                <div class="label-xs mb-2"><?= te('Nachricht des Kunden') ?></div>
                 <div class="bg-surface p-3 rounded border shadow-sm" id="tm_message"
                      style="min-height:110px;white-space:pre-wrap;font-size:14px;color:var(--text-body);"></div>
               </div>
 
               <div>
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                  <span class="label-xs">Interne Notizen <span class="text-muted fw-normal" id="tm_notes_count"></span></span>
+                  <span class="label-xs"><?= te('Interne Notizen') ?> <span class="text-muted fw-normal" id="tm_notes_count"></span></span>
                 </div>
                 <div id="tm_notes_list" class="d-flex flex-column gap-2 mb-3" style="max-height:200px;overflow-y:auto;"></div>
                 <div class="d-flex gap-2">
                   <textarea id="tm_new_note" class="form-control form-control-sm" rows="2"
-                            placeholder="Interne Notiz hinzufügen…" style="resize:none;"></textarea>
-                  <button class="btn btn-outline-secondary btn-sm align-self-end px-3 fw-bold" onclick="saveNote()" title="Notiz speichern">
+                            placeholder="<?= te('Interne Notiz hinzufügen…') ?>" style="resize:none;"></textarea>
+                  <button class="btn btn-outline-secondary btn-sm align-self-end px-3 fw-bold" onclick="saveNote()" title="<?= te('Notiz speichern') ?>">
                     <i class="bi bi-plus-lg"></i>
                   </button>
                 </div>
               </div>
 
               <div>
-                <div class="label-xs mb-2">Antwort senden</div>
+                <div class="label-xs mb-2"><?= te('Antwort senden') ?></div>
                 <div class="bg-surface p-3 rounded border shadow-sm">
                   <div class="row g-2 mb-2">
                     <div class="col-sm-6">
-                      <input type="email" id="tm_reply_to" class="form-control form-control-sm" placeholder="An: E-Mail-Adresse">
+                      <input type="email" id="tm_reply_to" class="form-control form-control-sm" placeholder="<?= te('An: E-Mail-Adresse') ?>">
                     </div>
                     <div class="col-sm-6">
-                      <input type="text" id="tm_reply_subject" class="form-control form-control-sm" placeholder="Betreff">
+                      <input type="text" id="tm_reply_subject" class="form-control form-control-sm" placeholder="<?= te('Betreff') ?>">
                     </div>
                   </div>
                   <textarea id="tm_reply_body" class="form-control form-control-sm mb-2" rows="4"
-                            placeholder="Ihre Antwort…" style="resize:vertical;"></textarea>
+                            placeholder="<?= te('Ihre Antwort…') ?>" style="resize:vertical;"></textarea>
                   <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
                     <div class="form-check form-check-sm mb-0">
                       <input class="form-check-input" type="checkbox" id="tm_send_email" checked>
                       <label class="form-check-label small text-muted" for="tm_send_email">
-                        <i class="bi bi-envelope me-1"></i>Per E-Mail an Kunden senden
+                        <i class="bi bi-envelope me-1"></i><?= te('Per E-Mail an Kunden senden') ?>
                       </label>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
                       <small id="tm_reply_status" class="text-muted"></small>
-                      <a href="#" id="tm_mailto_link" class="btn btn-outline-secondary btn-sm" title="Mailto öffnen">
-                        <i class="bi bi-envelope me-1"></i>Mailto
+                      <a href="#" id="tm_mailto_link" class="btn btn-outline-secondary btn-sm" title="<?= te('Mailto öffnen') ?>">
+                        <i class="bi bi-envelope me-1"></i><?= te('Mailto') ?>
                       </a>
                       <button class="btn btn-primary btn-sm fw-bold" onclick="sendReply()">
-                        <i class="bi bi-send me-1"></i>Antworten
+                        <i class="bi bi-send me-1"></i><?= te('Antworten') ?>
                       </button>
                     </div>
                   </div>
@@ -423,27 +423,27 @@ require 'includes/layout_start.php';
             <!-- Rechts: Ticket-Info -->
             <div class="col-lg-4 p-4 d-flex flex-column gap-3">
               <div>
-                <div class="label-xs mb-1">Absender</div>
+                <div class="label-xs mb-1"><?= te('Absender') ?></div>
                 <div class="fw-bold text-primary" id="tm_sender"></div>
                 <div class="small text-muted" id="tm_email_display"></div>
               </div>
               <div>
-                <div class="label-xs mb-1">Eingegangen</div>
+                <div class="label-xs mb-1"><?= te('Eingegangen') ?></div>
                 <div class="fw-bold small text-strong-c" id="tm_date"></div>
                 <div class="small text-muted" id="tm_age"></div>
               </div>
               <div>
-                <div class="label-xs mb-1">Priorität ändern</div>
+                <div class="label-xs mb-1"><?= te('Priorität ändern') ?></div>
                 <select id="tm_prio_sel" class="form-select form-select-sm" onchange="updatePriority()">
-                  <option value="Niedrig">⚪ Niedrig</option>
-                  <option value="Mittel">🟡 Mittel</option>
-                  <option value="Hoch">🟠 Hoch</option>
-                  <option value="Kritisch">🔴 Kritisch</option>
+                  <option value="Niedrig"><?= te('⚪ Niedrig') ?></option>
+                  <option value="Mittel"><?= te('🟡 Mittel') ?></option>
+                  <option value="Hoch"><?= te('🟠 Hoch') ?></option>
+                  <option value="Kritisch"><?= te('🔴 Kritisch') ?></option>
                 </select>
               </div>
               <div class="mt-auto pt-3 border-top">
                 <a href="#" id="tm_profile_btn" class="btn btn-outline-secondary btn-sm w-100 fw-bold">
-                  <i class="bi bi-person-badge me-1"></i>Kundenprofil öffnen
+                  <i class="bi bi-person-badge me-1"></i><?= te('Kundenprofil öffnen') ?>
                 </a>
               </div>
             </div>
@@ -463,40 +463,40 @@ require 'includes/layout_start.php';
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="create_ticket">
           <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle-fill me-2"></i>Neues Ticket anlegen</h5>
+            <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle-fill me-2"></i><?= te('Neues Ticket anlegen') ?></h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-4">
             <div class="mb-3">
-              <label class="form-label fw-bold small">Kunde *</label>
+              <label class="form-label fw-bold small"><?= te('Kunde *') ?></label>
               <select name="contact_id" class="form-select" required>
-                <option value="">– Kunde auswählen –</option>
+                <option value=""><?= te('– Kunde auswählen –') ?></option>
                 <?php foreach ($all_contacts as $c): ?>
                   <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' (' . htmlspecialchars($c['company']) . ')' : '' ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label fw-bold small">Priorität</label>
+              <label class="form-label fw-bold small"><?= te('Priorität') ?></label>
               <select name="priority" class="form-select">
-                <option value="Niedrig">⚪ Niedrig</option>
-                <option value="Mittel" selected>🟡 Mittel</option>
-                <option value="Hoch">🟠 Hoch</option>
-                <option value="Kritisch">🔴 Kritisch</option>
+                <option value="Niedrig"><?= te('⚪ Niedrig') ?></option>
+                <option value="Mittel" selected><?= te('🟡 Mittel') ?></option>
+                <option value="Hoch"><?= te('🟠 Hoch') ?></option>
+                <option value="Kritisch"><?= te('🔴 Kritisch') ?></option>
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label fw-bold small">Betreff *</label>
-              <input type="text" name="subject" class="form-control" required placeholder="Kurze Beschreibung des Problems">
+              <label class="form-label fw-bold small"><?= te('Betreff *') ?></label>
+              <input type="text" name="subject" class="form-control" required placeholder="<?= te('Kurze Beschreibung des Problems') ?>">
             </div>
             <div class="mb-0">
-              <label class="form-label fw-bold small">Nachricht *</label>
-              <textarea name="message" class="form-control" rows="5" required placeholder="Detaillierte Beschreibung…"></textarea>
+              <label class="form-label fw-bold small"><?= te('Nachricht *') ?></label>
+              <textarea name="message" class="form-control" rows="5" required placeholder="<?= te('Detaillierte Beschreibung…') ?>"></textarea>
             </div>
           </div>
           <div class="modal-footer bg-subtle d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i>Ticket erstellen</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+            <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i><?= te('Ticket erstellen') ?></button>
           </div>
         </form>
       </div>
@@ -512,15 +512,15 @@ require 'includes/layout_start.php';
           <input type="hidden" name="action" value="delete_ticket">
           <input type="hidden" name="ticket_id" id="del_id">
           <div class="modal-header bg-danger text-white">
-            <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Ticket löschen?</h6>
+            <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Ticket löschen?') ?></h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-center py-4">
-            <p class="mb-0 fw-bold">Ticket und alle Notizen endgültig löschen?</p>
+            <p class="mb-0 fw-bold"><?= te('Ticket und alle Notizen endgültig löschen?') ?></p>
           </div>
           <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-            <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+            <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button>
           </div>
         </form>
       </div>

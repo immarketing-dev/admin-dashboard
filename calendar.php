@@ -302,13 +302,13 @@ require 'includes/layout_start.php';
 
   <?php if ($saved_ok): ?>
   <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-    <i class="bi bi-check-circle-fill me-2"></i> Termin gespeichert.
+    <i class="bi bi-check-circle-fill me-2"></i> <?= te('Termin gespeichert.') ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   <?php endif; ?>
   <?php if ($invited_ok): ?>
   <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-    <i class="bi bi-envelope-check me-2"></i> Einladung(en) wurden versendet.
+    <i class="bi bi-envelope-check me-2"></i> <?= te('Einladung(en) wurden versendet.') ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   <?php endif; ?>
@@ -319,10 +319,10 @@ require 'includes/layout_start.php';
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
           <h4 class="fw-bold m-0 text-strong-c"><?= $month_names[$month] ?> <?= $year ?></h4>
           <div class="d-flex gap-3 small flex-wrap">
-            <span class="legend-chip"><span class="legend-dot legend-dot-task"></span>Deadline</span>
-            <span class="legend-chip"><span class="legend-dot legend-dot-inv"></span>Rechnung</span>
-            <span class="legend-chip"><span class="legend-dot legend-dot-event"></span>Termin</span>
-            <span class="legend-chip"><span class="legend-dot legend-dot-overdue"></span>Überfällig</span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-task"></span><?= te('Deadline') ?></span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-inv"></span><?= te('Rechnung') ?></span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-event"></span><?= te('Termin') ?></span>
+            <span class="legend-chip"><span class="legend-dot legend-dot-overdue"></span><?= te('Überfällig') ?></span>
           </div>
         </div>
 
@@ -410,30 +410,30 @@ require 'includes/layout_start.php';
 
         <!-- Monthly overview -->
         <div class="bg-surface rounded-3 shadow-sm border p-3 mb-3">
-          <h6 class="fw-bold text-strong-c mb-3"><i class="bi bi-bar-chart-fill me-2" style="color:var(--color-primary);"></i>Monatsüberblick</h6>
+          <h6 class="fw-bold text-strong-c mb-3"><i class="bi bi-bar-chart-fill me-2" style="color:var(--color-primary);"></i><?= te('Monatsüberblick') ?></h6>
           <?php if ($total_events_month > 0): ?>
           <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-            <span class="small text-muted"><i class="bi bi-calendar2-event me-1"></i>Termine</span>
+            <span class="small text-muted"><i class="bi bi-calendar2-event me-1"></i><?= te('Termine') ?></span>
             <span class="fw-bold"><?= $total_events_month ?></span>
           </div>
           <?php endif; ?>
           <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-            <span class="small text-muted"><i class="bi bi-briefcase me-1"></i>Deadlines</span>
+            <span class="small text-muted"><i class="bi bi-briefcase me-1"></i><?= te('Deadlines') ?></span>
             <span class="fw-bold"><?= $total_tasks_month ?></span>
           </div>
           <?php if ($overdue_tasks_month > 0): ?>
           <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-            <span class="small text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Überfällig</span>
+            <span class="small text-danger"><i class="bi bi-exclamation-triangle me-1"></i><?= te('Überfällig') ?></span>
             <span class="fw-bold text-danger"><?= $overdue_tasks_month ?></span>
           </div>
           <?php endif; ?>
           <div class="d-flex justify-content-between align-items-center py-2 <?= $open_invoices_month > 0 ? 'border-bottom' : '' ?>">
-            <span class="small text-muted"><i class="bi bi-receipt me-1"></i>Rechnungsfällig</span>
+            <span class="small text-muted"><i class="bi bi-receipt me-1"></i><?= te('Rechnungsfällig') ?></span>
             <span class="fw-bold"><?= $total_invoices_month ?></span>
           </div>
           <?php if ($open_invoices_month > 0): ?>
           <div class="d-flex justify-content-between align-items-center py-2">
-            <span class="small text-warning"><i class="bi bi-hourglass-split me-1"></i>Offen</span>
+            <span class="small text-warning"><i class="bi bi-hourglass-split me-1"></i><?= te('Offen') ?></span>
             <span class="fw-bold text-warning"><?= $open_invoices_month ?></span>
           </div>
           <?php endif; ?>
@@ -453,7 +453,7 @@ require 'includes/layout_start.php';
         <!-- Upcoming 14 days -->
         <?php if (!empty($upcoming) && $is_current_month): ?>
         <div class="bg-surface rounded-3 shadow-sm border p-3 mt-3">
-          <h6 class="fw-bold text-strong-c mb-3"><i class="bi bi-calendar-event me-2 text-warning"></i>Nächste 14 Tage</h6>
+          <h6 class="fw-bold text-strong-c mb-3"><i class="bi bi-calendar-event me-2 text-warning"></i><?= te('Nächste 14 Tage') ?></h6>
           <?php foreach($upcoming as $up): ?>
             <?php if ($up['type'] === 'event'): $evt = $up['data']; ?>
               <div class="d-flex align-items-start gap-2 mb-2 p-2 rounded" style="background:<?=$evt['color']?>1a;border-left:3px solid <?=$evt['color']?>;">
@@ -504,7 +504,7 @@ require 'includes/layout_start.php';
 
         <div class="modal-header" style="background:var(--color-primary);">
           <h5 class="modal-title text-white fw-bold" id="eventModalLabel">
-            <i class="bi bi-calendar-plus me-2"></i>Neuer Termin
+            <i class="bi bi-calendar-plus me-2"></i><?= te('Neuer Termin') ?>
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
@@ -512,54 +512,54 @@ require 'includes/layout_start.php';
         <div class="modal-body p-4">
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label fw-bold small">Titel *</label>
-              <input type="text" name="title" id="ev_title" class="form-control" placeholder="z.B. Kundengespräch mit Firma XY" required>
+              <label class="form-label fw-bold small"><?= te('Titel *') ?></label>
+              <input type="text" name="title" id="ev_title" class="form-control" placeholder="<?= te('z.B. Kundengespräch mit Firma XY') ?>" required>
             </div>
 
             <div class="col-md-4">
-              <label class="form-label fw-bold small">Datum *</label>
+              <label class="form-label fw-bold small"><?= te('Datum *') ?></label>
               <input type="date" name="event_date" id="ev_date" class="form-control" required>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-bold small">Startzeit</label>
+              <label class="form-label fw-bold small"><?= te('Startzeit') ?></label>
               <input type="time" name="start_time" id="ev_start_time" class="form-control">
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-bold small">Endzeit</label>
+              <label class="form-label fw-bold small"><?= te('Endzeit') ?></label>
               <input type="time" name="end_time" id="ev_end_time" class="form-control">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold small"><i class="bi bi-geo-alt me-1"></i>Ort / Adresse</label>
-              <input type="text" name="location" id="ev_location" class="form-control" placeholder="Büro, Online, Adresse...">
+              <label class="form-label fw-bold small"><i class="bi bi-geo-alt me-1"></i><?= te('Ort / Adresse') ?></label>
+              <input type="text" name="location" id="ev_location" class="form-control" placeholder="<?= te('Büro, Online, Adresse...') ?>">
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-bold small"><i class="bi bi-camera-video text-success me-1"></i>Meeting-Link <small class="text-muted fw-normal">(Zoom, Teams, Meet…)</small></label>
+              <label class="form-label fw-bold small"><i class="bi bi-camera-video text-success me-1"></i><?= te('Meeting-Link') ?> <small class="text-muted fw-normal"><?= te('(Zoom, Teams, Meet…)') ?></small></label>
               <input type="url" name="meeting_url" id="ev_meeting_url" class="form-control" placeholder="https://zoom.us/j/...">
             </div>
 
             <div class="col-md-6">
-              <label class="form-label fw-bold small">Kategorie</label>
+              <label class="form-label fw-bold small"><?= te('Kategorie') ?></label>
               <select name="category" id="ev_category" class="form-select">
-                <option value="Termin">Termin</option>
-                <option value="Meeting">Meeting</option>
-                <option value="Anruf">Anruf</option>
-                <option value="Deadline">Deadline</option>
-                <option value="Sonstiges">Sonstiges</option>
+                <option value="Termin"><?= te('Termin') ?></option>
+                <option value="Meeting"><?= te('Meeting') ?></option>
+                <option value="Anruf"><?= te('Anruf') ?></option>
+                <option value="Deadline"><?= te('Deadline') ?></option>
+                <option value="Sonstiges"><?= te('Sonstiges') ?></option>
               </select>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-bold small">Status</label>
               <select name="status" id="ev_status" class="form-select">
-                <option value="Geplant">Geplant</option>
-                <option value="Bestätigt">Bestätigt</option>
-                <option value="Abgesagt">Abgesagt</option>
-                <option value="Abgeschlossen">Abgeschlossen</option>
+                <option value="Geplant"><?= te('Geplant') ?></option>
+                <option value="Bestätigt"><?= te('Bestätigt') ?></option>
+                <option value="Abgesagt"><?= te('Abgesagt') ?></option>
+                <option value="Abgeschlossen"><?= te('Abgeschlossen') ?></option>
               </select>
             </div>
 
             <div class="col-12">
-              <label class="form-label fw-bold small">Farbe</label>
+              <label class="form-label fw-bold small"><?= te('Farbe') ?></label>
               <div class="d-flex gap-2 flex-wrap">
                 <?php foreach($preset_colors as $hex => $name): ?>
                 <label class="color-swatch-label" title="<?= $name ?>">
@@ -571,16 +571,16 @@ require 'includes/layout_start.php';
             </div>
 
             <div class="col-12">
-              <label class="form-label fw-bold small">Beschreibung / Notizen</label>
-              <textarea name="description" id="ev_description" class="form-control" rows="2" placeholder="Agenda, Infos, Themen..."></textarea>
+              <label class="form-label fw-bold small"><?= te('Beschreibung / Notizen') ?></label>
+              <textarea name="description" id="ev_description" class="form-control" rows="2" placeholder="<?= te('Agenda, Infos, Themen...') ?>"></textarea>
             </div>
 
             <div class="col-12">
-              <label class="form-label fw-bold small"><i class="bi bi-person-plus me-1"></i>Kontakte einladen</label>
-              <input type="text" class="form-control form-control-sm mb-2" id="contactSearch" placeholder="Kontakt suchen..." autocomplete="off">
+              <label class="form-label fw-bold small"><i class="bi bi-person-plus me-1"></i><?= te('Kontakte einladen') ?></label>
+              <input type="text" class="form-control form-control-sm mb-2" id="contactSearch" placeholder="<?= te('Kontakt suchen...') ?>" autocomplete="off">
               <div id="contactCheckList" style="max-height:150px;overflow-y:auto;border:1px solid var(--border-base);border-radius:6px;background:var(--surface-card);">
                 <?php if (empty($all_contacts)): ?>
-                <div class="p-3 text-muted small text-center">Keine Kontakte vorhanden.</div>
+                <div class="p-3 text-muted small text-center"><?= te('Keine Kontakte vorhanden.') ?></div>
                 <?php else: ?>
                 <?php foreach($all_contacts as $c): ?>
                 <label class="contact-item d-flex align-items-center gap-2 px-3 py-2" style="cursor:pointer;border-bottom:1px solid var(--border-subtle);margin:0;">
@@ -591,14 +591,14 @@ require 'includes/layout_start.php';
                 <?php endforeach; ?>
                 <?php endif; ?>
               </div>
-              <div class="small text-muted mt-1"><i class="bi bi-info-circle me-1"></i>Für jeden Kontakt wird ein ICS-Einladungslink generiert (öffnet direkt Outlook/Google Kalender).</div>
+              <div class="small text-muted mt-1"><i class="bi bi-info-circle me-1"></i><?= te('Für jeden Kontakt wird ein ICS-Einladungslink generiert (öffnet direkt Outlook/Google Kalender).') ?></div>
             </div>
           </div>
         </div>
 
         <div class="modal-footer bg-subtle p-3">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-          <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-check2 me-1"></i>Speichern</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+          <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-check2 me-1"></i><?= te('Speichern') ?></button>
         </div>
       </form>
     </div>
@@ -614,15 +614,15 @@ require 'includes/layout_start.php';
         <input type="hidden" name="action" value="delete_event">
         <input type="hidden" name="event_id" id="delete_event_id">
         <div class="modal-header bg-danger text-white">
-          <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Termin löschen?</h6>
+          <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Termin löschen?') ?></h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body text-center py-4">
-          <p class="mb-0 fw-bold">Termin und alle Einladungen löschen?</p>
+          <p class="mb-0 fw-bold"><?= te('Termin und alle Einladungen löschen?') ?></p>
         </div>
         <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-          <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+          <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button>
         </div>
       </form>
     </div>
@@ -635,22 +635,22 @@ require 'includes/layout_start.php';
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content border-0 shadow">
       <div class="modal-header" style="background:var(--color-primary);">
-        <h6 class="modal-title text-white fw-bold m-0"><i class="bi bi-envelope-plus me-2"></i>Einladungen versenden?</h6>
+        <h6 class="modal-title text-white fw-bold m-0"><i class="bi bi-envelope-plus me-2"></i><?= te('Einladungen versenden?') ?></h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body text-center py-4">
         <div class="mb-2" style="font-size:2.2rem;">📨</div>
-        <p class="fw-bold mb-1">Termin gespeichert!</p>
-        <p class="text-muted small mb-0">Einladungs-E-Mail mit ICS-Kalenderlink an <strong><?= $invite_count ?> Kontakt<?= $invite_count > 1 ? 'e' : '' ?></strong> senden?</p>
+        <p class="fw-bold mb-1"><?= te('Termin gespeichert!') ?></p>
+        <p class="text-muted small mb-0"><?= te('Einladungs-E-Mail mit ICS-Kalenderlink an') ?> <strong><?= $invite_count ?> Kontakt<?= $invite_count > 1 ? 'e' : '' ?></strong> <?= te('senden?') ?></p>
       </div>
       <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Später</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Später') ?></button>
         <form method="POST" class="d-inline">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="send_all_invites">
           <input type="hidden" name="event_id" value="<?= $ask_invite ?>">
           <button type="submit" class="btn btn-primary btn-sm fw-bold px-3">
-            <i class="bi bi-send me-1"></i>Ja, jetzt senden
+            <i class="bi bi-send me-1"></i><?= te('Ja, jetzt senden') ?>
           </button>
         </form>
       </div>

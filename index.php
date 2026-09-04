@@ -166,64 +166,64 @@ if (isset($_GET['ajax_widget'])) {
         try { $portal_ms_comments = $pdo->query("SELECT mc.id, mc.message, mc.author_name, tm.title AS ms_title, t.title AS task_title, c.name AS client_name FROM milestone_comments mc JOIN task_milestones tm ON mc.milestone_id = tm.id JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE mc.author = 'client' AND mc.admin_seen = 0 ORDER BY mc.created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC); } catch (PDOException $e) {}
         ?>
         <div class="col-md-3">
-            <h6 class="section-label">Uploads</h6>
+            <h6 class="section-label"><?= te('Uploads') ?></h6>
             <?php if(count($portal_uploads) > 0): foreach($portal_uploads as $u): ?>
             <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="upload"><input type="hidden" name="activity_id" value="<?=$u['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
+                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="upload"><input type="hidden" name="activity_id" value="<?=$u['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
                 <a href="tasks?q=<?=urlencode($u['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size:9px;letter-spacing:.5px;">DATEI</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size:9px;letter-spacing:.5px;"><?= te('DATEI') ?></span>
                     <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($u['file_name'])?></div>
                     <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($u['client_name'])?></div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-file-earmark-check d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Keine Uploads</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-file-earmark-check d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Keine Uploads') ?></span></div>
             <?php endif; ?>
         </div>
         <div class="col-md-3">
-            <h6 class="section-label">Absegnungen</h6>
+            <h6 class="section-label"><?= te('Absegnungen') ?></h6>
             <?php if(count($portal_approvals) > 0): foreach($portal_approvals as $a): ?>
             <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="approval"><input type="hidden" name="activity_id" value="<?=$a['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
+                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="approval"><input type="hidden" name="activity_id" value="<?=$a['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
                 <a href="tasks?q=<?=urlencode($a['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size:9px;letter-spacing:.5px;">BESTÄTIGT</span>
+                    <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size:9px;letter-spacing:.5px;"><?= te('BESTÄTIGT') ?></span>
                     <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($a['title'])?></div>
                     <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($a['client_name'])?></div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-check-circle d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Keine Absegnungen</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-check-circle d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Keine Absegnungen') ?></span></div>
             <?php endif; ?>
         </div>
         <div class="col-md-3">
             <h6 class="section-label">Feedback</h6>
             <?php if(count($portal_feedbacks) > 0): foreach($portal_feedbacks as $f): ?>
             <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="feedback"><input type="hidden" name="activity_id" value="<?=$f['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
+                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="feedback"><input type="hidden" name="activity_id" value="<?=$f['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
                 <a href="tasks?q=<?=urlencode($f['title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size:9px;letter-spacing:.5px;">NEUES FEEDBACK</span>
+                    <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size:9px;letter-spacing:.5px;"><?= te('NEUES FEEDBACK') ?></span>
                     <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($f['title'])?></div>
                     <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars($f['client_feedback'])?>"</div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Kein neues Feedback</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Kein neues Feedback') ?></span></div>
             <?php endif; ?>
         </div>
         <div class="col-md-3">
-            <h6 class="section-label">Kommentare</h6>
+            <h6 class="section-label"><?= te('Kommentare') ?></h6>
             <?php if(count($portal_ms_comments) > 0): foreach($portal_ms_comments as $mc): ?>
             <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="ms_comment"><input type="hidden" name="activity_id" value="<?=$mc['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="Ausblenden"></button></form>
+                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="ms_comment"><input type="hidden" name="activity_id" value="<?=$mc['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
                 <a href="tasks?q=<?=urlencode($mc['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;">KOMMENTAR</span>
+                    <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;"><?= te('KOMMENTAR') ?></span>
                     <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
                     <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars(mb_strimwidth($mc['message'],0,60,'…'))?>"</div>
                     <div class="text-muted small mt-1 text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($mc['client_name'])?></div>
                 </a>
             </div>
             <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;">Keine Kommentare</span></div>
+            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Keine Kommentare') ?></span></div>
             <?php endif; ?>
         </div>
         <?php
@@ -259,7 +259,7 @@ if (isset($_GET['ajax_widget'])) {
         <?php endforeach; else: ?>
             <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                 <i class="bi bi-server d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
-                Keine URLs im Monitor.
+                <?= te('Keine URLs im Monitor.') ?>
             </div>
         <?php endif;
         exit();
@@ -405,7 +405,7 @@ require 'includes/layout_start.php';
           <div class="d-flex">
               <div class="toast-body fw-bold text-dark">
                   <i class="bi bi-envelope-paper-fill me-2 fs-5 align-middle"></i> 
-                  <span class="align-middle"><?= $count_leads ?> neue Website-Anfrage(n)!</span>
+                  <span class="align-middle"><?= $count_leads ?> <?= te('neue Website-Anfrage(n)!') ?></span>
               </div>
               <button type="button" class="btn-close btn-close-dark me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
@@ -417,7 +417,7 @@ require 'includes/layout_start.php';
           <div class="d-flex">
               <div class="toast-body fw-bold text-white">
                   <i class="bi bi-life-preserver me-2 fs-5 align-middle"></i> 
-                  <span class="align-middle"><?= $count_tickets ?> offene(s) Support-Ticket(s)!</span>
+                  <span class="align-middle"><?= $count_tickets ?> <?= te('offene(s) Support-Ticket(s)!') ?></span>
               </div>
               <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
@@ -429,7 +429,7 @@ require 'includes/layout_start.php';
           <div class="d-flex">
               <div class="toast-body fw-bold text-dark">
                   <i class="bi bi-cloud-arrow-up-fill me-2 fs-5 align-middle"></i> 
-                  <span class="align-middle"><?= $count_uploads ?> neue Datei(en) im Portal!</span>
+                  <span class="align-middle"><?= $count_uploads ?> <?= te('neue Datei(en) im Portal!') ?></span>
               </div>
               <button type="button" class="btn-close btn-close-dark me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
@@ -441,7 +441,7 @@ require 'includes/layout_start.php';
           <div class="d-flex">
               <div class="toast-body fw-bold text-dark">
                   <i class="bi bi-chat-left-text-fill me-2 fs-5 align-middle"></i> 
-                  <span class="align-middle"><?= $count_feedbacks ?> neues Kunden-Feedback!</span>
+                  <span class="align-middle"><?= $count_feedbacks ?> <?= te('neues Kunden-Feedback!') ?></span>
               </div>
               <button type="button" class="btn-close btn-close-dark me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
@@ -453,7 +453,7 @@ require 'includes/layout_start.php';
           <div class="d-flex">
               <div class="toast-body fw-bold">
                   <i class="bi bi-chat-dots-fill me-2 fs-5 align-middle"></i>
-                  <span class="align-middle"><?= $count_ms_comments ?> neue(r) Meilenstein-Kommentar(e)!</span>
+                  <span class="align-middle"><?= $count_ms_comments ?> <?= te('neue(r) Meilenstein-Kommentar(e)!') ?></span>
               </div>
               <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
@@ -465,7 +465,7 @@ require 'includes/layout_start.php';
           <div class="d-flex">
               <div class="toast-body fw-bold text-white">
                   <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i> 
-                  <span class="align-middle"><?= $count_approvals ?> abgesegnete(r) Meilenstein(e)!</span>
+                  <span class="align-middle"><?= $count_approvals ?> <?= te('abgesegnete(r) Meilenstein(e)!') ?></span>
               </div>
               <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
           </div>
@@ -481,8 +481,8 @@ require 'includes/layout_start.php';
           <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
             <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-briefcase"></i></div>
             <div class="kpi-number mb-1" id="kpi_open_tasks"><?=$open_tasks?></div>
-            <div class="kpi-label">Projekte</div>
-            <div class="small text-muted d-none d-md-block">offene Aufgaben</div>
+            <div class="kpi-label"><?= te('Projekte') ?></div>
+            <div class="small text-muted d-none d-md-block"><?= te('offene Aufgaben') ?></div>
           </div>
         </a>
       </div>
@@ -493,8 +493,8 @@ require 'includes/layout_start.php';
           <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
             <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-people"></i></div>
             <div class="kpi-number mb-1" id="kpi_total_contacts"><?=$total_contacts?></div>
-            <div class="kpi-label">Kontakte</div>
-            <div class="small text-muted d-none d-md-block">Kontakte</div>
+            <div class="kpi-label"><?= te('Kontakte') ?></div>
+            <div class="small text-muted d-none d-md-block"><?= te('Kontakte') ?></div>
           </div>
         </a>
       </div>
@@ -503,7 +503,7 @@ require 'includes/layout_start.php';
       <div class="col-12 col-md-6 col-xl-4">
         <div class="widget-box widget-accent-left h-100">
            <div class="widget-title">
-               <span><i class="bi bi-envelope-paper-fill"></i> Neue Website-Anfragen</span>
+               <span><i class="bi bi-envelope-paper-fill"></i> <?= te('Neue Website-Anfragen') ?></span>
                <span class="widget-count<?= count($leads) > 0 ? ' widget-count-warning' : '' ?>" id="leads_count"><?= count($leads) ?></span>
            </div>
            
@@ -525,7 +525,7 @@ require 'includes/layout_start.php';
            <?php else: ?>
                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c">
                    <i class="bi bi-inbox d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
-                   Keine neuen Anfragen über die Website.
+                   <?= te('Keine neuen Anfragen über die Website.') ?>
                </div>
            <?php endif; ?>
            </div>
@@ -535,10 +535,10 @@ require 'includes/layout_start.php';
       <div class="col-12 col-md-6 col-xl-4">
         <div class="widget-box widget-accent-left h-100">
            <div class="widget-title">
-               <span><i class="bi bi-life-preserver"></i> Offene Support-Tickets</span>
+               <span><i class="bi bi-life-preserver"></i> <?= te('Offene Support-Tickets') ?></span>
                <span class="d-flex align-items-center gap-2">
                    <span class="widget-count<?= count($tickets) > 0 ? ' widget-count-danger' : '' ?>" id="tickets_count"><?= count($tickets) ?></span>
-                   <a href="tickets" class="btn btn-sm btn-link p-0 text-muted" aria-label="Alle Tickets öffnen"><i class="bi bi-arrow-right"></i></a>
+                   <a href="tickets" class="btn btn-sm btn-link p-0 text-muted" aria-label="<?= te('Alle Tickets öffnen') ?>"><i class="bi bi-arrow-right"></i></a>
                </span>
            </div>
            
@@ -560,7 +560,7 @@ require 'includes/layout_start.php';
            <?php else: ?>
                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c">
                    <i class="bi bi-check2-all d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
-                   Keine offenen Support-Anfragen.
+                   <?= te('Keine offenen Support-Anfragen.') ?>
                </div>
            <?php endif; ?>
            </div>
@@ -571,13 +571,13 @@ require 'includes/layout_start.php';
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
             <div class="widget-box widget-accent-left">
-                <div class="widget-title"><span><i class="bi bi-magic"></i> Portal Aktivitäten</span></div>
+                <div class="widget-title"><span><i class="bi bi-magic"></i> <?= te('Portal Aktivitäten') ?></span></div>
                 
                 <div class="scroll-container">
                     <div class="row g-3 w-100" id="portal_activity_body">
                         
                         <div class="col-md-3">
-                            <h6 class="section-label">Uploads</h6>
+                            <h6 class="section-label"><?= te('Uploads') ?></h6>
                             <?php if(count($portal_uploads) > 0): ?>
                                 <?php foreach($portal_uploads as $u): ?>
                                     <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
@@ -585,10 +585,10 @@ require 'includes/layout_start.php';
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="upload">
                                             <input type="hidden" name="activity_id" value="<?=$u['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="Ausblenden"></button>
+                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
                                         </form>
                                         <a href="tasks?q=<?=urlencode($u['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 9px; letter-spacing: 0.5px;">DATEI</span>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 9px; letter-spacing: 0.5px;"><?= te('DATEI') ?></span>
                                             <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($u['file_name'])?></div>
                                             <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($u['client_name'])?></div>
                                         </a>
@@ -597,13 +597,13 @@ require 'includes/layout_start.php';
                             <?php else: ?>
                                 <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                                     <i class="bi bi-file-earmark-check d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;">Keine Uploads</span>
+                                    <span style="font-size:10px;"><?= te('Keine Uploads') ?></span>
                                 </div>
                             <?php endif; ?>
                         </div>
 
                         <div class="col-md-3">
-                            <h6 class="section-label">Absegnungen</h6>
+                            <h6 class="section-label"><?= te('Absegnungen') ?></h6>
                             <?php if(count($portal_approvals) > 0): ?>
                                 <?php foreach($portal_approvals as $a): ?>
                                     <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
@@ -611,10 +611,10 @@ require 'includes/layout_start.php';
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="approval">
                                             <input type="hidden" name="activity_id" value="<?=$a['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="Ausblenden"></button>
+                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
                                         </form>
                                         <a href="tasks?q=<?=urlencode($a['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size: 9px; letter-spacing: 0.5px;">BESTÄTIGT</span>
+                                            <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size: 9px; letter-spacing: 0.5px;"><?= te('BESTÄTIGT') ?></span>
                                             <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($a['title'])?></div>
                                             <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($a['client_name'])?></div>
                                         </a>
@@ -623,7 +623,7 @@ require 'includes/layout_start.php';
                             <?php else: ?>
                                 <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                                     <i class="bi bi-check-circle d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;">Keine Absegnungen</span>
+                                    <span style="font-size:10px;"><?= te('Keine Absegnungen') ?></span>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -637,10 +637,10 @@ require 'includes/layout_start.php';
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="feedback">
                                             <input type="hidden" name="activity_id" value="<?=$f['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="Ausblenden"></button>
+                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
                                         </form>
                                         <a href="tasks?q=<?=urlencode($f['title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size: 9px; letter-spacing: 0.5px;">NEUES FEEDBACK</span>
+                                            <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size: 9px; letter-spacing: 0.5px;"><?= te('NEUES FEEDBACK') ?></span>
                                             <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($f['title'])?></div>
                                             <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars($f['client_feedback'])?>"</div>
                                         </a>
@@ -649,13 +649,13 @@ require 'includes/layout_start.php';
                             <?php else: ?>
                                 <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                                     <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;">Kein neues Feedback</span>
+                                    <span style="font-size:10px;"><?= te('Kein neues Feedback') ?></span>
                                 </div>
                             <?php endif; ?>
                         </div>
 
                         <div class="col-md-3">
-                            <h6 class="section-label">Kommentare</h6>
+                            <h6 class="section-label"><?= te('Kommentare') ?></h6>
                             <?php if(count($portal_ms_comments) > 0): ?>
                                 <?php foreach($portal_ms_comments as $mc): ?>
                                     <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
@@ -663,10 +663,10 @@ require 'includes/layout_start.php';
                                             <?= csrf_field() ?>
                                             <input type="hidden" name="activity_type" value="ms_comment">
                                             <input type="hidden" name="activity_id" value="<?=$mc['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="Ausblenden"></button>
+                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
                                         </form>
                                         <a href="tasks?q=<?=urlencode($mc['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;">KOMMENTAR</span>
+                                            <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;"><?= te('KOMMENTAR') ?></span>
                                             <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
                                             <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars(mb_strimwidth($mc['message'],0,60,'…'))?>"</div>
                                             <div class="text-muted small mt-1 text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($mc['client_name'])?></div>
@@ -676,7 +676,7 @@ require 'includes/layout_start.php';
                             <?php else: ?>
                                 <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                                     <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;">Keine Kommentare</span>
+                                    <span style="font-size:10px;"><?= te('Keine Kommentare') ?></span>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -689,8 +689,8 @@ require 'includes/layout_start.php';
         <div class="col-lg-4">
             <div class="widget-box widget-accent-left">
                 <div class="widget-title">
-                    <span><i class="bi bi-hdd-network"></i> System-Monitor</span>
-                    <button class="btn btn-sm btn-link p-0 text-muted" data-bs-toggle="modal" data-bs-target="#addMonitorModal" aria-label="URL zum Monitor hinzufügen"><i class="bi bi-plus-circle"></i></button>
+                    <span><i class="bi bi-hdd-network"></i> <?= te('System-Monitor') ?></span>
+                    <button class="btn btn-sm btn-link p-0 text-muted" data-bs-toggle="modal" data-bs-target="#addMonitorModal" aria-label="<?= te('URL zum Monitor hinzufügen') ?>"><i class="bi bi-plus-circle"></i></button>
                 </div>
                 
                 <div class="scroll-container" id="monitor_widget_body">
@@ -707,12 +707,12 @@ require 'includes/layout_start.php';
                         </div>
                         <?php endfor; ?>
                         <div class="text-muted text-center" style="font-size:var(--text-2xs);">
-                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>Status wird geprüft …
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span><?= te('Status wird geprüft …') ?>
                         </div>
                     <?php else: ?>
                         <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                             <i class="bi bi-server d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
-                            Keine URLs im Monitor.
+                            <?= te('Keine URLs im Monitor.') ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -729,7 +729,7 @@ require 'includes/layout_start.php';
             <div class="d-flex align-items-center gap-2">
               <div class="icon-tile icon-tile-primary"><i class="bi bi-alarm"></i></div>
               <div>
-                <div class="label-xs">Deadlines</div>
+                <div class="label-xs"><?= te('Deadlines') ?></div>
                 <div class="fw-bold fs-5 lh-1 text-strong-c" id="kpi_deadlines"><?=count($upcoming_deadlines)?></div>
               </div>
             </div>
@@ -748,7 +748,7 @@ require 'includes/layout_start.php';
           </div>
           <?php endforeach; ?>
           <?php if (empty($upcoming_deadlines)): ?>
-          <div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-check2-circle me-1 text-success"></i>Keine Deadlines</div>
+          <div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-check2-circle me-1 text-success"></i><?= te('Keine Deadlines') ?></div>
           <?php endif; ?>
           </div>
         </div>
@@ -762,7 +762,7 @@ require 'includes/layout_start.php';
             <div class="d-flex align-items-center gap-2">
               <div class="icon-tile icon-tile-primary"><i class="bi bi-calendar2-event"></i></div>
               <div>
-                <div class="label-xs">Termine</div>
+                <div class="label-xs"><?= te('Termine') ?></div>
                 <div class="fw-bold fs-5 lh-1 text-strong-c" id="kpi_termine"><?=count($all_apts)?></div>
               </div>
             </div>
@@ -780,7 +780,7 @@ require 'includes/layout_start.php';
           </div>
           <?php endforeach; ?>
           <?php if (empty($all_apts)): ?>
-          <div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-calendar-check me-1 text-success"></i>Keine Termine</div>
+          <div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-calendar-check me-1 text-success"></i><?= te('Keine Termine') ?></div>
           <?php endif; ?>
           </div>
         </div>
@@ -797,10 +797,10 @@ require 'includes/layout_start.php';
         <div class="widget-box widget-accent-left d-flex align-items-start gap-3">
           <div class="icon-tile <?=$ws_tile?>"><i class="bi bi-hdd-fill"></i></div>
           <div class="w-100">
-            <div class="label-xs">Webspace</div>
+            <div class="label-xs"><?= te('Webspace') ?></div>
             <div class="d-flex justify-content-between fw-bold small my-1 text-strong-c"><span><?=$used_gb?> GB</span><span><?=$percent_used?>%</span></div>
-            <div class="progress mb-1 bg-sunken" style="height:5px;" role="progressbar" aria-valuenow="<?=(int)$percent_used?>" aria-valuemin="0" aria-valuemax="100" aria-label="Belegter Webspace"><div class="progress-bar" style="width:<?=$percent_used?>%;background:<?=$ws_bar?>;"></div></div>
-            <div class="small text-muted" style="font-size:var(--text-xs);">von 200 GB belegt</div>
+            <div class="progress mb-1 bg-sunken" style="height:5px;" role="progressbar" aria-valuenow="<?=(int)$percent_used?>" aria-valuemin="0" aria-valuemax="100" aria-label="<?= te('Belegter Webspace') ?>"><div class="progress-bar" style="width:<?=$percent_used?>%;background:<?=$ws_bar?>;"></div></div>
+            <div class="small text-muted" style="font-size:var(--text-xs);"><?= te('von 200 GB belegt') ?></div>
           </div>
         </div>
       </div>
@@ -811,16 +811,16 @@ require 'includes/layout_start.php';
         <div class="col-lg-8">
             <div class="widget-box mt-0 h-100 d-flex flex-column">
                 <div class="widget-title flex-wrap gap-2">
-                    <span><i class="bi bi-kanban me-2"></i> Laufende Projekte</span>
+                    <span><i class="bi bi-kanban me-2"></i> <?= te('Laufende Projekte') ?></span>
                     <div class="d-flex gap-1 align-items-center flex-wrap">
-                        <button class="btn btn-sm py-0 px-2 btn-primary proj-filter" data-filter="all" style="font-size:11px;">Alle</button>
-                        <button class="btn btn-sm py-0 px-2 btn-outline-secondary proj-filter" data-filter="Offen" style="font-size:11px;">Offen</button>
-                        <button class="btn btn-sm py-0 px-2 btn-outline-secondary proj-filter" data-filter="In Bearbeitung" style="font-size:11px;">Läuft</button>
+                        <button class="btn btn-sm py-0 px-2 btn-primary proj-filter" data-filter="all" style="font-size:11px;"><?= te('Alle') ?></button>
+                        <button class="btn btn-sm py-0 px-2 btn-outline-secondary proj-filter" data-filter="Offen" style="font-size:11px;"><?= te('Offen') ?></button>
+                        <button class="btn btn-sm py-0 px-2 btn-outline-secondary proj-filter" data-filter="In Bearbeitung" style="font-size:11px;"><?= te('Läuft') ?></button>
                         <select id="projSort" class="form-select form-select-sm py-0 ms-1" style="width:auto;font-size:11px;">
-                            <option value="newest">Neueste</option>
-                            <option value="deadline">Deadline</option>
-                            <option value="progress_asc">Fortschritt ↑</option>
-                            <option value="progress_desc">Fortschritt ↓</option>
+                            <option value="newest"><?= te('Neueste') ?></option>
+                            <option value="deadline"><?= te('Deadline') ?></option>
+                            <option value="progress_asc"><?= te('Fortschritt ↑') ?></option>
+                            <option value="progress_desc"><?= te('Fortschritt ↓') ?></option>
                         </select>
                     </div>
                 </div>
@@ -854,7 +854,7 @@ require 'includes/layout_start.php';
 
                                             <div class="mt-auto border-top pt-3">
                                                 <div class="d-flex justify-content-between mb-1 small fw-bold" style="font-size:11px;">
-                                                    <span class="text-muted text-uppercase">Fortschritt</span>
+                                                    <span class="text-muted text-uppercase"><?= te('Fortschritt') ?></span>
                                                     <span class="<?=$p['progress']==100?'text-success':'text-primary'?>"><?=$p['progress']?>%</span>
                                                 </div>
                                                 <div class="progress" style="height:6px; border-radius:3px;">
@@ -868,12 +868,12 @@ require 'includes/layout_start.php';
                         </div>
                         <div id="projEmpty" class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2" style="display:none;">
                             <i class="bi bi-funnel d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>
-                            Kein Projekt entspricht diesem Filter.
+                            <?= te('Kein Projekt entspricht diesem Filter.') ?>
                         </div>
                     <?php else: ?>
                         <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
                             <i class="bi bi-clipboard-check d-block mb-1" style="font-size: 1.5rem; color:var(--text-faint);"></i>
-                            Aktuell keine laufenden Projekte.
+                            <?= te('Aktuell keine laufenden Projekte.') ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -882,12 +882,12 @@ require 'includes/layout_start.php';
         <div class="col-lg-4">
             <div class="widget-box mt-0 h-100 d-flex flex-column">
                 <div class="widget-title">
-                    <span><i class="bi bi-pen me-2"></i> Notizen</span>
+                    <span><i class="bi bi-pen me-2"></i> <?= te('Notizen') ?></span>
                     <button type="button" class="btn btn-xs btn-link text-danger p-0" onclick="triggerClearNotes()">
                         <i class="bi bi-trash" style="pointer-events:none;"></i>
                     </button>
                 </div>
-                <textarea id="quickNotes" class="form-control flex-grow-1 shadow-sm border bg-subtle p-3" style="font-size: 14px; resize: none; min-height: 250px;" placeholder="Wird automatisch gespeichert..."></textarea>
+                <textarea id="quickNotes" class="form-control flex-grow-1 shadow-sm border bg-subtle p-3" style="font-size: 14px; resize: none; min-height: 250px;" placeholder="<?= te('Wird automatisch gespeichert...') ?>"></textarea>
             </div>
         </div>
     </div>
@@ -896,13 +896,13 @@ require 'includes/layout_start.php';
       <div class="modal-dialog modal-lg">
           <div class="modal-content border-0 shadow">
               <div class="modal-header bg-warning">
-                  <h5 class="modal-title text-strong-c fw-bold"><i class="bi bi-envelope-open me-2"></i>Anfrage Details</h5>
+                  <h5 class="modal-title text-strong-c fw-bold"><i class="bi bi-envelope-open me-2"></i><?= te('Anfrage Details') ?></h5>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body p-4">
                   <div class="row mb-3">
                       <div class="col-md-6">
-                          <label class="small text-muted fw-bold mb-1">Name</label>
+                          <label class="small text-muted fw-bold mb-1"><?= te('Name') ?></label>
                           <div class="p-2 bg-subtle rounded border border-subtle-c fw-bold text-strong-c" id="vl_name"></div>
                       </div>
                       <div class="col-md-6 mt-3 mt-md-0">
@@ -913,32 +913,32 @@ require 'includes/layout_start.php';
                   
                   <div class="row mb-3">
                       <div class="col-md-6">
-                          <label class="small text-muted fw-bold mb-1">Telefon</label>
+                          <label class="small text-muted fw-bold mb-1"><?= te('Telefon') ?></label>
                           <div class="p-2 bg-subtle rounded border" id="vl_phone"></div>
                       </div>
                       <div class="col-md-6 mt-3 mt-md-0">
-                          <label class="small text-muted fw-bold mb-1">Quelle</label>
+                          <label class="small text-muted fw-bold mb-1"><?= te('Quelle') ?></label>
                           <div class="p-2 bg-subtle rounded border" id="vl_source"></div>
                       </div>
                   </div>
 
                   <div class="mb-3">
-                      <label class="small text-muted fw-bold mb-1">Betreff</label>
+                      <label class="small text-muted fw-bold mb-1"><?= te('Betreff') ?></label>
                       <div class="p-2 bg-subtle rounded border fw-bold text-primary" id="vl_subject"></div>
                   </div>
 
                   <div>
-                      <label class="small text-muted fw-bold mb-1">Nachricht</label>
+                      <label class="small text-muted fw-bold mb-1"><?= te('Nachricht') ?></label>
                       <div class="p-3 bg-subtle rounded border" id="vl_message" style="min-height: 100px; white-space: pre-wrap;"></div>
                   </div>
               </div>
               <div class="modal-footer d-flex justify-content-between bg-subtle">
-                  <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Schließen</button>
+                  <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal"><?= te('Schließen') ?></button>
                   <form action="index" method="POST" style="margin:0;">
                       <?= csrf_field() ?>
                       <input type="hidden" name="inbox_action" value="accept_lead">
                       <input type="hidden" name="lead_id" id="vl_id">
-                      <button type="submit" class="btn btn-success fw-bold px-4"><i class="bi bi-person-plus-fill me-1"></i> Als Kontakt übernehmen</button>
+                      <button type="submit" class="btn btn-success fw-bold px-4"><i class="bi bi-person-plus-fill me-1"></i> <?= te('Als Kontakt übernehmen') ?></button>
                   </form>
               </div>
           </div>
@@ -952,18 +952,18 @@ require 'includes/layout_start.php';
                   <?= csrf_field() ?>
                   <input type="hidden" name="monitor_action" value="add_url">
                   <div class="modal-header bg-dark text-white">
-                      <h6 class="modal-title m-0 fw-bold"><i class="bi bi-plus-circle me-2"></i>URL hinzufügen</h6>
+                      <h6 class="modal-title m-0 fw-bold"><i class="bi bi-plus-circle me-2"></i><?= te('URL hinzufügen') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body p-4 bg-subtle">
-                      <label class="form-label small fw-bold">Projekt / Name *</label>
-                      <input type="text" name="url_name" class="form-control mb-3" placeholder="Kunde XYZ" required>
+                      <label class="form-label small fw-bold"><?= te('Projekt / Name *') ?></label>
+                      <input type="text" name="url_name" class="form-control mb-3" placeholder="<?= te('Kunde XYZ') ?>" required>
                       
-                      <label class="form-label small fw-bold">URL / Domain *</label>
+                      <label class="form-label small fw-bold"><?= te('URL / Domain *') ?></label>
                       <input type="text" name="url_link" class="form-control" placeholder="https://..." required>
                   </div>
                   <div class="modal-footer bg-subtle p-2">
-                      <button type="submit" class="btn btn-primary w-100 fw-bold">Speichern</button>
+                      <button type="submit" class="btn btn-primary w-100 fw-bold"><?= te('Speichern') ?></button>
                   </div>
               </form>
           </div>
@@ -978,15 +978,15 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="monitor_action" value="delete_url">
                   <input type="hidden" name="url_id" id="delete_monitor_id">
                   <div class="modal-header bg-danger text-white">
-                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>URL entfernen?</h6>
+                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('URL entfernen?') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-center py-4">
-                      <p class="mb-0 fw-bold">Soll diese Domain aus der Überwachung entfernt werden?</p>
+                      <p class="mb-0 fw-bold"><?= te('Soll diese Domain aus der Überwachung entfernt werden?') ?></p>
                   </div>
                   <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, entfernen</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, entfernen') ?></button>
                   </div>
               </form>
           </div>
@@ -1001,15 +1001,15 @@ require 'includes/layout_start.php';
                   <input type="hidden" name="inbox_action" value="delete_lead">
                   <input type="hidden" name="lead_id" id="delete_lead_id">
                   <div class="modal-header bg-danger text-white">
-                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Anfrage löschen?</h6>
+                      <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Anfrage löschen?') ?></h6>
                       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body text-center py-4">
-                      <p class="mb-0 fw-bold">Die Nachricht unwiderruflich löschen?</p>
+                      <p class="mb-0 fw-bold"><?= te('Die Nachricht unwiderruflich löschen?') ?></p>
                   </div>
                   <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold">Ja, löschen</button>
+                      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                      <button type="submit" class="btn btn-danger btn-sm px-3 fw-bold"><?= te('Ja, löschen') ?></button>
                   </div>
               </form>
           </div>
@@ -1020,15 +1020,15 @@ require 'includes/layout_start.php';
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
               <div class="modal-header bg-danger text-white">
-                  <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Notizen leeren?</h6>
+                  <h6 class="modal-title m-0"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= te('Notizen leeren?') ?></h6>
                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body text-center py-4">
-                  <p class="mb-0 fw-bold">Möchtest du den gesamten Text im Notizblock endgültig löschen?</p>
+                  <p class="mb-0 fw-bold"><?= te('Möchtest du den gesamten Text im Notizblock endgültig löschen?') ?></p>
               </div>
               <div class="modal-footer p-2 d-flex justify-content-between bg-subtle">
-                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Abbrechen</button>
-                  <button type="button" class="btn btn-danger btn-sm px-3 fw-bold" onclick="executeClearNotes()">Ja, leeren</button>
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+                  <button type="button" class="btn btn-danger btn-sm px-3 fw-bold" onclick="executeClearNotes()"><?= te('Ja, leeren') ?></button>
               </div>
           </div>
       </div>
@@ -1177,12 +1177,12 @@ require 'includes/layout_start.php';
         };
 
         const toastDefs = {
-            leads:       { icon: 'bi-envelope-paper-fill', bg: 'bg-warning',  tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' neue Website-Anfrage(n)!' },
-            tickets:     { icon: 'bi-life-preserver',      bg: 'bg-danger',   tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' offene(s) Support-Ticket(s)!' },
-            uploads:     { icon: 'bi-cloud-arrow-up-fill', bg: 'bg-info',     tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' neue Datei(en) im Portal!' },
-            approvals:   { icon: 'bi-check-circle-fill',   bg: 'bg-success',  tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' abgesegnete(r) Meilenstein(e)!' },
-            feedbacks:   { icon: 'bi-chat-left-text-fill', bg: 'bg-warning',  tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' neues Kunden-Feedback!' },
-            ms_comments: { icon: 'bi-chat-dots-fill',      bg: '',            tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' neue(r) Meilenstein-Kommentar(e)!', style: 'background:var(--color-primary);color:var(--text-invert);' },
+            leads:       { icon: 'bi-envelope-paper-fill', bg: 'bg-warning',  tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' <?= te('neue Website-Anfrage(n)!') ?>' },
+            tickets:     { icon: 'bi-life-preserver',      bg: 'bg-danger',   tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' <?= te('offene(s) Support-Ticket(s)!') ?>' },
+            uploads:     { icon: 'bi-cloud-arrow-up-fill', bg: 'bg-info',     tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' <?= te('neue Datei(en) im Portal!') ?>' },
+            approvals:   { icon: 'bi-check-circle-fill',   bg: 'bg-success',  tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' <?= te('abgesegnete(r) Meilenstein(e)!') ?>' },
+            feedbacks:   { icon: 'bi-chat-left-text-fill', bg: 'bg-warning',  tc: 'text-dark',  btn: 'btn-close-dark',  msg: n => n + ' <?= te('neues Kunden-Feedback!') ?>' },
+            ms_comments: { icon: 'bi-chat-dots-fill',      bg: '',            tc: 'text-white', btn: 'btn-close-white', msg: n => n + ' <?= te('neue(r) Meilenstein-Kommentar(e)!') ?>', style: 'background:var(--color-primary);color:var(--text-invert);' },
         };
 
         function injectToast(def, count) {
