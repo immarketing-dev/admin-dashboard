@@ -2,6 +2,13 @@
 require_once 'config.php';
 require_once 'includes/upload_helper.php';
 require_once 'includes/session.php';
+require_once 'includes/csrf.php';
+
+// PHPMailer: das Portal meldet dem Absender, wenn ein Angebot
+// angenommen wird oder eine Rueckfrage kommt.
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
 app_session_start();
 
 // Token-Prüfung
@@ -17,10 +24,55 @@ if (!$client) { die("Zugang abgelaufen oder ungültig."); }
 $_sess_key  = 'portal_auth_' . $client['id'];
 $_pin_error = '';
 
+/**
+ * Meldet dem Absender, was im Portal mit einem Angebot geschehen ist.
+ *
+ * Schlägt der Versand fehl, bleibt der Vorgang trotzdem gültig - der
+ * Log-Eintrag ist die verlässliche Spur, die Mail nur die Bequemlichkeit.
+ */
+function portal_notify_admin(PDO $pdo, array $client, string $was,
+                             string $nummer, string $betrag, string $nachricht): void
+{
+    try {
+        $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host       = SMTP_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = SMTP_USER;
+        $mail->Password   = SMTP_PASS;
+        $mail->SMTPSecure = (SMTP_PORT == 587) ? 'tls' : 'ssl';
+        $mail->Port       = SMTP_PORT;
+        $mail->CharSet    = 'UTF-8';
+        $mail->setFrom(SMTP_USER, setting('company_short', COMPANY_SHORT));
+        $mail->addAddress(setting('admin_email', ADMIN_EMAIL));
+        $mail->isHTML(false);
+        $mail->Subject = "Angebot $nummer: $was";
+        $mail->Body    = "{$client['name']}"
+            . ($client['company'] ? " ({$client['company']})" : '')
+            . " hat im Portal reagiert.\n\n"
+            . "Angebot: $nummer\n"
+            . 'Betrag:  ' . number_format((float)$betrag, 2, ',', '.') . " €\n"
+            . "Vorgang: $was\n"
+            . ($nachricht !== '' ? "\nNachricht:\n$nachricht\n" : '');
+        $mail->send();
+    } catch (Throwable $e) {
+        // Throwable, nicht Exception: fehlt PHPMailer, wirft PHP einen Error -
+        // der wuerde das Portal abbrechen, statt nur die Meldung ausfallen zu
+        // lassen. Der Log-Eintrag oben ist die verlaessliche Spur.
+        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MAIL_ERROR', ?)")
+            ->execute(['Angebots-Benachrichtigung fehlgeschlagen: ' . $e->getMessage()]);
+    }
+}
+
 // =============================================
 // POST / AJAX AKTIONEN
 // =============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Jede zustandsaendernde Anfrage muss das Token mitbringen. Gilt auch
+    // fuer die PIN-Formulare: die Session steht dort bereits, und ein
+    // fremdes Formular soll auch keinen Zugangscode setzen koennen.
+    csrf_check();
 
     // ── PIN: Zugangscode erstmalig vergeben
     if (isset($_POST['action']) && $_POST['action'] === 'set_portal_pin') {
@@ -97,6 +149,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'time'        => date('d.m.Y H:i'),
         ]);
         exit();
+    }
+
+    // ── Angebot annehmen ────────────────────────────────────────────
+    // Der Status ist derselbe, den quotes.php kennt - der Vorgang landet
+    // also ohne Umweg in der bestehenden Angebotsverwaltung.
+    if (isset($_POST['accept_quote'])) {
+        $qid = (int)($_POST['quote_id'] ?? 0);
+        $chk = $pdo->prepare("SELECT quote_number, total_amount FROM quotes
+                              WHERE id = ? AND contact_id = ? AND status = 'Gesendet' AND deleted_at IS NULL");
+        $chk->execute([$qid, $client['id']]);
+        if ($q = $chk->fetch(PDO::FETCH_ASSOC)) {
+            $pdo->prepare("UPDATE quotes SET status = 'Angenommen' WHERE id = ?")->execute([$qid]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_ACCEPTED', ?)")
+                ->execute(["Angebot {$q['quote_number']} von {$client['name']} im Portal angenommen."]);
+            portal_notify_admin($pdo, $client, 'angenommen', $q['quote_number'], $q['total_amount'], '');
+            header("Location: portal?token=$token&msg=quote_accepted#quotes"); exit();
+        }
+        header("Location: portal?token=$token#quotes"); exit();
+    }
+
+    // ── Rückfrage zu einem Angebot ──────────────────────────────────
+    // Aendert den Status bewusst nicht: eine Rueckfrage ist keine
+    // Ablehnung. Sie geht als Nachricht an den Absender.
+    if (isset($_POST['query_quote'])) {
+        $qid  = (int)($_POST['quote_id'] ?? 0);
+        $frage = trim($_POST['quote_message'] ?? '');
+        $chk = $pdo->prepare("SELECT quote_number, total_amount FROM quotes
+                              WHERE id = ? AND contact_id = ? AND deleted_at IS NULL");
+        $chk->execute([$qid, $client['id']]);
+        if (($q = $chk->fetch(PDO::FETCH_ASSOC)) && $frage !== '') {
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_QUESTION', ?)")
+                ->execute(["Rückfrage von {$client['name']} zu Angebot {$q['quote_number']}: "
+                           . mb_strimwidth($frage, 0, 160, '…')]);
+            portal_notify_admin($pdo, $client, 'Rückfrage', $q['quote_number'], $q['total_amount'], $frage);
+            header("Location: portal?token=$token&msg=quote_question#quotes"); exit();
+        }
+        header("Location: portal?token=$token#quotes"); exit();
     }
 
     // Profildaten aktualisieren
@@ -311,6 +400,7 @@ if (!$_is_auth) {
     </div>
   <?php elseif ($_pin_is_set): ?>
     <form method="POST">
+    <?= csrf_field() ?>
       <input type="hidden" name="action" value="verify_portal_pin">
       <div class="mb-4">
         <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode</label>
@@ -324,6 +414,7 @@ if (!$_is_auth) {
     </form>
   <?php else: ?>
     <form method="POST" autocomplete="off" onsubmit="return chkMatch()">
+    <?= csrf_field() ?>
       <input type="hidden" name="action" value="set_portal_pin">
       <div class="mb-3">
         <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode wählen <span class="text-muted fw-normal">(mind. 4 Zeichen)</span></label>
@@ -403,6 +494,26 @@ if (!empty($projects)) {
         }
     }
 }
+
+// Entwuerfe bleiben aussen vor - was noch nicht gesendet wurde, geht den
+// Empfaenger nichts an.
+$quotes = $pdo->prepare("SELECT * FROM quotes
+                         WHERE deleted_at IS NULL AND contact_id = ?
+                           AND status IN ('Gesendet','Angenommen','Abgelehnt')
+                         ORDER BY created_at DESC");
+$quotes->execute([$client['id']]);
+$quotes = $quotes->fetchAll(PDO::FETCH_ASSOC);
+$open_quote_count = count(array_filter($quotes, fn($q) => $q['status'] === 'Gesendet'));
+
+// Zahlungsangaben. Fehlt die IBAN, entfaellt der ganze Bereich - lieber
+// kein Hinweis als ein halber.
+$bank = [
+    'holder' => trim(setting('bank_holder', setting('company_name', COMPANY_NAME))),
+    'iban'   => strtoupper(preg_replace('/\s+/', '', setting('bank_iban', ''))),
+    'bic'    => strtoupper(trim(setting('bank_bic', ''))),
+    'note'   => trim(setting('payment_note', '')),
+];
+$has_bank = $bank['iban'] !== '' && $bank['holder'] !== '';
 
 $invoices = $pdo->prepare("SELECT * FROM finances WHERE deleted_at IS NULL AND contact_id=? AND type='INCOME' ORDER BY record_date DESC");
 $invoices->execute([$client['id']]);
@@ -720,6 +831,20 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     [data-bs-toggle="collapse"][aria-expanded="true"] .ticket-chevron { transform: rotate(180deg); }
     .ticket-body { padding: 0 20px 16px; background: var(--surface-subtle); border-top: 1px solid var(--border-subtle); }
 
+    /* ── ZAHLUNG ── */
+    .pay-box { margin-top: 14px; padding: 14px; border-radius: 12px;
+      background: var(--surface-subtle); border: 1px solid var(--border-subtle); }
+    .pay-qr { flex-shrink: 0; line-height: 0; background: #fff; padding: 6px; border-radius: 8px; }
+    .pay-qr img, .pay-qr canvas { display: block; }
+    .pay-box-noqr .pay-qr { display: none; }
+    .pay-details { display: grid; gap: 3px; font-size: 13px; min-width: 0; }
+    .pay-details > div { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pay-key { color: var(--text-muted); min-width: 128px; flex-shrink: 0; }
+    .pay-val { color: var(--text-strong); word-break: break-all; }
+    .pay-mono { font-family: var(--font-mono); }
+    .pay-hint { margin-top: 10px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+    @media(max-width:576px) { .pay-key { min-width: 100%; } .pay-details > div { gap: 0; } }
+
     /* ── TOAST ── */
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1090; }
 
@@ -761,6 +886,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             'ticket_closed'   => 'Ticket als erledigt markiert.',
             'ticket_deleted'  => 'Ticket wurde gelöscht.',
             'profile_updated' => 'Ihre Daten wurden aktualisiert!',
+            'quote_accepted'  => 'Vielen Dank! Wir haben Ihre Zusage erhalten.',
+            'quote_question'  => 'Ihre Rückfrage ist bei uns eingegangen.',
           ];
           echo '<i class="bi bi-check-circle-fill me-2"></i>' . ($msgs[$_GET['msg']] ?? '');
         ?>
@@ -819,6 +946,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <button class="portal-pill active" data-tab="projects">
         <i class="bi bi-<?= $is_partner ? 'diagram-3-fill' : 'kanban-fill' ?>"></i> <?= $is_partner ? 'Zusammenarbeit' : 'Projekte' ?>
         <?php if($active_proj_count > 0): ?><span class="pill-badge"><?= $active_proj_count ?></span><?php endif; ?>
+      </button>
+      <button class="portal-pill" data-tab="quotes">
+        <i class="bi bi-file-earmark-text"></i> Angebote
+        <?php if($open_quote_count > 0): ?>
+          <span class="pill-badge pill-badge-danger"><?= $open_quote_count ?></span>
+        <?php elseif(count($quotes) > 0): ?>
+          <span class="pill-badge"><?= count($quotes) ?></span>
+        <?php endif; ?>
       </button>
       <button class="portal-pill" data-tab="invoices">
         <i class="bi bi-receipt"></i> <?= $is_partner ? 'Abrechnungen' : 'Rechnungen' ?>
@@ -957,6 +1092,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                         </div>
                         <?php if(!$is_partner && $ms['is_completed'] && !$ms['approved_at']): ?>
                           <form method="POST" class="m-0 flex-shrink-0">
+    <?= csrf_field() ?>
                             <input type="hidden" name="ms_id" value="<?= $ms['id'] ?>">
                             <button type="submit" name="approve_ms" class="btn-approve"><i class="bi bi-check-circle me-1"></i>Absegnen</button>
                           </form>
@@ -1032,7 +1168,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                       <?php endif; ?>
                       <a href="<?= htmlspecialchars($asset['file_path']) ?>" download class="text-primary" title="Herunterladen"><i class="bi bi-download small"></i></a>
                       <?php if(!$is_admin): ?>
-                      <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>">
+                      <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>
+    <?= csrf_field() ?>">
                         <input type="hidden" name="delete_asset" value="1">
                         <input type="hidden" name="asset_id" value="<?= $asset['id'] ?>">
                         <button type="button" class="btn-icon text-danger p-0" style="background:none;border:none;cursor:pointer;font-size:13px;"
@@ -1061,6 +1198,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   <div class="section-label" style="color:var(--state-warn-fg);"><i class="bi bi-chat-left-dots-fill me-1"></i>Allgemeines Feedback</div>
                   <p class="text-muted small mb-3">Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?</p>
                   <form method="POST">
+    <?= csrf_field() ?>
                     <input type="hidden" name="task_id" value="<?= $p['id'] ?>">
                     <textarea name="feedback" rows="3" class="form-control mb-3" style="font-size:13px;border-radius:10px;resize:none;border-color:var(--accent-warning);background:var(--surface-card);" placeholder="Ihre Anmerkungen..."><?= htmlspecialchars($p['client_feedback'] ?? '') ?></textarea>
                     <button type="submit" name="send_feedback" class="btn btn-sm fw-bold w-100 text-white" style="background:var(--color-sidebar);border-radius:10px;"><i class="bi bi-send me-1"></i>Feedback speichern</button>
@@ -1078,6 +1216,125 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     </div><!-- /projects -->
 
     <!-- ═══════════════════════════════════════ RECHNUNGEN ═══ -->
+      <!-- ══════════ ANGEBOTE ══════════ -->
+      <div class="tab-pane" id="tab-quotes">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Angebote</h4>
+            <p class="text-muted mb-0 small">
+              <?= $is_partner
+                    ? 'Angebote zur gemeinsamen Zusammenarbeit.'
+                    : 'Hier können Sie ein Angebot direkt annehmen oder eine Rückfrage stellen.' ?>
+            </p>
+          </div>
+          <?php if($open_quote_count > 0): ?>
+            <span class="badge rounded-pill px-3 py-2" style="background:var(--state-warn-bg);color:var(--state-warn-fg);">
+              <i class="bi bi-hourglass-split me-1"></i><?= $open_quote_count ?> wartet auf Ihre Antwort
+            </span>
+          <?php endif; ?>
+        </div>
+
+        <?php if(empty($quotes)): ?>
+          <div class="empty-state bg-surface rounded-4 border shadow-sm">
+            <i class="bi bi-file-earmark-text"></i>
+            <p>Aktuell liegt kein Angebot vor.</p>
+          </div>
+        <?php else: ?>
+          <?php foreach($quotes as $q):
+            $offen  = $q['status'] === 'Gesendet';
+            $ja     = $q['status'] === 'Angenommen';
+            $nein   = $q['status'] === 'Abgelehnt';
+            $frist  = $q['valid_until'] ? strtotime($q['valid_until']) : null;
+            $abgelaufen = $frist !== null && $frist < strtotime('today');
+          ?>
+          <div class="project-card">
+            <div class="project-card-header" style="cursor:default;">
+              <div class="d-flex align-items-start justify-content-between gap-3 mb-2 flex-wrap">
+                <div style="min-width:0;">
+                  <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:18px;color:var(--text-strong);">
+                    <?= htmlspecialchars($q['subject'] ?: 'Angebot') ?>
+                  </h4>
+                  <div class="text-muted small"><?= htmlspecialchars($q['quote_number']) ?>
+                    · <?= date('d.m.Y', strtotime($q['created_at'])) ?></div>
+                </div>
+                <div class="text-end flex-shrink-0">
+                  <div class="invoice-amount"><?= number_format((float)$q['total_amount'], 2, ',', '.') ?> €</div>
+                  <span class="badge rounded-pill px-3 py-1 mt-1"
+                        style="<?= $ja   ? 'background:var(--state-success-bg);color:var(--state-success-fg);'
+                                 : ($nein ? 'background:var(--state-danger-bg);color:var(--state-danger-fg);'
+                                          : 'background:var(--state-warn-bg);color:var(--state-warn-fg);') ?>">
+                    <?= htmlspecialchars($q['status']) ?>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:18px 24px 22px;">
+              <?php if(trim((string)$q['intro_text']) !== ''): ?>
+                <p class="small mb-3" style="white-space:pre-wrap;"><?= htmlspecialchars($q['intro_text']) ?></p>
+              <?php endif; ?>
+
+              <?php if($frist !== null): ?>
+                <div class="section-label">
+                  <i class="bi bi-calendar-event me-1"></i>
+                  <?= $abgelaufen ? 'Frist abgelaufen am' : 'Gültig bis' ?>
+                  <?= date('d.m.Y', $frist) ?>
+                </div>
+              <?php endif; ?>
+
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <?php if(!empty($q['quote_pdf_path']) && file_exists($q['quote_pdf_path'])): ?>
+                  <a href="<?= htmlspecialchars($q['quote_pdf_path']) ?>" target="_blank" rel="noopener"
+                     class="btn btn-sm btn-outline-secondary fw-bold">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Angebot als PDF
+                  </a>
+                <?php endif; ?>
+
+                <?php if($offen && !$abgelaufen): ?>
+                  <form method="POST" class="d-inline m-0"
+                        onsubmit="return confirm('Angebot <?= htmlspecialchars($q['quote_number'], ENT_QUOTES) ?> verbindlich annehmen?')">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
+                    <button type="submit" name="accept_quote" class="btn-approve">
+                      <i class="bi bi-check-circle me-1"></i>Angebot annehmen
+                    </button>
+                  </form>
+                  <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                          onclick="document.getElementById('qq_<?= (int)$q['id'] ?>').classList.toggle('d-none')">
+                    <i class="bi bi-chat-left-text me-1"></i>Rückfrage stellen
+                  </button>
+                <?php elseif($offen && $abgelaufen): ?>
+                  <span class="text-muted small align-self-center">
+                    <i class="bi bi-info-circle me-1"></i>Die Frist ist abgelaufen — melden Sie sich gern, wir machen Ihnen ein neues Angebot.
+                  </span>
+                <?php elseif($ja): ?>
+                  <span class="small align-self-center" style="color:var(--state-success-fg);">
+                    <i class="bi bi-patch-check-fill me-1"></i>Angenommen — vielen Dank!
+                  </span>
+                <?php endif; ?>
+              </div>
+
+              <?php if($offen && !$abgelaufen): ?>
+                <form method="POST" class="d-none mt-3" id="qq_<?= (int)$q['id'] ?>">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
+                  <label class="section-label" for="qm_<?= (int)$q['id'] ?>">Ihre Rückfrage</label>
+                  <textarea class="form-control mb-2" id="qm_<?= (int)$q['id'] ?>" name="quote_message" rows="3"
+                            placeholder="Was möchten Sie wissen oder anders haben?" required></textarea>
+                  <button type="submit" name="query_quote" class="btn btn-sm btn-primary fw-bold">
+                    <i class="bi bi-send me-1"></i>Rückfrage senden
+                  </button>
+                  <div class="section-hint mt-2">
+                    Eine Rückfrage ändert am Angebot nichts — sie erreicht uns als Nachricht.
+                  </div>
+                </form>
+              <?php endif; ?>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
     <div class="tab-pane" id="tab-invoices">
       <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
@@ -1116,6 +1373,37 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   · <span class="<?= $is_overdue ? 'text-danger fw-bold' : '' ?>">fällig <?= date('d.m.Y', strtotime($inv['due_date'])) ?></span>
                 <?php endif; ?>
               </div>
+              <?php if($has_bank && !$is_paid):
+                // Verwendungszweck: die Rechnungsnummer, sonst der Titel.
+                $vz = trim((string)($inv['invoice_number'] ?? '')) !== ''
+                    ? $inv['invoice_number'] : $inv['title'];
+              ?>
+              <div class="pay-box" data-pay
+                   data-holder="<?= htmlspecialchars($bank['holder'], ENT_QUOTES) ?>"
+                   data-iban="<?= htmlspecialchars($bank['iban'], ENT_QUOTES) ?>"
+                   data-bic="<?= htmlspecialchars($bank['bic'], ENT_QUOTES) ?>"
+                   data-amount="<?= htmlspecialchars(number_format((float)$inv['amount'], 2, '.', ''), ENT_QUOTES) ?>"
+                   data-ref="<?= htmlspecialchars($vz, ENT_QUOTES) ?>">
+                <div class="section-label mb-2"><i class="bi bi-bank me-1"></i>Zahlung</div>
+                <div class="d-flex gap-3 flex-wrap align-items-start">
+                  <div class="pay-qr" aria-hidden="true"></div>
+                  <div class="pay-details">
+                    <div><span class="pay-key">Empfänger</span><span class="pay-val"><?= htmlspecialchars($bank['holder']) ?></span></div>
+                    <div><span class="pay-key">IBAN</span><span class="pay-val pay-mono"><?= htmlspecialchars(chunk_split($bank['iban'], 4, ' ')) ?></span></div>
+                    <?php if($bank['bic'] !== ''): ?>
+                      <div><span class="pay-key">BIC</span><span class="pay-val pay-mono"><?= htmlspecialchars($bank['bic']) ?></span></div>
+                    <?php endif; ?>
+                    <div><span class="pay-key">Betrag</span><span class="pay-val fw-bold"><?= number_format((float)$inv['amount'], 2, ',', '.') ?> €</span></div>
+                    <div><span class="pay-key">Verwendungszweck</span><span class="pay-val pay-mono"><?= htmlspecialchars($vz) ?></span></div>
+                  </div>
+                </div>
+                <div class="pay-hint">
+                  Mit der Banking-App scannen — Empfänger, Betrag und Verwendungszweck
+                  sind dann bereits ausgefüllt.
+                  <?php if($bank['note'] !== ''): ?><br><?= htmlspecialchars($bank['note']) ?><?php endif; ?>
+                </div>
+              </div>
+              <?php endif; ?>
               <?php if(!empty($inv['invoice_pdf_path'])): ?>
                 <div class="d-flex gap-2">
                   <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" target="_blank" class="btn btn-sm btn-outline-primary fw-bold flex-grow-1" style="border-radius:8px;">
@@ -1143,6 +1431,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <h5 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Neue Mitteilung' : 'Neue Anfrage' ?></h5>
             <p class="text-muted small mb-4"><?= $is_partner ? 'Fragen zur Zusammenarbeit oder sonstige Anliegen? Ich melde mich schnellstmöglich.' : 'Probleme mit der Website oder Änderungswünsche? Ich melde mich schnellstmöglich.' ?></p>
             <form method="POST">
+    <?= csrf_field() ?>
               <div class="mb-3">
                 <label class="form-label small fw-bold">Betreff</label>
                 <input type="text" name="subject" class="form-control" required placeholder="Worum geht es?" style="border-radius:10px;">
@@ -1231,6 +1520,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   <!-- Antwortformular (nur wenn nicht Erledigt) -->
                   <?php if (!$is_done): ?>
                   <form method="POST" class="mt-3">
+    <?= csrf_field() ?>
                     <input type="hidden" name="action" value="add_ticket_reply">
                     <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                     <div class="d-flex gap-2">
@@ -1264,6 +1554,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                     <div class="d-flex gap-2">
                       <?php if (!$is_done): ?>
                       <form method="POST">
+    <?= csrf_field() ?>
                         <input type="hidden" name="action" value="close_ticket">
                         <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-success fw-bold" style="border-radius:8px;">
@@ -1272,6 +1563,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                       </form>
                       <?php endif; ?>
                       <form method="POST" onsubmit="return confirm('Ticket und alle Nachrichten endgültig löschen?')">
+    <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete_portal_ticket">
                         <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius:8px;">
@@ -1343,6 +1635,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Mein Profil</h4>
         <p class="text-muted small mb-4">Ihre bei uns hinterlegten Stammdaten — werden u.a. für die Rechnungsstellung verwendet.</p>
         <form method="POST">
+    <?= csrf_field() ?>
           <input type="hidden" name="update_profile" value="1">
           <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;">Kontaktdaten</h6>
           <div class="row g-3 mb-4">
@@ -1397,6 +1690,10 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="assets/js/payment-qr.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
@@ -1428,6 +1725,9 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     });
 })();
 
+// Wird an jede AJAX-Anfrage angehaengt - die Formulare tragen es als
+// verstecktes Feld, hier muss es von Hand mit.
+const PORTAL_CSRF  = '<?= htmlspecialchars(csrf_token(), ENT_QUOTES) ?>';
 const PORTAL_TOKEN = '<?= htmlspecialchars($token, ENT_QUOTES) ?>';
 
 // ── TAB-NAVIGATION ──
@@ -1493,6 +1793,7 @@ function submitComment(msId) {
     if (!msg) return;
 
     const fd = new FormData();
+    fd.append('csrf_token', PORTAL_CSRF);
     fd.append('action', 'add_ms_comment');
     fd.append('milestone_id', msId);
     fd.append('message', msg);
@@ -1549,6 +1850,7 @@ function autoUpload(input, taskId) {
     const MAX = 100 * 1024 * 1024;
     const forbidden = ['php','phtml','exe','sh','js','html','htm'];
     const fd = new FormData();
+    fd.append('csrf_token', PORTAL_CSRF);
     fd.append('task_id', taskId);
     for (let f of files) {
         const ext = f.name.split('.').pop().toLowerCase();
@@ -1574,6 +1876,7 @@ function updatePortalPrio(ticketId, sel) {
     const prio = sel.value;
     const msg  = document.getElementById('prio_msg_' + ticketId);
     const fd   = new FormData();
+    fd.append('csrf_token', PORTAL_CSRF);
     fd.append('action',    'update_ticket_priority');
     fd.append('ticket_id', ticketId);
     fd.append('priority',  prio);

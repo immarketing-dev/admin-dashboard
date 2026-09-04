@@ -106,6 +106,17 @@ private history.
   tables out of the source with `token_get_all()` and fails when one does
   not account for `deleted_at`. Exceptions are listed in the tool with a
   reason, so an exception stays a decision instead of becoming an oversight.
+- Quotes in the client and partner portal. The quote system was complete
+  but its recipient never saw it — a PDF arrived by mail and they had to
+  reply. A quote marked "Gesendet" now appears in the portal with
+  "Annehmen" and "Rückfrage"; accepting sets the same status
+  `quotes.php` already knows, so it lands in the existing workflow, and
+  the sender is notified. Drafts stay out of the portal.
+- Payment details on unpaid invoices in the portal, with a transfer code
+  (EPC069-12, "Girocode") that German banking apps scan. Bank details are
+  configured under Settings › Firma. The code is generated in the
+  visitor's browser: handing an IBAN and an amount to an image service
+  would be the wrong trade for payment data.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -309,3 +320,12 @@ private history.
   `invoice.php` writes them) keep it unchanged, because it is printed on
   PDFs that have gone out; anything left is numbered by invoice date,
   continuing after the highest number already used in that year.
+- The client portal had no CSRF protection at all, though profile data,
+  tickets, milestone approvals and file deletion are all changed there.
+  All twelve forms now carry a token, the three AJAX calls send one, and
+  every POST is checked. The access token in the URL looks like a
+  credential but appears in history, in referrers and in any shared link —
+  and after the PIN it is the session that authenticates anyway.
+- `qrcode.min.js` is loaded with a Subresource Integrity hash in
+  `portal.php` and `contacts.php`. It renders payment data, so a
+  compromised CDN could put a different IBAN into the code.
