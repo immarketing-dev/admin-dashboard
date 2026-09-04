@@ -116,6 +116,39 @@ GRANT SELECT ON demo_dashboard.* TO 'demo_reader'@'%';
 `run_migrations()` returns after a single `SELECT` once the schema is at
 the current version, so a read-only user is enough at runtime.
 
+### Running it beside a real installation
+
+A separate subdomain (`demo.example.com`) is the clean arrangement. If you
+would rather put the demo in a subdirectory of the installation you already
+have — `admin.example.com/demo` — that works, with one thing to understand.
+
+The session cookie is what keeps the two apart. Both installations would
+otherwise use the name `ADMINPANELSESS` on the same host, and the cookie
+path is `/`. A visitor opening the demo gets
+`$_SESSION['admin_logged_in'] = true`; that cookie travels to every path on
+the host, and the real panel would accept it. Anyone with the demo link
+would be logged into the real one.
+
+`includes/session.php` handles this: in demo mode the cookie is named
+`ADMINPANELSESSDEMO`, and its path is scoped to the directory the
+installation actually lives in. Two different names cannot mix in either
+direction. `tools/test_demo.php` checks both.
+
+What you still have to get right yourself:
+
+- **A separate database.** The subdirectory is a full second installation
+  with its own `.env`. It must not point at the live database — the demo
+  publishes whatever it can read.
+- **Its own `.htaccess`.** `tools/deploy.php` copies one into the folder;
+  leave it there. It is what blocks `includes/`, `vendor/` and `tools/`
+  inside the demo directory, since the parent's rules do not reach into it.
+- **`uploads/` of its own.** Do not point the demo at the live upload
+  directory.
+
+The URL rewriting needs no change: the redirect rule captures the full
+request path, and the internal rules are relative to the directory their
+`.htaccess` sits in.
+
 ### 5. Keep it out of search engines
 
 Fictional company names and invoice amounts should not end up in the

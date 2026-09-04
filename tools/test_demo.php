@@ -19,6 +19,15 @@ foreach ($argv as $arg) {
 }
 
 if ($fall !== null) {
+    // Der Cookie-Name haengt an einer Konstanten, laesst sich im selben
+    // Prozess also nicht zweimal verschieden pruefen.
+    if ($fall === 'sessionname-an' || $fall === 'sessionname-aus') {
+        define('DEMO_MODE', $fall === 'sessionname-an');
+        require_once $wurzel . '/includes/session.php';
+        echo app_session_name();
+        exit(0);
+    }
+
     define('DEMO_MODE', true);
     require_once $wurzel . '/includes/demo.php';
 
@@ -163,6 +172,37 @@ foreach (['board.php', 'portal.php'] as $datei) {
 }
 foreach ($aufrufer as $d => [$a, $h]) echo "  $d: $a Aufruf(e), $h Kennzeichnung(en)\n";
 echo "\n";
+
+echo "=== Pruefung 6: die Demo teilt sich keine Sitzung mit dem Echtbetrieb ===\n";
+// Das ist die Grenze, an der eine Demo im Unterverzeichnis derselben
+// Adresse gefaehrlich wuerde: gleicher Cookie-Name bedeutet, dass die im
+// Demo-Modus gesetzte Anmeldung auch fuer die echte Installation gilt.
+[$name_aus, ] = fall_ausfuehren('sessionname-aus');
+[$name_an,  ] = fall_ausfuehren('sessionname-an');
+$name_aus = trim($name_aus);
+$name_an  = trim($name_an);
+
+pruefe('Der Echtbetrieb behaelt seinen bisherigen Cookie-Namen',
+       $name_aus === 'ADMINPANELSESS', "ergab '$name_aus'");
+pruefe('Die Demo bekommt einen anderen Cookie-Namen',
+       $name_an !== $name_aus && $name_an !== '', "ergab '$name_an'");
+echo "  Echtbetrieb: $name_aus\n  Demo:        $name_an\n";
+
+// Und der Cookie-Pfad bleibt auf dem eigenen Verzeichnis.
+require_once $wurzel . '/includes/session.php';
+$pfade = [
+    '/index.php'        => '/',
+    '/tasks.php'        => '/',
+    '/demo/index.php'   => '/demo/',
+    '/demo/portal.php'  => '/demo/',
+    '/kunden/demo/x.php' => '/kunden/demo/',
+];
+foreach ($pfade as $skript => $erwartet) {
+    $_SERVER['SCRIPT_NAME'] = $skript;
+    $ist = app_session_path();
+    pruefe("Cookie-Pfad fuer $skript", $ist === $erwartet, "ergab '$ist', erwartet '$erwartet'");
+}
+echo '  ' . count($pfade) . " Pfade geprueft, Cookie bleibt im eigenen Verzeichnis.\n\n";
 
 echo "=== Zusammenfassung ===\n";
 if ($fehler === []) {
