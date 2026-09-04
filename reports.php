@@ -36,7 +36,7 @@ if (($_GET['export'] ?? '') === 'timesheet') {
 
     $aus = fopen('php://output', 'w');
     fprintf($aus, chr(0xEF) . chr(0xBB) . chr(0xBF));
-    fputcsv($aus, ['Datum', 'Uhrzeit', 'Projekt', 'Kunde', 'Notiz', 'Minuten', 'Stunden', 'Abgerechnet'], ';');
+    fputcsv($aus, ['Datum', 'Uhrzeit', 'Projekt', 'Kunde', 'Notiz', 'Minuten', 'Stunden', 'Abgerechnet'], ';', '"', '');
 
     foreach (zeiteintraege($pdo, $zeitraum['von'], $zeitraum['bis']) as $e) {
         fputcsv($aus, [
@@ -48,7 +48,7 @@ if (($_GET['export'] ?? '') === 'timesheet') {
             (int) $e['duration_minutes'],
             str_replace('.', ',', (string) stunden((int) $e['duration_minutes'])),
             $e['billed_at'] ? 'Ja' : 'Nein',
-        ], ';');
+        ], ';', '"', '');
     }
     fclose($aus);
     exit();

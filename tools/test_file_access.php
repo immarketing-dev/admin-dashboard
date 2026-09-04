@@ -124,6 +124,37 @@ $checks['Verwalter bekommt sie noch']
     = is_array(datei_zugriff($pdo, 'invoice', $rechnung_anna, null));
 
 // --- Unbekanntes ------------------------------------------------------
+// ── Belege zu Ausgaben ───────────────────────────────────────────────
+// Die wichtigste Zusage dieses Typs ist eine Verneinung: ein
+// Ausgabenbeleg ist die Rechnung eines Dritten an DICH - Hostinganbieter,
+// Versicherung, Bahn. Er geht keinen Kunden etwas an, auch nicht den,
+// dem die Ausgabe zugeordnet ist. Deshalb wird hier eine Ausgabe
+// ausdruecklich einem Kontakt zugeordnet und dann geprueft, dass genau
+// dieser Kontakt sie trotzdem nicht bekommt.
+$aus = $pdo->prepare(
+    "INSERT INTO finances (type, title, contact_id, amount, receipt_path)
+     VALUES ('EXPENSE', ?, ?, 29.00, ?)"
+);
+$aus->execute(['Serverkosten', $kontakt['Anna'], 'uploads/receipts/1780000000_Serverrechnung.pdf']);
+$beleg_anna = (int) $pdo->lastInsertId();
+
+$checks['Verwalter bekommt den Beleg']
+    = is_array(datei_zugriff($pdo, 'receipt', $beleg_anna, null));
+$checks['der zugeordnete Kunde bekommt ihn NICHT']
+    = datei_zugriff($pdo, 'receipt', $beleg_anna, $kontakt['Anna']) === null;
+$checks['ein anderer Kunde erst recht nicht']
+    = datei_zugriff($pdo, 'receipt', $beleg_anna, $kontakt['Carla']) === null;
+
+// Eine Ausgabe ohne Beleg hat nichts auszuliefern.
+$aus->execute(['Kaffee', null, null]);
+$checks['Ausgabe ohne Beleg gibt nichts heraus']
+    = datei_zugriff($pdo, 'receipt', (int) $pdo->lastInsertId(), null) === null;
+
+// Auch fuer Belege gilt die Pfadschranke.
+$pdo->exec("UPDATE finances SET receipt_path = '../../.env' WHERE id = $beleg_anna");
+$checks['Beleg ausserhalb von uploads wird abgewiesen']
+    = datei_zugriff($pdo, 'receipt', $beleg_anna, null) === null;
+
 $checks['unbekannte Art wird abgewiesen']
     = datei_zugriff($pdo, 'passwort', 1, null) === null;
 $checks['unbekannte Kennung wird abgewiesen']

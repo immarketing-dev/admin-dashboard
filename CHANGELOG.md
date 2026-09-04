@@ -9,6 +9,49 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Receipts on expenses, and a yearly handover.** `finances` knew exactly
+  one file column — `invoice_pdf_path`, the outgoing invoice the panel
+  generates itself. An expense had nothing attached: the hosting bill, the
+  software licence, the train ticket lived somewhere else, and at tax time
+  they were gathered up again from five inboxes.
+
+  Schema version 11 gives the expense its own column, deliberately
+  separate from `invoice_pdf_path` — that file is generated and
+  regenerable, a receipt is a third party's document that exists only
+  once. One shared column would mean losing a receipt the next time an
+  invoice PDF is produced.
+
+  Served through `file.php` like every other upload, but **never to the
+  portal** — the `receipt` case has no client branch at all, only a
+  refusal. An expense receipt is a third party's invoice to you; it is no
+  business of the client, not even the one the expense is assigned to.
+  Five checks in `tools/test_file_access.php` pin that down, including the
+  one where the assigned client asks for their own expense's receipt.
+
+  Beside the CSV export, a year of expenses now packs into a ZIP: the
+  overview plus every attached receipt, named so the archive reads in the
+  order of the list. The `zip` extension is optional — without it the
+  button is hidden rather than shown and then failing, and the handler
+  falls back to the CSV.
+
+### Fixed
+- **The trash no longer deletes files it cannot restore, and now deletes
+  the ones it should.** Two halves of the same oversight, both dating from
+  migration 4, when deletion stopped being final:
+
+  `finances.php` removed the invoice PDF from disk while moving the record
+  only into the trash. Restoring it afterwards produced an entry pointing
+  at a PDF that no longer existed — precisely the file one restores *for*.
+
+  `trash.php`, meanwhile, deleted rows and never files. Permanently
+  removing an invoice left `Rechnung_RE-2026-014.pdf` lying in a directory
+  nobody looks at, with a client name and an amount in the filename,
+  indefinitely.
+
+  Now the file follows the record: it survives the move to the trash and
+  goes with the final deletion — both the manual one and the automatic
+  sweep after 30 days.
+
 - **Reports and a timesheet (`reports.php`).** Since schema version 9
   everything needed for a profitability calculation had been in place: an
   hourly rate on client and project, tracked minutes with a "billed"

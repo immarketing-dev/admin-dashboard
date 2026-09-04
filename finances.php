@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/reminders.php';
+require_once 'includes/receipts.php';
 require_once 'includes/recurring.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -172,6 +173,42 @@ function build_invoice_pdf_from_quote(array $q, string $inv_num): string {
 }
 
 // ==========================================
+// JAHRESUEBERGABE: AUSGABEN MIT BELEGEN
+// ==========================================
+// Ein Archiv mit der Uebersicht als CSV und jedem hinterlegten Beleg.
+// Reines Lesen, deshalb auf einem GET.
+if (isset($_GET['export']) && $_GET['export'] === 'receipts') {
+    $jahr = (int) ($_GET['jahr'] ?? date('Y'));
+    if ($jahr < 2000 || $jahr > 2100) { $jahr = (int) date('Y'); }
+
+    $ausgaben = belege_des_jahres($pdo, $jahr);
+    $vermisst = [];
+    $archiv   = belege_archiv($ausgaben, __DIR__, $jahr, $vermisst);
+
+    if ($archiv === null) {
+        // Ohne die Erweiterung zip gibt es kein Archiv - dann wenigstens
+        // die Uebersicht. Die Oberflaeche blendet den Knopf in dem Fall
+        // ohnehin aus; hierher kommt nur, wer die Adresse von Hand
+        // aufruft.
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=Ausgaben_' . $jahr . '.csv');
+        echo belege_csv($ausgaben);
+        exit();
+    }
+
+    if ($vermisst) {
+        log_event($pdo, 'RECEIPT_EXPORT', count($vermisst) . " Beleg(e) fehlten beim Export $jahr auf der Platte.");
+    }
+
+    header('Content-Type: application/zip');
+    header('Content-Disposition: attachment; filename=Ausgaben_' . $jahr . '_mit_Belegen.zip');
+    header('Content-Length: ' . filesize($archiv));
+    readfile($archiv);
+    @unlink($archiv);
+    exit();
+}
+
+// ==========================================
 // CSV EXPORT LOGIK
 // ==========================================
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
@@ -179,7 +216,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     header('Content-Disposition: attachment; filename=Finanzen_Export_'.date('Y-m-d').'.csv');
     $output = fopen('php://output', 'w');
     fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM für Excel Kompatibilität
-    fputcsv($output, ['Datum', 'Typ', 'Titel', 'Betrag (EUR)', 'Status', 'Kunde/Empfaenger', 'Notiz', 'Fixkosten'], ';');
+    fputcsv($output, ['Datum', 'Typ', 'Titel', 'Betrag (EUR)', 'Status', 'Kunde/Empfaenger', 'Notiz', 'Fixkosten'], ';', '"', '');
     
     $stmt = $pdo->query("SELECT f.*, c.name as contact_name FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE f.deleted_at IS NULL ORDER BY record_date DESC");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -192,7 +229,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             $row['contact_name'] ?: $row['custom_name'], 
             $row['notes'],
             $row['is_recurring'] ? t('Ja') : t('Nein')
-        ], ';');
+        ], ';', '"', '');
     }
     fclose($output); exit();
 }
@@ -236,7 +273,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             }
         }
 
+        // Der Beleg. Nur an einer Ausgabe: an einer Einnahme haengt die
+        // selbst erzeugte Rechnung, und die steht in ihrer eigenen Spalte.
+        $beleg_neu    = null;
+        $beleg_fehler = null;
+        if ($type === 'EXPENSE') {
+            $ergebnis = beleg_speichern($_FILES['receipt'] ?? [], __DIR__);
+            $beleg_neu    = $ergebnis['pfad'];
+            $beleg_fehler = $ergebnis['fehler'];
+        }
+        if ($beleg_fehler !== null) {
+            filter_redirect('finances', ['error' => 'upload_failed', 'detail' => $beleg_fehler]);
+        }
+
         if ($id) {
+            // Der alte Beleg wird erst entfernt, nachdem der neue liegt -
+            // schlaegt der Upload fehl, ist der bisherige noch da.
+            if ($beleg_neu !== null) {
+                $alt = $pdo->prepare("SELECT receipt_path FROM finances WHERE id = ? AND deleted_at IS NULL");
+                $alt->execute([$id]);
+                $alter_pfad = (string) ($alt->fetchColumn() ?: '');
+
+                $pdo->prepare("UPDATE finances SET receipt_path = ? WHERE id = ?")
+                    ->execute([$beleg_neu, $id]);
+
+                if ($alter_pfad !== '' && $alter_pfad !== $beleg_neu) {
+                    beleg_loeschen($alter_pfad, __DIR__);
+                }
+            }
             $pdo->prepare("UPDATE finances SET type=?, title=?, contact_id=?, custom_name=?, amount=?, status=?, record_date=?, due_date=?, notes=?, is_recurring=?, recurrence=?, next_run=? WHERE id=?")
                 ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run, $id]);
             
@@ -245,6 +309,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, is_recurring, recurrence, next_run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run]);
             
+            if ($beleg_neu !== null) {
+                $pdo->prepare("UPDATE finances SET receipt_path = ? WHERE id = ?")
+                    ->execute([$beleg_neu, (int) $pdo->lastInsertId()]);
+            }
+
             $typ_name = ($type === 'INCOME') ? 'Einnahme' : 'Ausgabe';
             log_event($pdo, 'FINANCE_ADDED', "Neue $typ_name angelegt: '$title' über $amount €.");
         }
@@ -269,18 +338,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     if ($action === 'delete_record') {
         $id = (int)$_POST['record_id'];
 
-        $stmt = $pdo->prepare("SELECT title, invoice_pdf_path FROM finances WHERE deleted_at IS NULL AND id = ?");
+        $stmt = $pdo->prepare("SELECT title FROM finances WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($row['invoice_pdf_path'] && file_exists(__DIR__ . '/' . $row['invoice_pdf_path'])) {
-            @unlink(__DIR__ . '/' . $row['invoice_pdf_path']);
-        }
-        // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
-        // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
+        // Die Dateien bleiben liegen. Vorher wurde hier das Rechnungs-PDF
+        // von der Platte entfernt, obwohl der Datensatz nur in den
+        // Papierkorb wandert - nach dem Wiederherstellen zeigte der
+        // Eintrag dann auf ein PDF, das es nicht mehr gab. Seit Migration 4
+        // ist das Loeschen nicht mehr endgueltig, das Entfernen der Datei
+        // war es aber geblieben. Endgueltig raeumt trash.php auf.
         $pdo->prepare("UPDATE finances SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
 
-        log_event($pdo, 'FINANCE_DELETED', "Finanzeintrag '{$row['title']}' (ID: $id) wurde dauerhaft gelöscht.");
+        log_event($pdo, 'FINANCE_DELETED', "Finanzeintrag '{$row['title']}' (ID: $id) in den Papierkorb verschoben.");
 
         filter_redirect('finances');
     }
@@ -446,6 +516,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     // beide Wege denselben Zaehler fort, und eine von Hand verschickte
     // Erinnerung verschiebt die naechste automatische Stufe, statt neben
     // ihr herzulaufen.
+    if ($action === 'delete_receipt') {
+        $id = (int) ($_POST['record_id'] ?? 0);
+
+        $stmt = $pdo->prepare("SELECT title, receipt_path FROM finances WHERE deleted_at IS NULL AND id = ?");
+        $stmt->execute([$id]);
+        $zeile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($zeile && $zeile['receipt_path']) {
+            beleg_loeschen((string) $zeile['receipt_path'], __DIR__);
+            $pdo->prepare("UPDATE finances SET receipt_path = NULL WHERE id = ?")->execute([$id]);
+            log_event($pdo, 'RECEIPT_DELETED', "Beleg zu '{$zeile['title']}' (ID: $id) entfernt.");
+        }
+        filter_redirect('finances');
+    }
+
     if ($action === 'send_payment_reminder') {
         $id = (int) ($_POST['record_id'] ?? 0);
         $rechnung = rechnung_fuer_mahnung($pdo, $id);
@@ -623,6 +708,46 @@ $page_heading = $active_tab === 'quotes' ? 'Angebote' : 'Finanz-Zentrale';
 $current_page = basename($_SERVER['PHP_SELF']);
 // Vier Buttons im Header (CSV/Rechnung/Ausgabe/Einnahme) brauchen Zeilenumbruch
 // auf schmalen Screens - im Original war das die Klasse "top-header flex-wrap".
+
+// Die Jahresuebergabe an die Buchhaltung: Ausgaben mit ihren Belegen als
+// ZIP. Der Knopf erscheint nur mit der Erweiterung zip - einer, der beim
+// Druecken erklaert, warum er nicht geht, ist keiner.
+//
+// Hier als Zeichenkette gebaut und nicht als Markup weiter unten:
+// $header_actions ist selbst eine Zeichenkette. Eingebettete PHP-Tags
+// waeren darin blosser Text - und ein schliessendes Tag in einem
+// Kommentar beendet den PHP-Modus, auch wenn es nur erklaeren soll.
+// Genau das ist beim Schreiben dieser Zeilen einmal passiert;
+// tools/check_php_tags.php hat es gefunden.
+$beleg_export_html = '';
+if (beleg_zip_moeglich()) {
+    $_jahre_ausg = $pdo->query(
+        "SELECT DISTINCT YEAR(record_date) AS jahr FROM finances
+          WHERE deleted_at IS NULL AND type = 'EXPENSE' AND record_date IS NOT NULL
+          ORDER BY jahr DESC"
+    )->fetchAll(PDO::FETCH_COLUMN);
+    $_jahre_ausg = array_map('intval', $_jahre_ausg ?: []);
+    // Das laufende Jahr ist immer dabei, auch wenn noch nichts drinsteht.
+    if (!in_array((int) date('Y'), $_jahre_ausg, true)) {
+        array_unshift($_jahre_ausg, (int) date('Y'));
+    }
+
+    $_eintraege = '';
+    foreach (array_slice($_jahre_ausg, 0, 8) as $_j) {
+        $_eintraege .= '<li><a class="dropdown-item small" href="?export=receipts&amp;jahr=' . $_j . '">'
+                     . '<i class="bi bi-download me-2"></i>' . $_j . '</a></li>';
+    }
+
+    $beleg_export_html =
+        '<div class="btn-group btn-group-sm">'
+      . '<button type="button" class="btn btn-outline-secondary fw-bold px-3 dropdown-toggle" data-bs-toggle="dropdown">'
+      . '<i class="bi bi-file-earmark-zip"></i> <span class="btn-label">' . te('Belege') . '</span></button>'
+      . '<ul class="dropdown-menu dropdown-menu-end shadow-sm">'
+      . '<li><h6 class="dropdown-header">' . te('Ausgaben mit Belegen') . '</h6></li>'
+      . $_eintraege
+      . '</ul></div>';
+}
+
 if ($active_tab === 'quotes') {
     $header_actions = '
       <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#quoteModal" onclick="prepareNewQuote()">
@@ -632,6 +757,7 @@ if ($active_tab === 'quotes') {
     $header_actions = '
       <div class="d-flex gap-2">
           <a href="?export=csv" class="btn btn-outline-secondary btn-sm fw-bold px-3"><i class="bi bi-filetype-csv"></i> <span class="btn-label">CSV</span></a>
+          ' . $beleg_export_html . '
           <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#invoiceModal"><i class="bi bi-file-earmark-plus"></i> Rechnung <span class="btn-label-xs">erstellen</span></button>
           <button class="btn btn-outline-danger btn-sm" onclick="openFinanceModal(\'EXPENSE\')"><i class="bi bi-dash-circle"></i> <span class="btn-label">Ausgabe</span></button>
           <button class="btn btn-outline-success btn-sm" onclick="openFinanceModal(\'INCOME\')"><i class="bi bi-plus-circle"></i> <span class="btn-label">Einnahme</span></button>
@@ -674,7 +800,7 @@ require 'includes/layout_start.php';
     <div class="toast show align-items-center text-bg-danger border-0 shadow-lg" role="alert" aria-atomic="true">
       <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>
         <?php
-          $errs = ['email_failed'=>'E-Mail konnte nicht gesendet werden.','no_phpmailer'=>'PHPMailer nicht installiert.','invalid_email'=>'Ungültige E-Mail-Adresse.','no_pdf'=>'Kein PDF vorhanden – bitte zuerst Rechnung generieren.','not_found'=>'Eintrag nicht gefunden.'];
+          $errs = ['email_failed'=>'E-Mail konnte nicht gesendet werden.','no_phpmailer'=>'PHPMailer nicht installiert.','invalid_email'=>'Ungültige E-Mail-Adresse.','no_pdf'=>'Kein PDF vorhanden – bitte zuerst Rechnung generieren.','not_found'=>'Eintrag nicht gefunden.','upload_failed'=>'Der Beleg konnte nicht gespeichert werden.'];
           $err_key = htmlspecialchars($_GET['error'], ENT_QUOTES);
           echo $errs[$err_key] ?? 'Fehler aufgetreten.';
           if(isset($_GET['detail'])) echo ' '.htmlspecialchars($_GET['detail']);
@@ -932,6 +1058,7 @@ require 'includes/layout_start.php';
                                   <span class="badge bg-warning text-dark ms-1" style="font-size:9px;" title="<?= te('Zuletzt erinnert am %s', $row['last_reminder_at'] ? date('d.m.Y', strtotime($row['last_reminder_at'])) : '?') ?>"><i class="bi bi-bell-fill"></i> <?= (int)$row['reminder_count'] ?></span>
                                 <?php endif; ?>
                                 <?php if($row['notes']): ?> <i class="bi bi-chat-text text-muted ms-1" title="<?=htmlspecialchars($row['notes'])?>"></i> <?php endif; ?>
+                                <?php if(!empty($row['receipt_path'])): ?> <a href="file?type=receipt&amp;id=<?=(int)$row['id']?>" target="_blank" class="text-muted ms-1" title="<?= te('Beleg ansehen') ?>"><i class="bi bi-paperclip"></i></a> <?php endif; ?>
                             </td>
                             <td><span class="small"><?=$display_name?></span></td>
                             <td>
@@ -1081,7 +1208,9 @@ require 'includes/layout_start.php';
       <div class="modal-content border-0 shadow">
         <div class="modal-header bg-subtle"><h5 class="fw-bold" id="fm_modal_title"><?= te('Eintrag') ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4">
-          <form method="POST" id="fm_form">
+          <?php /* enctype: ohne das kommt der Beleg nicht an, und zwar
+                        lautlos - $_FILES bleibt leer, die Sendung geht durch. */ ?>
+          <form method="POST" id="fm_form" enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="save_record"><input type="hidden" name="record_id" id="fm_id"><input type="hidden" name="type" id="fm_type">
             <div class="row g-3">
@@ -1106,6 +1235,19 @@ require 'includes/layout_start.php';
                   <label class="form-label small fw-bold"><?= te('Nächster Termin') ?></label>
                   <input type="date" name="next_run" id="fm_next_run" class="form-control">
                   <div class="form-text small"><?= te('Leer lassen: ein Intervall nach dem Datum oben.') ?></div>
+                </div>
+                <div class="col-12" id="div_receipt" style="display:none;">
+                  <label class="form-label small fw-bold"><?= te('Beleg') ?></label>
+                  <div id="fm_receipt_vorhanden" class="mb-2" style="display:none;">
+                    <a href="#" id="fm_receipt_link" target="_blank" class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-paperclip me-1"></i><?= te('Hinterlegten Beleg ansehen') ?>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="belegEntfernen()">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </div>
+                  <input type="file" name="receipt" id="fm_receipt" class="form-control">
+                  <div class="form-text small"><?= te('PDF oder Bild, höchstens 20 MB. Ein neuer Beleg ersetzt den bisherigen.') ?></div>
                 </div>
                 <div class="col-12"><label class="form-label small fw-bold"><?= te('Notiz') ?></label><textarea name="notes" id="fm_notes" class="form-control" rows="2"></textarea></div>
             </div>
@@ -1149,6 +1291,15 @@ require 'includes/layout_start.php';
       </div>
     </div>
   </div>
+
+  <?php /* Eigene Sendung statt eines Feldes im Bearbeitungsformular:
+           das Entfernen soll auch dann greifen, wenn der Rest des
+           Formulars ungueltig ist. */ ?>
+  <form method="POST" id="receiptDeleteForm" class="d-none">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="delete_receipt">
+    <input type="hidden" name="record_id" id="rd_id">
+  </form>
 
   <div class="modal fade" id="reminderModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -1413,6 +1564,29 @@ require 'includes/layout_start.php';
         new bootstrap.Modal(document.getElementById('reminderModal')).show();
     }
 
+    // Der Beleg gehört zur Ausgabe. Bei einer Einnahme bleibt das Feld
+    // aus: dort ist das Dokument die selbst erzeugte Rechnung, und die
+    // hat ihre eigene Spalte.
+    function belegFeldSetzen(istAusgabe, pfad, id) {
+        document.getElementById('div_receipt').style.display = istAusgabe ? 'block' : 'none';
+        document.getElementById('fm_receipt').value = '';
+
+        const vorhanden = document.getElementById('fm_receipt_vorhanden');
+        if (istAusgabe && pfad) {
+            document.getElementById('fm_receipt_link').href = 'file?type=receipt&id=' + encodeURIComponent(id);
+            document.getElementById('rd_id').value = id;
+            vorhanden.style.display = 'block';
+        } else {
+            vorhanden.style.display = 'none';
+        }
+    }
+
+    function belegEntfernen() {
+        if (confirm(<?= tjs('Den hinterlegten Beleg wirklich entfernen?') ?>)) {
+            document.getElementById('receiptDeleteForm').submit();
+        }
+    }
+
     // Das Terminfeld gehört nur zu einer Wiederholung.
     function toggleNextRun() {
         const gewaehlt = document.getElementById('fm_rec').value !== '';
@@ -1438,6 +1612,7 @@ require 'includes/layout_start.php';
             document.getElementById('div_due_man').style.display = (dataOrType=='INCOME' ? 'block' : 'none');
             document.getElementById('fm_date').value = new Date().toISOString().split('T')[0];
             document.getElementById('fm_next_run').value = '';
+            belegFeldSetzen(dataOrType === 'EXPENSE', null, null);
         } else {
             document.getElementById('fm_id').value = dataOrType.id;
             document.getElementById('fm_type').value = dataOrType.type;
@@ -1450,6 +1625,7 @@ require 'includes/layout_start.php';
             document.getElementById('fm_stat').value = dataOrType.status;
             document.getElementById('fm_rec').value = dataOrType.recurrence || '';
             document.getElementById('fm_next_run').value = dataOrType.next_run || '';
+            belegFeldSetzen(dataOrType.type === 'EXPENSE', dataOrType.receipt_path, dataOrType.id);
             document.getElementById('fm_notes').value = dataOrType.notes || '';
             document.getElementById('fm_modal_title').innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> Bearbeiten';
             document.getElementById('div_due_man').style.display = (dataOrType.type=='INCOME' ? 'block' : 'none');

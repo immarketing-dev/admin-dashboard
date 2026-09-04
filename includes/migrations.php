@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -427,6 +427,24 @@ function migrations(): array
 
             // Der Cron-Lauf fragt genau danach: was ist heute faellig?
             'CREATE INDEX idx_fin_next_run ON finances (next_run, recurrence)',
+        ],
+
+        // Version 11: an einer Ausgabe haengt ihr Beleg.
+        //
+        // finances kannte genau ein Dateifeld: invoice_pdf_path, und das
+        // ist die selbst erzeugte Ausgangsrechnung. An einer Ausgabe hing
+        // nichts. Der Serverrechnung, der Softwarelizenz, dem Bahnticket
+        // fehlte das Dokument - es lag woanders, und zur Steuer wurde es
+        // wieder zusammengesucht.
+        //
+        // Eigene Spalte statt Mitbenutzung von invoice_pdf_path: die
+        // beiden bedeuten Verschiedenes. invoice_pdf_path ist das, was
+        // das Panel selbst erzeugt hat und jederzeit neu erzeugen kann;
+        // receipt_path ist ein fremdes Dokument, das es nur einmal gibt.
+        // Sie zu vermengen hiesse, beim Neuerzeugen eines Rechnungs-PDFs
+        // einen Beleg zu ueberschreiben.
+        11 => [
+            'ALTER TABLE finances ADD COLUMN receipt_path VARCHAR(255) DEFAULT NULL',
         ],
     ];
 }

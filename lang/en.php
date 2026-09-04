@@ -1609,4 +1609,19 @@ return [
         => "61–90 days",
     "über 90 Tage"
         => "over 90 days",
+    // ── Belege zu Ausgaben ───────────────────────────────────────────
+    "Beleg"
+        => "Receipt",
+    "Belege"
+        => "Receipts",
+    "Beleg ansehen"
+        => "View receipt",
+    "Hinterlegten Beleg ansehen"
+        => "View the attached receipt",
+    "Den hinterlegten Beleg wirklich entfernen?"
+        => "Really remove the attached receipt?",
+    "PDF oder Bild, höchstens 20 MB. Ein neuer Beleg ersetzt den bisherigen."
+        => "PDF or image, 20 MB at most. A new receipt replaces the existing one.",
+    "Ausgaben mit Belegen"
+        => "Expenses with receipts",
 ];

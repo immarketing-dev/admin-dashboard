@@ -106,6 +106,10 @@ $ausnahmen = [
     // Kennungen, die eine Einzelansicht oeffnen, und interne Schalter.
     'ticket_id', 'ajax_notes', 'ajax_widget', 'ajax_upload', 'token', 'id',
     'year', 'month_view', 'page',
+    // Das Jahr der Belegausgabe. Kein Filter der Liste, sondern
+    // Teil einer einmaligen Adresse (?export=receipts&jahr=2026) -
+    // es ueber die Seitenaufrufe mitzuschleppen waere falsch.
+    'jahr',
 ];
 $fehlend = [];
 foreach (['tasks', 'contacts', 'finances', 'tickets', 'quotes', 'wiki'] as $seite) {

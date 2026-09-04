@@ -12,6 +12,9 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
 require_once 'includes/csrf.php';
+// Wegen datei_pfad_erlaubt(): der Papierkorb raeumt jetzt auch die
+// Dateien weg, und zwar nach derselben Schranke wie file.php.
+require_once 'includes/file_access.php';
 
 /**
  * Die Bereiche des Papierkorbs. Nur Daten, deren Verlust wehtut —
@@ -47,6 +50,70 @@ const PAPIERKORB = [
 
 const AUFBEWAHRUNG_TAGE = 30;
 
+/**
+ * Spalten, die auf eine hochgeladene oder erzeugte Datei zeigen.
+ *
+ * Bis hierher loeschte der Papierkorb ausschliesslich Datenbankzeilen.
+ * Die Dateien blieben liegen - dauerhaft, mit Kundenname und Betrag im
+ * Dateinamen ("Rechnung_RE-2026-014.pdf"), in einem Verzeichnis, das
+ * niemand mehr ansieht. Zusammen mit dem Papierkorb war das nicht
+ * gedacht: finances.php entfernte das PDF frueher schon beim
+ * Verschieben in den Papierkorb, was den Eintrag nach dem
+ * Wiederherstellen ohne Datei zuruecklaesst. Beides gehoert
+ * zusammen - die Datei geht mit dem Datensatz, und zwar endgueltig
+ * mit dem endgueltigen Loeschen.
+ *
+ * Projektdateien und Wiki-Anhaenge stehen hier nicht: sie haengen ueber
+ * ON DELETE CASCADE an ihrem Projekt bzw. Artikel und haben keinen
+ * eigenen Papierkorb.
+ */
+const PAPIERKORB_DATEIEN = [
+    'finances' => ['invoice_pdf_path', 'receipt_path'],
+    'quotes'   => ['quote_pdf_path'],
+];
+
+/**
+ * Entfernt die Dateien der genannten Zeilen von der Platte.
+ *
+ * Vor dem DELETE aufzurufen - danach sind die Pfade nicht mehr zu
+ * erfahren. datei_pfad_erlaubt() prueft mit: der Wert kommt zwar aus
+ * der Datenbank, aber ein Pfad, der aus uploads/ herausfuehrt, waere
+ * auch dann falsch, wenn ihn niemand angegriffen hat.
+ *
+ * @param string $bedingung SQL-Bedingung ohne "WHERE"
+ * @param array  $werte     Werte dazu
+ * @return int Anzahl entfernter Dateien
+ */
+function papierkorb_dateien_entfernen(PDO $pdo, string $tabelle, string $bedingung, array $werte): int
+{
+    if (!isset(PAPIERKORB_DATEIEN[$tabelle])) {
+        return 0;
+    }
+    $spalten = PAPIERKORB_DATEIEN[$tabelle];
+
+    // Der Tabellenname stammt aus PAPIERKORB, die Spalten aus der
+    // Konstante darueber - beide aus dem Code, nie aus einer Eingabe.
+    $stmt = $pdo->prepare(
+        'SELECT ' . implode(', ', $spalten) . " FROM $tabelle WHERE $bedingung"
+    );
+    $stmt->execute($werte);
+
+    $weg = 0;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $zeile) {
+        foreach ($spalten as $spalte) {
+            $pfad = (string) ($zeile[$spalte] ?? '');
+            if ($pfad === '' || !datei_pfad_erlaubt($pfad)) {
+                continue;
+            }
+            $voll = __DIR__ . '/' . $pfad;
+            if (is_file($voll) && @unlink($voll)) {
+                $weg++;
+            }
+        }
+    }
+    return $weg;
+}
+
 // ── Automatisches Aufräumen ─────────────────────────────────────────
 // Läuft bei jedem Aufruf der Seite, also auch auf einem GET. In der
 // Demo darf das nicht: der dortige Datenbankbenutzer hat nur SELECT,
@@ -54,16 +121,22 @@ const AUFBEWAHRUNG_TAGE = 30;
 // zu löschen gäbe es ohnehin nichts - der Bestand ist unveränderlich.
 // tools/check_demo.php führt diese Stelle als dokumentierte Ausnahme.
 $geraeumt = 0;
+$dateien_weg = 0;
 foreach (demo_mode() ? [] : array_keys(PAPIERKORB) as $tabelle) {
-    $st = $pdo->prepare(
-        "DELETE FROM $tabelle WHERE deleted_at IS NOT NULL"
-        . ' AND deleted_at < DATE_SUB(NOW(), INTERVAL ' . AUFBEWAHRUNG_TAGE . ' DAY)'
-    );
+    $abgelaufen = 'deleted_at IS NOT NULL'
+                . ' AND deleted_at < DATE_SUB(NOW(), INTERVAL ' . AUFBEWAHRUNG_TAGE . ' DAY)';
+
+    // Erst die Dateien, dann die Zeilen: danach waeren die Pfade nicht
+    // mehr zu erfahren.
+    $dateien_weg += papierkorb_dateien_entfernen($pdo, $tabelle, $abgelaufen, []);
+
+    $st = $pdo->prepare("DELETE FROM $tabelle WHERE $abgelaufen");
     $st->execute();
     $geraeumt += $st->rowCount();
 }
 if ($geraeumt > 0) {
-    log_event($pdo, 'TRASH_PURGED', "$geraeumt Eintrag/Einträge nach " . AUFBEWAHRUNG_TAGE . ' Tagen endgültig entfernt.');
+    log_event($pdo, 'TRASH_PURGED', "$geraeumt Eintrag/Einträge nach " . AUFBEWAHRUNG_TAGE
+        . ' Tagen endgültig entfernt' . ($dateien_weg > 0 ? ", dazu $dateien_weg Datei(en)." : '.'));
 }
 
 // ── Aktionen ────────────────────────────────────────────────────────
@@ -82,8 +155,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($_POST['action'] ?? '') === 'purge') {
             // Nur was bereits im Papierkorb liegt - ein fehlgeleiteter
             // Aufruf darf keinen aktiven Datensatz treffen.
+            $weg = papierkorb_dateien_entfernen(
+                $pdo, $tabelle, 'id = ? AND deleted_at IS NOT NULL', [$id]
+            );
             $pdo->prepare("DELETE FROM $tabelle WHERE id = ? AND deleted_at IS NOT NULL")->execute([$id]);
-            log_event($pdo, 'TRASH_PURGED', PAPIERKORB[$tabelle]['label'] . ": Eintrag $id endgültig gelöscht.");
+            log_event($pdo, 'TRASH_PURGED', PAPIERKORB[$tabelle]['label'] . ": Eintrag $id endgültig gelöscht"
+                . ($weg > 0 ? ", dazu $weg Datei(en)." : '.'));
             header("Location: trash?msg=purged#$tabelle"); exit();
         }
     }

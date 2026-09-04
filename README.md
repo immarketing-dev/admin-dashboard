@@ -33,8 +33,9 @@ mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
 - **Projects** — milestones, file attachments, time tracking, client feedback
 - **Kanban board** — drag and drop across three columns
 - **CRM** — contacts, companies, portal access per contact
-- **Finances** — income and expenses, invoice PDFs, recurring entries, charts
-  by month, year or lifetime
+- **Finances** — income and expenses, invoice PDFs, receipts attached to
+  expenses, recurring entries, payment reminders, charts by month, year or
+  lifetime
 - **Quotes** — PDF generation, status tracking, one-click conversion to an
   invoice, e-mail delivery with the PDF attached
 - **Reports** — revenue per client, outstanding invoices by age, hours
@@ -68,7 +69,9 @@ How they were captured: [docs/screenshots/README.md](docs/screenshots/README.md)
   into invoice and quote PDFs via FPDF's `Image()`) is a GIF or a WebP —
   FPDF converts those through `gd` internally. A PNG or JPEG logo needs no
   `gd` at all. `zlib` is also expected — FPDF compresses PDF streams with
-  it by default.
+  it by default. `zip` is optional: without it the yearly expense export
+  falls back to the CSV alone, and the button offering the archive is
+  hidden rather than shown and then failing.
 - **MySQL 5.7.8+ or MariaDB 10.2.7+.** This is a hard floor, not a
   suggestion: `install/schema.sql` gives `quotes.items` a `JSON` column,
   which older servers reject outright, and `wiki_articles` declares two
@@ -305,6 +308,32 @@ and the data does not support it — `finances` knows a contact, not a
 `task_id`. The only link is `time_entries.invoice_id`, and an invoice
 usually covers more than one project's time. A number that pretended to
 know would be worse than no number.
+
+### Receipts on expenses
+
+`finances` knew exactly one file column — `invoice_pdf_path`, the outgoing
+invoice the panel generates itself. An expense had nothing attached. The
+hosting bill, the software licence, the train ticket: the document lived
+somewhere else, and at tax time it was gathered up again from five inboxes.
+
+Schema version 11 gives the expense its own column. It is deliberately a
+separate one rather than reusing `invoice_pdf_path`: that file is
+generated and can be regenerated at any time, a receipt is a third party's
+document that exists only once. Sharing one column would mean a receipt
+gets overwritten the next time an invoice PDF is produced.
+
+Upload runs through the same validation as every other upload in the panel
+(`validate_upload`: MIME type against a whitelist, extension matching the
+type, 20 MB at most), and the file is served through `file.php` like every
+other upload — but **never to the client portal**, with no exception. An
+expense receipt is a third party's invoice to *you*; it is no business of
+the client, not even the one the expense is assigned to.
+
+**Handover to your accountant:** the button beside the CSV export packs a
+year of expenses into a ZIP — an overview as CSV plus every attached
+receipt, named `date_id_title.pdf` so the archive reads in the same order
+as the list. Needs the `zip` extension; without it the button is hidden and
+the CSV alone remains.
 
 ### Cross-domain single sign-on
 

@@ -321,6 +321,13 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Belege: die Pfadschranke beim Loeschen ist hier die heikle Stelle -
+  # die Funktion bekommt einen Pfad aus der Datenbank und entfernt damit
+  # eine Datei.
+  if ! out=$(php tools/test_receipts.php 2>&1); then
+    echo "BELEGE: $out"
+    fail=1
+  fi
   # Auswertungen: Altersstufen, Zeitraumgrenzen, Stundensatzaufloesung.
   if ! out=$(php tools/test_reports.php 2>&1); then
     echo "AUSWERTUNG: $out"

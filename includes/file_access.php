@@ -16,6 +16,7 @@
  *   - Rechnungen:     der Kontakt, auf den sie ausgestellt sind
  *   - Angebote:       derselbe, aber keine Entwuerfe
  *   - Wiki-Anhaenge:  nur ausdruecklich freigegebene Artikel
+ *   - Belege:         ausschliesslich der Verwalter, nie das Portal
  */
 
 /**
@@ -99,6 +100,22 @@ function datei_zugriff(PDO $pdo, string $typ, int $id, ?int $kontakt_id): ?array
                            AND status IN ('Gesendet','Angenommen','Abgelehnt')";
                 $werte = [$id, $kontakt_id];
             }
+            break;
+
+        case 'receipt':
+            // Kein Fall fuer das Portal, und zwar ohne Ausnahme: ein
+            // Ausgabenbeleg ist die Rechnung eines Dritten an dich -
+            // Hostinganbieter, Versicherung, Bahn. Er geht keinen Kunden
+            // etwas an, auch nicht den, dem die Ausgabe zugeordnet ist.
+            // Deshalb hier kein "sonst"-Zweig wie bei den anderen Arten,
+            // sondern ein Abbruch.
+            if (!$ist_verwalter) {
+                return null;
+            }
+            // Auch geloeschte: der Papierkorb stellt wieder her, und dazu
+            // gehoert der Beleg (dieselbe Ueberlegung wie bei invoice).
+            $sql   = "SELECT receipt_path AS pfad FROM finances WHERE id = ?";
+            $werte = [$id];
             break;
 
         default:

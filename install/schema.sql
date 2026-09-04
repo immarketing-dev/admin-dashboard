@@ -281,6 +281,12 @@ CREATE TABLE IF NOT EXISTS finances (
   recurrence       VARCHAR(20) NOT NULL DEFAULT '',
   next_run         DATE DEFAULT NULL,
   recurring_parent_id INT DEFAULT NULL,
+  -- Der Beleg zu einer Ausgabe. Bewusst eine eigene Spalte neben
+  -- invoice_pdf_path: das eine ist die selbst erzeugte Ausgangsrechnung,
+  -- jederzeit neu erzeugbar, das andere ein fremdes Dokument, das es nur
+  -- einmal gibt. Vermengt wuerde ein Beleg beim Neuerzeugen eines
+  -- Rechnungs-PDFs ueberschrieben.
+  receipt_path     VARCHAR(255) DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_fin_contact (contact_id),
   KEY idx_fin_type_date (type, record_date),
@@ -441,7 +447,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '10')
+INSERT INTO settings (k, v) VALUES ('schema_version', '11')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;
