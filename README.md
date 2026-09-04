@@ -7,6 +7,16 @@ token and a PIN.
 
 Plain PHP and MySQL. No framework, no build step — upload it and it runs.
 
+### ▶ [Try the live demo](https://admin.david-imminger.de/demo)
+
+No login, nothing to install. Every page is open; saving is disabled, so
+the data stays as it is. The client portal is part of it — open
+[the portal as a customer sees it](https://admin.david-imminger.de/demo/portal?token=6cd6b22dedac3c1a6b9acbd6f928860b0accbd5f658c45554913d24c2fc3e616)
+and enter the access code `1234`, which the page shows you anyway.
+
+Every name, company, invoice and address in it is invented. How the demo
+mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
+
 ## Features
 
 - **Dashboard** — KPIs, upcoming deadlines, parallel uptime monitoring for a
@@ -25,8 +35,7 @@ Plain PHP and MySQL. No framework, no build step — upload it and it runs.
   invoices and shared wiki articles, reached with a token and a PIN
 - **Dark mode**, responsive down to phone width
 
-Screenshots: see [docs/screenshots/README.md](docs/screenshots/README.md) —
-none are checked in yet, since taking them needs a running install.
+Screenshots: see [docs/screenshots/README.md](docs/screenshots/README.md).
 
 ## Requirements
 

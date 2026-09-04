@@ -490,13 +490,20 @@ for ($m = 11; $m >= 0; $m--) {
     $anzahl_e = 2 + ($m % 2);
     for ($i = 0; $i < $anzahl_e; $i++) {
         [$titel, $kk] = $einnahme_texte[($m * 3 + $i) % count($einnahme_texte)];
-        $datum = tag(-$monat_start + $i * 4);
+        // min(..., -1): im laufenden Monat schiebt $i sonst ueber heute
+        // hinaus, und die Uebersicht zeigt Buchungen mit Datum in der Zukunft.
+        $datum = tag(min(-$monat_start + $i * 4, -1));
         $faellig = date('Y-m-d', strtotime($datum . ' +14 days'));
 
         // Alles ab zwei Monaten zurück ist bezahlt. In den jüngsten
         // Monaten steht bewusst beides offen - sonst zeigt die Übersicht
         // nie einen offenen Posten.
-        if ($m >= 2)                                  $status = 'Bezahlt';
+        // Die erste Rechnung eines Monats ist immer beglichen, sonst zeigt
+        // die Finanzseite im laufenden Monat 0,00 EUR Einnahmen. Die
+        // uebrigen bleiben in den zwei juengsten Monaten offen bzw.
+        // ueberfaellig - ohne offene Posten waere die Uebersicht ebenso
+        // unrealistisch.
+        if ($m >= 2 || $i === 0)                      $status = 'Bezahlt';
         elseif (strtotime($faellig) < time())          $status = 'Überfällig';
         else                                           $status = 'Offen';
 
@@ -519,7 +526,7 @@ for ($m = 11; $m >= 0; $m--) {
     $anzahl_a = 3 + ($m % 2);
     for ($i = 0; $i < $anzahl_a; $i++) {
         [$titel, $betrag] = $ausgabe_texte[($m * 4 + $i) % count($ausgabe_texte)];
-        $datum = tag(-$monat_start + 2 + $i * 5);
+        $datum = tag(min(-$monat_start + 2 + $i * 5, -1));
         ins('finances', [
             'type'         => 'EXPENSE',
             'title'        => $titel,

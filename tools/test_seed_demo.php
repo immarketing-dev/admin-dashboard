@@ -230,6 +230,19 @@ $vergangen = $zaehle('calendar_events', "event_date < '$heute'");
 pruefe('Es gibt vergangene Termine', $vergangen > 0);
 $offene_rechnungen = $zaehle('finances', "type = 'INCOME' AND status <> 'Bezahlt'");
 pruefe('Es gibt offene Rechnungen', $offene_rechnungen > 0);
+
+// Keine Buchung darf in der Zukunft liegen. Der Monatsversatz schob im
+// laufenden Monat ueber heute hinaus, und die Finanzseite zeigte
+// Bueromaterial mit einem Kaufdatum in neun Tagen.
+$kuenftige_buchungen = $zaehle("finances", "record_date > '$heute'");
+pruefe("Keine Buchung liegt in der Zukunft", $kuenftige_buchungen === 0,
+       "$kuenftige_buchungen Buchung(en) mit Datum nach heute");
+
+// Und im laufenden Monat muss etwas bezahlt sein, sonst steht die
+// Finanzseite in ihrer Standardansicht auf 0,00 EUR Einnahmen.
+$bezahlt_diesen_monat = $zaehle("finances",
+    "type = 'INCOME' AND status = 'Bezahlt' AND record_date >= '" . date("Y-m-01") . "'");
+pruefe("Im laufenden Monat ist eine Rechnung bezahlt", $bezahlt_diesen_monat > 0);
 echo "  OK: $vor_kurzem Protokolleintraege der letzten Woche, $kuenftig kuenftige und "
    . "$vergangen vergangene Termine, $offene_rechnungen offene Rechnungen.\n";
 

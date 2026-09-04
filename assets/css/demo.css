@@ -41,3 +41,20 @@
 @media (prefers-reduced-motion: reduce) {
     .demo-toast { transition: none; }
 }
+
+/* Hinweis im Kundenportal. Eigene Regel, weil das Portal app.css nicht
+   lädt - .demo-strip von dort steht hier nicht zur Verfügung. Sitzt über
+   dem Kopfbereich, damit er vor allem anderen gelesen wird. */
+.demo-portal-hinweis {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--accent-soft);
+    border-bottom: 1px solid var(--accent-soft-strong);
+    color: var(--text-body);
+    font-size: var(--text-sm-plus);
+    line-height: 1.45;
+}
+.demo-portal-hinweis i      { color: var(--color-primary); font-size: var(--text-base-plus); flex: 0 0 auto; }
+.demo-portal-hinweis strong { color: var(--text-strong); }
+.demo-portal-hinweis span   { min-width: 0; }
