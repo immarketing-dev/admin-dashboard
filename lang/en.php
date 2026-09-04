@@ -1533,4 +1533,80 @@ return [
         => "Leave empty to send no reminders automatically. The button in the invoice list works regardless.",
     "Automatische Erinnerungen werden nur verschickt, wenn cron.php regelmäßig läuft. Ohne eingerichteten Cron-Lauf passiert hier nichts."
         => "Automatic reminders only go out if cron.php runs regularly. Without a scheduled cron run, nothing happens here.",
+    // ── Auswertungen (reports.php) ───────────────────────────────────
+    "Auswertungen"
+        => "Reports",
+    "Auswertung"
+        => "Report",
+    "Stundenzettel"
+        => "Timesheet",
+    "Offene Posten nach Alter"
+        => "Outstanding invoices by age",
+    "Keine offenen Rechnungen."
+        => "No outstanding invoices.",
+    "%d Rechnung(en)"
+        => "%d invoice(s)",
+    "%d Tage"
+        => "%d days",
+    "Nummer"
+        => "Number",
+    "Fällig"
+        => "Due",
+    "Erinnert"
+        => "Reminded",
+    "Umsatz je Kunde"
+        => "Revenue by client",
+    "Für dieses Jahr gibt es keine Einnahmen."
+        => "There is no income for this year.",
+    "Bezahlt: %s € · Offen: %s €"
+        => "Paid: %s € · Outstanding: %s €",
+    "Anteil"
+        => "Share",
+    "Geleistet, noch nicht berechnet"
+        => "Worked, not yet billed",
+    "Jede erfasste Stunde ist abgerechnet."
+        => "Every tracked hour has been billed.",
+    "%s Stunden aus %d Projekt(en). Bewertet mit dem heute geltenden Satz (Projekt vor Kunde vor Voreinstellung)."
+        => "%s hours across %d project(s), valued at the rate in force today (project before client before default).",
+    "Projekt"
+        => "Project",
+    "Erfasst"
+        => "Tracked",
+    "Berechnet"
+        => "Billed",
+    "Satz"
+        => "Rate",
+    "Wert"
+        => "Value",
+    "In diesem Zeitraum wurde keine Zeit erfasst."
+        => "No time was tracked in this period.",
+    "Davon offen"
+        => "Of that unbilled",
+    "Einträge"
+        => "Entries",
+    "Nach Tag"
+        => "By day",
+    "Nach Projekt"
+        => "By project",
+    "%s offen"
+        => "%s unbilled",
+    "Abgerechnet"
+        => "Billed",
+    "Noch nicht abgerechnet"
+        => "Not billed yet",
+    "CSV"
+        => "CSV",
+
+    // Altersstufen der offenen Posten - ueber datenwert() nachgeschlagen,
+    // weil sie an der Anzeigestelle als Variable ankommen.
+    "nicht fällig"
+        => "not yet due",
+    "1–30 Tage"
+        => "1–30 days",
+    "31–60 Tage"
+        => "31–60 days",
+    "61–90 Tage"
+        => "61–90 days",
+    "über 90 Tage"
+        => "over 90 days",
 ];

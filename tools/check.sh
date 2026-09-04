@@ -314,6 +314,25 @@ if command -v php >/dev/null 2>&1; then
     echo "SEED: $out"
     fail=1
   fi
+  # Mahnstufen und wiederkehrende Eintraege. Die gefaehrlichen Faelle
+  # sind hier das doppelte Verschicken und die Reihe, die sich bei jedem
+  # Lauf verdoppelt.
+  if ! out=$(php tools/test_cron_billing.php 2>&1); then
+    echo "MAHNUNG/WIEDERHOLUNG: $out"
+    fail=1
+  fi
+  # Auswertungen: Altersstufen, Zeitraumgrenzen, Stundensatzaufloesung.
+  if ! out=$(php tools/test_reports.php 2>&1); then
+    echo "AUSWERTUNG: $out"
+    fail=1
+  fi
+  # Und die Auswertungsseite einmal wirklich rendern - php -l sieht
+  # weder einen falschen Array-Schluessel im Markup noch ein max() auf
+  # eine leere Liste, und im Browser waere beides ein weisses Fenster.
+  if ! out=$(php tools/test_reports_render.php 2>&1); then
+    echo "AUSWERTUNG (Darstellung): $out"
+    fail=1
+  fi
 else
   echo "HINWEIS: php nicht gefunden - Demo-Pruefungen uebersprungen."
 fi

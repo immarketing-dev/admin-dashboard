@@ -144,7 +144,16 @@ class SqliteSpiegelPDO extends PDO
         // CURDATE() kennt SQLite ebenfalls nicht. DATE('now') ist das
         // Gegenstueck; dass es UTC liefert statt der Serverzeitzone,
         // spielt fuer eine Spiegelung zu Pruefzwecken keine Rolle.
-        return preg_replace('/\bCURDATE\s*\(\s*\)/i', "DATE('now')", $sql);
+        $sql = preg_replace('/\bCURDATE\s*\(\s*\)/i', "DATE('now')", $sql);
+
+        // YEAR(x) -> CAST(strftime('%Y', x) AS INTEGER). Der Cast ist
+        // noetig, weil strftime eine Zeichenkette liefert und der
+        // aufrufende Code die Jahreszahl als Zahl weiterverwendet.
+        return preg_replace(
+            '/\bYEAR\s*\(\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\)/i',
+            "CAST(strftime('%Y', $1) AS INTEGER)",
+            $sql
+        );
     }
 
     /**
@@ -190,6 +199,14 @@ class SqliteSpiegelPDO extends PDO
         $statement = self::zeitfunktionen($statement);
         $statement = preg_replace('/^\s*TRUNCATE TABLE\s+/i', 'DELETE FROM ', $statement);
         return parent::exec($statement);
+    }
+
+    public function query(string $query, ?int $fetchMode = null, mixed ...$args): PDOStatement|false
+    {
+        $query = self::zeitfunktionen($query);
+        return $fetchMode === null
+            ? parent::query($query)
+            : parent::query($query, $fetchMode, ...$args);
     }
 
     public function prepare(string $query, array $options = []): PDOStatement|false

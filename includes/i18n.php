@@ -200,6 +200,14 @@ function datenwert(string $wert): string
             'Anruf'            => t('Anruf'),
             'Deadline'         => t('Deadline'),
             'Sonstiges'        => t('Sonstiges'),
+            // Altersstufen der offenen Posten (includes/reports.php).
+            // Zusammengesetzt aus OP_STUFEN; wer die Stufen aendert,
+            // bekommt hier deutsche Namen zurueck, bis er sie ergaenzt.
+            'nicht fällig'     => t('nicht fällig'),
+            '1–30 Tage'        => t('1–30 Tage'),
+            '31–60 Tage'       => t('31–60 Tage'),
+            '61–90 Tage'       => t('61–90 Tage'),
+            'über 90 Tage'     => t('über 90 Tage'),
             // Wiederholungsintervalle (includes/recurring.php)
             'Monatlich'        => t('Monatlich'),
             'Vierteljährlich'  => t('Vierteljährlich'),

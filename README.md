@@ -37,6 +37,8 @@ mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
   by month, year or lifetime
 - **Quotes** — PDF generation, status tracking, one-click conversion to an
   invoice, e-mail delivery with the PDF attached
+- **Reports** — revenue per client, outstanding invoices by age, hours
+  worked but not yet billed, and a timesheet with CSV export
 - **Support tickets** — priorities, internal and client-visible notes
 - **Calendar** — deadlines and due dates, appointments with .ics invitations
 - **Wiki** — articles with attachments, selectively shareable with clients
@@ -275,6 +277,35 @@ A single run creates at most twelve entries per template, so a `next_run`
 accidentally left in the distant past cannot produce a decade of invoices
 at once. The rest follows on the next run.
 
+### Reports
+
+Everything these need was already in the database — an hourly rate on
+client and project, tracked minutes with a "billed" marker, invoice
+amounts with due dates. None of it was evaluated: the finance page drew
+income against expenses over time, and `time_entries` had no view of its
+own at all. So this page adds no table and no migration; it only reads.
+
+Four answers, on two tabs:
+
+- **Outstanding invoices by age** — 1–30, 31–60, 61–90 and older, with the
+  reminder count per invoice beside it. Here the traffic-light colouring
+  is an actual statement about state, which is why it is used.
+- **Revenue per client**, per year, with paid and outstanding kept apart —
+  a single figure mixing both says nothing about whether the money
+  arrived.
+- **Worked but not yet billed**, per project, valued at the rate in force
+  today (project before client before default). This is the number the
+  page exists for: what has been done and not yet invoiced.
+- **A timesheet** — by week, month or year, grouped by day and by project,
+  with a CSV export.
+
+**What is deliberately absent:** the hourly rate actually achieved per
+project. That would require attributing an invoice amount to a project,
+and the data does not support it — `finances` knows a contact, not a
+`task_id`. The only link is `time_entries.invoice_id`, and an invoice
+usually covers more than one project's time. A number that pretended to
+know would be worse than no number.
+
 ### Cross-domain single sign-on
 
 `SSO_ENABLED` is `false` by default. `sso.php` only **consumes** tokens — it
@@ -387,6 +418,9 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_i18n.php` | renders the navigation in both languages and compares |
 | `test_demo.php` | which requests the demo guard lets through |
 | `test_seed_demo.php` | runs the demo seed against SQLite and checks the result |
+| `test_cron_billing.php` | reminder stages, recurrence dates, double-send guards |
+| `test_reports.php` | ageing buckets, period boundaries, hourly-rate resolution |
+| `test_reports_render.php` | renders the reports page in eight states, empty database included |
 
 Run separately when you need them:
 
@@ -396,8 +430,7 @@ php tools/check_forms.php         # no form tag swallows its own CSRF field
 php tools/test_csrf.php           # CSRF helpers
 php tools/test_upload.php         # upload validation
 php tools/test_mail_templates.php # mail templates render without CSS variables
-php tools/test_cron_billing.php   # reminder stages, recurrence dates,
-                                  #   and the counters that stop a double send
+
 php tools/export_demo_sql.php <file.sql>
                                   # demo data as an importable MySQL file,
                                   #   for hosting without a shell

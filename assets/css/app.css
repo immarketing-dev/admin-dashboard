@@ -1309,3 +1309,105 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     .grid-stack-item > .ui-resizable-se { display: none; }
     .grid-stack-item .widget-title { cursor: default; }
 }
+
+
+/* =========================================
+   AUSWERTUNGEN (reports.php)
+   =========================================
+   Die Balken sind bewusst CSS und nicht Chart.js: eine Leinwand kann
+   var() nicht aufloesen, und finances.php muss dafuer die Tokenwerte
+   ueber getComputedStyle nachreichen. Fuer einen Groessenvergleich in
+   einer Tabellenzeile ist das zu viel Apparat - ein div mit einer
+   Breite in Prozent traegt beide Themen von allein.
+
+   Farbregel wie im ganzen Panel: Primary traegt den reinen
+   Groessenvergleich, Gruen/Gelb/Rot ausschliesslich Status. Beim Alter
+   offener Posten IST die Farbe eine Statusaussage, beim Umsatz je Kunde
+   nicht. */
+
+.report-bar {
+    display: flex;
+    height: 8px;
+    width: 100%;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin: 4px 0;
+}
+.report-bar-fill {
+    background: var(--color-primary);
+    height: 100%;
+    /* Ein Wert groesser null soll sichtbar bleiben, auch wenn er neben
+       dem groessten der Reihe fast verschwindet. */
+    min-width: 2px;
+    transition: width .3s ease;
+}
+.report-bar-fill[style*="width: 0%"] { min-width: 0; }
+.report-bar-success { background: var(--accent-success); }
+.report-bar-warn    { background: var(--accent-warning); }
+.report-bar-danger  { background: var(--accent-danger); }
+
+/* Zahlen, die untereinander stehen und verglichen werden, brauchen
+   gleich breite Ziffern - sonst tanzen die Kommastellen. */
+.report-num { font-variant-numeric: tabular-nums; }
+
+/* Die Altersstufen als Reihe. Sie fuellen die Breite gleichmaessig und
+   brechen auf schmalen Geraeten um, statt zu schrumpfen. */
+.report-stufen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-4);
+}
+.report-stufe-name {
+    font-size: var(--text-2xs);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+}
+.report-stufe-betrag {
+    font-weight: 700;
+    font-size: var(--text-base-plus);
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+}
+.report-stufe-anzahl { font-size: var(--text-2xs); color: var(--text-muted); }
+
+/* Ein Tag auf dem Stundenzettel. */
+.report-tag { margin-bottom: var(--space-4); }
+.report-tag-kopf {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 4px;
+}
+.report-eintrag {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1.4fr) 60px 20px;
+    gap: var(--space-2);
+    align-items: baseline;
+    padding: 3px 0;
+    font-size: var(--text-sm);
+}
+.report-eintrag-zeit { color: var(--text-muted); font-size: var(--text-xs); }
+.report-eintrag-projekt,
+.report-eintrag-notiz { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.report-eintrag-dauer { text-align: right; font-weight: 600; }
+.report-eintrag-status { text-align: right; }
+
+/* Auf dem Telefon ist fuer fuenf Spalten kein Platz. Notiz und
+   Abrechnungszeichen treten zurueck, damit Projekt und Dauer lesbar
+   bleiben - die Notiz steht ohnehin im CSV. */
+@media (max-width: 575.98px) {
+    .report-eintrag { grid-template-columns: 44px minmax(0, 1fr) 56px; }
+    .report-eintrag-notiz,
+    .report-eintrag-status { display: none; }
+}
+
+.report-projekt { margin-bottom: var(--space-4); }
+.report-projekt:last-child { margin-bottom: 0; }
+
+/* Die Jahresauswahl sitzt im Widget-Kopf und soll ihn nicht auseinander
+   ziehen. */
+.report-jahr { width: auto; display: inline-block; }

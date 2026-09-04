@@ -9,6 +9,44 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Reports and a timesheet (`reports.php`).** Since schema version 9
+  everything needed for a profitability calculation had been in place: an
+  hourly rate on client and project, tracked minutes with a "billed"
+  marker, invoice amounts with due dates. None of it was evaluated —
+  `finances.php` draws income against expenses over time and nothing else,
+  and `time_entries` had no view of its own at all. The question "which
+  client actually pays their way" could not be answered by the panel,
+  although it held the answer.
+
+  No new table and no migration: the page only reads. Four answers on two
+  tabs — outstanding invoices by age, revenue per client per year (paid
+  and outstanding kept apart), hours worked but not yet billed valued at
+  the rate in force today, and a timesheet by week, month or year with a
+  CSV export.
+
+  Deliberately absent: the hourly rate actually achieved per project.
+  Attributing an invoice amount to a project is not possible with this
+  data — `finances` knows a contact, not a `task_id`, and the only link
+  is `time_entries.invoice_id`, which an invoice covering several projects
+  makes ambiguous. A figure that pretended to know would be worse than
+  none.
+
+  The bars are CSS, not Chart.js: a canvas cannot resolve `var()`, which
+  is why `finances.php` has to feed it token values through
+  `getComputedStyle`. For a size comparison inside a table row that is too
+  much apparatus, and a `div` with a percentage width carries both themes
+  by itself.
+
+  67 checks in `tools/test_reports.php`, plus
+  `tools/test_reports_render.php`, which renders the real page source in
+  eight states — empty database, both tabs, all three periods, nonsense
+  in the query string, and once in English. `php -l` sees none of those:
+  a wrong array key in the markup or a `max()` over an empty list is a
+  blank page in the browser and a clean bill on the command line. That
+  test found two things while being written — a function defined in the
+  page rather than in its include, and a query the SQLite mirror could not
+  run.
+
 - **Scheduled tasks: `cron.php`.** Nothing in this panel happened without a
   visitor. `finances.php` stamped overdue invoices while rendering the
   list, `includes/auth.php` trimmed the log on login, `index.php` queried

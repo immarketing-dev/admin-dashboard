@@ -21,6 +21,7 @@
  * und nicht in eine Erinnerungsmail.
  */
 
+require_once __DIR__ . '/dates.php';
 require_once __DIR__ . '/mailer.php';
 require_once __DIR__ . '/mail_templates.php';
 require_once __DIR__ . '/logging.php';
@@ -70,25 +71,9 @@ function mahnstufen(string $roh): array
     return $tage;
 }
 
-/**
- * Wie viele Tage ist diese Rechnung überfällig?
- *
- * Gerechnet auf Tagesgrenzen, nicht auf Sekunden: eine Rechnung, die
- * heute fällig ist, ist nicht überfällig, und morgen ist sie es um genau
- * einen Tag - unabhängig davon, zu welcher Uhrzeit der Cron-Lauf kommt.
- */
-function tage_ueberfaellig(?string $faellig, string $heute): int
-{
-    if ($faellig === null || trim($faellig) === '') {
-        return 0;
-    }
-    $f = strtotime(substr($faellig, 0, 10) . ' 00:00:00');
-    $h = strtotime(substr($heute, 0, 10) . ' 00:00:00');
-    if ($f === false || $h === false) {
-        return 0;
-    }
-    return (int) floor(($h - $f) / 86400);
-}
+// tage_ueberfaellig() steht in includes/dates.php - die offene-Posten-
+// Liste in includes/reports.php rechnet dasselbe und soll dafuer nicht
+// den Mailversand mitladen muessen.
 
 /**
  * Ist für diese Rechnung die nächste Stufe erreicht?

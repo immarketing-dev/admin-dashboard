@@ -46,6 +46,7 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at
         <?php if($_sb_open_inv > 0): ?><span class="sidebar-badge sidebar-badge-warning"><?= $_sb_open_inv ?></span><?php endif; ?>
       </a>
     </li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'reports.php') ? 'active' : '' ?>" href="reports"><i class="bi bi-graph-up-arrow"></i> <span class="nav-text"><?= te('Auswertungen') ?></span></a></li>
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'tickets.php') ? 'active' : '' ?>" href="tickets">
         <i class="bi bi-life-preserver"></i> <span class="nav-text"><?= te('Support-Tickets') ?></span>
