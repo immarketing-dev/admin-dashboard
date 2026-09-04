@@ -260,7 +260,30 @@ echo "=== Pruefung 5: die Ausnahmeliste bleibt klein ===\n";
 // DEMO_ERLAUBTE_AKTIONEN laesst einzelne POSTs durch. Dort darf nur
 // stehen, was allein die Sitzung beruehrt - eine Aktion mit
 // Datenbankzugriff waere ein Loch im Schreibschutz.
-$bekannt = ['verify_portal_pin'];
+$bekannt = [
+    // Beruehrt nur die Sitzung (portal.php ueberspringt im Demo-Modus
+    // zusaetzlich den Fehlversuchszaehler).
+    'verify_portal_pin',
+    // Sprache und Farben darf ein Besucher fuer sich aendern. Die
+    // Handler in settings.php schreiben dann in die Sitzung statt in
+    // die Datenbank - genau das prueft die Schleife darunter.
+    'save_language', 'save_design', 'reset_design',
+];
+
+// Eine durchgelassene Aktion, deren Handler nicht auf den Demo-Modus
+// verzweigt, schriebe dort in die Datenbank - und scheiterte am
+// SELECT-only-Benutzer, mitten in der Verarbeitung.
+$settings = code_ohne_kommentare($wurzel . '/settings.php');
+foreach (['save_language', 'save_design', 'reset_design'] as $aktion) {
+    $pos = strpos($settings, "=== '$aktion'");
+    if ($pos === false) continue;
+    $block = substr($settings, $pos, 1400);
+    if (strpos($block, 'demo_mode()') === false) {
+        echo "FEHLER: Handler $aktion laesst den Demo-Modus unberuecksichtigt.
+";
+        $fail = 1;
+    }
+}
 require_once $wurzel . '/includes/env.php';
 if (!defined('DEMO_MODE')) define('DEMO_MODE', false);
 require_once $wurzel . '/includes/demo.php';

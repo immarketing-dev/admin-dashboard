@@ -21,7 +21,7 @@
       if (collapseBtn) {
           collapseBtn.addEventListener('click', function () {
               var collapsed = document.body.classList.toggle('sidebar-collapsed');
-              localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+              window.ansichtSpeicher.setItem('sidebarCollapsed', collapsed ? '1' : '0');
           });
       }
   })();

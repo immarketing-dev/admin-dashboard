@@ -11,7 +11,7 @@ try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM milestone_comments W
 try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM project_comments WHERE author_contact_id IS NOT NULL AND admin_seen=0")->fetchColumn(); } catch (PDOException $e) {}
 $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status IN ('Offen','Überfällig')")->fetchColumn();
 ?>
-<script>if(localStorage.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');</script>
+<script>if(window.ansichtSpeicher.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');</script>
 <button id="sidebarCollapseBtn" aria-label="<?= te('Seitenleiste einklappen') ?>" title="<?= te('Seitenleiste einklappen') ?>"><i class="bi bi-chevron-left ci"></i></button>
 <div class="sidebar" id="sidebar">
   <div class="brand">

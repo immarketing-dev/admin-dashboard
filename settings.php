@@ -15,9 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         // Nur bekannte Sprachen: ein fremder Wert wuerde lang() dazu
         // bringen, eine nicht vorhandene Datei zu suchen.
         if (in_array($sprache, SPRACHEN, true)) {
-            $pdo->prepare("INSERT INTO settings (k,v) VALUES ('ui_language',?) ON DUPLICATE KEY UPDATE v=?")
-                ->execute([$sprache, $sprache]);
-            log_event($pdo, 'SETTINGS_LANG', "Sprache der Oberfläche auf '$sprache' gesetzt.");
+            if (demo_mode()) {
+                demo_einstellung_setzen('ui_language', $sprache);
+            } else {
+                $pdo->prepare("INSERT INTO settings (k,v) VALUES ('ui_language',?) ON DUPLICATE KEY UPDATE v=?")
+                    ->execute([$sprache, $sprache]);
+                log_event($pdo, 'SETTINGS_LANG', "Sprache der Oberfläche auf '$sprache' gesetzt.");
+            }
         }
         header("Location: settings?tab=design&saved=1"); exit();
     }
@@ -25,21 +29,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'save_design') {
         $cp = trim($_POST['color_primary'] ?? '');
         $cs = trim($_POST['color_sidebar'] ?? '');
-        if (preg_match('/^#[0-9a-fA-F]{6}$/', $cp)) {
-            $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('color_primary',?) ON DUPLICATE KEY UPDATE v=?");
-            $s->execute([$cp, $cp]);
+        foreach (['color_primary' => $cp, 'color_sidebar' => $cs] as $schluessel => $wert) {
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $wert)) continue;
+            if (demo_mode()) {
+                demo_einstellung_setzen($schluessel, $wert);
+                continue;
+            }
+            $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?")
+                ->execute([$schluessel, $wert, $wert]);
         }
-        if (preg_match('/^#[0-9a-fA-F]{6}$/', $cs)) {
-            $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('color_sidebar',?) ON DUPLICATE KEY UPDATE v=?");
-            $s->execute([$cs, $cs]);
+        if (!demo_mode()) {
+            log_event($pdo, 'SETTINGS_DESIGN', "Farben geändert: Primär $cp, Seitenleiste $cs.");
         }
-        log_event($pdo, 'SETTINGS_DESIGN', "Farben geändert: Primär $cp, Seitenleiste $cs.");
         header("Location: settings?tab=design&saved=1"); exit();
     }
 
     if ($_POST['action'] === 'reset_design') {
-        $pdo->exec("DELETE FROM settings WHERE k IN ('color_primary','color_sidebar')");
-        log_event($pdo, 'SETTINGS_DESIGN', 'Farben auf Standard zurückgesetzt.');
+        if (demo_mode()) {
+            demo_einstellung_loeschen('color_primary');
+            demo_einstellung_loeschen('color_sidebar');
+        } else {
+            $pdo->exec("DELETE FROM settings WHERE k IN ('color_primary','color_sidebar')");
+            log_event($pdo, 'SETTINGS_DESIGN', 'Farben auf Standard zurückgesetzt.');
+        }
         header("Location: settings?tab=design&saved=1"); exit();
     }
 
@@ -208,9 +220,10 @@ $active_tab = $_GET['tab'] ?? 'design';
 $saved = isset($_GET['saved']);
 
 // Read current values (fall back to constants)
-$s_ui_language    = setting('ui_language', 'de');
-$s_color_primary  = setting('color_primary', COLOR_PRIMARY);
-$s_color_sidebar  = setting('color_sidebar', COLOR_SIDEBAR);
+// demo_einstellung() liefert ausserhalb der Demo den uebergebenen Wert.
+$s_ui_language    = demo_einstellung('ui_language',   setting('ui_language', 'de'));
+$s_color_primary  = demo_einstellung('color_primary', setting('color_primary', COLOR_PRIMARY));
+$s_color_sidebar  = demo_einstellung('color_sidebar', setting('color_sidebar', COLOR_SIDEBAR));
 $s_company_name   = setting('company_name', COMPANY_NAME);
 $s_company_short  = setting('company_short', COMPANY_SHORT);
 $s_base_url       = setting('base_url', BASE_URL);
@@ -287,6 +300,13 @@ require 'includes/layout_start.php';
     <!-- ========== TAB: DARSTELLUNG ========== -->
     <?php if($active_tab === 'design'): ?>
     <div class="settings-card" style="border-radius:0 10px 10px 10px;">
+
+<?php if (demo_mode()):  ?>
+      <div class="demo-hinweis mb-4" role="status">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <span><?= te('Sprache, Farben und Thema gelten nur für Ihren Besuch. Andere Besucher sehen weiterhin die Vorgaben, und beim nächsten Aufruf beginnt alles von vorn.') ?></span>
+      </div>
+<?php endif;  ?>
 
       <!-- Sprache -->
       <div class="settings-section-title"><i class="bi bi-translate me-2"></i><?= te('Sprache') ?></div>
@@ -609,7 +629,7 @@ require 'includes/layout_start.php';
               <span class="text-truncate">
                 <span class="d-block fw-semibold"><?= htmlspecialchars($t['label']) ?></span>
                 <span class="d-block small<?= $k === $tpl_key ? '' : ' text-muted' ?>" style="font-size:var(--text-2xs);">
-                  <?= !empty($t['plaintext']) ? 'Vorbelegung, reiner Text' : 'HTML mit Rahmen' ?>
+                  <?= !empty($t['plaintext']) ? te('Vorbelegung, reiner Text') : te('HTML mit Rahmen') ?>
                 </span>
               </span>
               <?php if($angepasst): ?>
@@ -748,14 +768,14 @@ require 'includes/layout_start.php';
     // Dark mode toggle
     const dmToggle = document.getElementById('darkModeToggle');
     if (dmToggle) {
-        dmToggle.checked = localStorage.getItem('darkMode') === '1';
+        dmToggle.checked = window.ansichtSpeicher.getItem('darkMode') === '1';
         dmToggle.addEventListener('change', function() {
             if (this.checked) {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('darkMode', '1');
+                window.ansichtSpeicher.setItem('darkMode', '1');
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('darkMode', '0');
+                window.ansichtSpeicher.setItem('darkMode', '0');
             }
         });
     }

@@ -355,7 +355,7 @@ require 'includes/layout_start.php';
           </ul>
         </nav>
         <?php endif; ?>
-        <div class="text-muted mt-3" style="font-size: 12px;"><i class="bi bi-info-circle"></i> <?= $log_filter || $log_search ? count($logs) . ' gefilterte Einträge (max. ' . ($_log_limit*2>2000?2000:$_log_limit*2) . ').' : 'Anzeige der letzten ' . $_log_limit . ' Einträge.' ?></div>
+        <div class="text-muted mt-3" style="font-size: 12px;"><i class="bi bi-info-circle"></i> <?= $log_filter || $log_search ? count($logs) . te(' gefilterte Einträge (max. ') . ($_log_limit*2>2000?2000:$_log_limit*2) . ').' : te('Anzeige der letzten ') . $_log_limit . te(' Einträge.') ?></div>
       <?php else: ?>
         <div class="text-center py-5"><i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i><h4 class="mt-3 text-muted"><?= te('Logbuch ist leer') ?></h4></div>
       <?php endif; ?>

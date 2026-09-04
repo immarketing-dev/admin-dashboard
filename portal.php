@@ -14,13 +14,13 @@ app_session_start();
 
 // Token-Prüfung
 if (!isset($_GET['token']) || strlen($_GET['token']) < 10) {
-    die("Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.");
+    die(t('Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.'));
 }
 $token = $_GET['token'];
 $stmt = $pdo->prepare("SELECT * FROM contacts WHERE deleted_at IS NULL AND portal_token = ?");
 $stmt->execute([$token]);
 $client = $stmt->fetch(PDO::FETCH_ASSOC);
-if (!$client) { die("Zugang abgelaufen oder ungültig."); }
+if (!$client) { die(t('Zugang abgelaufen oder ungültig.')); }
 
 $_sess_key  = 'portal_auth_' . $client['id'];
 $_pin_error = '';
@@ -112,9 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pin  = trim($_POST['pin'] ?? '');
         $pin2 = trim($_POST['pin_confirm'] ?? '');
         if (mb_strlen($pin) < 4) {
-            $_pin_error = 'Der Zugangscode muss mindestens 4 Zeichen haben.';
+            $_pin_error = t('Der Zugangscode muss mindestens 4 Zeichen haben.');
         } elseif ($pin !== $pin2) {
-            $_pin_error = 'Die Zugangscodes stimmen nicht überein.';
+            $_pin_error = t('Die Zugangscodes stimmen nicht überein.');
         } else {
             $pdo->prepare("UPDATE contacts SET portal_pin=?, portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")
                 ->execute([password_hash($pin, PASSWORD_DEFAULT), $client['id']]);
@@ -132,12 +132,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$fresh || empty($fresh['portal_pin'])) {
             // Kein PIN gesetzt — kein Verify möglich (Angreifer soll keinen Hinweis erhalten)
-            $_pin_error = 'Falscher Zugangscode.';
+            $_pin_error = t('Falscher Zugangscode.');
         } else {
             $locked_until = $fresh['portal_pin_locked_until'];
             if ($locked_until && strtotime($locked_until) > time()) {
                 $mins = (int)ceil((strtotime($locked_until) - time()) / 60);
-                $_pin_error = "Zu viele Fehlversuche. Bitte noch $mins Minute(n) warten.";
+                $_pin_error = t('Zu viele Fehlversuche. Bitte noch %d Minute(n) warten.', $mins);
             } elseif (password_verify(trim($_POST['pin'] ?? ''), $fresh['portal_pin'])) {
                 // In der Demo bleibt der Zähler unberührt: der dortige
                 // Datenbankbenutzer darf ausschließlich lesen.
@@ -149,18 +149,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif (demo_mode()) {
                 // Kein Fehlversuchszähler in der Demo - ein einzelner
                 // Besucher könnte sonst das Portal für alle sperren.
-                $_pin_error = 'Falscher Zugangscode.';
+                $_pin_error = t('Falscher Zugangscode.');
             } else {
                 $attempts = (int)$fresh['portal_pin_attempts'] + 1;
                 if ($attempts >= 5) {
                     $pdo->prepare("UPDATE contacts SET portal_pin_attempts=?, portal_pin_locked_until=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?")
                         ->execute([$attempts, $client['id']]);
                     log_event($pdo, 'PORTAL_PIN_LOCKED', "Portalzugang von {$client['name']} nach 5 Fehlversuchen für 30 Minuten gesperrt.");
-                    $_pin_error = 'Zu viele Fehlversuche. Zugang für 30 Minuten gesperrt.';
+                    $_pin_error = t('Zu viele Fehlversuche. Zugang für 30 Minuten gesperrt.');
                 } else {
                     log_event($pdo, 'PORTAL_PIN_FAILED', "Falscher Zugangscode für {$client['name']} (Versuch $attempts von 5).");
                     $pdo->prepare("UPDATE contacts SET portal_pin_attempts=? WHERE id=?")->execute([$attempts, $client['id']]);
-                    $_pin_error = 'Falscher Zugangscode. Noch ' . (5 - $attempts) . ' Versuch(e).';
+                    $_pin_error = t('Falscher Zugangscode. Noch %d Versuch(e).', 5 - $attempts);
                 }
             }
         }
@@ -403,7 +403,7 @@ if (!$_is_auth) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zugang · <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></title>
+  <title><?= te('Zugang') ?> · <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
@@ -464,7 +464,7 @@ if (!$_is_auth) {
 
   <?php if ($_pin_is_set): ?>
     <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);"><?= te('Willkommen zurück') ?></h4>
-    <p class="text-muted text-center mb-4" style="font-size:13.5px;">Hallo <?= $_first_name ?>, geben Sie Ihren Zugangscode ein.</p>
+    <p class="text-muted text-center mb-4" style="font-size:13.5px;"><?= te('Hallo %s, geben Sie Ihren Zugangscode ein.', $_first_name) ?></p>
   <?php else: ?>
     <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);"><?= te('Portal einrichten') ?></h4>
     <p class="text-muted text-center mb-4" style="font-size:13.5px;"><?= te('Legen Sie einmalig einen persönlichen Zugangscode für Ihr Portal fest.') ?></p>
@@ -1034,18 +1034,18 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <div class="toast-body fw-bold">
         <?php
           $msgs = [
-            'approved'        => 'Meilenstein erfolgreich abgesegnet!',
-            'feedback'        => 'Ihr Feedback wurde gespeichert!',
-            'deleted'         => 'Datei erfolgreich entfernt!',
-            'uploaded'        => 'Datei(en) erfolgreich hochgeladen!',
-            'ticket_created'  => 'Ihre Anfrage wurde gesendet!',
-            'reply_sent'      => 'Ihre Antwort wurde gesendet!',
-            'ticket_closed'   => 'Ticket als erledigt markiert.',
-            'ticket_deleted'  => 'Ticket wurde gelöscht.',
-            'profile_updated' => 'Ihre Daten wurden aktualisiert!',
-            'quote_accepted'  => 'Vielen Dank! Wir haben Ihre Zusage erhalten.',
-            'quote_question'  => 'Ihre Rückfrage ist bei uns eingegangen.',
-            'comment'         => 'Ihr Beitrag ist gespeichert.',
+            'approved'        => t('Meilenstein erfolgreich abgesegnet!'),
+            'feedback'        => t('Ihr Feedback wurde gespeichert!'),
+            'deleted'         => t('Datei erfolgreich entfernt!'),
+            'uploaded'        => t('Datei(en) erfolgreich hochgeladen!'),
+            'ticket_created'  => t('Ihre Anfrage wurde gesendet!'),
+            'reply_sent'      => t('Ihre Antwort wurde gesendet!'),
+            'ticket_closed'   => t('Ticket als erledigt markiert.'),
+            'ticket_deleted'  => t('Ticket wurde gelöscht.'),
+            'profile_updated' => t('Ihre Daten wurden aktualisiert!'),
+            'quote_accepted'  => t('Vielen Dank! Wir haben Ihre Zusage erhalten.'),
+            'quote_question'  => t('Ihre Rückfrage ist bei uns eingegangen.'),
+            'comment'         => t('Ihr Beitrag ist gespeichert.'),
           ];
           echo '<i class="bi bi-check-circle-fill me-2"></i>' . ($msgs[$_GET['msg']] ?? '');
         ?>
@@ -1068,9 +1068,9 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <?php endif; ?>
       </p>
       <h1 class="text-white fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:clamp(22px,5vw,36px);">
-        <?= $is_partner ? 'Guten Tag' : 'Willkommen' ?><?= $client['company'] ? ', '.htmlspecialchars($client['company']) : ', '.htmlspecialchars(explode(' ',$client['name'])[0]) ?>!
+        <?= $is_partner ? te('Guten Tag') : 'Willkommen' ?><?= $client['company'] ? ', '.htmlspecialchars($client['company']) : ', '.htmlspecialchars(explode(' ',$client['name'])[0]) ?>!
       </h1>
-      <p class="text-white-50 mb-0 small"><?= $is_partner ? 'Ihr persönliches Partner-Portal' : 'Ihr persönliches Projektportal' ?></p>
+      <p class="text-white-50 mb-0 small"><?= $is_partner ? te('Ihr persönliches Partner-Portal') : te('Ihr persönliches Projektportal') ?></p>
     </div>
     <div class="d-flex gap-3 flex-wrap justify-content-center">
       <div class="portal-header-stat">
@@ -1090,7 +1090,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <?php endif; ?>
       <div class="portal-header-stat">
         <div class="stat-val" style="<?= $open_ticket_count > 0 ? 'color:var(--accent-danger);' : '' ?>"><?= $open_ticket_count ?></div>
-        <div class="stat-lbl"><?= $is_partner ? 'Offene Anfragen' : 'Support-Tickets' ?></div>
+        <div class="stat-lbl"><?= $is_partner ? te('Offene Anfragen') : 'Support-Tickets' ?></div>
       </div>
     </div><!-- /stats -->
   </div><!-- /container -->
@@ -1155,7 +1155,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <?php if(empty($projects)): ?>
         <div class="empty-state bg-white rounded-4 shadow-sm border">
           <i class="bi bi-folder-x"></i>
-          <p><?= $is_partner ? 'Aktuell sind keine gemeinsamen Projekte hinterlegt.' : 'Aktuell sind keine Projekte hinterlegt.' ?></p>
+          <p><?= $is_partner ? te('Aktuell sind keine gemeinsamen Projekte hinterlegt.') : te('Aktuell sind keine Projekte hinterlegt.') ?></p>
         </div>
 
       <?php else: ?>
@@ -1222,7 +1222,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
                 <!-- Milestone Timeline -->
                 <?php if(!empty($milestones)): ?>
-                <div class="section-label"><i class="bi bi-list-check me-1"></i><?= $is_partner ? 'Projektschritte' : 'Roadmap & Meilensteine' ?></div>
+                <div class="section-label"><i class="bi bi-list-check me-1"></i><?= $is_partner ? 'Projektschritte' : te('Roadmap & Meilensteine') ?></div>
                 <?php if(!$is_partner): ?>
                 <p class="text-muted small mb-3"><?= te('Schließen Sie erledigte Schritte mit "Absegnen" ab, damit wir mit dem nächsten beginnen können.') ?></p>
                 <?php endif; ?>
@@ -1249,11 +1249,11 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                             ?>
                               <span class="wait-chip <?= $wir ? 'wait-us' : 'wait-them' ?>">
                                 <i class="bi bi-hourglass-split me-1"></i>
-                                <?= $wir ? 'Wir sind dran' : 'Sie sind dran' ?>
+                                <?= $wir ? te('Wir sind dran') : te('Sie sind dran') ?>
                               </span>
                             <?php endif; ?>
                           <?php if($ms['approved_at']): ?>
-                            <div class="tl-meta"><i class="bi bi-patch-check-fill text-success me-1"></i><?= $is_partner ? 'Abgeschlossen am' : 'Freigegeben am' ?> <?= date('d.m.Y', strtotime($ms['approved_at'])) ?></div>
+                            <div class="tl-meta"><i class="bi bi-patch-check-fill text-success me-1"></i><?= $is_partner ? te('Abgeschlossen am') : te('Freigegeben am') ?> <?= date('d.m.Y', strtotime($ms['approved_at'])) ?></div>
                           <?php elseif($ms['is_completed']): ?>
                             <?php if(!$is_partner): ?>
                             <div class="tl-meta" style="color:var(--state-warn-fg);"><i class="bi bi-hourglass me-1"></i><?= te('Warten auf Ihre Freigabe') ?></div>
@@ -1299,7 +1299,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                       <div class="mt-2">
                         <button type="button" class="ms-comment-toggle" onclick="toggleCommentForm(this, <?= $ms['id'] ?>)">
                           <i class="bi bi-chat-dots"></i>
-                          <?= empty($ms_coms) ? 'Kommentar hinterlassen' : 'Antworten' ?>
+                          <?= empty($ms_coms) ? te('Kommentar hinterlassen') : 'Antworten' ?>
                         </button>
                         <div class="ms-comment-form" id="cf_<?= $ms['id'] ?>">
                           <div class="d-flex gap-2 mt-2">
@@ -1331,7 +1331,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
                 <!-- Dateien -->
                 <div class="mb-4">
-                  <div class="section-label"><i class="bi bi-paperclip me-1"></i><?= $is_partner ? 'Dokumente & Dateien' : 'Dateien & Assets' ?></div>
+                  <div class="section-label"><i class="bi bi-paperclip me-1"></i><?= $is_partner ? te('Dokumente & Dateien') : te('Dateien & Assets') ?></div>
 
                   <?php if(!empty($assets)): ?>
                   <div class="mb-3" style="max-height:220px;overflow-y:auto;">
@@ -1353,9 +1353,9 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                                && (int)$asset['uploaded_by_contact_id'] === (int)$client['id'];
                       ?>
                       <span class="<?= $is_admin ? 'file-badge-admin' : 'file-badge-client' ?>"
-                            title="<?= $is_admin ? 'Von uns hochgeladen' : htmlspecialchars($lader !== '' ? "Hochgeladen von $lader" : 'Von Ihrer Seite hochgeladen') ?>">
-                        <?= $is_admin ? 'Von uns'
-                             : ($lader !== '' ? htmlspecialchars($selbst ? 'Sie' : $lader) : 'Von Ihnen') ?>
+                            title="<?= $is_admin ? te('Von uns hochgeladen') : htmlspecialchars($lader !== '' ? "Hochgeladen von $lader" : te('Von Ihrer Seite hochgeladen')) ?>">
+                        <?= $is_admin ? te('Von uns')
+                             : ($lader !== '' ? htmlspecialchars($selbst ? 'Sie' : $lader) : te('Von Ihnen')) ?>
                       </span>
                       <?php if($viewable): ?>
                         <a href="<?= htmlspecialchars($asset['file_path']) ?>" target="_blank" class="text-muted" title="<?= te('Ansehen') ?>"><i class="bi bi-eye small"></i></a>
@@ -1486,8 +1486,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= te('Angebote') ?></h4>
             <p class="text-muted mb-0 small">
               <?= $is_partner
-                    ? 'Angebote zur gemeinsamen Zusammenarbeit.'
-                    : 'Hier können Sie ein Angebot direkt annehmen oder eine Rückfrage stellen.' ?>
+                    ? te('Angebote zur gemeinsamen Zusammenarbeit.')
+                    : te('Hier können Sie ein Angebot direkt annehmen oder eine Rückfrage stellen.') ?>
             </p>
           </div>
           <?php if($open_quote_count > 0): ?>
@@ -1540,7 +1540,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <?php if($frist !== null): ?>
                 <div class="section-label">
                   <i class="bi bi-calendar-event me-1"></i>
-                  <?= $abgelaufen ? 'Frist abgelaufen am' : 'Gültig bis' ?>
+                  <?= $abgelaufen ? te('Frist abgelaufen am') : te('Gültig bis') ?>
                   <?= date('d.m.Y', $frist) ?>
                 </div>
               <?php endif; ?>
@@ -1602,7 +1602,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
           <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Abrechnungen' : 'Rechnungsarchiv' ?></h4>
-          <p class="text-muted small m-0"><?= $is_partner ? 'Gemeinsame Abrechnungen auf einen Blick — als PDF herunterladbar.' : 'Alle Rechnungen auf einen Blick — als PDF herunterladbar.' ?></p>
+          <p class="text-muted small m-0"><?= $is_partner ? te('Gemeinsame Abrechnungen auf einen Blick — als PDF herunterladbar.') : te('Alle Rechnungen auf einen Blick — als PDF herunterladbar.') ?></p>
         </div>
         <?php if($open_inv_count > 0): ?>
           <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 fs-6">
@@ -1691,8 +1691,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <div class="row g-4">
         <div class="col-lg-5">
           <div class="project-card p-4">
-            <h5 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Neue Mitteilung' : 'Neue Anfrage' ?></h5>
-            <p class="text-muted small mb-4"><?= $is_partner ? 'Fragen zur Zusammenarbeit oder sonstige Anliegen? Ich melde mich schnellstmöglich.' : 'Probleme mit der Website oder Änderungswünsche? Ich melde mich schnellstmöglich.' ?></p>
+            <h5 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? te('Neue Mitteilung') : te('Neue Anfrage') ?></h5>
+            <p class="text-muted small mb-4"><?= $is_partner ? te('Fragen zur Zusammenarbeit oder sonstige Anliegen? Ich melde mich schnellstmöglich.') : te('Probleme mit der Website oder Änderungswünsche? Ich melde mich schnellstmöglich.') ?></p>
             <form method="POST">
     <?= csrf_field() ?>
               <div class="mb-3">
@@ -1704,14 +1704,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <textarea name="message" class="form-control" rows="5" required placeholder="<?= te('Beschreiben Sie Ihr Anliegen...') ?>" style="border-radius:10px;resize:none;"></textarea>
               </div>
               <button type="submit" name="create_ticket" class="btn btn-danger w-100 fw-bold py-2" style="border-radius:10px;">
-                <i class="bi bi-send me-2"></i><?= $is_partner ? 'Absenden' : 'Ticket absenden' ?>
+                <i class="bi bi-send me-2"></i><?= $is_partner ? 'Absenden' : te('Ticket absenden') ?>
               </button>
             </form>
           </div>
         </div>
 
         <div class="col-lg-7">
-          <h5 class="fw-bold mb-3" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Bisherige Mitteilungen' : 'Meine Anfragen' ?></h5>
+          <h5 class="fw-bold mb-3" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? te('Bisherige Mitteilungen') : te('Meine Anfragen') ?></h5>
           <?php if(empty($tickets)): ?>
             <div class="empty-state bg-white rounded-4 border shadow-sm">
               <i class="bi bi-inbox" style="font-size:36px;"></i>
@@ -1983,7 +1983,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     btn.addEventListener("click", function () {
         var dark = document.documentElement.getAttribute("data-theme") !== "dark";
         document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-        try { localStorage.setItem("darkMode", dark ? "1" : "0"); } catch (e) {}
+        try { window.ansichtSpeicher.setItem("darkMode", dark ? "1" : "0"); } catch (e) {}
         paint();
     });
 })();

@@ -12,6 +12,12 @@
 $wurzel = dirname(__DIR__);
 require_once $wurzel . '/includes/env.php';
 
+// Vor jeder Ausgabe: session_start() scheitert sonst auch auf der
+// Kommandozeile, sobald etwas geschrieben wurde. Pruefung 7 braucht
+// eine laufende Sitzung.
+ini_set('session.save_path', sys_get_temp_dir());
+@session_start();
+
 // ─── Teilprozess: einen einzelnen Fall ausfuehren ────────────────────
 $fall = null;
 foreach ($argv as $arg) {
@@ -203,6 +209,41 @@ foreach ($pfade as $skript => $erwartet) {
     pruefe("Cookie-Pfad fuer $skript", $ist === $erwartet, "ergab '$ist', erwartet '$erwartet'");
 }
 echo '  ' . count($pfade) . " Pfade geprueft, Cookie bleibt im eigenen Verzeichnis.\n\n";
+
+echo "=== Pruefung 7: die Wahl eines Besuchers bleibt bei ihm ===\n";
+// Sprache und Farben darf ein Demo-Besucher aendern. Landeten sie in der
+// Datenbank, saehe der naechste Besucher die Einstellung des vorigen - und
+// eine unglueckliche Farbwahl bliebe fuer alle stehen.
+$_SESSION = [];
+
+pruefe('Ohne Wahl gilt der Standard',
+       demo_einstellung('color_primary', '#149ddd') === '#149ddd');
+
+demo_einstellung_setzen('color_primary', '#ff0000');
+pruefe('Die eigene Wahl wird zurueckgegeben',
+       demo_einstellung('color_primary', '#149ddd') === '#ff0000');
+pruefe('Sie liegt in der Sitzung, nicht anderswo',
+       ($_SESSION['demo_color_primary'] ?? null) === '#ff0000');
+
+// Eine neue Sitzung ist eine leere Sitzung - genau das trennt die Besucher.
+$_SESSION = [];
+pruefe('Eine frische Sitzung sieht wieder den Standard',
+       demo_einstellung('color_primary', '#149ddd') === '#149ddd');
+
+// Nur die drei vorgesehenen Schluessel, sonst waere es ein Schlupfloch.
+demo_einstellung_setzen('company_name', 'Fremdfirma');
+pruefe('Ein nicht vorgesehener Schluessel wird abgewiesen',
+       ($_SESSION['demo_company_name'] ?? null) === null);
+pruefe('Und liefert weiter den Standard',
+       demo_einstellung('company_name', 'Musterwerk') === 'Musterwerk');
+
+pruefe('Genau drei Einstellungen sind freigegeben',
+       count(DEMO_EIGENE_EINSTELLUNGEN) === 3,
+       implode(', ', DEMO_EIGENE_EINSTELLUNGEN));
+
+$_SESSION = [];
+echo '  OK: ' . count(DEMO_EIGENE_EINSTELLUNGEN)
+   . " Einstellungen, sitzungsgebunden, ohne Datenbankzugriff.\n\n";
 
 echo "=== Zusammenfassung ===\n";
 if ($fehler === []) {

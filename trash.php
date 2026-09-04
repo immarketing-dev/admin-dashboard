@@ -114,7 +114,7 @@ require 'includes/layout_start.php';
 <?php if (isset($_GET['msg'])): ?>
   <div class="alert alert-success alert-dismissible fade show mb-3">
     <i class="bi bi-check-circle me-2"></i>
-    <?= $_GET['msg'] === 'restored' ? 'Eintrag wiederhergestellt.' : 'Eintrag endgültig gelöscht.' ?>
+    <?= $_GET['msg'] === 'restored' ? te('Eintrag wiederhergestellt.') : te('Eintrag endgültig gelöscht.') ?>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
 <?php endif; ?>
@@ -162,7 +162,7 @@ require 'includes/layout_start.php';
         <?php foreach ($rows as $r): $rest = (int) $r['rest']; ?>
           <tr>
             <td>
-              <div class="fw-semibold text-strong-c"><?= htmlspecialchars($r['titel'] ?? '(ohne Titel)') ?></div>
+              <div class="fw-semibold text-strong-c"><?= htmlspecialchars($r['titel'] ?? te('(ohne Titel)')) ?></div>
               <?php if (trim((string) $r['zusatz']) !== ''): ?>
                 <div class="text-muted" style="font-size:var(--text-2xs);"><?= htmlspecialchars($r['zusatz']) ?></div>
               <?php endif; ?>
