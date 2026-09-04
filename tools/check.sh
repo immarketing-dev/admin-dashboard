@@ -321,6 +321,13 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Passwort-Zuruecksetzung. Die Zusagen sind hier alle Verneinungen:
+  # ein Token gilt einmal, laeuft ab, und die Datenbank kennt nur seinen
+  # Hash.
+  if ! out=$(php tools/test_auth_reset.php 2>&1); then
+    echo "PASSWORT-RESET: $out"
+    fail=1
+  fi
   # Belege: die Pfadschranke beim Loeschen ist hier die heikle Stelle -
   # die Funktion bekommt einen Pfad aus der Datenbank und entfernt damit
   # eine Datei.

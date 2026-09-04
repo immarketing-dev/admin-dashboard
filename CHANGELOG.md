@@ -9,6 +9,44 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **A way back in: password reset.** There was none. No `password_reset`,
+  no `forgot`, nothing on the sign-in screen but an address and a
+  password. Whoever lost theirs needed database access — on someone
+  else's shared hosting, the point at which the panel gets abandoned.
+
+  Schema version 12 adds `password_resets`, a table rather than two
+  columns on `users` for the same reason `sso_tokens` is one: a token is
+  an event with a beginning, an end and a consumption, not an attribute of
+  a person.
+
+  Three things it does that the obvious implementation does not. It stores
+  the **hash** of the token, not the token — anyone reading a backup would
+  otherwise hold a working way in (SHA-256 suffices where bcrypt does not
+  apply: the token is already 256 bits of randomness and cannot be
+  guessed). It **expires** after an hour. And the answer is **identical**
+  whether or not the address exists, because otherwise the form is a
+  directory of the account names; even a failed send goes to the log
+  rather than the screen, since saying so would give the same answer away.
+
+  Redemption carries `AND used_at IS NULL`, so two concurrent openings of
+  the same link cannot both go through — only the run that actually
+  invalidates the row sets the password. Requests are rate-limited per IP
+  through the same `logs` table the sign-in lockout uses. The cron run
+  sweeps spent tokens.
+
+  33 checks in `tools/test_auth_reset.php`. The SQLite mirror learned
+  MySQL's `INTERVAL` arithmetic for it — which is what the sign-in
+  lockout, the log trimming and the trash all express their deadlines in,
+  so those become testable too.
+
+### Fixed
+- **`install/preflight.php` and `tools/check_schema.php` each knew only 21
+  of the schema's tables.** `task_contacts` and `project_comments` arrived
+  with migrations 5 and 6, and neither list was carried along. A fresh
+  install missing one of them was still reported as complete by the
+  pre-flight check, and check 1 of the schema test never watched them.
+  Both lists are now current.
+
 - **Receipts on expenses, and a yearly handover.** `finances` knew exactly
   one file column — `invoice_pdf_path`, the outgoing invoice the panel
   generates itself. An expense had nothing attached: the hosting bill, the

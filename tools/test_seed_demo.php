@@ -55,7 +55,7 @@ foreach (nach_sqlite(file_get_contents($wurzel . '/install/schema.sql')) as $anw
                   . "\n    " . substr(preg_replace('/\s+/', ' ', $anweisung), 0, 160);
     }
 }
-pruefe('Alle 23 Tabellen angelegt', $angelegt === 23, "es wurden $angelegt angelegt");
+pruefe('Alle 24 Tabellen angelegt', $angelegt === 24, "es wurden $angelegt angelegt");
 
 if ($fehler !== []) {
     echo "FEHLGESCHLAGEN beim Aufbau des Schemas:\n";

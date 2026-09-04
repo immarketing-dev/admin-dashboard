@@ -53,3 +53,18 @@ jobs:
 
       - name: Error page tests
         run: php tools/test_errors.php
+
+      - name: Reminder and recurrence tests
+        run: php tools/test_cron_billing.php
+
+      - name: Report tests
+        run: php tools/test_reports.php
+
+      - name: Report page renders
+        run: php tools/test_reports_render.php
+
+      - name: Receipt tests
+        run: php tools/test_receipts.php
+
+      - name: Password reset tests
+        run: php tools/test_auth_reset.php

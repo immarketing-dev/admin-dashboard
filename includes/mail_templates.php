@@ -72,6 +72,19 @@ function mail_templates(): array
             'button'  => 'Termin im Kalender speichern',
         ],
 
+        'password_reset' => [
+            'label'   => 'Passwort zurücksetzen',
+            'hint'    => 'Geht an Sie selbst, wenn Sie im Anmeldebild "Passwort vergessen" benutzen.',
+            'vars'    => ['link', 'minuten', 'firma'],
+            'subject' => 'Passwort zurücksetzen | {{firma}}',
+            'body'    => "Sie haben angefordert, das Passwort für Ihr Admin-Panel zurückzusetzen.\n\n"
+                       . "Der Link gilt {{minuten}} Minuten und lässt sich nur einmal verwenden:\n"
+                       . "{{link}}\n\n"
+                       . "Haben Sie das nicht angefordert, können Sie diese Nachricht ignorieren. "
+                       . "Ihr bisheriges Passwort bleibt gültig, solange der Link nicht benutzt wird.",
+            'button'  => 'Neues Passwort festlegen',
+        ],
+
         // Die folgenden drei füllen ein Formular vor, das Sie vor dem
         // Absenden noch bearbeiten. Der Rahmen gilt hier nicht — diese
         // Mails gehen als reiner Text hinaus.
@@ -275,6 +288,9 @@ function mail_preview_vars(): array
         'datum'        => '12.09.2026, 10:00 Uhr',
         'ort'          => 'Online (Videokonferenz)',
         'beschreibung' => 'Wir gehen den Entwurf gemeinsam durch.',
+        // Fuer die Vorschau der Vorlage 'password_reset'.
+        'link'         => 'https://admin.example.com/login?reset=…',
+        'minuten'      => '60',
         'nummer'       => 'RE-2026-014',
         'betrag'       => '1.240,00',
         'faellig'      => '20.09.2026',

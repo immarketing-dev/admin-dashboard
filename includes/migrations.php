@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -445,6 +445,40 @@ function migrations(): array
         // einen Beleg zu ueberschreiben.
         11 => [
             'ALTER TABLE finances ADD COLUMN receipt_path VARCHAR(255) DEFAULT NULL',
+        ],
+
+        // Version 12: ein Weg zurueck ins eigene Panel.
+        //
+        // Es gab keinen. Kein "Passwort vergessen", nichts im Anmeldebild
+        // ausser E-Mail und Passwort. Wer sein Passwort verlor, brauchte
+        // Zugriff auf die Datenbank - bei einer Installation, die jemand
+        // bei einem Massenhoster betreibt, ist das der Punkt, an dem das
+        // Panel aufgegeben wird.
+        //
+        // Eigene Tabelle statt zweier Spalten an users, aus demselben
+        // Grund, aus dem sso_tokens eine eigene hat: ein Token ist ein
+        // Vorgang mit Anfang, Ende und Verbrauch, kein Merkmal eines
+        // Benutzers. So laesst sich ausserdem sehen, dass ueberhaupt
+        // zurueckgesetzt wurde.
+        //
+        // Gespeichert wird der HASH des Tokens, nicht das Token. Wer die
+        // Datenbank liest - ein Backup, ein Auszug, eine Einschleusung -
+        // haette sonst einen gueltigen Anmeldeweg in der Hand. Ein
+        // einfaches SHA-256 genuegt hier, anders als beim Passwort:
+        // das Token ist selbst schon 256 Bit Zufall und nicht zu raten.
+        12 => [
+            'CREATE TABLE IF NOT EXISTS password_resets ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' user_id INT NOT NULL,'
+            . ' token_hash CHAR(64) NOT NULL,'
+            . ' expires_at DATETIME NOT NULL,'
+            . ' used_at DATETIME DEFAULT NULL,'
+            . ' created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' UNIQUE KEY uq_reset_token (token_hash),'
+            . ' KEY idx_reset_user (user_id, used_at),'
+            . ' CONSTRAINT fk_reset_user FOREIGN KEY (user_id)'
+            . '   REFERENCES users(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
         ],
     ];
 }

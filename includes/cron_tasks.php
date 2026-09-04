@@ -21,6 +21,7 @@
 require_once __DIR__ . '/logging.php';
 require_once __DIR__ . '/reminders.php';
 require_once __DIR__ . '/recurring.php';
+require_once __DIR__ . '/auth_reset.php';
 
 /**
  * Markiert offene Rechnungen nach Fristablauf als überfällig.
@@ -150,6 +151,26 @@ function cron_protokoll_kuerzen(PDO $pdo): array
 }
 
 /**
+ * Räumt verbrauchte und abgelaufene Rücksetz-Token weg.
+ *
+ * Kein dringender Vorgang - ein abgelaufenes Token ist bereits wirkungslos,
+ * die Prüfung in reset_token_einloesen() sieht auf expires_at. Es geht
+ * darum, dass die Tabelle nicht unbegrenzt wächst.
+ *
+ * @return array{titel: string, ok: bool, meldung: string}
+ */
+function cron_reset_token(PDO $pdo): array
+{
+    $weg = reset_token_aufraeumen($pdo);
+
+    return [
+        'titel'   => 'Rücksetz-Token',
+        'ok'      => true,
+        'meldung' => $weg > 0 ? $weg . ' abgelaufene(s) Token entfernt.' : 'Nichts zu tun.',
+    ];
+}
+
+/**
  * Führt alle Aufgaben aus und sammelt die Ergebnisse.
  *
  * Jede Aufgabe einzeln abgesichert: fällt eine aus - eine fehlende
@@ -171,6 +192,7 @@ function cron_ausfuehren(PDO $pdo, array $umgebung): array
         fn() => cron_wiederholungen($pdo, $heute),
         fn() => cron_mahnungen($pdo, $stufen, $firma, $wurzel, $jetzt),
         fn() => cron_protokoll_kuerzen($pdo),
+        fn() => cron_reset_token($pdo),
     ];
 
     $ergebnisse = [];

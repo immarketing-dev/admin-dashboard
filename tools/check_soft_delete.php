@@ -62,6 +62,10 @@ const AUSNAHMEN = [
     'includes/file_access.php' => [
         'SELECT invoice_pdf_path AS pfad FROM finances WHERE id = ?',
         'SELECT quote_pdf_path AS pfad FROM quotes WHERE id = ?',
+        // Belege folgen derselben Regel. Der Zweig hat gar keine
+        // Kunden-Variante: ein Ausgabenbeleg ist die Rechnung eines
+        // Dritten an den Betreiber und geht das Portal nie etwas an.
+        'SELECT receipt_path AS pfad FROM finances WHERE id = ?',
     ],
 ];
 

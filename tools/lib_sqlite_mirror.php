@@ -149,9 +149,54 @@ class SqliteSpiegelPDO extends PDO
         // YEAR(x) -> CAST(strftime('%Y', x) AS INTEGER). Der Cast ist
         // noetig, weil strftime eine Zeichenkette liefert und der
         // aufrufende Code die Jahreszahl als Zahl weiterverwendet.
-        return preg_replace(
+        $sql = preg_replace(
             '/\bYEAR\s*\(\s*([A-Za-z_][A-Za-z0-9_.]*)\s*\)/i',
             "CAST(strftime('%Y', $1) AS INTEGER)",
+            $sql
+        );
+
+        return self::intervalle($sql);
+    }
+
+    /**
+     * MySQLs INTERVAL-Rechnung nach SQLite.
+     *
+     * MySQL schreibt "NOW() - INTERVAL 60 MINUTE" und
+     * "DATE_SUB(x, INTERVAL 30 DAY)"; SQLite kennt beides nicht und
+     * bricht mit einem Syntaxfehler ab. Sein Gegenstueck ist
+     * datetime(x, '-60 minutes').
+     *
+     * Betrifft im Projekt die Anmeldesperre (includes/auth_login.php),
+     * das Kuerzen des Protokolls (includes/logging.php), den Papierkorb
+     * und die Rueckstz-Token - also durchweg Stellen, an denen eine
+     * Frist darueber entscheidet, ob etwas noch gilt. Genau die will man
+     * pruefen koennen.
+     *
+     * Die Einheit wird kleingeschrieben und bekommt ein "s"; SQLite
+     * nimmt Singular wie Plural, aber einheitlich liest es sich besser.
+     */
+    private static function intervalle(string $sql): string
+    {
+        $einheiten = 'SECOND|MINUTE|HOUR|DAY|WEEK|MONTH|YEAR';
+
+        // DATE_SUB(x, INTERVAL n EINHEIT) / DATE_ADD(...)
+        $sql = preg_replace_callback(
+            '/\bDATE_(SUB|ADD)\s*\(\s*(.+?)\s*,\s*INTERVAL\s+(\d+)\s+(' . $einheiten . ')S?\s*\)/i',
+            static function (array $m): string {
+                $zeichen = strtoupper($m[1]) === 'SUB' ? '-' : '+';
+                return "datetime(" . $m[2] . ", '" . $zeichen . $m[3] . ' ' . strtolower($m[4]) . "s')";
+            },
+            $sql
+        );
+
+        // x + INTERVAL n EINHEIT / x - INTERVAL n EINHEIT
+        // Als x kommt nur CURRENT_TIMESTAMP (aus NOW()) oder ein
+        // Spaltenname in Frage - ein beliebiger Ausdruck liesse sich mit
+        // einem regulaeren Ausdruck ohnehin nicht sicher abgrenzen.
+        return preg_replace_callback(
+            '/\b(CURRENT_TIMESTAMP|[A-Za-z_][A-Za-z0-9_.]*)\s*([+-])\s*INTERVAL\s+(\d+)\s+(' . $einheiten . ')S?\b/i',
+            static fn(array $m): string
+                => "datetime(" . $m[1] . ", '" . $m[2] . $m[3] . ' ' . strtolower($m[4]) . "s')",
             $sql
         );
     }

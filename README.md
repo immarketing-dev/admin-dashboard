@@ -362,6 +362,31 @@ subdomain with its own database and a `SELECT`-only database user — never
 on a real installation. See [docs/DEMO.md](docs/DEMO.md) for the full
 setup.
 
+### Forgotten password
+
+There was no way back in. No "forgot password", nothing on the sign-in
+screen but an address and a password — whoever lost theirs needed database
+access, which on someone else's shared hosting is the point where the
+panel gets abandoned.
+
+The sign-in screen now offers a link. The mechanics are the ones `sso.php`
+already used — a single-use token with an expiry, invalidated when
+redeemed — with three deliberate differences:
+
+- **The database stores the token's hash, not the token.** Anyone reading a
+  backup or a dump would otherwise hold a working way in.
+- **It expires** after an hour: long enough to read an e-mail, short enough
+  that a forgotten link in an inbox does not become a permanent second key.
+- **The answer never reveals whether an address exists.** Requesting a reset
+  for an unknown address looks exactly like requesting one for a known
+  address — otherwise the form would be a directory of your accounts.
+
+Requests are rate-limited per IP through the same `logs` table the sign-in
+lockout uses, so the form cannot be turned into a mailing machine. Sending
+needs SMTP configured in `.env`; without it the request is accepted, the
+mail fails, and the failure goes to the log rather than to the screen —
+saying so out loud would reveal that the address exists.
+
 ### Locked out
 
 Five failed logins from one IP address within fifteen minutes trigger a
@@ -450,6 +475,8 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_cron_billing.php` | reminder stages, recurrence dates, double-send guards |
 | `test_reports.php` | ageing buckets, period boundaries, hourly-rate resolution |
 | `test_reports_render.php` | renders the reports page in eight states, empty database included |
+| `test_receipts.php` | archive naming, the CSV, and the path guard on deletion |
+| `test_auth_reset.php` | single use, expiry, hashed storage, per-IP rate limit |
 
 Run separately when you need them:
 

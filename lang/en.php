@@ -1624,4 +1624,29 @@ return [
         => "PDF or image, 20 MB at most. A new receipt replaces the existing one.",
     "Ausgaben mit Belegen"
         => "Expenses with receipts",
+    // ── Passwort zurücksetzen ────────────────────────────────────────
+    "Passwort vergessen?"
+        => "Forgot your password?",
+    "Passwort zurücksetzen"
+        => "Reset password",
+    "Geben Sie die E-Mail-Adresse Ihres Zugangs an. Wir schicken einen Link, mit dem sich ein neues Passwort festlegen lässt."
+        => "Enter the e-mail address of your account. We will send a link that lets you set a new password.",
+    "Link anfordern"
+        => "Request a link",
+    "Zurück zur Anmeldung"
+        => "Back to sign-in",
+    "Falls diese Adresse hinterlegt ist, wurde eine E-Mail mit einem Link verschickt."
+        => "If that address is on file, an e-mail with a link has been sent.",
+    "Zu viele Anforderungen. Bitte später erneut versuchen."
+        => "Too many requests. Please try again later.",
+    "Legen Sie ein neues Passwort für %s fest."
+        => "Set a new password for %s.",
+    "Passwort speichern"
+        => "Save password",
+    "Das Passwort wurde geändert. Sie können sich jetzt anmelden."
+        => "The password has been changed. You can sign in now.",
+    "Dieser Link ist nicht mehr gültig. Fordern Sie einen neuen an."
+        => "This link is no longer valid. Request a new one.",
+    "Neuen Link anfordern"
+        => "Request a new link",
 ];

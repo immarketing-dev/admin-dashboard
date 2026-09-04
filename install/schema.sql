@@ -82,6 +82,27 @@ CREATE TABLE IF NOT EXISTS sso_tokens (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Ein Weg zurueck ins eigene Panel. Vorher gab es keinen: wer sein
+-- Passwort verlor, brauchte Zugriff auf die Datenbank.
+--
+-- Gespeichert wird der HASH des Tokens, nicht das Token selbst. Wer die
+-- Datenbank liest - ein Backup, ein Auszug, eine Einschleusung - haette
+-- sonst einen gueltigen Anmeldeweg in der Hand. Ein einfaches SHA-256
+-- genuegt hier, anders als beim Passwort: das Token ist selbst schon
+-- 256 Bit Zufall und damit nicht zu raten.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at    DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_reset_token (token_hash),
+  KEY idx_reset_user (user_id, used_at),
+  CONSTRAINT fk_reset_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- -- CRM ----------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS contacts (
@@ -447,7 +468,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '11')
+INSERT INTO settings (k, v) VALUES ('schema_version', '12')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

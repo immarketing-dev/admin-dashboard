@@ -232,6 +232,11 @@ $known = [
     'quotes', 'support_tickets', 'ticket_notes', 'leads_inbox',
     'wiki_articles', 'wiki_attachments', 'wiki_client_shares',
     'monitored_urls', 'calendar_events', 'event_contacts', 'sso_tokens',
+    // Ueber die Migrationen 5 und 6 dazugekommen und bis hierher in
+    // dieser Liste vergessen - Pruefung 1 hat sie deshalb nicht
+    // ueberwacht.
+    'task_contacts', 'project_comments',
+    'password_resets',
 ];
 
 $check1_fail = 0;
