@@ -143,6 +143,9 @@ $riegelstellen = [
     'includes/auth.php' => 'demo_guard()',
     'portal.php'        => 'demo_guard()',
     'includes/demo.php' => 'function demo_guard',
+    // Ohne eigenen Cookie-Namen wuerde eine Demo unter derselben
+    // Host-Adresse die Anmeldung der echten Installation aushebeln.
+    'includes/session.php' => 'demo_mode()',
     'config.php'        => "define('DEMO_MODE'",
 ];
 $fehlend = [];
