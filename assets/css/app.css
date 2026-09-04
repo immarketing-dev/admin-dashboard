@@ -763,7 +763,10 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
        <button> ist, und erlaubte keinen Umbruch. */
     .top-header { padding: var(--space-4); }
     .top-header h2 { font-size: 18px; flex: 1 1 100%; }
-    .header-actions { flex: 1 1 100%; }
+    /* Rechtsbuendig: die Zeile gehoert den Schaltflaechen allein, und am
+       rechten Rand stehen sie dort, wo sie auf dem Desktop auch stehen -
+       der Daumen erreicht sie ausserdem leichter als links. */
+    .header-actions { flex: 1 1 100%; justify-content: flex-end; }
 }
 
 /* =========================================================
