@@ -20,10 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('color_sidebar',?) ON DUPLICATE KEY UPDATE v=?");
             $s->execute([$cs, $cs]);
         }
+        log_event($pdo, 'SETTINGS_DESIGN', "Farben geändert: Primär $cp, Seitenleiste $cs.");
         header("Location: settings?tab=design&saved=1"); exit();
     }
 
     if ($_POST['action'] === 'reset_design') {
+        log_event($pdo, 'SETTINGS_DESIGN', 'Farben auf Standard zurückgesetzt.');
         $pdo->exec("DELETE FROM settings WHERE k IN ('color_primary','color_sidebar')");
         header("Location: settings?tab=design&saved=1"); exit();
     }
@@ -36,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
             $s->execute([$k, $v, $v]);
         }
+        log_event($pdo, 'SETTINGS_COMPANY', 'Unternehmensangaben und Bankverbindung gespeichert.');
         header("Location: settings?tab=company&saved=1"); exit();
     }
 
@@ -46,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
             $s->execute([$k, $v, $v]);
         }
+        log_event($pdo, 'SETTINGS_NOTIFY', 'Benachrichtigungen gespeichert.');
         header("Location: settings?tab=notifications&saved=1"); exit();
     }
 
@@ -75,6 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $pdo->prepare("INSERT INTO settings (k,v) VALUES ('company_logo',?) ON DUPLICATE KEY UPDATE v=?")->execute([$rel, $rel]);
             }
         }
+        log_event($pdo, 'SETTINGS_LOGO', 'Firmenlogo hochgeladen.');
         header("Location: settings?tab=company&saved=1"); exit();
     }
 
@@ -82,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $lp = setting('company_logo', '');
         if ($lp) @unlink(__DIR__ . '/' . $lp);
         $pdo->exec("DELETE FROM settings WHERE k='company_logo'");
+        log_event($pdo, 'SETTINGS_LOGO', 'Firmenlogo entfernt.');
         header("Location: settings?tab=company&saved=1"); exit();
     }
 
@@ -115,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
         }
+        log_event($pdo, 'SETTINGS_FAVICON', 'Favicon hochgeladen.');
         header("Location: settings?tab=company&saved=1"); exit();
     }
 
@@ -122,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $fp = setting('favicon', '');
         if ($fp) @unlink(__DIR__ . '/' . $fp);
         $pdo->exec("DELETE FROM settings WHERE k='favicon'");
+        log_event($pdo, 'SETTINGS_FAVICON', 'Favicon entfernt.');
         header("Location: settings?tab=company&saved=1"); exit();
     }
 
@@ -134,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $v = trim($_POST[$k] ?? '');
             $st->execute([$k, $v, $v]);
         }
+        log_event($pdo, 'SETTINGS_MAIL_FRAME', 'Rahmen der E-Mails geändert.');
         header("Location: settings?tab=mail&saved=1"); exit();
     }
 
@@ -158,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
         }
+        log_event($pdo, 'SETTINGS_MAIL_TPL', "E-Mail-Vorlage '$key' geändert.");
         header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
     }
 
@@ -168,6 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $pdo->prepare("DELETE FROM settings WHERE k IN (?, ?)")
                 ->execute(['mailtpl_' . $key . '_subject', 'mailtpl_' . $key . '_body']);
         }
+        log_event($pdo, 'SETTINGS_MAIL_TPL', "E-Mail-Vorlage '$key' auf Standard zurückgesetzt.");
         header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
     }
 
@@ -175,6 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $ll = max(50, min(2000, (int)($_POST['log_limit'] ?? 200)));
         $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_limit',?) ON DUPLICATE KEY UPDATE v=?");
         $s->execute([$ll, $ll]);
+        log_event($pdo, 'SETTINGS_SYSTEM', 'Systemeinstellungen gespeichert.');
         header("Location: settings?tab=system&saved=1"); exit();
     }
 }

@@ -11,6 +11,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 // 3. Zentrale Config laden (ob_end_clean verhindert, dass PHPMailer-Warnings die Session brechen)
 ob_end_clean();
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
@@ -33,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $stmt->execute([$contact_id]);
         $c_name = $stmt->fetchColumn();
         
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_CREATED', ?)")->execute(["Portal-Zugang für '".$c_name."' erstellt."]);
+        log_event($pdo, 'PORTAL_CREATED', "Portal-Zugang für '".$c_name."' erstellt.");
     }
     
     // 2. Portal Mail & QR-Code senden (White-Label SMTP Config)
@@ -84,9 +85,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->AltBody = $_m['text'] . "\n\n" . $portal_link;
                 $mail->send();
                 
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MAIL_SENT', ?)")->execute(["Portal-Link via E-Mail an ".$c['name']." gesendet."]);
+                log_event($pdo, 'MAIL_SENT', "Portal-Link via E-Mail an ".$c['name']." gesendet.");
             } catch (Exception $e) {
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MAIL_ERROR', ?)")->execute(["SMTP Fehler beim Senden an ".$c['name'].": " . $mail->ErrorInfo]);
+                log_event($pdo, 'MAIL_ERROR', "SMTP Fehler beim Senden an ".$c['name'].": " . $mail->ErrorInfo);
             }
         }
     }
@@ -99,10 +100,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if ($action === 'edit_contact') {
             $params[] = (int)$_POST['contact_id'];
             $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=? WHERE id=?")->execute($params);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('CONTACT_EDITED', ?)")->execute(["Kontakt '".$name."' wurde aktualisiert."]);
+            log_event($pdo, 'CONTACT_EDITED', "Kontakt '".$name."' wurde aktualisiert.");
         } else {
             $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('CONTACT_ADDED', ?)")->execute(["Neuer Kontakt '".$name."' wurde angelegt."]);
+            log_event($pdo, 'CONTACT_ADDED', "Neuer Kontakt '".$name."' wurde angelegt.");
         }
     }
     
@@ -110,8 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     elseif ($action === 'reset_portal_pin') {
         $id = (int)$_POST['contact_id'];
         $pdo->prepare("UPDATE contacts SET portal_pin=NULL, portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_PIN_RESET',?)")
-            ->execute(["Portal-Zugangscode für Kontakt #$id zurückgesetzt."]);
+        log_event($pdo, 'PORTAL_PIN_RESET', "Portal-Zugangscode für Kontakt #$id zurückgesetzt.");
         header("Location: contacts?msg=pin_reset"); exit();
     }
 
@@ -126,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("UPDATE contacts SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([(int)$_POST['contact_id']]);
         
         if($del_name) {
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('CONTACT_DELETED', ?)")->execute(["Kontakt '".$del_name."' wurde gelöscht."]);
+            log_event($pdo, 'CONTACT_DELETED', "Kontakt '".$del_name."' wurde gelöscht.");
         }
     }
     

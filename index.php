@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
 
 // ==========================================
@@ -25,7 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $insert = $pdo->prepare("INSERT INTO contacts (name, email, phone, contact_type, source, notes) VALUES (?, ?, ?, 'Interessent', ?, ?)");
                 $insert->execute([$lead['name'], $lead['email'], $lead['phone'] ?? null, $lead['source'], $notes]);
                 
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('LEAD_ACCEPTED', ?)")->execute(["Neue Anfrage von " . $lead['name'] . " ins CRM übernommen."]);
+                log_event($pdo, 'LEAD_ACCEPTED', "Neue Anfrage von " . $lead['name'] . " ins CRM übernommen.");
                 
                 $pdo->prepare("DELETE FROM leads_inbox WHERE id = ?")->execute([$lead_id]);
             }
@@ -38,8 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $pdo->prepare("DELETE FROM leads_inbox WHERE id = ?")->execute([$lead_id]);
             
             if ($del_lead) {
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('LEAD_REJECTED', ?)")
-                    ->execute(["Anfrage von '" . $del_lead['name'] . "' (" . $del_lead['subject'] . ") wurde gelöscht."]);
+                log_event($pdo, 'LEAD_REJECTED', "Anfrage von '" . $del_lead['name'] . "' (" . $del_lead['subject'] . ") wurde gelöscht.");
             }
         }
     }
@@ -63,8 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             $pdo->prepare("INSERT INTO monitored_urls (url_name, url_link) VALUES (?, ?)")->execute([$name, $link]);
             
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MONITOR_ADDED', ?)")
-                ->execute(["URL '$name' zum System-Monitor hinzugefügt."]);
+            log_event($pdo, 'MONITOR_ADDED', "URL '$name' zum System-Monitor hinzugefügt.");
         } 
         elseif ($_POST['monitor_action'] === 'delete_url') {
             $url_id = (int)$_POST['url_id'];
@@ -76,8 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $pdo->prepare("DELETE FROM monitored_urls WHERE id = ?")->execute([$url_id]);
             
             if ($url_name) {
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MONITOR_DELETED', ?)")
-                    ->execute(["URL '$url_name' aus dem System-Monitor entfernt."]);
+                log_event($pdo, 'MONITOR_DELETED', "URL '$url_name' aus dem System-Monitor entfernt.");
             }
         }
     }

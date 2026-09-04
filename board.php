@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 
 require_once 'includes/auth.php';
 
@@ -23,8 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         $stmt->execute([$new_status, $task_id]);
         
         // LOG: Status im Board geändert
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_STATUS', ?)")
-            ->execute(["Kanban: '$task_title' auf '$new_status' verschoben."]);
+        log_event($pdo, 'TASK_STATUS', "Kanban: '$task_title' auf '$new_status' verschoben.");
         
         echo "OK";
     } else {

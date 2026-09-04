@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
@@ -70,8 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("INSERT INTO quotes (quote_number, subject, intro_text, contact_id, custom_name, status, tax_type, items, notes, total_amount, valid_until) VALUES (?,?,?,?,?,'Entwurf',?,?,?,?,?)")
             ->execute([$quote_number, $subject, $intro_text, $contact_id, $custom_name, $tax_type, json_encode($items), $notes, $total, $valid_until]);
 
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_CREATED',?)")
-            ->execute(["Angebot $quote_number erstellt."]);
+        log_event($pdo, 'QUOTE_CREATED', "Angebot $quote_number erstellt.");
         header("Location: quotes"); exit();
     }
 
@@ -92,8 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("UPDATE quotes SET subject=?, intro_text=?, contact_id=?, custom_name=?, status=?, tax_type=?, items=?, notes=?, total_amount=?, valid_until=? WHERE id=?")
             ->execute([$subject, $intro_text, $contact_id, $custom_name, $status, $tax_type, json_encode($items), $notes, $total, $valid_until, $id]);
 
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_EDITED',?)")
-            ->execute(["Angebot #$id aktualisiert."]);
+        log_event($pdo, 'QUOTE_EDITED', "Angebot #$id aktualisiert.");
         header("Location: quotes"); exit();
     }
 
@@ -107,8 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
         // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
         $pdo->prepare("UPDATE quotes SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_DELETED',?)")
-            ->execute(["Angebot {$q['quote_number']} gelöscht."]);
+        log_event($pdo, 'QUOTE_DELETED', "Angebot {$q['quote_number']} gelöscht.");
         header("Location: quotes"); exit();
     }
 
@@ -290,8 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
         $rel_path = build_quote_pdf($pdo, $q);
         $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=? AND status='Entwurf'")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_PDF',?)")
-            ->execute(["PDF für Angebot {$q['quote_number']} generiert."]);
+        log_event($pdo, 'QUOTE_PDF', "PDF für Angebot {$q['quote_number']} generiert.");
 
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="' . basename($rel_path) . '"');
@@ -349,8 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($q['status'] === 'Entwurf') {
                 $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=?")->execute([$id]);
             }
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_EMAIL_SENT',?)")
-                ->execute(["Angebot {$q['quote_number']} per E-Mail an $to_email gesendet."]);
+            log_event($pdo, 'QUOTE_EMAIL_SENT', "Angebot {$q['quote_number']} per E-Mail an $to_email gesendet.");
 
             header("Location: quotes?msg=email_sent"); exit();
         } catch (PHPMailerException $e) {
@@ -495,8 +491,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ->execute([$inv_num, $inv_num, $q['contact_id'], $client_name, $q['total_amount'], $q['notes'], $inv_pdf_path]);
 
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_CONVERTED',?)")
-            ->execute(["Angebot {$q['quote_number']} zu Rechnung $inv_num konvertiert."]);
+        log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q['quote_number']} zu Rechnung $inv_num konvertiert.");
 
         header("Location: finances?msg=invoice_created"); exit();
     }

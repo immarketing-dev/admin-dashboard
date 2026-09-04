@@ -9,6 +9,7 @@
  * ihn nie öffnet, zahlt auch keine Abfragen dafür.
  */
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
 require_once 'includes/csrf.php';
 
@@ -57,8 +58,7 @@ foreach (array_keys(PAPIERKORB) as $tabelle) {
     $geraeumt += $st->rowCount();
 }
 if ($geraeumt > 0) {
-    $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TRASH_PURGED', ?)")
-        ->execute(["$geraeumt Eintrag/Einträge nach " . AUFBEWAHRUNG_TAGE . ' Tagen endgültig entfernt.']);
+    log_event($pdo, 'TRASH_PURGED', "$geraeumt Eintrag/Einträge nach " . AUFBEWAHRUNG_TAGE . ' Tagen endgültig entfernt.');
 }
 
 // ── Aktionen ────────────────────────────────────────────────────────
@@ -71,16 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (($_POST['action'] ?? '') === 'restore') {
             $pdo->prepare("UPDATE $tabelle SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL")
                 ->execute([$id]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TRASH_RESTORED', ?)")
-                ->execute([PAPIERKORB[$tabelle]['label'] . ": Eintrag $id wiederhergestellt."]);
+            log_event($pdo, 'TRASH_RESTORED', PAPIERKORB[$tabelle]['label'] . ": Eintrag $id wiederhergestellt.");
             header("Location: trash?msg=restored#$tabelle"); exit();
         }
         if (($_POST['action'] ?? '') === 'purge') {
             // Nur was bereits im Papierkorb liegt - ein fehlgeleiteter
             // Aufruf darf keinen aktiven Datensatz treffen.
             $pdo->prepare("DELETE FROM $tabelle WHERE id = ? AND deleted_at IS NOT NULL")->execute([$id]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TRASH_PURGED', ?)")
-                ->execute([PAPIERKORB[$tabelle]['label'] . ": Eintrag $id endgültig gelöscht."]);
+            log_event($pdo, 'TRASH_PURGED', PAPIERKORB[$tabelle]['label'] . ": Eintrag $id endgültig gelöscht.");
             header("Location: trash?msg=purged#$tabelle"); exit();
         }
     }

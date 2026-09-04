@@ -131,6 +131,16 @@ private history.
   list of participants; and a "wer ist dran" marker per step that says
   whether the ball is with us or with them. Set in `tasks.php`, shown in the
   portal, counted in the sidebar badge.
+- Participants can be set while editing a project, not only from the
+  project card. The edit form carries a multi-select and reconciles
+  membership on save, so `added_at` survives.
+- `includes/logging.php` as the one place that writes a log entry, and
+  `tools/check_forms.php` in CI, which fails when a `csrf_field()` ends up
+  inside a form tag instead of within the form.
+- The system log gained figures at the top (entries, today, failed
+  attempts over seven days, last sign-in), a period filter and paging.
+  Older entries were previously unreachable: the page showed the newest N
+  and nothing else.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -205,6 +215,17 @@ private history.
 - 64 queries across 13 files now exclude deleted rows. Without that a
   deleted record comes back in a list, a total or a dropdown — which is why
   the check above exists rather than a promise that all of them were found.
+- Every log entry records the caller's IP. Only three of eighty did before,
+  while the log view has always shown an "IP-Adresse" column — so the
+  column was almost always empty. The eighty inserts became `log_event()`
+  calls; the two in the login path keep their own insert, because the
+  lockout counter depends on the IP they are handed rather than on
+  `REMOTE_ADDR`.
+- Twenty state-changing actions now leave a trace. All eleven settings
+  actions were silent — company data, colours, logo, favicon, mail
+  templates and system values could be changed without any record.
+  Dismissing a dashboard notice stays unlogged on purpose: it flips a
+  "seen" flag and would only add noise.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.
@@ -347,3 +368,15 @@ private history.
   `task_id` came straight out of the form into the insert, so any signed-in
   portal user could place a file in any project, including another
   client's. It now verifies membership and answers 403.
+- The portal showed "Sie" as the author of every client comment, whoever
+  wrote it. With several people on a project (#11) that was simply wrong.
+  Comments now carry the author's name, uploads and feedback record who
+  they came from (migration 7), and the panel shows those names too.
+- Table rows stayed white in the dark theme while their text turned light,
+  which made them close to unreadable. Bootstrap colours table cells
+  through its own variables, which were never pointed at the design
+  tokens. Affected every table in the panel, not just the log.
+- `csrf_field()` had landed inside a form tag in `portal.php` rather than
+  inside the form: the `?>` of a PHP echo in the `id` attribute ended the
+  tag for the expression that placed it. That form lost both its token and
+  its id, and deleting a file from the portal would have failed twice over.
