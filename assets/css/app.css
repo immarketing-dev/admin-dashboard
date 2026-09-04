@@ -7,7 +7,12 @@ body {
     color: var(--text-body);
     display: flex;
     margin: 0;
-    overflow-x: hidden;
+    /* "clip" und nicht "hidden": hidden macht aus dem Rumpf einen
+       eigenen Scroll-Behaelter, und daran scheitert jedes
+       position:sticky darin - der Kopf haette sich am Rumpf statt am
+       Sichtfeld festgehalten und waere mitgescrollt. "clip" schneidet
+       genauso ab, erzeugt aber keinen Scroll-Behaelter. */
+    overflow-x: clip;
 }
 body.portal-body { display: block; }
 
@@ -94,6 +99,25 @@ h1, h2, h3, h4, h5, h6, .brand, .widget-title {
     padding: var(--space-4) var(--space-6);
     border-radius: var(--radius-lg);
     box-shadow: var(--elev-rest);
+
+    /* Der Kopf bleibt beim Scrollen oben stehen - auf jeder Seite und
+       in jeder Breite. Unter der Seitenleiste (1050) und unter den
+       Bootstrap-Fenstern (1055), damit beide weiter darueber liegen. */
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+/* Oberhalb des Kopfes liegt das Innenpolster von .main-content. Ohne
+   Abdeckung scrollt der Inhalt in diesem Spalt sichtbar durch und
+   erscheint ueber dem Kopf. Das Pseudo-Element deckt genau diesen
+   Streifen mit der Seitenfarbe zu und wandert mit. */
+.top-header::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 100%;
+    height: var(--space-7);
+    background: var(--surface-page);
 }
 /* Der Titel darf schrumpfen (min-width:0), damit er die Aktionen nicht
    aus dem Kopf hinausdraengt - ohne das wurde "Projekte & Aufgaben" auf
@@ -675,6 +699,25 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     margin-bottom: var(--space-6);
     display: flex; flex-wrap: wrap; align-items: center;
     gap: var(--space-3);
+
+    /* Bleibt gleich unter dem Kopf stehen. Dessen Hoehe ist nicht
+       vorhersagbar - auf schmalen Geraeten bricht er in zwei oder drei
+       Zeilen um -, deshalb kommt sie zur Laufzeit aus
+       assets/js/sticky-header.js. Bis dahin gilt der Startwert aus
+       tokens.css, der dem einzeiligen Kopf entspricht. */
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-3));
+    z-index: 1010;
+}
+/* Derselbe durchscheinende Spalt wie beim Kopf, nur schmaler - hier ist
+   es der Abstand, den top oben freilaesst. */
+.filter-bar::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 100%;
+    height: var(--space-3);
+    background: var(--surface-page);
 }
 /* Das Suchfeld nimmt den freien Platz, gibt ihn aber wieder her, sobald
    es eng wird - min-width:0 hebt die Vorgabe auf, mit der ein Flex-Kind

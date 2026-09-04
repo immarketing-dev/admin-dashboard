@@ -8,8 +8,38 @@ private history.
 
 ## [Unreleased]
 
-### Security
-- **Uploaded files are no longer served directly.** Everything under
+### Added
+- **The page header and the filter bar stay put while scrolling**, on every
+  page and at every width. Both were part of the normal flow, so on a long
+  list the page title, its buttons, the global search and the whole filter
+  row scrolled out of sight — and filtering a list meant scrolling back to
+  the top first.
+
+  The header comes from `includes/layout_start.php`, which all twelve pages
+  use, and the filter bar is one shared `.filter-bar` class across the seven
+  pages that have one, so this is two rules in `app.css` rather than a change
+  per page. Pages without a filter bar (dashboard, board, calendar, settings,
+  trash) keep the sticky header; `board.php` and `calendar.php` carry their
+  search and month navigation in `$header_actions`, so those ride along.
+
+  Two details made it work. `body` had `overflow-x: hidden`, which turns the
+  body into its own scroll container — every `position: sticky` inside then
+  anchors to that container instead of the viewport and scrolls away anyway.
+  It is `overflow-x: clip` now, which clips the same way without creating a
+  container, and `tools/check.sh` rejects a relapse, because the symptom
+  gives no hint of the cause. And the filter bar has to latch below a header
+  whose height is not knowable in CSS — it wraps to two or three rows on a
+  phone, and changes again when the sidebar collapses or the fonts finish
+  loading. `assets/js/sticky-header.js` measures it with a `ResizeObserver`
+  and writes `--header-height`; the token carries a single-row default for
+  the moment before the script runs.
+
+  Verified with Playwright against the real stylesheets at 1280×800 and
+  375×667: after scrolling, the header sits at viewport top, the filter bar
+  exactly `--header-height + 12px` below it, and `elementFromPoint` hits
+  both rather than content showing through.
+
+### Security- **Uploaded files are no longer served directly.** Everything under
   `uploads/` was delivered by the web server to anyone who knew the path.
   For invoices the path did not even have to be guessed: they were named
   `Rechnung_RE-2026-001.pdf`, so counting from 001 upwards handed out every

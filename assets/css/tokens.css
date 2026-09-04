@@ -192,6 +192,12 @@
   /* Layout */
   --sidebar-width:           280px;
   --sidebar-width-collapsed: 72px;
+
+  /* Hoehe des Seitenkopfes. assets/js/sticky-header.js misst sie und
+     schreibt den echten Wert zur Laufzeit hierher - der Kopf bricht auf
+     schmalen Geraeten um und ist dann hoeher. Dieser Startwert gilt, bis
+     das Skript gelaufen ist, und entspricht dem einzeiligen Kopf. */
+  --header-height:           72px;
 }
 
 [data-theme="dark"] {

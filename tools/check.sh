@@ -203,6 +203,19 @@ if [ -n "$direkt" ]; then
   fail=1
 fi
 
+# --- 4e. Kein overflow-x:hidden am Seitenrumpf ---------------------------
+# "hidden" macht aus dem Rumpf einen eigenen Scroll-Behaelter. Jedes
+# position:sticky darin haelt sich dann an diesem Behaelter fest statt am
+# Sichtfeld - der Seitenkopf und die Filterleiste scrollen wieder mit,
+# ohne dass irgendetwas an ihren eigenen Regeln falsch waere. Der Fehler
+# ist von der Ursache her nicht zu erraten, deshalb dieser Riegel.
+# "clip" schneidet genauso ab und erzeugt keinen Behaelter.
+if grep -nE '^\s*overflow-x:\s*hidden' assets/css/app.css | grep -q .; then
+  echo "CSS: overflow-x:hidden gefunden - bricht position:sticky. 'clip' benutzen:"
+  grep -nE '^\s*overflow-x:\s*hidden' assets/css/app.css
+  fail=1
+fi
+
 # --- 5. Demo-Modus -------------------------------------------------------
 # check_demo prueft die Annahmen des Schreibschutzes (jede POST-Seite
 # gedeckt, kein Schreibzugriff im Anzeigepfad). test_seed_demo laesst die
