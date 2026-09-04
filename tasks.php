@@ -38,7 +38,7 @@ if (isset($_POST['ajax_action'])) {
     }
     
     if ($_POST['ajax_action'] === 'stop_timer') {
-        $stmt = $pdo->prepare("SELECT timer_start FROM tasks WHERE id = ?"); $stmt->execute([$task_id]);
+        $stmt = $pdo->prepare("SELECT timer_start FROM tasks WHERE deleted_at IS NULL AND id = ?"); $stmt->execute([$task_id]);
         $start = $stmt->fetchColumn();
         if ($start) {
             $minutes = round(abs(time() - strtotime($start)) / 60);
@@ -153,11 +153,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_ADDED', ?)")->execute(["Neues Projekt '". $title ."' wurde angelegt."]);
     }
     elseif ($action === 'delete_task') { 
-        $stmt = $pdo->prepare("SELECT title FROM tasks WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT title FROM tasks WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([$_POST['task_id']]);
         $del_title = $stmt->fetchColumn();
 
-        $pdo->prepare("DELETE FROM tasks WHERE id = ?")->execute([$_POST['task_id']]); 
+        // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
+        // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
+        $pdo->prepare("UPDATE tasks SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([(int)$_POST['task_id']]); 
         if($del_title) {
             $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_DELETED', ?)")->execute(["Projekt '". $del_title ."' wurde gelöscht."]);
         }
@@ -258,10 +260,10 @@ $filter_month = isset($_GET['start_month']) ? $_GET['start_month'] : 'all';
 $filter_created = isset($_GET['created']) ? $_GET['created'] : 'all'; 
 $filter_deadline = isset($_GET['deadline_filter']) ? $_GET['deadline_filter'] : 'all';
 
-$available_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(start_date, '%Y-%m') as ym FROM tasks WHERE start_date IS NOT NULL AND start_date != '0000-00-00' ORDER BY ym DESC")->fetchAll(PDO::FETCH_COLUMN);
+$available_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(start_date, '%Y-%m') as ym FROM tasks WHERE deleted_at IS NULL AND start_date IS NOT NULL AND start_date != '0000-00-00' ORDER BY ym DESC")->fetchAll(PDO::FETCH_COLUMN);
 
 $sql = "SELECT t.*, c.name AS contact_name, c.email AS contact_email, c.website AS contact_website, c.street, c.zip, c.city, c.company
-        FROM tasks t LEFT JOIN contacts c ON t.contact_id = c.id WHERE 1=1";
+        FROM tasks t LEFT JOIN contacts c ON t.contact_id = c.id WHERE t.deleted_at IS NULL AND 1=1";
 $params = [];
 
 if ($search_query !== '') { $sql .= " AND (t.title LIKE ? OR t.description LIKE ?)"; $params[] = "%$search_query%"; $params[] = "%$search_query%"; }
@@ -284,8 +286,8 @@ if ($filter_deadline === '30') { $sql .= " AND t.deadline IS NOT NULL AND t.dead
 $sql .= ($sort_by === 'newest') ? " ORDER BY t.created_at DESC" : " ORDER BY CASE WHEN t.status IN ('Erledigt','Storniert') THEN 1 ELSE 0 END, t.deadline ASC";
 
 $stmt = $pdo->prepare($sql); $stmt->execute($params); $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$all_categories = $pdo->query("SELECT DISTINCT category FROM tasks WHERE category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
-$all_contacts = $pdo->query("SELECT * FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$all_categories = $pdo->query("SELECT DISTINCT category FROM tasks WHERE deleted_at IS NULL AND category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
+$all_contacts = $pdo->query("SELECT * FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Batch-Abfragen statt N+1 Queries pro Task
 $task_ids = array_column($tasks, 'id');

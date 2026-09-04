@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("UPDATE contacts SET portal_token = ? WHERE id = ?")->execute([$token, $contact_id]);
         
         // Name für das Logbuch holen
-        $stmt = $pdo->prepare("SELECT name FROM contacts WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT name FROM contacts WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([$contact_id]);
         $c_name = $stmt->fetchColumn();
         
@@ -38,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     
     // 2. Portal Mail & QR-Code senden (White-Label SMTP Config)
     elseif ($action === 'send_portal_mail') {
-        $stmt = $pdo->prepare("SELECT * FROM contacts WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT * FROM contacts WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([(int)$_POST['contact_id']]);
         $c = $stmt->fetch();
 
@@ -117,11 +117,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
     // 5. Kontakt Löschen
     elseif ($action === 'delete_contact') {
-        $stmt = $pdo->prepare("SELECT name FROM contacts WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT name FROM contacts WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([(int)$_POST['contact_id']]);
         $del_name = $stmt->fetchColumn();
 
-        $pdo->prepare("DELETE FROM contacts WHERE id = ?")->execute([(int)$_POST['contact_id']]);
+        // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
+        // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
+        $pdo->prepare("UPDATE contacts SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([(int)$_POST['contact_id']]);
         
         if($del_name) {
             $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('CONTACT_DELETED', ?)")->execute(["Kontakt '".$del_name."' wurde gelöscht."]);
@@ -137,7 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 $search_query = isset($_GET['search']) ? trim($_GET['search']) : ''; 
 $filter_type = isset($_GET['type']) ? $_GET['type'] : 'all';
 
-$sql = "SELECT * FROM contacts WHERE 1=1";
+$sql = "SELECT * FROM contacts WHERE deleted_at IS NULL AND 1=1";
 $params = [];
 
 if ($search_query !== '') {

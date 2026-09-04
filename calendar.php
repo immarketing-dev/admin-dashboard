@@ -175,7 +175,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 $task_stmt = $pdo->prepare("
     SELECT t.id, t.title, t.status, t.deadline, c.name AS contact_name
     FROM tasks t LEFT JOIN contacts c ON t.contact_id = c.id
-    WHERE t.deadline IS NOT NULL AND YEAR(t.deadline) = ? AND MONTH(t.deadline) = ?
+    WHERE t.deleted_at IS NULL AND t.deadline IS NOT NULL AND YEAR(t.deadline) = ? AND MONTH(t.deadline) = ?
     ORDER BY t.deadline ASC
 ");
 $task_stmt->execute([$year, $month]);
@@ -188,7 +188,7 @@ foreach ($task_stmt->fetchAll(PDO::FETCH_ASSOC) as $t) {
 $inv_stmt = $pdo->prepare("
     SELECT f.id, f.title, f.amount, f.status, f.due_date, c.name AS contact_name
     FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id
-    WHERE f.type = 'INCOME' AND f.due_date IS NOT NULL AND YEAR(f.due_date) = ? AND MONTH(f.due_date) = ?
+    WHERE f.deleted_at IS NULL AND f.type = 'INCOME' AND f.due_date IS NOT NULL AND YEAR(f.due_date) = ? AND MONTH(f.due_date) = ?
     ORDER BY f.due_date ASC
 ");
 $inv_stmt->execute([$year, $month]);
@@ -234,7 +234,7 @@ if (!empty($all_ev_ids)) {
 }
 
 // Contacts for modal
-$all_contacts = $pdo->query("SELECT id, name, email FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$all_contacts = $pdo->query("SELECT id, name, email FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $today_d  = (int)date('j');
 $today_m  = (int)date('m');

@@ -100,11 +100,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // ANGEBOT LÖSCHEN
     if ($action === 'delete_quote') {
         $id = (int)$_POST['quote_id'];
-        $row = $pdo->prepare("SELECT quote_number, quote_pdf_path FROM quotes WHERE id=?");
+        $row = $pdo->prepare("SELECT quote_number, quote_pdf_path FROM quotes WHERE deleted_at IS NULL AND id=?");
         $row->execute([$id]);
         $q = $row->fetch(PDO::FETCH_ASSOC);
         if ($q && $q['quote_pdf_path'] && file_exists($q['quote_pdf_path'])) @unlink($q['quote_pdf_path']);
-        $pdo->prepare("DELETE FROM quotes WHERE id=?")->execute([$id]);
+        // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
+        // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
+        $pdo->prepare("UPDATE quotes SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
         $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_DELETED',?)")
             ->execute(["Angebot {$q['quote_number']} gelöscht."]);
         header("Location: quotes"); exit();
@@ -281,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // PDF GENERIEREN & IM BROWSER ANZEIGEN
     if ($action === 'generate_pdf') {
         $id   = (int)$_POST['quote_id'];
-        $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.id=?");
+        $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt->execute([$id]);
         $q = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$q) { header("Location: quotes"); exit(); }
@@ -309,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             header("Location: quotes?error=invalid_email"); exit();
         }
 
-        $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country, c.email AS c_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.id=?");
+        $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country, c.email AS c_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt->execute([$id]);
         $q = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$q) { header("Location: quotes"); exit(); }
@@ -478,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($action === 'convert_to_invoice') {
         $id   = (int)$_POST['quote_id'];
-        $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.id=?");
+        $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt->execute([$id]);
         $q = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$q) { header("Location: quotes"); exit(); }
@@ -501,10 +503,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // DATEN LADEN
-$contacts = $pdo->query("SELECT id, name, company FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$contacts = $pdo->query("SELECT id, name, company FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 $filter_status = isset($_GET['status']) ? trim($_GET['status']) : 'all';
-$sql    = "SELECT q.*, c.name AS contact_name, c.email AS contact_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id";
+$sql    = "SELECT q.*, c.name AS contact_name, c.email AS contact_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL";
 $params = [];
 if ($filter_status !== 'all') { $sql .= " WHERE q.status = ?"; $params[] = $filter_status; }
 $sql .= " ORDER BY q.created_at DESC";
@@ -520,7 +522,7 @@ $kpi = $pdo->query("SELECT
     SUM(CASE WHEN status='Angenommen' THEN 1 ELSE 0 END) AS accepted,
     SUM(CASE WHEN status='Abgelehnt' THEN 1 ELSE 0 END) AS rejected,
     SUM(CASE WHEN status='Angenommen' THEN total_amount ELSE 0 END) AS revenue
-FROM quotes")->fetch(PDO::FETCH_ASSOC);
+FROM quotes WHERE deleted_at IS NULL")->fetch(PDO::FETCH_ASSOC);
 $page_title   = 'Angebote';
 $page_heading = 'Angebote';
 $current_page = basename($_SERVER['PHP_SELF']);

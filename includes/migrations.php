@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -208,6 +208,24 @@ function migrations(): array
             // der Index brauchte nichts zu leisten, danach haelt er die
             // Einmaligkeit auch gegen zwei gleichzeitige Anlagen durch.
             'ALTER TABLE finances ADD UNIQUE KEY uq_fin_invoice_number (invoice_number)',
+        ],
+
+        // Version 4: Papierkorb statt Sofortloeschung.
+        //
+        // Loeschen war endgueltig. Bei einem Kontakt haengt daran mehr, als
+        // im Moment des Klickens sichtbar ist - Projekte, Rechnungen,
+        // Tickets, Portalzugang. Bewusst nur diese vier Tabellen: bei Logs,
+        // Meilensteinen, Kommentaren und Dateien ist Loeschen billig und
+        // ein Papierkorb nur Ballast.
+        4 => [
+            'ALTER TABLE contacts ADD COLUMN deleted_at DATETIME DEFAULT NULL',
+            'ALTER TABLE contacts ADD INDEX idx_contacts_deleted (deleted_at)',
+            'ALTER TABLE tasks ADD COLUMN deleted_at DATETIME DEFAULT NULL',
+            'ALTER TABLE tasks ADD INDEX idx_tasks_deleted (deleted_at)',
+            'ALTER TABLE finances ADD COLUMN deleted_at DATETIME DEFAULT NULL',
+            'ALTER TABLE finances ADD INDEX idx_finances_deleted (deleted_at)',
+            'ALTER TABLE quotes ADD COLUMN deleted_at DATETIME DEFAULT NULL',
+            'ALTER TABLE quotes ADD INDEX idx_quotes_deleted (deleted_at)',
         ],
     ];
 }

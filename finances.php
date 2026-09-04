@@ -177,7 +177,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM für Excel Kompatibilität
     fputcsv($output, ['Datum', 'Typ', 'Titel', 'Betrag (EUR)', 'Status', 'Kunde/Empfaenger', 'Notiz', 'Fixkosten'], ';');
     
-    $stmt = $pdo->query("SELECT f.*, c.name as contact_name FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id ORDER BY record_date DESC");
+    $stmt = $pdo->query("SELECT f.*, c.name as contact_name FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE f.deleted_at IS NULL ORDER BY record_date DESC");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         fputcsv($output, [
             $row['record_date'], 
@@ -234,7 +234,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $id = (int)$_POST['record_id'];
         $new_status = $_POST['status'];
         
-        $stmt = $pdo->prepare("SELECT title FROM finances WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT title FROM finances WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([$id]);
         $fin_title = $stmt->fetchColumn();
 
@@ -249,14 +249,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     if ($action === 'delete_record') {
         $id = (int)$_POST['record_id'];
 
-        $stmt = $pdo->prepare("SELECT title, invoice_pdf_path FROM finances WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT title, invoice_pdf_path FROM finances WHERE deleted_at IS NULL AND id = ?");
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($row['invoice_pdf_path'] && file_exists(__DIR__ . '/' . $row['invoice_pdf_path'])) {
             @unlink(__DIR__ . '/' . $row['invoice_pdf_path']);
         }
-        $pdo->prepare("DELETE FROM finances WHERE id = ?")->execute([$id]);
+        // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
+        // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
+        $pdo->prepare("UPDATE finances SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
 
         $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
             ->execute(['FINANCE_DELETED', "Finanzeintrag '{$row['title']}' (ID: $id) wurde dauerhaft gelöscht."]);
@@ -298,15 +300,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     }
     if ($action === 'delete_quote') {
         $id = (int)$_POST['quote_id'];
-        $row2 = $pdo->prepare("SELECT quote_number,quote_pdf_path FROM quotes WHERE id=?"); $row2->execute([$id]); $q2 = $row2->fetch(PDO::FETCH_ASSOC);
+        $row2 = $pdo->prepare("SELECT quote_number,quote_pdf_path FROM quotes WHERE deleted_at IS NULL AND id=?"); $row2->execute([$id]); $q2 = $row2->fetch(PDO::FETCH_ASSOC);
         if ($q2 && $q2['quote_pdf_path'] && file_exists($q2['quote_pdf_path'])) @unlink($q2['quote_pdf_path']);
-        $pdo->prepare("DELETE FROM quotes WHERE id=?")->execute([$id]);
+        // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
+        // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
+        $pdo->prepare("UPDATE quotes SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
         $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_DELETED',?)")->execute(["Angebot {$q2['quote_number']} gelöscht."]);
         header("Location: finances?tab=quotes"); exit();
     }
     if ($action === 'generate_pdf') {
         $id   = (int)$_POST['quote_id'];
-        $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.id=?");
+        $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
         $rel_path = build_quote_pdf($pdo, $q2);
@@ -323,7 +327,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $subj2    = trim($_POST['email_subject'] ?? '');
         $body2    = trim($_POST['email_body'] ?? '');
         if (!filter_var($to_email, FILTER_VALIDATE_EMAIL)) { header("Location: finances?tab=quotes&error=invalid_email"); exit(); }
-        $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country,c.email AS c_email FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.id=?");
+        $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country,c.email AS c_email FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
         if (empty($q2['quote_pdf_path']) || !file_exists(__DIR__.'/'.$q2['quote_pdf_path'])) { $q2['quote_pdf_path'] = build_quote_pdf($pdo, $q2); }
@@ -344,7 +348,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     }
     if ($action === 'convert_to_invoice') {
         $id   = (int)$_POST['quote_id'];
-        $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.id=?");
+        $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
         $inv_num2 = next_invoice_number($pdo);
@@ -371,7 +375,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             header("Location: finances?error=no_phpmailer"); exit();
         }
 
-        $stmt = $pdo->prepare("SELECT f.*, c.email AS c_email FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE f.id=?");
+        $stmt = $pdo->prepare("SELECT f.*, c.email AS c_email FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE f.deleted_at IS NULL AND f.id=?");
         $stmt->execute([$id]);
         $rec = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$rec || empty($rec['invoice_pdf_path'])) {
@@ -416,11 +420,13 @@ $pdo->query("UPDATE finances SET status = 'Überfällig' WHERE type = 'INCOME' A
 $german_months = ['01'=>'Januar','02'=>'Februar','03'=>'März','04'=>'April','05'=>'Mai','06'=>'Juni','07'=>'Juli','08'=>'August','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Dezember'];
 
 $period = $_GET['period'] ?? 'month'; 
-$kpi_where = " WHERE 1=1";
+// Die Bedingung des Papierkorbs steht hier, nicht in der Abfrage: dort
+// wuerde sie vor diesem Ausdruck landen und ein zweites WHERE erzeugen.
+$kpi_where = " WHERE deleted_at IS NULL AND 1=1";
 if ($period === 'year') $kpi_where .= " AND YEAR(record_date) = YEAR(CURDATE())";
 if ($period === 'month') $kpi_where .= " AND MONTH(record_date) = MONTH(CURDATE()) AND YEAR(record_date) = YEAR(CURDATE())";
 
-$kpi_data = $pdo->query("SELECT type, status, amount FROM finances $kpi_where")->fetchAll(PDO::FETCH_ASSOC);
+$kpi_data = $pdo->query("SELECT type, status, amount FROM finances$kpi_where")->fetchAll(PDO::FETCH_ASSOC);
 $sum_income = 0; $sum_expense = 0; $sum_open = 0;
 foreach ($kpi_data as $k) {
     if ($k['type'] === 'INCOME') {
@@ -440,9 +446,9 @@ if ($period === 'month') {
     $ym = date('Y-m');
     $chart_title = $german_months[date('m')] . ' ' . $cur_year . ' (täglich)';
 
-    $inc_rows = $pdo->prepare("SELECT DAY(record_date) AS d, SUM(amount) AS total FROM finances WHERE type='INCOME' AND status='Bezahlt' AND DATE_FORMAT(record_date,'%Y-%m')=? GROUP BY DAY(record_date)");
+    $inc_rows = $pdo->prepare("SELECT DAY(record_date) AS d, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status='Bezahlt' AND DATE_FORMAT(record_date,'%Y-%m')=? GROUP BY DAY(record_date)");
     $inc_rows->execute([$ym]); $inc_by_day = array_column($inc_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'd');
-    $exp_rows = $pdo->prepare("SELECT DAY(record_date) AS d, SUM(amount) AS total FROM finances WHERE type='EXPENSE' AND DATE_FORMAT(record_date,'%Y-%m')=? GROUP BY DAY(record_date)");
+    $exp_rows = $pdo->prepare("SELECT DAY(record_date) AS d, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='EXPENSE' AND DATE_FORMAT(record_date,'%Y-%m')=? GROUP BY DAY(record_date)");
     $exp_rows->execute([$ym]); $exp_by_day = array_column($exp_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'd');
 
     for ($d = 1; $d <= $days_in_month; $d++) {
@@ -456,9 +462,9 @@ if ($period === 'month') {
     $cur_year = (int)date('Y');
     $chart_title = $cur_year . ' (monatlich)';
 
-    $inc_rows = $pdo->prepare("SELECT MONTH(record_date) AS m, SUM(amount) AS total FROM finances WHERE type='INCOME' AND status='Bezahlt' AND YEAR(record_date)=? GROUP BY MONTH(record_date)");
+    $inc_rows = $pdo->prepare("SELECT MONTH(record_date) AS m, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status='Bezahlt' AND YEAR(record_date)=? GROUP BY MONTH(record_date)");
     $inc_rows->execute([$cur_year]); $inc_by_month = array_column($inc_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'm');
-    $exp_rows = $pdo->prepare("SELECT MONTH(record_date) AS m, SUM(amount) AS total FROM finances WHERE type='EXPENSE' AND YEAR(record_date)=? GROUP BY MONTH(record_date)");
+    $exp_rows = $pdo->prepare("SELECT MONTH(record_date) AS m, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='EXPENSE' AND YEAR(record_date)=? GROUP BY MONTH(record_date)");
     $exp_rows->execute([$cur_year]); $exp_by_month = array_column($exp_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'm');
 
     for ($mo = 1; $mo <= 12; $mo++) {
@@ -471,9 +477,9 @@ if ($period === 'month') {
     // Yearly view: all years with data
     $chart_title = 'Gesamtübersicht (jährlich)';
 
-    $inc_rows = $pdo->query("SELECT YEAR(record_date) AS y, SUM(amount) AS total FROM finances WHERE type='INCOME' AND status='Bezahlt' GROUP BY YEAR(record_date)");
+    $inc_rows = $pdo->query("SELECT YEAR(record_date) AS y, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status='Bezahlt' GROUP BY YEAR(record_date)");
     $inc_by_year = array_column($inc_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'y');
-    $exp_rows = $pdo->query("SELECT YEAR(record_date) AS y, SUM(amount) AS total FROM finances WHERE type='EXPENSE' GROUP BY YEAR(record_date)");
+    $exp_rows = $pdo->query("SELECT YEAR(record_date) AS y, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='EXPENSE' GROUP BY YEAR(record_date)");
     $exp_by_year = array_column($exp_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'y');
 
     $years = array_unique(array_merge(array_keys($inc_by_year), array_keys($exp_by_year)));
@@ -500,7 +506,7 @@ $filter_month = $_GET['month'] ?? date('Y-m');
 $filter_recurring = isset($_GET['only_recurring']) ? 1 : 0;
 $search_query = trim($_GET['search'] ?? ''); 
 
-$sql = "SELECT f.*, c.name AS contact_name, c.email AS contact_email FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE 1=1";
+$sql = "SELECT f.*, c.name AS contact_name, c.email AS contact_email FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id WHERE f.deleted_at IS NULL AND 1=1";
 $params = [];
 
 if ($filter_type !== 'all') { $sql .= " AND f.type = ?"; $params[] = $filter_type; }
@@ -518,8 +524,8 @@ if (!empty($search_query)) {
 
 $sql .= " ORDER BY f.record_date DESC, f.id DESC";
 $stmt = $pdo->prepare($sql); $stmt->execute($params); $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$all_contacts = $pdo->query("SELECT * FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-$available_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(record_date, '%Y-%m') as ym FROM finances ORDER BY ym DESC")->fetchAll(PDO::FETCH_COLUMN);
+$all_contacts = $pdo->query("SELECT * FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$available_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(record_date, '%Y-%m') as ym FROM finances WHERE deleted_at IS NULL ORDER BY ym DESC")->fetchAll(PDO::FETCH_COLUMN);
 
 $filtered_income = 0; $filtered_expense = 0;
 foreach ($records as $r) {
@@ -532,15 +538,15 @@ foreach ($records as $r) {
 // ==========================================
 $active_tab = $_GET['tab'] ?? 'finances';
 
-$contacts_q     = $pdo->query("SELECT id, name, company FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$contacts_q     = $pdo->query("SELECT id, name, company FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 $filter_status_q = $_GET['qstatus'] ?? 'all';
-$sql_q = "SELECT q.*, c.name AS contact_name, c.email AS contact_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id";
+$sql_q = "SELECT q.*, c.name AS contact_name, c.email AS contact_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL";
 $params_q = [];
 if ($filter_status_q !== 'all') { $sql_q .= " WHERE q.status = ?"; $params_q[] = $filter_status_q; }
 $sql_q .= " ORDER BY q.created_at DESC";
 $stmt_q = $pdo->prepare($sql_q); $stmt_q->execute($params_q);
 $quotes = $stmt_q->fetchAll(PDO::FETCH_ASSOC);
-$kpi_q = $pdo->query("SELECT COUNT(*) AS total, SUM(CASE WHEN status='Entwurf' THEN 1 ELSE 0 END) AS draft, SUM(CASE WHEN status='Gesendet' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN status='Angenommen' THEN 1 ELSE 0 END) AS accepted, SUM(CASE WHEN status='Abgelehnt' THEN 1 ELSE 0 END) AS rejected, SUM(CASE WHEN status='Angenommen' THEN total_amount ELSE 0 END) AS revenue FROM quotes")->fetch(PDO::FETCH_ASSOC);
+$kpi_q = $pdo->query("SELECT COUNT(*) AS total, SUM(CASE WHEN status='Entwurf' THEN 1 ELSE 0 END) AS draft, SUM(CASE WHEN status='Gesendet' THEN 1 ELSE 0 END) AS sent, SUM(CASE WHEN status='Angenommen' THEN 1 ELSE 0 END) AS accepted, SUM(CASE WHEN status='Abgelehnt' THEN 1 ELSE 0 END) AS rejected, SUM(CASE WHEN status='Angenommen' THEN total_amount ELSE 0 END) AS revenue FROM quotes WHERE deleted_at IS NULL")->fetch(PDO::FETCH_ASSOC);
 
 $page_title   = $active_tab === 'quotes' ? 'Angebote' : 'Finanzen';
 $page_heading = $active_tab === 'quotes' ? 'Angebote' : 'Finanz-Zentrale';
