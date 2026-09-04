@@ -41,3 +41,52 @@ function log_event(PDO $pdo, string $type, string $description): void
         error_log('Protokolleintrag fehlgeschlagen (' . $type . '): ' . $e->getMessage());
     }
 }
+
+/**
+ * Raeumt alte Protokolleintraege weg - hoechstens einmal am Tag.
+ *
+ * logs waechst unbegrenzt: jede Anmeldung, jeder Fehlversuch, jede
+ * Aenderung. Bei einer Welle von Anmeldeversuchen sind das schnell
+ * Zehntausende Zeilen, und die Tabelle traegt die Sperrlogik - wird sie
+ * langsam, wird die Anmeldung langsam.
+ *
+ * Der Tagesriegel steht in settings und kostet nichts: setting() hat die
+ * Tabelle ohnehin schon vollstaendig geladen. Erst wenn der Tag wechselt,
+ * faellt ueberhaupt eine Abfrage an.
+ *
+ * @return int Anzahl geloeschter Zeilen (0 wenn heute schon geraeumt).
+ */
+function logs_aufraeumen(PDO $pdo): int
+{
+    $heute = date('Y-m-d');
+    if (setting('logs_pruned_on', '') === $heute) {
+        return 0;
+    }
+
+    $tage = (int) setting('log_retention_days', '365');
+    if ($tage < 7) {
+        $tage = 7;   // Untergrenze: eine Woche bleibt immer nachvollziehbar.
+    }
+
+    try {
+        $stmt = $pdo->prepare(
+            'DELETE FROM logs WHERE created_at < DATE_SUB(NOW(), INTERVAL ' . $tage . ' DAY)'
+        );
+        $stmt->execute();
+        $weg = $stmt->rowCount();
+
+        $pdo->prepare(
+            "INSERT INTO settings (k, v) VALUES ('logs_pruned_on', ?)
+             ON DUPLICATE KEY UPDATE v = VALUES(v)"
+        )->execute([$heute]);
+
+        if ($weg > 0) {
+            log_event($pdo, 'LOGS_PRUNED', "$weg Protokolleintraege aelter als $tage Tage entfernt.");
+        }
+        return $weg;
+    } catch (PDOException $e) {
+        // Aufraeumen ist Nebensache - es darf keine Seite zum Absturz bringen.
+        error_log('Protokoll aufraeumen fehlgeschlagen: ' . $e->getMessage());
+        return 0;
+    }
+}

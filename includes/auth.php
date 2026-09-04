@@ -24,3 +24,10 @@ if (demo_mode()) {
 
 require_once __DIR__ . '/csrf.php';
 csrf_token(); // Token bei jeder authentifizierten Anfrage initialisieren
+
+// Einmal taeglich das Protokoll kuerzen. Nicht in der Demo: dort darf
+// nichts geschrieben werden, und der Datenbankbenutzer darf es auch nicht.
+if (!demo_mode()) {
+    require_once __DIR__ . '/logging.php';
+    logs_aufraeumen($pdo);
+}

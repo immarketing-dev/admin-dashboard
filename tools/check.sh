@@ -283,6 +283,12 @@ if command -v php >/dev/null 2>&1; then
   # Wer welche hochgeladene Datei bekommt. Ein Fehler darin gibt Kunden
   # die Unterlagen anderer Kunden - und faellt im Betrieb nie auf, weil
   # niemand die Rechnung sieht, die er faelschlich sehen duerfte.
+  # Das Auffangnetz laeuft nur, wenn ohnehin schon etwas schiefging -
+  # ein Fehler darin ersetzt eine leere Seite durch eine andere.
+  if ! out=$(php tools/test_errors.php 2>&1); then
+    echo "FEHLERSEITE: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_file_access.php 2>&1); then
     echo "DATEIZUGRIFF: $out"
     fail=1

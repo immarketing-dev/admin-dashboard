@@ -23,6 +23,24 @@ const MIGRATION_BENIGN_ERRORS = [
 
 function run_migrations(PDO $pdo): void
 {
+    // Der Normalfall zuerst: die Tabelle steht und die Version stimmt.
+    // Diese Funktion laeuft bei JEDEM Seitenaufruf - auch bei jedem
+    // Poll alle 60 Sekunden -, und vorher stand ein CREATE TABLE davor,
+    // also eine Schemaanweisung pro Anfrage. Jetzt kostet der Normalfall
+    // genau eine Abfrage; der Rest laeuft nur, wenn wirklich etwas fehlt.
+    $current = 0;
+    try {
+        $stmt = $pdo->prepare("SELECT v FROM settings WHERE k = 'schema_version'");
+        $stmt->execute();
+        $current = (int) ($stmt->fetchColumn() ?: 0);
+
+        if ($current >= SCHEMA_VERSION) {
+            return;
+        }
+    } catch (PDOException $e) {
+        // settings gibt es noch nicht - Erstinstallation. $current bleibt 0.
+    }
+
     // settings ist die einzige Tabelle, die vor allem anderen da sein muss –
     // sie trägt die Versionsnummer.
     $pdo->exec(
@@ -30,14 +48,6 @@ function run_migrations(PDO $pdo): void
         . 'k VARCHAR(100) NOT NULL PRIMARY KEY, v TEXT NOT NULL'
         . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
-
-    $stmt = $pdo->prepare("SELECT v FROM settings WHERE k = 'schema_version'");
-    $stmt->execute();
-    $current = (int) ($stmt->fetchColumn() ?: 0);
-
-    if ($current >= SCHEMA_VERSION) {
-        return;
-    }
 
     $failed = false;
 

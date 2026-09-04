@@ -58,13 +58,40 @@ ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 error_reporting(E_ALL);
 
+// Ohne Auffangnetz endete jeder unbehandelte Fehler in einer leeren
+// Seite - ohne Hinweis, ohne Nummer, ohne etwas, wonach sich im
+// Protokoll suchen liesse.
+require_once __DIR__ . '/includes/errors.php';
+fehler_handler_einrichten();
+
 // ── Verbindung ─────────────────────────────────────────────────────
 try {
     $pdo = new PDO(
         'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
         DB_USER,
         DB_PASS,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+
+            // Echte Prepared Statements statt der Nachbildung im Treiber.
+            // Bei der Nachbildung baut PDO die Abfrage selbst zusammen und
+            // maskiert die Werte dabei - richtig, aber es bleibt
+            // Zeichenkettenarbeit, und der Server sieht am Ende doch eine
+            // fertige Abfrage. Echte Prepares trennen Anweisung und Werte
+            // bis in den Server hinein; eine Einschleusung ueber den Wert
+            // ist dann von der Bauart her ausgeschlossen.
+            //
+            // Voraussetzung dafuer war, die drei "INTERVAL ?" loszuwerden
+            // (includes/auth_login.php, systemlogs.php): dort erwartet
+            // MySQL einen Zahlenausdruck, und gebundene Werte kommen als
+            // Zeichenkette an.
+            PDO::ATTR_EMULATE_PREPARES => false,
+
+            // Ohne das liefert der Treiber jede Spalte als Zeichenkette,
+            // auch INT und DECIMAL. Der Code vergleicht an vielen Stellen
+            // mit === gegen Zahlen.
+            PDO::ATTR_STRINGIFY_FETCHES => false,
+        ]
     );
 } catch (PDOException $e) {
     error_log('DB connection failed: ' . $e->getMessage());
