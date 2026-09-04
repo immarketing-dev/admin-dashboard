@@ -8,6 +8,31 @@ private history.
 
 ## [Unreleased]
 
+### Changed
+- **The demo notice now sits inside the page header and stays there.**
+  It was a separate card above the header, which meant it scrolled out of
+  sight after the first screenful — on a demo whose whole job is to say
+  "this is not a real system", the wrong place for it. In the panel it is
+  now the first row inside `.top-header`, so it inherits that element's
+  sticky behaviour and needs no rules of its own; `--header-height` is
+  measured, so the filter bar keeps latching correctly below the now
+  taller header.
+
+  The client portal has no `.top-header` — it is built differently and
+  already had a sticky tab bar at `top: 0`. The notice sticks above it and
+  the tab bar drops to `top: var(--demo-strip-height)`, measured by the
+  same script, which was generalised for the purpose. Outside demo mode
+  the variable is 0px and nothing moves.
+
+  Both are set tighter on phones — the sticky header would otherwise hold
+  a quarter of the viewport permanently. Tightened rather than shortened:
+  "changes are not saved" is the sentence the notice exists for.
+
+  Verified with Playwright at 1280x800 and 375x667: after scrolling, both
+  notices sit at viewport top, `elementFromPoint` hits them rather than
+  content bleeding through, and the portal's tab bar sits flush below
+  without overlap.
+
 ### Added
 - **Tracked time can be billed.** The timer had been recording for a long
   time, but the hours never reached an invoice: `time_entries` knew neither

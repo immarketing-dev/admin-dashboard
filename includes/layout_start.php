@@ -24,13 +24,18 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 <?php require __DIR__ . '/sidebar.php'; ?>
 
 <div class="main-content">
-<?php if (demo_mode()): ?>
-  <div class="demo-strip" role="status">
-    <i class="bi bi-eye" aria-hidden="true"></i>
-    <span><strong><?= te('Demo-Version') ?></strong> &ndash; <?= te('alle Daten sind erfunden, Änderungen werden nicht gespeichert.') ?></span>
-  </div>
-<?php endif; ?>
   <div class="top-header<?= !empty($header_class) ? ' ' . htmlspecialchars($header_class, ENT_QUOTES) : '' ?>">
+<?php if (demo_mode()): ?>
+    <?php /* Im Kopf und nicht darueber: der Kopf bleibt beim Scrollen
+             stehen, der Hinweis damit auch. Als eigene Karte oberhalb war
+             er nach der ersten Bildschirmhoehe verschwunden - auf einer
+             Demo, die genau das erklaeren soll, die falsche Stelle.
+             Als erstes Kind, damit er vor dem Titel gelesen wird. */ ?>
+    <div class="demo-strip" role="status">
+      <i class="bi bi-eye" aria-hidden="true"></i>
+      <span><strong><?= te('Demo-Version') ?></strong> &ndash; <?= te('alle Daten sind erfunden, Änderungen werden nicht gespeichert.') ?></span>
+    </div>
+<?php endif; ?>
     <h2>
       <i class="bi bi-list mobile-toggle" id="mobile-toggle-btn"></i>
       <?= htmlspecialchars($page_heading ?? '') ?>

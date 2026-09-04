@@ -54,6 +54,25 @@
     color: var(--text-body);
     font-size: var(--text-sm-plus);
     line-height: 1.45;
+
+    /* Bleibt beim Scrollen stehen. Ueber der Reiterleiste (z-index 100),
+       die ihrerseits sticky ist und deshalb unter den Hinweis rutscht -
+       ihr top holt sich die gemessene Hoehe aus --demo-strip-height
+       (assets/js/sticky-header.js). */
+    position: sticky;
+    top: 0;
+    z-index: 110;
+}
+
+/* Auf dem Handy enger: der Hinweis belegt sonst dauerhaft einen zu
+   grossen Teil der Sichtflaeche. Enger gesetzt statt gekuerzt - dass
+   nichts gespeichert wird, ist der Satz, wegen dem er dasteht. */
+@media (max-width: 575.98px) {
+    .demo-portal-hinweis {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--text-2xs);
+        line-height: 1.35;
+    }
 }
 .demo-portal-hinweis i      { color: var(--color-primary); font-size: var(--text-base-plus); flex: 0 0 auto; }
 .demo-portal-hinweis strong { color: var(--text-strong); }

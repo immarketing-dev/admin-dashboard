@@ -788,7 +788,10 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     .portal-nav-wrap {
       background: var(--surface-card);
       box-shadow: var(--elev-raised);
-      position: sticky; top: 0; z-index: 100;
+      /* Unter dem Demo-Hinweis, wenn es einen gibt. Ausserhalb der Demo
+         ist --demo-strip-height nicht gesetzt und der Rueckfall 0px
+         stellt den bisherigen Zustand her. */
+      position: sticky; top: var(--demo-strip-height, 0px); z-index: 100;
       margin-top: -36px;
     }
     .portal-nav-inner {
@@ -1973,6 +1976,11 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 </footer>
 
 <script src="<?= asset('assets/vendor/bootstrap/bootstrap.bundle.min.js') ?>"></script>
+<?php if (demo_mode()): ?>
+  <?php /* Misst den Demo-Hinweis, damit die Reiterleiste genau darunter
+           einrastet. Nur in der Demo noetig - sonst gibt es ihn nicht. */ ?>
+  <script src="<?= asset('assets/js/sticky-header.js') ?>" defer></script>
+<?php endif; ?>
 <script src="<?= asset('assets/vendor/qrcode/qrcode.min.js') ?>"
         integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>

@@ -14,30 +14,42 @@
  * meldet jede dieser Aenderungen, ohne dass etwas gepollt werden muss.
  */
 (function () {
-    var kopf = document.querySelector('.top-header');
-    if (!kopf) return;
+    /**
+     * Haelt eine CSS-Variable auf der Hoehe eines Elements.
+     *
+     * Zwei Stellen brauchen das: der Seitenkopf im Panel (darunter rastet
+     * die Filterleiste ein) und der Demo-Hinweis im Portal (darunter die
+     * Reiterleiste). Beide aendern ihre Hoehe beim Umbruch, und keine
+     * davon laesst sich im Stylesheet beziffern.
+     */
+    function beobachte(el, variable) {
+        if (!el) return;
 
-    function setzen() {
-        // offsetHeight rundet auf ganze Pixel ab. Bei einem Kopf mit
-        // gebrochener Hoehe bliebe sonst ein Haarstrich sichtbar, durch
-        // den der Inhalt beim Scrollen durchwandert.
-        var hoehe = Math.ceil(kopf.getBoundingClientRect().height);
-        document.documentElement.style.setProperty('--header-height', hoehe + 'px');
+        function setzen() {
+            // Aufrunden: getBoundingClientRect liefert gebrochene Pixel,
+            // und bei einem abgerundeten Wert bliebe ein Haarstrich, durch
+            // den der Inhalt beim Scrollen durchwandert.
+            var hoehe = Math.ceil(el.getBoundingClientRect().height);
+            document.documentElement.style.setProperty(variable, hoehe + 'px');
+        }
+
+        setzen();
+
+        if (typeof ResizeObserver === 'function') {
+            new ResizeObserver(setzen).observe(el);
+        } else {
+            // Aeltere Browser: wenigstens auf die Groessenaenderung hoeren.
+            window.addEventListener('resize', setzen);
+        }
+
+        // Schriften kommen ueber das Netz und aendern die Hoehe, nachdem
+        // schon einmal gemessen wurde. Ohne dieses Nachmessen sitzt das
+        // Element darunter bis zum ersten Umbruch ein paar Pixel falsch.
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(setzen);
+        }
     }
 
-    setzen();
-
-    if (typeof ResizeObserver === 'function') {
-        new ResizeObserver(setzen).observe(kopf);
-    } else {
-        // Aeltere Browser: wenigstens auf die Groessenaenderung hoeren.
-        window.addEventListener('resize', setzen);
-    }
-
-    // Schriften kommen ueber das Netz und aendern die Hoehe des Kopfes,
-    // nachdem er schon einmal gemessen wurde. Ohne dieses Nachmessen
-    // sitzt die Filterleiste bis zum ersten Umbruch ein paar Pixel falsch.
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(setzen);
-    }
+    beobachte(document.querySelector('.top-header'), '--header-height');
+    beobachte(document.querySelector('.demo-portal-hinweis'), '--demo-strip-height');
 })();

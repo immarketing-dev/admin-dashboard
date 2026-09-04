@@ -198,6 +198,12 @@
      schmalen Geraeten um und ist dann hoeher. Dieser Startwert gilt, bis
      das Skript gelaufen ist, und entspricht dem einzeiligen Kopf. */
   --header-height:           72px;
+
+  /* Hoehe des Demo-Hinweises im Kundenportal, damit die Reiterleiste
+     genau darunter einrastet. Ausserhalb der Demo gibt es ihn nicht -
+     0px stellt dann den Zustand ohne Hinweis her.
+     Gesetzt von assets/js/sticky-header.js. */
+  --demo-strip-height:       0px;
 }
 
 [data-theme="dark"] {
