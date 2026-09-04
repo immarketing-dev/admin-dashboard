@@ -29,7 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if ($_POST['action'] === 'save_company') {
-        $keys = ['company_name','company_short','base_url','main_website','admin_email','support_email'];
+        $keys = ['company_name','company_short','base_url','main_website','admin_email','support_email',
+                 'bank_holder','bank_iban','bank_bic','payment_note'];
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
@@ -354,6 +355,38 @@ require 'includes/layout_start.php';
           <span>Diese Werte überschreiben die Konstanten in <code>config.php</code> und werden sofort auf allen Seiten wirksam.</span>
         </div>
 
+        <div class="settings-section-title mt-4"><i class="bi bi-bank me-2"></i>Bankverbindung</div>
+        <p class="text-muted small mb-3">
+          Erscheint im Kundenportal bei offenen Rechnungen, zusammen mit einem
+          Überweisungs-Code zum Scannen. Leer lassen blendet den Bereich aus.
+          Die Daten verlassen den eigenen Server nicht — der Code wird im
+          Browser des Kunden erzeugt.
+        </p>
+        <div class="row g-3 mb-2">
+          <div class="col-md-6">
+            <label class="fw-bold small mb-1" for="bank_holder">Kontoinhaber</label>
+            <input type="text" name="bank_holder" id="bank_holder" class="form-control" maxlength="70"
+                   value="<?= htmlspecialchars(setting('bank_holder', '')) ?>"
+                   placeholder="<?= htmlspecialchars(setting('company_name', COMPANY_NAME)) ?>">
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold small mb-1" for="bank_iban">IBAN</label>
+            <input type="text" name="bank_iban" id="bank_iban" class="form-control" maxlength="42"
+                   value="<?= htmlspecialchars(setting('bank_iban', '')) ?>"
+                   placeholder="DE00 0000 0000 0000 0000 00">
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold small mb-1" for="bank_bic">BIC <span class="text-muted fw-normal">(optional)</span></label>
+            <input type="text" name="bank_bic" id="bank_bic" class="form-control" maxlength="11"
+                   value="<?= htmlspecialchars(setting('bank_bic', '')) ?>">
+          </div>
+          <div class="col-md-6">
+            <label class="fw-bold small mb-1" for="payment_note">Hinweis zur Zahlung <span class="text-muted fw-normal">(optional)</span></label>
+            <input type="text" name="payment_note" id="payment_note" class="form-control" maxlength="140"
+                   value="<?= htmlspecialchars(setting('payment_note', '')) ?>"
+                   placeholder="z. B. Zahlbar innerhalb von 14 Tagen ohne Abzug.">
+          </div>
+        </div>
         <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> Speichern</button>
       </form>
 
