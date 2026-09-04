@@ -186,6 +186,24 @@ private history.
   Older entries were previously unreachable: the page showed the newest N
   and nothing else.
 ### Changed
+- **The global search sits with the other header buttons.** It used to be
+  its own child of the page header, between the title and the action
+  buttons. On narrow screens the title and the actions each claim a full
+  row, so the magnifier was pushed onto a row of its own and the header
+  became three rows tall — on every page, from 768 px down. It now lives
+  at the end of the same group as the buttons, which makes the header two
+  rows on a phone and puts the magnifier to the right of the actions on
+  the desktop. `.header-actions` is therefore always rendered, even on
+  pages that bring no buttons of their own.
+- **The task filter bar fits on one line.** The bar is built in two
+  stages so the filters can collapse behind a button on a phone; that
+  nesting also forced two rows on the desktop, with the search field
+  alone above the filters. From 768 px up the intermediate wrappers are
+  now dissolved with `display: contents`, so search field, filters and
+  buttons share one flex row. The filters' widths moved out of `style`
+  attributes into `.filter-field`, and their wrap threshold is lower, so
+  everything fits on a 1366 px laptop instead of dropping the "Filter"
+  button onto a second row.
 - `SSO_ENABLED` is now forced to `false` in demo mode regardless of the
   `.env`, because `sso.php` writes to `sso_tokens` before any POST is
   involved.
@@ -289,6 +307,27 @@ private history.
   benefit once the entry point is gone.
 
 ### Fixed
+- **Filters survived no change.** Every list page follows post / redirect /
+  get, but the redirect rebuilt its target from scratch —
+  `header("Location: tasks")` — and dropped the query string with it. So
+  filtering by "Offen" and then changing one task's status handed back the
+  full list. It affected tasks, contacts, finances, tickets, quotes and
+  wiki; on tasks that was eight filters, of which exactly one, the search
+  term, had been rescued by hand through a hidden `back_q` field.
+
+  `includes/filter_state.php` now carries the view across the submission.
+  `filter_redirect()` replaces all 36 hand-built redirects, and the 18
+  POST forms that named their own page in `action` lost that attribute —
+  a form without one submits to the address it sits on, filters included.
+  What gets carried is a fixed list per page, not "whatever arrived": a
+  one-off `msg=1` must not be replayed after every change, and a
+  redirect target taken from the request would be an open redirect. Every
+  value is re-encoded through `http_build_query`, so a newline in a search
+  term cannot split the header.
+
+  `tools/test_filter_state.php` checks the list against the parameters the
+  pages actually read, so a new filter cannot be forgotten silently — it
+  found `qstatus` on finances, which this change had missed.
 - `install/schema.sql` could not be imported at all. Two columns added by
   migrations (`task_milestones.waiting_on`, `client_assets.uploaded_by_name`)
   were appended to the end of their `CREATE TABLE` list with the preceding

@@ -4,6 +4,7 @@ require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
+require_once 'includes/filter_state.php';
 
 // PHPMailer laden
 use PHPMailer\PHPMailer\PHPMailer;
@@ -72,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ->execute([$quote_number, $subject, $intro_text, $contact_id, $custom_name, $tax_type, json_encode($items), $notes, $total, $valid_until]);
 
         log_event($pdo, 'QUOTE_CREATED', "Angebot $quote_number erstellt.");
-        header("Location: quotes"); exit();
+        filter_redirect('quotes');
     }
 
     // ANGEBOT BEARBEITEN
@@ -93,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ->execute([$subject, $intro_text, $contact_id, $custom_name, $status, $tax_type, json_encode($items), $notes, $total, $valid_until, $id]);
 
         log_event($pdo, 'QUOTE_EDITED', "Angebot #$id aktualisiert.");
-        header("Location: quotes"); exit();
+        filter_redirect('quotes');
     }
 
     // ANGEBOT LÖSCHEN
@@ -107,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
         $pdo->prepare("UPDATE quotes SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
         log_event($pdo, 'QUOTE_DELETED', "Angebot {$q['quote_number']} gelöscht.");
-        header("Location: quotes"); exit();
+        filter_redirect('quotes');
     }
 
     // ── PDF HELPER ──────────────────────────────────────────────
@@ -284,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt->execute([$id]);
         $q = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$q) { header("Location: quotes"); exit(); }
+        if (!$q) { filter_redirect('quotes'); }
 
         $rel_path = build_quote_pdf($pdo, $q);
         $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=? AND status='Entwurf'")->execute([$id]);
@@ -305,13 +306,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $body     = trim($_POST['email_body'] ?? '');
 
         if (!filter_var($to_email, FILTER_VALIDATE_EMAIL)) {
-            header("Location: quotes?error=invalid_email"); exit();
+            filter_redirect('quotes', ['error' => 'invalid_email']);
         }
 
         $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country, c.email AS c_email FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt->execute([$id]);
         $q = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$q) { header("Location: quotes"); exit(); }
+        if (!$q) { filter_redirect('quotes'); }
 
         // PDF generieren falls noch nicht vorhanden
         if (empty($q['quote_pdf_path']) || !file_exists(__DIR__ . '/' . $q['quote_pdf_path'])) {
@@ -320,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
 
         if (!$_pm_available) {
-            header("Location: quotes?error=no_phpmailer"); exit();
+            filter_redirect('quotes', ['error' => 'no_phpmailer']);
         }
 
         try {
@@ -348,9 +349,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             log_event($pdo, 'QUOTE_EMAIL_SENT', "Angebot {$q['quote_number']} per E-Mail an $to_email gesendet.");
 
-            header("Location: quotes?msg=email_sent"); exit();
+            filter_redirect('quotes', ['msg' => 'email_sent']);
         } catch (PHPMailerException $e) {
-            header("Location: quotes?error=email_failed&detail=" . urlencode($e->getMessage())); exit();
+            filter_redirect('quotes', ['error' => 'email_failed', 'detail' => $e->getMessage()]);
         }
     }
 
@@ -479,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt = $pdo->prepare("SELECT q.*, c.name AS c_name, c.company AS c_company, c.street AS c_street, c.zip AS c_zip, c.city AS c_city, c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt->execute([$id]);
         $q = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$q) { header("Location: quotes"); exit(); }
+        if (!$q) { filter_redirect('quotes'); }
 
         $y = date('Y');
         $inv_num = next_invoice_number($pdo, $y);
@@ -493,6 +494,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
         log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q['quote_number']} zu Rechnung $inv_num konvertiert.");
 
+        // Seitenwechsel, kein Ruecksprung: die Filter der Angebotsliste
+        // gelten fuer die Rechnungsliste nicht.
         header("Location: finances?msg=invoice_created"); exit();
     }
 }

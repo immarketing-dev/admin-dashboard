@@ -3,6 +3,7 @@
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
+require_once 'includes/filter_state.php';
 require_once 'includes/upload_helper.php';
 
 // ==========================================
@@ -74,11 +75,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             }
             exit();
         } else {
-            $redirect = "wiki";
-            if (!empty($upload_errors)) {
-                $redirect .= "?upload_err=" . urlencode(implode(' | ', $upload_errors));
-            }
-            header("Location: $redirect"); exit();
+            // Die Filter der Liste bleiben erhalten; eine Fehlermeldung
+            // kommt nur dazu, wenn es wirklich eine gibt.
+            filter_redirect('wiki', empty($upload_errors)
+                ? []
+                : ['upload_err' => implode(' | ', $upload_errors)]);
         }
     }
     
@@ -111,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $art_title = $stmt->fetchColumn();
         log_event($pdo, 'WIKI_SHARED', "Artikel '". $art_title ."' für ". count($contact_ids) ." Kunde(n) freigegeben.");
 
-        header("Location: wiki"); exit();
+        filter_redirect('wiki');
     }
 
     // KOMPLETTEN ARTIKEL LÖSCHEN
@@ -134,7 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if($del_title) {
             log_event($pdo, 'WIKI_DELETED', "Wiki-Eintrag '". $del_title ."' wurde gelöscht.");
         }
-        header("Location: wiki"); exit();
+        filter_redirect('wiki');
     }
 }
 
@@ -302,7 +303,7 @@ require 'includes/layout_start.php';
                                       <i class="bi bi-pencil-square" style="font-size: 1.2rem;"></i>
                                   </button>
 
-                                  <form action="wiki" method="POST" class="d-inline" id="del_form_<?= $article['id'] ?>">
+                                  <form method="POST" class="d-inline" id="del_form_<?= $article['id'] ?>">
                                       <?= csrf_field() ?>
                                       <input type="hidden" name="action" value="delete_article">
                                       <input type="hidden" name="article_id" value="<?= $article['id'] ?>">
@@ -333,7 +334,7 @@ require 'includes/layout_start.php';
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4 bg-subtle">
-          <form action="wiki" method="POST" enctype="multipart/form-data" id="wikiMainForm">
+          <form method="POST" enctype="multipart/form-data" id="wikiMainForm">
             <?= csrf_field() ?>
             <input type="hidden" name="action" id="form_action" value="add_article">
             <input type="hidden" name="article_id" id="form_article_id">
@@ -423,7 +424,7 @@ require 'includes/layout_start.php';
           <h5 class="modal-title fw-bold m-0"><i class="bi bi-share me-2"></i> <?= te('Artikel im Kundenportal freigeben') ?></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <form action="wiki" method="POST" id="shareWikiForm">
+        <form method="POST" id="shareWikiForm">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="save_shares">
           <input type="hidden" name="article_id" id="share_article_id">

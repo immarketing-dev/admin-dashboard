@@ -209,6 +209,12 @@ if command -v php >/dev/null 2>&1; then
     echo "DASHBOARD-LAYOUT: $out"
     fail=1
   fi
+  # Die Filter einer Liste ueberleben eine Sendung nur, wenn jede
+  # Weiterleitung sie mitfuehrt - und nur die Filter, nichts sonst.
+  if ! out=$(php tools/test_filter_state.php 2>&1); then
+    echo "FILTER: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_seed_demo.php 2>&1); then
     echo "SEED: $out"
     fail=1

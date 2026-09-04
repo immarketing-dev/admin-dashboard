@@ -686,6 +686,48 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 .filter-bar .form-control { min-width: 0; }
 .filter-bar .btn { white-space: nowrap; }
 
+/* Eine Filterleiste, die auf dem Handy in zwei Stufen zerfaellt: oben das
+   Suchfeld mit dem Aufklapp-Knopf, darunter die Auswahlfelder. Genau diese
+   Verschachtelung machte am Desktop aber eine zweite Zeile daraus, obwohl
+   der Platz fuer alles in einer Zeile reicht - das Suchfeld stand allein
+   ueber den Filtern.
+
+   Ab der mittleren Breite werden ALLE Zwischenebenen deshalb aufgeloest -
+   auch die Gruppe um die Schaltflaechen. Bleibt eine davon stehen, zaehlt
+   sie als ein Flex-Kind mit min-width:auto und laesst sich nicht mehr
+   schrumpfen; sie draengt sich dann selbst in eine zweite Zeile:
+   display:contents nimmt einem Element seinen eigenen Kasten, seine Kinder
+   ruecken eine Ebene hoch und werden zu Flex-Kindern der Leiste. Das Markup
+   bleibt fuer den Aufklapp-Knopf unveraendert erhalten.
+
+   Das !important ist noetig, weil die Klassen von Bootstrap (.d-flex,
+   .d-md-block) selbst mit !important kommen. */
+@media (min-width: 768px) {
+    .filter-bar-stacked .d-flex,
+    .filter-bar-stacked > .collapse { display: contents !important; }
+}
+
+/* Ein Auswahlfeld der Filterleiste. Schmaler als das Suchfeld, damit alle
+   nebeneinander in eine Zeile passen; die Beschriftungen sind kurz genug.
+   Die Werte standen vorher als style-Attribut im Markup und waren damit
+   fuer keine Bildschirmgroesse mehr erreichbar. */
+/* max-width, damit ein einzelnes Feld in einer nur halb gefuellten
+   Zeile nicht auf die ganze Restbreite auseinandergezogen wird. */
+.filter-bar .filter-field { flex: 1 1 110px; min-width: 0; max-width: 260px; }
+/* Bootstrap haelt rechts 2.25rem fuer den Pfeil frei. In einem schmalen
+   Filterfeld sind das die Zeichen, die am Ende fehlen - "Alle Kunden"
+   wurde zu "Alle Kunde". Der Pfeil braucht die Haelfte davon nicht. */
+.filter-bar .filter-field .form-select {
+    padding-right: 1.6rem;
+    background-position: right 0.4rem center;
+}
+/* Das Suchfeld gibt in dieser Leiste frueher nach als sonst: mit der
+   allgemeinen Schwelle von 260px reichte der Platz auf einem
+   1366er-Bildschirm nicht mehr fuer die Schaltflaeche, und sie fiel
+   allein in eine zweite Zeile. Die Schwelle bestimmt nur, wann
+   umgebrochen wird - danach waechst das Feld wieder auf. */
+.filter-bar-stacked .input-group { flex: 1 1 190px; }
+
 @media (max-width: 576px) {
     .filter-bar { gap: var(--space-2); padding: var(--space-3); }
     /* Ganze Zeile fuer die Suche - die Deckelung von oben faellt hier weg. */
@@ -693,6 +735,7 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     .filter-bar .input-group { flex: 1 1 100%; max-width: none; }
     /* Zwei Auswahlfelder teilen sich eine Zeile. */
     .filter-bar > div:has(> .form-select),
+    .filter-bar .filter-field,
     .filter-bar > .form-select { flex: 1 1 calc(50% - var(--space-2)); }
     .filter-bar .btn { flex: 1 1 auto; }
 }

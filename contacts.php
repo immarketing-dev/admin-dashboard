@@ -14,6 +14,7 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
+require_once 'includes/filter_state.php';
 
 // ==========================================
 // AKTIONEN VERARBEITEN & LOGGEN
@@ -112,7 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $id = (int)$_POST['contact_id'];
         $pdo->prepare("UPDATE contacts SET portal_pin=NULL, portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")->execute([$id]);
         log_event($pdo, 'PORTAL_PIN_RESET', "Portal-Zugangscode für Kontakt #$id zurückgesetzt.");
-        header("Location: contacts?msg=pin_reset"); exit();
+        filter_redirect('contacts', ['msg' => 'pin_reset']);
     }
 
     // 5. Kontakt Löschen
@@ -130,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         }
     }
     
-    header("Location: contacts"); exit();
+    filter_redirect('contacts');
 }
 
 // ==========================================
@@ -211,7 +212,7 @@ require 'includes/layout_start.php';
                     <i class="bi bi-pencil-square" style="font-size:1.2rem;"></i>
                 </button>
                 
-                <form action="contacts" method="POST" class="d-inline" id="del_form_<?= $c['id'] ?>">
+                <form method="POST" class="d-inline" id="del_form_<?= $c['id'] ?>">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="delete_contact">
                     <input type="hidden" name="contact_id" value="<?= $c['id'] ?>">
@@ -299,7 +300,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="addContactModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <form action="contacts" method="POST">
+        <form method="POST">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_contact">
             <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-person-plus-fill me-2"></i><?= te('Neuen Kontakt anlegen') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
@@ -337,7 +338,7 @@ require 'includes/layout_start.php';
       <div class="modal-content">
         <div class="modal-header bg-dark text-white"><h5 class="fw-bold m-0"><i class="bi bi-pencil-square me-2"></i><?= te('Kontakt bearbeiten') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4 bg-subtle">
-            <form action="contacts" method="POST" id="editContactForm">
+            <form method="POST" id="editContactForm">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="edit_contact">
                 <input type="hidden" name="contact_id" id="edit_id">

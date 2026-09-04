@@ -8,6 +8,7 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
+require_once 'includes/filter_state.php';
 require_once 'includes/upload_helper.php';
 
 // HILFSFUNKTION: UPTIME CHECK
@@ -111,7 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if (!in_array($wert, ['', 'us', 'them'], true)) $wert = '';
         $pdo->prepare("UPDATE task_milestones SET waiting_on = ? WHERE id = ?")->execute([$wert, $ms_id]);
         log_event($pdo, 'MILESTONE_WAITING', "Zuständigkeit für Schritt $ms_id: " . ($wert ?: 'offen') . '.');
-        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+        filter_redirect('tasks');
     }
 
     // Antwort in der Projekt-Diskussion. author_contact_id bleibt NULL -
@@ -125,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 ->execute([$t_id, setting('company_short', COMPANY_SHORT), $msg]);
             log_event($pdo, 'PROJECT_REPLY', "Antwort im Austausch zu Projekt $t_id.");
         }
-        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+        filter_redirect('tasks');
     }
 
     // Beim Aufruf der Seite gelten die Beitraege als gesehen.
@@ -143,7 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $n->execute([$c_id]);
             log_event($pdo, 'TASK_CONTACT_ADDED', ($n->fetchColumn() ?: "Kontakt $c_id") . " zu Projekt $t_id hinzugefügt.");
         }
-        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+        filter_redirect('tasks');
     }
 
     if ($action === 'remove_task_contact') {
@@ -158,7 +159,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 ->execute([$t_id, $c_id]);
             log_event($pdo, 'TASK_CONTACT_REMOVED', "Kontakt $c_id von Projekt $t_id entfernt.");
         }
-        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+        filter_redirect('tasks');
     }
 
     if ($action === 'add_manual_time') {
@@ -332,7 +333,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         log_event($pdo, 'TASK_STATUS', "Task ID #".$_POST['task_id']." Status geändert auf: ".$_POST['status']);
     }
     
-    header("Location: tasks"); exit();
+    filter_redirect('tasks');
 }
 
 // ==========================================
@@ -551,11 +552,11 @@ require 'includes/layout_start.php';
     ?>
     <div class="row mb-4">
         <div class="col-12">
-            <form method="GET" action="tasks" class="filter-bar d-block">
+            <form method="GET" action="tasks" class="filter-bar filter-bar-stacked">
 
                 <!-- Search bar + mobile collapse toggle -->
                 <div class="d-flex gap-2 align-items-center">
-                    <div class="input-group" style="flex-grow:1; min-width:150px;">
+                    <div class="input-group">
                         <span class="input-group-text bg-surface"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="<?= te('Suche...') ?>" value="<?=htmlspecialchars($search_query)?>">
                     </div>
@@ -575,7 +576,7 @@ require 'includes/layout_start.php';
                 <div class="collapse d-md-block <?= $active_filter_count > 0 ? 'show' : '' ?>" id="taskFiltersCollapse">
                     <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
 
-                        <div style="min-width:140px; flex:1 1 140px;">
+                        <div class="filter-field">
                             <select name="contact" class="form-select">
                                 <option value="all"><?= te('Alle Kunden') ?></option>
                                 <?php foreach($all_contacts as $c): ?>
@@ -584,7 +585,7 @@ require 'includes/layout_start.php';
                             </select>
                         </div>
 
-                        <div style="min-width:130px; flex:1 1 130px;">
+                        <div class="filter-field">
                             <select name="status" class="form-select">
                                 <option value="all"><?= te('Alle Status') ?></option>
                                 <option value="Offen" <?= $filter_status === 'Offen' ? 'selected' : '' ?>><?= te('Offen') ?></option>
@@ -594,7 +595,7 @@ require 'includes/layout_start.php';
                             </select>
                         </div>
 
-                        <div style="min-width:140px; flex:1 1 140px;">
+                        <div class="filter-field">
                             <select name="start_month" class="form-select">
                                 <option value="all"><?= te('Startmonat egal') ?></option>
                                 <?php
@@ -608,7 +609,7 @@ require 'includes/layout_start.php';
                             </select>
                         </div>
 
-                        <div style="min-width:130px; flex:1 1 130px;">
+                        <div class="filter-field">
                             <select name="created" class="form-select">
                                 <option value="all"><?= te('Start egal') ?></option>
                                 <option value="7" <?= $filter_created === '7' ? 'selected' : '' ?>><?= te('Letzte 7 Tage') ?></option>
@@ -616,7 +617,7 @@ require 'includes/layout_start.php';
                             </select>
                         </div>
 
-                        <div style="min-width:130px; flex:1 1 130px;">
+                        <div class="filter-field">
                             <select name="deadline_filter" class="form-select">
                                 <option value="all"><?= te('Deadline egal') ?></option>
                                 <option value="overdue" <?= $filter_deadline === 'overdue' ? 'selected' : '' ?>><?= te('Überfällig') ?></option>
@@ -710,10 +711,10 @@ require 'includes/layout_start.php';
                     <?php $_sc = ['Offen'=>'status-offen','In Bearbeitung'=>'status-in-bearbeitung','Erledigt'=>'status-erledigt','Storniert'=>'status-storniert'][$task['status']] ?? 'status-offen'; ?>
                     <button class="status-badge <?=$_sc?> dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= htmlspecialchars($task['status']); ?></button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('Offen') ?></button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('In Bearbeitung') ?></button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Erledigt"><button type="submit" class="btn-sm btn btn-link text-success text-start p-0 text-decoration-none w-100"><?= te('Erledigt') ?></button></form></li>
-                      <li><form action="tasks" method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Storniert"><button type="submit" class="btn-sm btn btn-link text-secondary text-start p-0 text-decoration-none w-100"><?= te('Storniert') ?></button></form></li>
+                      <li><form method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('Offen') ?></button></form></li>
+                      <li><form method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('In Bearbeitung') ?></button></form></li>
+                      <li><form method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Erledigt"><button type="submit" class="btn-sm btn btn-link text-success text-start p-0 text-decoration-none w-100"><?= te('Erledigt') ?></button></form></li>
+                      <li><form method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Storniert"><button type="submit" class="btn-sm btn btn-link text-secondary text-start p-0 text-decoration-none w-100"><?= te('Storniert') ?></button></form></li>
                     </ul>
                   </div>
                   
@@ -754,7 +755,6 @@ require 'includes/layout_start.php';
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="action" value="set_waiting_on">
                                         <input type="hidden" name="milestone_id" value="<?=$ms['id']?>">
-                                        <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
                                         <select name="waiting_on" class="form-select form-select-sm waiting-select"
                                                 onchange="this.form.submit()" title="<?= te('Auf wen wartet dieser Schritt?') ?>">
                                             <option value=""     <?= ($ms['waiting_on'] ?? '') === ''     ? 'selected' : '' ?>>—</option>
@@ -812,7 +812,6 @@ require 'includes/layout_start.php';
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="add_project_reply">
                         <input type="hidden" name="task_id" value="<?=$task['id']?>">
-                        <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
                         <input type="text" name="message" class="form-control form-control-sm"
                                placeholder="<?= te('Antworten …') ?>" required>
                         <button class="btn btn-sm btn-primary"><i class="bi bi-send"></i></button>
@@ -918,7 +917,7 @@ require 'includes/layout_start.php';
           <div class="modal fade" id="manualTimeModal_<?= $task['id'] ?>" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
-                    <form method="POST" action="tasks">
+                    <form method="POST">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="add_manual_time">
                         <input type="hidden" name="task_id" value="<?= $task['id'] ?>">
@@ -1002,7 +1001,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="deleteAssetModal" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
-              <form action="tasks" method="POST">
+              <form method="POST">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete_asset">
                   <input type="hidden" name="asset_id" id="delete_asset_id">
@@ -1025,7 +1024,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="deleteMilestoneModal" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
-              <form action="tasks" method="POST">
+              <form method="POST">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete_milestone">
                   <input type="hidden" name="milestone_id" id="delete_milestone_id">
@@ -1066,7 +1065,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
       <div class="modal-dialog modal-sm modal-dialog-centered">
           <div class="modal-content border-0 shadow">
-              <form action="tasks" method="POST">
+              <form method="POST">
                   <?= csrf_field() ?>
                   <input type="hidden" name="action" value="delete_task">
                   <input type="hidden" name="task_id" id="delete_confirm_id">
@@ -1511,7 +1510,6 @@ require 'includes/layout_start.php';
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add_task_contact">
             <input type="hidden" name="task_id" id="mm_task_add">
-            <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
             <div style="flex:1 1 220px;min-width:0;">
               <label class="fw-bold small mb-1" for="mm_contact"><?= te('Person hinzufügen') ?></label>
               <select name="contact_id" id="mm_contact" class="form-select form-select-sm" required>
@@ -1540,7 +1538,6 @@ require 'includes/layout_start.php';
      seine Liste daraus, ohne weitere Anfrage. */
   const TASK_MEMBERS = <?= json_encode($task_members, JSON_HEX_TAG|JSON_HEX_APOS) ?>;
   const MEMBERS_CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG|JSON_HEX_APOS) ?>;
-  const MEMBERS_BACK = <?= json_encode($search_query, JSON_HEX_TAG|JSON_HEX_APOS) ?>;
 
   function openMembers(taskId, titel) {
       document.getElementById('mm_title').textContent = titel;
@@ -1582,7 +1579,7 @@ require 'includes/layout_start.php';
               f.className = 'm-0';
               f.onsubmit = function () { return confirm(m.name + <?= tjs(' aus diesem Projekt entfernen?') ?>); };
               [['csrf_token', MEMBERS_CSRF], ['action', 'remove_task_contact'],
-               ['task_id', taskId], ['contact_id', m.contact_id], ['back_q', MEMBERS_BACK]
+               ['task_id', taskId], ['contact_id', m.contact_id]
               ].forEach(function (kv) {
                   const i = document.createElement('input');
                   i.type = 'hidden'; i.name = kv[0]; i.value = kv[1];

@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
+require_once 'includes/filter_state.php';
 
 // AJAX: Notizen laden
 if (isset($_GET['ajax_notes'])) {
@@ -36,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ->execute([$contact_id, $subject, $message, $priority]);
             log_event($pdo, 'TICKET_CREATED', "Ticket '$subject' manuell angelegt.");
         }
-        header("Location: tickets?msg=created"); exit();
+        filter_redirect('tickets', ['msg' => 'created']);
     }
 
     // Status ändern (AJAX)
@@ -155,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $pdo->prepare("DELETE FROM ticket_notes WHERE ticket_id=?")->execute([$id]);
         $pdo->prepare("DELETE FROM support_tickets WHERE id=?")->execute([$id]);
         log_event($pdo, 'TICKET_DELETED', "Ticket '$sub' gelöscht.");
-        header("Location: tickets"); exit();
+        filter_redirect('tickets');
     }
 }
 
@@ -459,7 +460,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="newTicketModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog">
       <div class="modal-content border-0 shadow">
-        <form method="POST" action="tickets">
+        <form method="POST">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="create_ticket">
           <div class="modal-header bg-primary text-white">
@@ -507,7 +508,7 @@ require 'includes/layout_start.php';
   <div class="modal fade" id="deleteTicketModal" tabindex="-1">
     <div class="modal-dialog modal-sm modal-dialog-centered">
       <div class="modal-content border-0 shadow">
-        <form action="tickets" method="POST">
+        <form method="POST">
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="delete_ticket">
           <input type="hidden" name="ticket_id" id="del_id">
