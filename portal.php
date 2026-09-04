@@ -170,6 +170,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
+    // ── Beitrag zur Projekt-Diskussion ──────────────────────────────
+    // Anders als die Meilenstein-Kommentare haengt der Beitrag am Projekt,
+    // nicht an einem Schritt - fuer alles, was sich keinem Schritt zuordnen
+    // laesst.
+    if (isset($_POST['add_project_comment'])) {
+        $t_id = (int)($_POST['task_id'] ?? 0);
+        $msg  = trim($_POST['message'] ?? '');
+        if ($msg !== '' && portal_darf_projekt($pdo, $t_id, (int)$client['id'])) {
+            $pdo->prepare("INSERT INTO project_comments (task_id, author_contact_id, author_name, message)
+                           VALUES (?, ?, ?, ?)")
+                ->execute([$t_id, $client['id'], $client['name'], $msg]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PROJECT_COMMENT', ?)")
+                ->execute(["{$client['name']} hat im Projekt $t_id geschrieben: "
+                           . mb_strimwidth($msg, 0, 120, '…')]);
+        }
+        header("Location: portal?token=$token&msg=comment#tab-projects"); exit();
+    }
+
     // ── Angebot annehmen ────────────────────────────────────────────
     // Der Status ist derselbe, den quotes.php kennt - der Vorgang landet
     // also ohne Umweg in der bestehenden Angebotsverwaltung.
@@ -498,6 +516,30 @@ $projects = $pdo->prepare("SELECT t.* FROM tasks t
                            ORDER BY t.created_at DESC");
 $projects->execute([$client['id']]);
 $projects = $projects->fetchAll(PDO::FETCH_ASSOC);
+
+// Diskussion und Beteiligte gebatcht - nicht je Projektkarte einzeln.
+$project_comments = [];
+$project_members  = [];
+if (!empty($projects)) {
+    $pids = array_column($projects, 'id');
+    $in   = implode(',', array_fill(0, count($pids), '?'));
+
+    $c = $pdo->prepare("SELECT * FROM project_comments WHERE task_id IN ($in) ORDER BY created_at ASC");
+    $c->execute($pids);
+    foreach ($c->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $project_comments[$row['task_id']][] = $row;
+    }
+
+    $m = $pdo->prepare("SELECT tc.task_id, tc.role, c.id AS contact_id, c.name, c.company, c.contact_type
+                        FROM task_contacts tc
+                        JOIN contacts c ON c.id = tc.contact_id
+                        WHERE tc.task_id IN ($in) AND c.deleted_at IS NULL
+                        ORDER BY tc.role = 'owner' DESC, c.name ASC");
+    $m->execute($pids);
+    foreach ($m->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $project_members[$row['task_id']][] = $row;
+    }
+}
 
 // Batch: Meilensteine + Assets + Kommentare
 $milestones_by_task = [];
@@ -868,6 +910,31 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     [data-bs-toggle="collapse"][aria-expanded="true"] .ticket-chevron { transform: rotate(180deg); }
     .ticket-body { padding: 0 20px 16px; background: var(--surface-subtle); border-top: 1px solid var(--border-subtle); }
 
+    /* ── ZUSAMMENARBEIT ── */
+    .member-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 3px 10px 3px 3px; border-radius: 999px;
+      background: var(--surface-subtle); border: 1px solid var(--border-subtle);
+      font-size: 12px; color: var(--text-body);
+    }
+    .member-chip-self { border-color: var(--color-primary); }
+    .member-dot {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent-soft); color: var(--color-primary);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .proj-talk { max-height: 280px; overflow-y: auto; padding-right: 4px; }
+    .wait-chip {
+      display: inline-block; margin-left: 8px; padding: 1px 8px;
+      border-radius: 999px; font-size: 10px; font-weight: 700;
+      vertical-align: middle; white-space: nowrap;
+    }
+    /* Die Farbe sagt, wo der Ball liegt - bei uns beruhigend, bei Ihnen
+       auffordernd. */
+    .wait-us   { background: var(--accent-soft);  color: var(--color-primary); }
+    .wait-them { background: var(--state-warn-bg); color: var(--state-warn-fg); }
+
     /* ── ZAHLUNG ── */
     .pay-box { margin-top: 14px; padding: 14px; border-radius: 12px;
       background: var(--surface-subtle); border: 1px solid var(--border-subtle); }
@@ -925,6 +992,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             'profile_updated' => 'Ihre Daten wurden aktualisiert!',
             'quote_accepted'  => 'Vielen Dank! Wir haben Ihre Zusage erhalten.',
             'quote_question'  => 'Ihre Rückfrage ist bei uns eingegangen.',
+            'comment'         => 'Ihr Beitrag ist gespeichert.',
           ];
           echo '<i class="bi bi-check-circle-fill me-2"></i>' . ($msgs[$_GET['msg']] ?? '');
         ?>
@@ -1117,6 +1185,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                       <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
                         <div style="min-width:0;">
                           <div class="tl-title <?= $ms['approved_at'] ? 'done-text' : '' ?>"><?= htmlspecialchars($ms['title']) ?></div>
+                            <?php if(!empty($ms['waiting_on']) && !$ms['is_completed']):
+                              $wir = $ms['waiting_on'] === 'us';
+                            ?>
+                              <span class="wait-chip <?= $wir ? 'wait-us' : 'wait-them' ?>">
+                                <i class="bi bi-hourglass-split me-1"></i>
+                                <?= $wir ? 'Wir sind dran' : 'Sie sind dran' ?>
+                              </span>
+                            <?php endif; ?>
                           <?php if($ms['approved_at']): ?>
                             <div class="tl-meta"><i class="bi bi-patch-check-fill text-success me-1"></i><?= $is_partner ? 'Abgeschlossen am' : 'Freigegeben am' ?> <?= date('d.m.Y', strtotime($ms['approved_at'])) ?></div>
                           <?php elseif($ms['is_completed']): ?>
@@ -1229,6 +1305,67 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   </div>
                 </div>
 
+                <?php
+                  $beteiligte = $project_members[$p['id']] ?? [];
+                  $beitraege  = $project_comments[$p['id']] ?? [];
+                ?>
+
+                <!-- Beteiligte -->
+                <?php if(count($beteiligte) > 1): ?>
+                <div class="section-label mt-4"><i class="bi bi-people me-1"></i>Beteiligte</div>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                  <?php foreach($beteiligte as $b): ?>
+                    <span class="member-chip<?= (int)$b['contact_id'] === (int)$client['id'] ? ' member-chip-self' : '' ?>"
+                          title="<?= htmlspecialchars(trim($b['company'] . ' · ' . ($b['role'] === 'owner' ? 'Hauptansprechpartner' : 'Beteiligt'), ' ·')) ?>">
+                      <span class="member-dot"><?= htmlspecialchars(mb_strtoupper(mb_substr($b['name'], 0, 1))) ?></span>
+                      <?= htmlspecialchars($b['name']) ?><?= (int)$b['contact_id'] === (int)$client['id'] ? ' (Sie)' : '' ?>
+                    </span>
+                  <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <!-- Projekt-Diskussion -->
+                <div class="section-label mt-4">
+                  <i class="bi bi-chat-square-text me-1"></i>Austausch zum Projekt
+                  <?php if($beitraege): ?><span class="text-muted">(<?= count($beitraege) ?>)</span><?php endif; ?>
+                </div>
+                <p class="section-hint">
+                  Für alles, was sich keinem einzelnen Schritt zuordnen lässt. Alle
+                  Beteiligten sehen den Verlauf.
+                </p>
+
+                <?php if($beitraege): ?>
+                  <div class="proj-talk">
+                    <?php foreach($beitraege as $b):
+                      $vonMir = $b['author_contact_id'] !== null && (int)$b['author_contact_id'] === (int)$client['id'];
+                      $vonUns = $b['author_contact_id'] === null;
+                    ?>
+                    <div class="ms-comment-bubble<?= $vonMir ? ' self' : '' ?>">
+                      <div class="ms-comment-meta">
+                        <?= $vonUns ? htmlspecialchars(setting('company_short', COMPANY_SHORT))
+                                    : htmlspecialchars($b['author_name']) ?><?= $vonMir ? ' (Sie)' : '' ?>
+                        · <?= date('d.m.Y H:i', strtotime($b['created_at'])) ?>
+                      </div>
+                      <div class="ms-comment-text"><?= nl2br(htmlspecialchars($b['message'])) ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+
+                <form method="POST" class="mt-2">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="task_id" value="<?= (int)$p['id'] ?>">
+                  <div class="d-flex gap-2 align-items-end flex-wrap">
+                    <div style="flex:1 1 240px;min-width:0;">
+                      <label class="visually-hidden" for="pc_<?= (int)$p['id'] ?>">Beitrag</label>
+                      <textarea class="form-control" id="pc_<?= (int)$p['id'] ?>" name="message" rows="2"
+                                placeholder="Etwas mitteilen oder nachfragen …" required></textarea>
+                    </div>
+                    <button type="submit" name="add_project_comment" class="btn btn-sm btn-primary fw-bold">
+                      <i class="bi bi-send me-1"></i>Senden
+                    </button>
+                  </div>
+                </form>
                 <?php if(!$is_partner): ?>
                 <!-- Allgemeines Feedback -->
                 <div class="feedback-card">

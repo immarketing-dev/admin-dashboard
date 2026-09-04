@@ -103,6 +103,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     csrf_check();
     $action = $_POST['action'];
     
+    // Auf wen wartet dieser Schritt? Leer heisst: nicht festgelegt.
+    if ($action === 'set_waiting_on') {
+        $ms_id = (int)($_POST['milestone_id'] ?? 0);
+        $wert  = $_POST['waiting_on'] ?? '';
+        if (!in_array($wert, ['', 'us', 'them'], true)) $wert = '';
+        $pdo->prepare("UPDATE task_milestones SET waiting_on = ? WHERE id = ?")->execute([$wert, $ms_id]);
+        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+    }
+
+    // Antwort in der Projekt-Diskussion. author_contact_id bleibt NULL -
+    // daran erkennt das Portal, dass der Beitrag von uns kommt.
+    if ($action === 'add_project_reply') {
+        $t_id = (int)($_POST['task_id'] ?? 0);
+        $msg  = trim($_POST['message'] ?? '');
+        if ($t_id > 0 && $msg !== '') {
+            $pdo->prepare("INSERT INTO project_comments (task_id, author_contact_id, author_name, message, admin_seen)
+                           VALUES (?, NULL, ?, ?, 1)")
+                ->execute([$t_id, setting('company_short', COMPANY_SHORT), $msg]);
+        }
+        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+    }
+
+    // Beim Aufruf der Seite gelten die Beitraege als gesehen.
     // ── Beteiligte am Projekt ───────────────────────────────────────
     // Seit Migration 5 kann ein Projekt mehrere Kontakte haben. Jeder
     // Beteiligte sieht es in seinem eigenen Portal - mit eigenem Link
@@ -323,6 +346,22 @@ $stmt = $pdo->prepare($sql); $stmt->execute($params); $tasks = $stmt->fetchAll(P
 $all_categories = $pdo->query("SELECT DISTINCT category FROM tasks WHERE deleted_at IS NULL AND category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
 $all_contacts = $pdo->query("SELECT * FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
+// Projekt-Diskussion je Projekt - in einer Abfrage.
+$project_talk = [];
+if (!empty($tasks)) {
+    $tids = array_column($tasks, 'id');
+    $in2  = implode(',', array_fill(0, count($tids), '?'));
+    $tst  = $pdo->prepare("SELECT * FROM project_comments WHERE task_id IN ($in2) ORDER BY created_at ASC");
+    $tst->execute($tids);
+    foreach ($tst->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $project_talk[$row['task_id']][] = $row;
+    }
+    // Als gesehen markieren, sobald die Seite sie zeigt.
+    $pdo->prepare("UPDATE project_comments SET admin_seen = 1
+                   WHERE admin_seen = 0 AND author_contact_id IS NOT NULL AND task_id IN ($in2)")
+        ->execute($tids);
+}
+
 // Beteiligte je Projekt - in einer Abfrage, nicht je Karte einzeln.
 $task_members = [];
 if (!empty($tasks)) {
@@ -456,6 +495,8 @@ $extra_head = <<<'CSS'
       .ms-com-toggle { font-size:11px; color:var(--text-muted); cursor:pointer; text-decoration:none; }
       .ms-com-toggle:hover { color:var(--text-strong); text-decoration:underline; }
       .ms-reply-row { display:flex; gap:4px; margin-top:6px; }
+      .waiting-select { width:auto; font-size:11px; padding:1px 18px 1px 6px; height:auto; }
+      .proj-talk-admin .ms-comment-thread { max-height:240px; overflow-y:auto; }
       .ms-reply-row input { font-size:12px; }
       .task-card-cancelled { background-color: var(--surface-subtle) !important; border-top-color: var(--text-faint) !important; opacity: 0.75; }
       .task-card-cancelled:hover { opacity: 1; }
@@ -678,6 +719,20 @@ require 'includes/layout_start.php';
                                     </span>
                                 </form>
                                 <div class="d-flex align-items-center gap-1">
+                                    <?php if(!$ms['is_completed']): ?>
+                                    <form method="POST" class="m-0">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="action" value="set_waiting_on">
+                                        <input type="hidden" name="milestone_id" value="<?=$ms['id']?>">
+                                        <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
+                                        <select name="waiting_on" class="form-select form-select-sm waiting-select"
+                                                onchange="this.form.submit()" title="Auf wen wartet dieser Schritt?">
+                                            <option value=""     <?= ($ms['waiting_on'] ?? '') === ''     ? 'selected' : '' ?>>—</option>
+                                            <option value="us"   <?= ($ms['waiting_on'] ?? '') === 'us'   ? 'selected' : '' ?>>wir</option>
+                                            <option value="them" <?= ($ms['waiting_on'] ?? '') === 'them' ? 'selected' : '' ?>>Kunde</option>
+                                        </select>
+                                    </form>
+                                    <?php endif; ?>
                                     <?php if($ms_com_count > 0): ?>
                                         <a class="ms-com-toggle" onclick="toggleMsComments(<?=$ms['id']?>)" title="Kommentare anzeigen">
                                             <i class="bi bi-chat-dots<?=$ms_has_client?' text-primary':''?>"></i> <?=$ms_com_count?>
@@ -703,6 +758,36 @@ require 'includes/layout_start.php';
                         </div>
                     <?php endforeach; ?>
                     <form method="POST" class="mt-2"><?= csrf_field() ?><input type="hidden" name="action" value="add_milestone"><input type="hidden" name="task_id" value="<?=$task['id']?>"><div class="input-group input-group-sm"><input type="text" name="milestone_title" class="form-control border-light" placeholder="Neuer Meilenstein..."><button class="btn btn-light border">+</button></div></form>
+                  </div>
+                  <?php $talk = $project_talk[$task['id']] ?? []; ?>
+                  <div class="proj-talk-admin mt-2">
+                    <a class="ms-com-toggle" onclick="toggleTalk(<?=$task['id']?>)">
+                      <i class="bi bi-chat-square-text"></i>
+                      Austausch<?= $talk ? ' (' . count($talk) . ')' : '' ?>
+                    </a>
+                    <div class="ms-comment-thread d-none" id="talk-<?=$task['id']?>">
+                      <?php foreach($talk as $t): $vonUns = $t['author_contact_id'] === null; ?>
+                        <div class="ms-com-bubble <?= $vonUns ? 'admin' : 'client' ?>">
+                          <div class="ms-com-meta">
+                            <?= htmlspecialchars($t['author_name']) ?>
+                            · <?= date('d.m.Y H:i', strtotime($t['created_at'])) ?>
+                          </div>
+                          <?= nl2br(htmlspecialchars($t['message'])) ?>
+                        </div>
+                      <?php endforeach; ?>
+                      <?php if(!$talk): ?>
+                        <div class="text-muted" style="font-size:11px;">Noch kein Austausch.</div>
+                      <?php endif; ?>
+                      <form method="POST" class="ms-reply-row">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="add_project_reply">
+                        <input type="hidden" name="task_id" value="<?=$task['id']?>">
+                        <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
+                        <input type="text" name="message" class="form-control form-control-sm"
+                               placeholder="Antworten …" required>
+                        <button class="btn btn-sm btn-primary"><i class="bi bi-send"></i></button>
+                      </form>
+                    </div>
                   </div>
               </div> 
 
@@ -1450,4 +1535,11 @@ require 'includes/layout_start.php';
       });
   }
   </script>
+
+<script>
+function toggleTalk(id) {
+    var el = document.getElementById('talk-' + id);
+    if (el) el.classList.toggle('d-none');
+}
+</script>
 <?php require 'includes/layout_end.php'; ?>
