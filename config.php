@@ -38,8 +38,18 @@ define('SMTP_USER', env('SMTP_USER', ''));
 define('SMTP_PASS', env('SMTP_PASS', ''));
 define('SMTP_PORT', (int) env('SMTP_PORT', '587'));
 
+// ── Demo-Modus (standardmäßig aus) ─────────────────────────────────
+// Öffentlich erreichbares, schreibgeschütztes Panel ohne Anmeldung.
+// Nur über die .env schaltbar - siehe includes/demo.php.
+define('DEMO_MODE', env_bool('DEMO_MODE', false));
+require_once __DIR__ . '/includes/demo.php';
+
 // ── Cross-Domain-SSO (standardmäßig aus) ───────────────────────────
-define('SSO_ENABLED', env_bool('SSO_ENABLED', false));
+// In der Demo zwingend aus, unabhängig von der .env: sso.php entwertet
+// Token in der Datenbank, noch bevor ein POST im Spiel ist. Das wäre ein
+// Schreibzugriff auf einem GET - und ein Anmeldeweg, den eine öffentlich
+// begehbare Demo ohnehin nicht braucht.
+define('SSO_ENABLED', env_bool('SSO_ENABLED', false) && !DEMO_MODE);
 
 // ── Fehlerausgabe ──────────────────────────────────────────────────
 // Details gehören ins Log, nicht in den Browser.

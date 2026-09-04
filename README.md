@@ -115,12 +115,14 @@ Edit `.env` and fill in at least `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`.
 `vendor/` is committed, so `composer install` is **optional** — run it only
 if you want to update PHPMailer or FPDF to a newer version.
 
-Import the schema, then optionally the demo data:
+Import the schema:
 
 ```bash
 mysql -u USER -p DATABASE < install/schema.sql
-mysql -u USER -p DATABASE < install/seed_demo.sql   # optional, see below
 ```
+
+To fill a database with example data instead of starting empty, see
+[Public demo mode](#public-demo-mode).
 
 Make `uploads/` writable by the web server. Then open the site in a
 browser — the first visit creates the administrator account.
@@ -139,12 +141,12 @@ browser — the first visit creates the administrator account.
   possible but not automatic: you must find and remove the orphan rows
   first, or `ALTER TABLE ... ADD CONSTRAINT` fails on the first offending
   row.
-- **`install/seed_demo.sql` hardcodes ids 1 and 2** (contacts, tasks) on the
-  assumption that it is loading into a freshly created, empty database
-  where `AUTO_INCREMENT` starts at 1. Import it once, immediately after
-  `schema.sql`, and never against a database that already has rows —
-  otherwise the demo milestones and invoices silently attach to whatever
-  unrelated contact or task already happens to own that id.
+- **Example data comes from `tools/seed_demo.php`**, not from a `.sql`
+  file. It inserts row by row and reads back each generated id, so the
+  references always match — the earlier `install/seed_demo.sql` hardcoded
+  ids 1 and 2 and silently attached its milestones and invoices to
+  whatever unrelated rows already owned those ids. The script refuses to
+  run unless `DEMO_MODE=true`, because it empties the tables first.
 - **Migrations run automatically** on every request, gated by a
   `schema_version` row in the `settings` table (`includes/migrations.php`).
   A step that is already applied (table/column/index already exists) is
@@ -173,6 +175,20 @@ need to extend `sso.php` to associate the token with a `users` row — as
 shipped, it does not. Turn this on only if you understand and accept that
 a valid token grants a full admin session, and only across domains you
 trust.
+
+### Public demo mode
+
+`DEMO_MODE=false` by default. Setting it to `true` turns the panel into a
+publicly reachable, read-only instance: every page opens without a login,
+and every POST is rejected before a handler runs — which also puts the
+mail, upload and delete paths out of reach, since all of them sit behind
+POST. `tools/seed_demo.php` fills a throwaway database with a year of
+invented data.
+
+This grants an admin session to anyone with the URL. It belongs on its own
+subdomain with its own database and a `SELECT`-only database user — never
+on a real installation. See [docs/DEMO.md](docs/DEMO.md) for the full
+setup.
 
 ### Locked out
 
@@ -247,11 +263,15 @@ php tools/check_css.php [path/to/old/design.css]
                               # optional — without it, only the structural
                               # checks run and the parity checks are skipped
 php tools/test_env.php       # unit tests for the .env parser
+php tools/test_seed_demo.php # runs the demo seed against SQLite and
+                              # checks the result
+php tools/check_demo.php     # verifies the demo-mode write guard holds
+php tools/test_demo.php      # unit tests for the guard itself
 ```
 
-`bash tools/check.sh` runs `check_css.php` internally (without a baseline)
-as part of its own checks; run `check_schema.php` and `test_env.php`
-separately. All must exit 0 before you open a pull request — see
+`bash tools/check.sh` runs `check_css.php`, `check_demo.php`,
+`test_demo.php` and `test_seed_demo.php` internally; run `check_schema.php`
+and `test_env.php` separately. All must exit 0 before you open a pull request — see
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Language

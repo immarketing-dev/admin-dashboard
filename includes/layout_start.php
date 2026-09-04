@@ -17,6 +17,12 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 <?php require __DIR__ . '/sidebar.php'; ?>
 
 <div class="main-content">
+<?php if (demo_mode()): ?>
+  <div class="demo-strip" role="status">
+    <i class="bi bi-eye" aria-hidden="true"></i>
+    <span><strong>Demo-Version</strong> &ndash; alle Daten sind erfunden, Änderungen werden nicht gespeichert.</span>
+  </div>
+<?php endif; ?>
   <div class="top-header<?= !empty($header_class) ? ' ' . htmlspecialchars($header_class, ENT_QUOTES) : '' ?>">
     <h2>
       <i class="bi bi-list mobile-toggle" id="mobile-toggle-btn"></i>
@@ -32,6 +38,14 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
       <div class="header-actions"><?= $header_actions ?></div>
     <?php endif; ?>
   </div>
+
+<?php if (demo_mode() && ($_GET['demo'] ?? '') === 'blocked'): ?>
+  <div class="demo-hinweis" role="alert">
+    <i class="bi bi-info-circle" aria-hidden="true"></i>
+    <span><?= htmlspecialchars(DEMO_HINWEIS) ?> Zum Ansehen und Ausprobieren
+      bleibt aber alles offen &ndash; Filter, Suche und jede Ansicht funktionieren.</span>
+  </div>
+<?php endif; ?>
 
 <?php require __DIR__ . "/search_overlay.php"; ?>
 <script src="assets/js/search.js" defer></script>

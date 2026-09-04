@@ -14,6 +14,12 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     die("Zugriff verweigert.");
 }
 
+// Diese Datei bindet includes/auth.php nicht ein, prueft die Anmeldung
+// also selbst - und braucht den Demo-Riegel deshalb ebenfalls selbst.
+// Ohne ihn liefe der POST-Handler in der Demo durch: er schreibt nach
+// finances und legt eine PDF-Datei ab.
+demo_guard();
+
 // PRÜFUNG: Ist der Composer-Autoloader vorhanden?
 if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
     die("<b>FEHLER:</b> Die Datei 'vendor/autoload.php' wurde nicht gefunden! Bitte 'composer install' ausführen.");

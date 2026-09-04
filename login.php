@@ -6,6 +6,14 @@ require_once 'includes/auth_login.php';
 require_once 'includes/session.php';
 app_session_start();
 
+// In der Demo gibt es kein Anmeldeformular - und damit auch nichts, an
+// dem jemand Passwörter durchprobieren könnte.
+if (demo_mode()) {
+    $_SESSION['admin_logged_in'] = true;
+    header('Location: index');
+    exit();
+}
+
 if (!empty($_SESSION['admin_logged_in'])) {
     header('Location: index');
     exit();

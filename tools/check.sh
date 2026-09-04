@@ -133,5 +133,26 @@ if [ -n "$stray" ]; then
   fail=1
 fi
 
+# --- 5. Demo-Modus -------------------------------------------------------
+# check_demo prueft die Annahmen des Schreibschutzes (jede POST-Seite
+# gedeckt, kein Schreibzugriff im Anzeigepfad). test_seed_demo laesst die
+# Demodaten gegen SQLite wirklich laufen - eine Syntaxpruefung wuerde
+# einen falschen Spaltennamen nicht bemerken.
+if command -v php >/dev/null 2>&1; then
+  if ! out=$(php tools/test_demo.php 2>&1); then
+    echo "DEMO-RIEGEL: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/check_demo.php 2>&1); then
+    echo "DEMO: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_seed_demo.php 2>&1); then
+    echo "SEED: $out"
+    fail=1
+  fi
+else
+  echo "HINWEIS: php nicht gefunden - Demo-Pruefungen uebersprungen."
+fi
 [ "$fail" -eq 0 ] && echo "OK: alle Pruefungen bestanden."
 exit "$fail"

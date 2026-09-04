@@ -89,6 +89,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 function getParallelSiteStatuses(array $urls): array {
     if (empty($urls)) return [];
 
+    // Die einzige Stelle im Ansehen-Pfad, die nach außen greift. Ohne
+    // Anmeldung ließe sich der Server damit auf beliebige Adressen
+    // ansetzen - auch auf interne. In der Demo wird deshalb nichts
+    // abgerufen, sondern ein aus der Adresse abgeleiteter Zustand
+    // gezeigt: gleichbleibend über Seitenaufrufe hinweg, und ohne die
+    // bis zu sechs Sekunden Wartezeit im ersten Eindruck.
+    if (demo_mode()) {
+        $demo = [];
+        foreach ($urls as $key => $url_row) {
+            $h = crc32((string)($url_row['url_link'] ?? $key));
+            $demo[$key] = ['online' => true, 'code' => 200,
+                            'time' => 90 + ($h % 380), 'error' => ''];
+        }
+        return $demo;
+    }
+
     $mh         = curl_multi_init();
     $handles    = [];
     $start_times = [];

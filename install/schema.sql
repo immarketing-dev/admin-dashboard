@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS task_milestones (
   KEY idx_ms_task (task_id),
   CONSTRAINT fk_ms_task FOREIGN KEY (task_id)
     REFERENCES tasks(id) ON DELETE CASCADE,
-  waiting_on   VARCHAR(20) NOT NULL DEFAULT '',
+  waiting_on   VARCHAR(20) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Taken verbatim from d:\Downloads\admin-dashboard\portal.php:31
@@ -217,7 +217,7 @@ CREATE TABLE IF NOT EXISTS client_assets (
   CONSTRAINT fk_assets_task FOREIGN KEY (task_id)
     REFERENCES tasks(id) ON DELETE CASCADE,
   uploaded_by_contact_id INT DEFAULT NULL,
-  uploaded_by_name VARCHAR(255) NOT NULL DEFAULT '',
+  uploaded_by_name VARCHAR(255) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS time_entries (

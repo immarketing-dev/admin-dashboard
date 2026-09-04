@@ -21,6 +21,9 @@ $page_title = $page_title ?? 'Dashboard';
 
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/app.css">
+  <?php if (demo_mode()): ?>
+  <link rel="stylesheet" href="assets/css/demo.css">
+  <?php endif; ?>
 
   <?php require_once __DIR__ . '/theme.php'; ?>
   <?= $extra_head ?? '' ?>
