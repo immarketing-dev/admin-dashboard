@@ -133,6 +133,18 @@ if [ -n "$stray" ]; then
   fail=1
 fi
 
+# --- 4b. Schutzdateien in uploads/ ---------------------------------------
+# Jedes Unterverzeichnis von uploads/ traegt eine .htaccess, die dort die
+# PHP-Ausfuehrung sperrt. Sie ist eine Sicherheitsmassnahme, aber weil sie
+# mit einem Punkt beginnt und leer aussieht, verschwindet sie leicht - ein
+# unbedachtes "rm -rf uploads/wiki" beim Aufraeumen genuegte einmal.
+for dir in uploads/*/; do
+  [ -d "$dir" ] || continue
+  if [ ! -f "${dir}.htaccess" ]; then
+    echo "UPLOADS: ${dir}.htaccess fehlt - dort waere PHP ausfuehrbar."
+    fail=1
+  fi
+done
 # --- 5. Demo-Modus -------------------------------------------------------
 # check_demo prueft die Annahmen des Schreibschutzes (jede POST-Seite
 # gedeckt, kein Schreibzugriff im Anzeigepfad). test_seed_demo laesst die
