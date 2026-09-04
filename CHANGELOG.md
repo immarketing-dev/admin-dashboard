@@ -193,8 +193,10 @@ private history.
   became three rows tall — on every page, from 768 px down. It now lives
   at the end of the same group as the buttons, which makes the header two
   rows on a phone and puts the magnifier to the right of the actions on
-  the desktop. `.header-actions` is therefore always rendered, even on
-  pages that bring no buttons of their own.
+  the desktop. On that phone row the whole group is right-aligned, so the
+  buttons sit where they do on the desktop instead of jumping to the left
+  edge. `.header-actions` is therefore always rendered, even on pages that
+  bring no buttons of their own.
 - **The task filter bar fits on one line.** The bar is built in two
   stages so the filters can collapse behind a button on a phone; that
   nesting also forced two rows on the desktop, with the search field
