@@ -802,7 +802,7 @@ require 'includes/layout_start.php';
             <option value="all"><?= te('Alle Status') ?></option>
             <option value="Offen" <?=$filter_status=='Offen'?'selected':''?>><?= te('Offen') ?></option>
             <option value="Bezahlt" <?=$filter_status=='Bezahlt'?'selected':''?>><?= te('Bezahlt') ?></option>
-            <option value="Überfällig" <?=$filter_status=='Überfällig'?'selected':''?>><?= te('Überfällig') ?></option>
+            <option value="Überfällig" <?=$filter_status==te('Überfällig')?'selected':''?>><?= te('Überfällig') ?></option>
         </select>
         <div class="form-check ms-2 me-2">
             <input type="checkbox" name="only_recurring" class="form-check-input" id="checkFix" onchange="this.form.submit()" <?=$filter_recurring?'checked':''?>>

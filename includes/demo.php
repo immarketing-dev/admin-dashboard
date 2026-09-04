@@ -32,7 +32,12 @@ const DEMO_HINWEIS = 'Dies ist eine Demo-Version. Änderungen werden nicht gespe
  * zeigen soll; portal.php überspringt im Demo-Modus zusätzlich den
  * Fehlversuchszähler, der sonst schreiben würde.
  */
-const DEMO_ERLAUBTE_AKTIONEN = ['verify_portal_pin'];
+const DEMO_ERLAUBTE_AKTIONEN = [
+    'verify_portal_pin',
+    // Sprache und Farben: die Handler in settings.php schreiben im
+    // Demo-Modus in die Sitzung statt in die Datenbank.
+    'save_language', 'save_design', 'reset_design',
+];
 
 function demo_mode(): bool
 {
@@ -142,4 +147,48 @@ function demo_portal_pin(): string
 {
     $pin = (string) env('DEMO_PORTAL_PIN', '');
     return $pin !== '' ? $pin : '1234';
+}
+
+/**
+ * Einstellungen, die ein Demo-Besucher fuer sich selbst aendern darf.
+ *
+ * Sprache und Farben. Die Wahl landet in der Sitzung, nicht in der
+ * Datenbank - aus zwei Gruenden:
+ *
+ *  - Der Datenbankbenutzer der Demo darf nur lesen.
+ *  - Waere es die Datenbank, saehe der naechste Besucher, was der
+ *    vorherige eingestellt hat. Jeder soll fuer sich ausprobieren
+ *    koennen, ohne die Demo fuer andere zu veraendern.
+ *
+ * Alles andere auf der Einstellungsseite bleibt gesperrt: Firmendaten,
+ * Logo, Mailvorlagen und Protokollgrenzen sind Inhalt, nicht Ansicht.
+ */
+const DEMO_EIGENE_EINSTELLUNGEN = ['ui_language', 'color_primary', 'color_sidebar'];
+
+/** Der vom Besucher gewaehlte Wert, sonst der uebergebene Standard. */
+function demo_einstellung(string $schluessel, string $standard): string
+{
+    if (!demo_mode()) return $standard;
+    if (!in_array($schluessel, DEMO_EIGENE_EINSTELLUNGEN, true)) return $standard;
+    if (session_status() !== PHP_SESSION_ACTIVE) return $standard;
+
+    $wert = $_SESSION['demo_' . $schluessel] ?? null;
+    return ($wert === null || $wert === '') ? $standard : (string) $wert;
+}
+
+/** Merkt sich die Wahl des Besuchers fuer diese Sitzung. */
+function demo_einstellung_setzen(string $schluessel, string $wert): void
+{
+    if (!demo_mode()) return;
+    if (!in_array($schluessel, DEMO_EIGENE_EINSTELLUNGEN, true)) return;
+    if (session_status() !== PHP_SESSION_ACTIVE) return;
+
+    $_SESSION['demo_' . $schluessel] = $wert;
+}
+
+/** Verwirft die Wahl des Besuchers - fuer "auf Standard zuruecksetzen". */
+function demo_einstellung_loeschen(string $schluessel): void
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) return;
+    unset($_SESSION['demo_' . $schluessel]);
 }

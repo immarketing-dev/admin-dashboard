@@ -47,6 +47,13 @@ function lang(): string
         $gesetzt = setting('ui_language', 'de');
         if (in_array($gesetzt, SPRACHEN, true)) $sprache = $gesetzt;
     }
+
+    // In der Demo darf jeder Besucher fuer sich umschalten; die Wahl
+    // liegt in seiner Sitzung und beruehrt niemanden sonst.
+    if (function_exists('demo_einstellung')) {
+        $eigen = demo_einstellung('ui_language', $sprache);
+        if (in_array($eigen, SPRACHEN, true)) $sprache = $eigen;
+    }
     $GLOBALS['__sprache'] = $sprache;
     return $sprache;
 }

@@ -842,7 +842,7 @@ require 'includes/layout_start.php';
                                             </div>
                                             
                                             <div class="d-flex justify-content-between align-items-center mb-3 small text-muted">
-                                                <span class="text-truncate" style="max-width: 60%;"><i class="bi bi-person-fill me-1"></i> <?= $p['client_name'] ? htmlspecialchars($p['client_name']) : 'Kein Kunde' ?></span>
+                                                <span class="text-truncate" style="max-width: 60%;"><i class="bi bi-person-fill me-1"></i> <?= $p['client_name'] ? htmlspecialchars($p['client_name']) : te('Kein Kunde') ?></span>
                                                 <?php if($p['deadline']): ?>
                                                     <span class="<?= $p['days_until_deadline'] < 0 ? 'text-danger fw-bold' : '' ?>">
                                                         <i class="bi bi-calendar-event me-1"></i> <?= date('d.m.', strtotime($p['deadline'])) ?>

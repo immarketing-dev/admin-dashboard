@@ -254,7 +254,7 @@ require 'includes/layout_start.php';
       <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
         <option value="all"><?= te('Alle Status') ?></option>
         <option value="Offen"          <?= $filter_status === 'Offen'          ? 'selected' : '' ?>><?= te('Offen') ?></option>
-        <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
+        <option value="In Bearbeitung" <?= $filter_status === te('In Bearbeitung') ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
         <option value="Erledigt"       <?= $filter_status === 'Erledigt'       ? 'selected' : '' ?>><?= te('Erledigt') ?></option>
       </select>
       <select name="priority" class="form-select form-select-sm w-auto" onchange="this.form.submit()">

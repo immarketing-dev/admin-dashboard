@@ -1266,4 +1266,129 @@ return [
         => 'Here you set what appears below every message.',
     'angepasst'
         => 'edited',
+    // ── Portal, Protokoll, Papierkorb ────────────────────────────────
+    'Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.'
+        => 'Invalid access. Please use the link from your e-mail.',
+    'Zugang abgelaufen oder ungültig.'
+        => 'Access expired or invalid.',
+    'Zugang'
+        => 'Access',
+    'Hallo %s, geben Sie Ihren Zugangscode ein.'
+        => 'Hello %s, please enter your access code.',
+    'Der Zugangscode muss mindestens 4 Zeichen haben.'
+        => 'The access code must be at least 4 characters long.',
+    'Die Zugangscodes stimmen nicht überein.'
+        => 'The access codes do not match.',
+    'Falscher Zugangscode.'
+        => 'Wrong access code.',
+    'Falscher Zugangscode. Noch %d Versuch(e).'
+        => 'Wrong access code. %d attempt(s) left.',
+    'Zu viele Fehlversuche. Bitte noch %d Minute(n) warten.'
+        => 'Too many failed attempts. Please wait %d more minute(s).',
+    'Zu viele Fehlversuche. Zugang für 30 Minuten gesperrt.'
+        => 'Too many failed attempts. Access locked for 30 minutes.',
+    'Meilenstein erfolgreich abgesegnet!'
+        => 'Milestone approved.',
+    'Ihr Feedback wurde gespeichert!'
+        => 'Your feedback has been saved.',
+    'Datei erfolgreich entfernt!'
+        => 'File removed.',
+    'Datei(en) erfolgreich hochgeladen!'
+        => 'File(s) uploaded.',
+    'Ihre Anfrage wurde gesendet!'
+        => 'Your request has been sent.',
+    'Ihre Antwort wurde gesendet!'
+        => 'Your reply has been sent.',
+    'Ticket als erledigt markiert.'
+        => 'Ticket marked as done.',
+    'Ticket wurde gelöscht.'
+        => 'Ticket deleted.',
+    'Ihre Daten wurden aktualisiert!'
+        => 'Your details have been updated.',
+    'Vielen Dank! Wir haben Ihre Zusage erhalten.'
+        => 'Thank you. We have received your acceptance.',
+    'Ihre Rückfrage ist bei uns eingegangen.'
+        => 'Your question has reached us.',
+    'Ihr Beitrag ist gespeichert.'
+        => 'Your message has been saved.',
+    'Guten Tag'
+        => 'Hello',
+    'Ihr persönliches Partner-Portal'
+        => 'Your personal partner portal',
+    'Ihr persönliches Projektportal'
+        => 'Your personal project portal',
+    'Offene Anfragen'
+        => 'Open requests',
+    'Aktuell sind keine Projekte hinterlegt.'
+        => 'There are no projects at the moment.',
+    'Aktuell sind keine gemeinsamen Projekte hinterlegt.'
+        => 'There are no shared projects at the moment.',
+    'Roadmap & Meilensteine'
+        => 'Roadmap and milestones',
+    'Wir sind dran'
+        => 'With us',
+    'Sie sind dran'
+        => 'With you',
+    'Abgeschlossen am'
+        => 'Completed on',
+    'Freigegeben am'
+        => 'Approved on',
+    'Kommentar hinterlassen'
+        => 'Leave a comment',
+    'Dokumente & Dateien'
+        => 'Documents and files',
+    'Dateien & Assets'
+        => 'Files and assets',
+    'Von uns hochgeladen'
+        => 'Uploaded by us',
+    'Von Ihrer Seite hochgeladen'
+        => 'Uploaded by your side',
+    'Von uns'
+        => 'From us',
+    'Von Ihnen'
+        => 'From you',
+    'Angebote zur gemeinsamen Zusammenarbeit.'
+        => 'Quotes for our joint work.',
+    'Hier können Sie ein Angebot direkt annehmen oder eine Rückfrage stellen.'
+        => 'You can accept a quote here, or ask a question about it.',
+    'Frist abgelaufen am'
+        => 'Expired on',
+    'Alle Rechnungen auf einen Blick — als PDF herunterladbar.'
+        => 'All invoices at a glance — downloadable as PDF.',
+    'Gemeinsame Abrechnungen auf einen Blick — als PDF herunterladbar.'
+        => 'Shared invoices at a glance — downloadable as PDF.',
+    'Neue Anfrage'
+        => 'New request',
+    'Neue Mitteilung'
+        => 'New message',
+    'Probleme mit der Website oder Änderungswünsche? Ich melde mich schnellstmöglich.'
+        => 'Problems with the website, or changes you would like? I will get back to you as soon as I can.',
+    'Fragen zur Zusammenarbeit oder sonstige Anliegen? Ich melde mich schnellstmöglich.'
+        => 'Questions about our work together, or anything else? I will get back to you as soon as I can.',
+    'Ticket absenden'
+        => 'Send request',
+    'Meine Anfragen'
+        => 'My requests',
+    'Bisherige Mitteilungen'
+        => 'Previous messages',
+    'Kein Kunde'
+        => 'No client',
+    'Vorbelegung, reiner Text'
+        => 'Default, plain text',
+    'HTML mit Rahmen'
+        => 'HTML with frame',
+    ' gefilterte Einträge (max. '
+        => ' filtered entries (max. ',
+    'Anzeige der letzten '
+        => 'Showing the last ',
+    ' Einträge.'
+        => ' entries.',
+    'Eintrag wiederhergestellt.'
+        => 'Entry restored.',
+    'Eintrag endgültig gelöscht.'
+        => 'Entry permanently deleted.',
+    '(ohne Titel)'
+        => '(untitled)',
+    'Sprache, Farben und Thema gelten nur für Ihren Besuch. Andere Besucher sehen weiterhin die Vorgaben, und beim nächsten Aufruf beginnt alles von vorn.'
+        => 'Language, colours and theme apply to your visit only. Other visitors still see the defaults, and everything starts over on your next visit.',
 ];

@@ -588,7 +588,7 @@ require 'includes/layout_start.php';
                             <select name="status" class="form-select">
                                 <option value="all"><?= te('Alle Status') ?></option>
                                 <option value="Offen" <?= $filter_status === 'Offen' ? 'selected' : '' ?>><?= te('Offen') ?></option>
-                                <option value="In Bearbeitung" <?= $filter_status === 'In Bearbeitung' ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
+                                <option value="In Bearbeitung" <?= $filter_status === te('In Bearbeitung') ? 'selected' : '' ?>><?= te('In Bearbeitung') ?></option>
                                 <option value="Erledigt" <?= $filter_status === 'Erledigt' ? 'selected' : '' ?>><?= te('Erledigt') ?></option>
                                 <option value="Storniert" <?= $filter_status === 'Storniert' ? 'selected' : '' ?>><?= te('Storniert') ?></option>
                             </select>
@@ -973,7 +973,7 @@ require 'includes/layout_start.php';
                       <select name="member_ids[]" id="e_members" class="form-select" multiple size="5">
                         <?php foreach($all_contacts as $c): ?>
                           <option value="<?=$c['id']?>">
-                            <?=htmlspecialchars($c['name'])?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?><?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
+                            <?=htmlspecialchars($c['name'])?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?><?= $c['contact_type'] === te('Geschäftspartner') ? ' (Partner)' : '' ?>
                           </option>
                         <?php endforeach; ?>
                       </select>
@@ -1519,7 +1519,7 @@ require 'includes/layout_start.php';
                 <?php foreach($all_contacts as $c): ?>
                   <option value="<?= (int)$c['id'] ?>">
                     <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?>
-                    <?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
+                    <?= $c['contact_type'] === te('Geschäftspartner') ? ' (Partner)' : '' ?>
                   </option>
                 <?php endforeach; ?>
               </select>

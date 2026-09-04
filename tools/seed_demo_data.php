@@ -51,6 +51,10 @@ $einstellungen = [
     'admin_email'     => 'hallo@musterwerk.example',
     'support_email'   => 'support@musterwerk.example',
     'log_limit'       => '200',
+    // Die Demo startet auf Englisch. Wer umschaltet, aendert das nur
+    // fuer seine eigene Sitzung - der naechste Besucher faengt wieder
+    // hier an.
+    'ui_language'     => 'en',
 ];
 foreach ($einstellungen as $sk => $sv) {
     $pdo->prepare('INSERT INTO settings (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)')
