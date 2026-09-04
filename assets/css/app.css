@@ -814,7 +814,22 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 [data-theme="dark"] .card { background: var(--surface-card); border-color: var(--border-base); }
 [data-theme="dark"] .card-header { background: var(--surface-subtle); border-color: var(--border-base); color: var(--text-strong); }
 [data-theme="dark"] .card-body { color: var(--text-body); }
-[data-theme="dark"] .rounded-3, [data-theme="dark"] .rounded { background: var(--surface-card); }
+/* Diese Regel faerbte im dunklen Thema jedes abgerundete Element ein -
+   auch solche, die auf einer Karte liegen und durchscheinen sollen. Sie
+   bleibt als Rueckfall fuer umrandete Kaesten ohne eigene Flaeche, greift
+   aber nicht mehr, wenn eine Flaechenklasse etwas anderes vorgibt. */
+[data-theme="dark"] .rounded-3:not([class*="bg-"]):not([class*="tint-"]):not(.badge),
+[data-theme="dark"] .rounded:not([class*="bg-"]):not([class*="tint-"]):not(.badge) {
+    background: var(--surface-card);
+}
+
+/* Platzhalterzeile, solange ein Widget seine Daten noch laedt. */
+.skeleton-line {
+    display: inline-block; height: 10px; border-radius: 5px;
+    background: var(--surface-sunken);
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 
 
 /* =========================================================

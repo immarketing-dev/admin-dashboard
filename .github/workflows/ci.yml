@@ -23,3 +23,9 @@ jobs:
         run: php tools/check_schema.php
       - name: .env parser tests
         run: php tools/test_env.php
+
+      - name: CSRF tests
+        run: php tools/test_csrf.php
+
+      - name: Upload validation tests
+        run: php tools/test_upload.php
