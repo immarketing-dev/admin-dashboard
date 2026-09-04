@@ -203,6 +203,12 @@ if command -v php >/dev/null 2>&1; then
     echo "DEMO: $out"
     fail=1
   fi
+  # Die Anordnung der Startseiten-Widgets kommt aus einer POST-Sendung.
+  # Die Pruefung, die sie baendigt, laeuft ohne Datenbank.
+  if ! out=$(php tools/test_dashboard_layout.php 2>&1); then
+    echo "DASHBOARD-LAYOUT: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_seed_demo.php 2>&1); then
     echo "SEED: $out"
     fail=1
