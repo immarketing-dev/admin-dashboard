@@ -8,8 +8,40 @@ private history.
 
 ## [Unreleased]
 
-### Security
-- **Every library is served from the panel itself now, and a
+### Added
+- **Invoices keep their line items.** `invoice.php` took them by POST,
+  printed them into the PDF and threw them away — `finances` held a single
+  `amount`. The PDF was the only place the breakdown existed at all, so an
+  invoice could not be corrected, its PDF not regenerated, and VAT not
+  evaluated. An e-invoice (XRechnung, ZUGFeRD) was impossible outright:
+  that needs the items individually and machine-readable.
+
+  Schema version 8 adds `items` (JSON), `tax_type`, `net_amount` and
+  `tax_amount` to `finances`, in exactly the format quotes already use, so
+  converting a quote to an invoice now carries the breakdown across instead
+  of losing it. Existing invoices keep `net_amount` NULL rather than having
+  it back-filled from `amount` — an invented net sum would be worse than
+  none, because an evaluation could not tell it from a real one.
+
+  The arithmetic moved into `includes/invoice_items.php`, which the PDF, the
+  totals and the database row now share; previously the PDF loop computed
+  the net sum as a side effect of printing, so the number existed only while
+  the document was being drawn. Rounding is applied to the tax, not to the
+  gross, so the printed tax is exactly the difference between the two
+  printed sums. An unknown tax type yields no tax rather than a guessed 19 %.
+  26 checks in `tools/test_invoice_items.php`.
+
+- **`tools/check_placeholders.php`** counts `?` placeholders against the
+  values passed to `execute()`. `php -l` cannot see a query that lost a
+  value — it is syntactically perfect and fails at runtime, mid-save. It
+  found a real one immediately: the quote-to-invoice conversion in
+  `quotes.php`, which this same change had just given four more columns
+  without extending its parameter list. It reads the value list
+  bracket-aware rather than by regex; a non-greedy `.*?\]` stops at the
+  first `])`, which already occurs inside `trim($_POST['x'])` mid-list and
+  produced four false reports.
+
+### Security- **Every library is served from the panel itself now, and a
   Content-Security-Policy enforces it.** Bootstrap, Bootstrap Icons,
   Chart.js, Prism, SortableJS, Gridstack, qrcode.js and CKEditor came from
   four foreign origins on every page load, none of them with an

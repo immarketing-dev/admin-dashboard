@@ -285,8 +285,20 @@ if command -v php >/dev/null 2>&1; then
   # niemand die Rechnung sieht, die er faelschlich sehen duerfte.
   # Das Auffangnetz laeuft nur, wenn ohnehin schon etwas schiefging -
   # ein Fehler darin ersetzt eine leere Seite durch eine andere.
+  # Platzhalter gegen uebergebene Werte. "php -l" sieht eine Abfrage,
+  # der ein Wert fehlt, nicht - sie ist syntaktisch tadellos und faellt
+  # erst zur Laufzeit auf, mitten im Speichern.
+  if ! out=$(php tools/check_placeholders.php 2>&1); then
+    echo "PLATZHALTER: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_errors.php 2>&1); then
     echo "FEHLERSEITE: $out"
+    fail=1
+  fi
+  # Rechnungspositionen und Summen - hier wird mit Geld gerechnet.
+  if ! out=$(php tools/test_invoice_items.php 2>&1); then
+    echo "POSITIONEN: $out"
     fail=1
   fi
   if ! out=$(php tools/test_file_access.php 2>&1); then

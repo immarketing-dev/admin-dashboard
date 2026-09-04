@@ -352,8 +352,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $inv_num2 = next_invoice_number($pdo);
         $inv_pdf2 = build_invoice_pdf_from_quote($q2, $inv_num2);
         $client_name2 = $q2['custom_name'] ?: ($q2['c_name'] ?? 'Unbekannt');
-        $pdo->prepare("INSERT INTO finances (type,title,invoice_number,contact_id,custom_name,amount,status,record_date,due_date,notes,invoice_pdf_path,is_recurring) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(),INTERVAL 14 DAY),?,?,0)")
-            ->execute([$inv_num2,$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2]);
+        // Die Positionen des Angebots wandern mit in die Rechnung. Bis
+        // Schemaversion 8 ging dabei nur der Gesamtbetrag ueber, und die
+        // Aufstellung blieb allein im erzeugten PDF stehen - die Rechnung
+        // liess sich danach nicht mehr aendern, ohne sie neu zu tippen.
+        require_once __DIR__ . '/includes/invoice_items.php';
+        $pos2    = positionen_aus_json($q2['items'] ?? null);
+        $summen2 = positionen_summen($pos2, $q2['tax_type'] ?? 'kleinunternehmer');
+
+        $pdo->prepare("INSERT INTO finances (type,title,invoice_number,contact_id,custom_name,amount,status,record_date,due_date,notes,invoice_pdf_path,is_recurring,items,tax_type,net_amount,tax_amount) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(),INTERVAL 14 DAY),?,?,0,?,?,?,?)")
+            ->execute([$inv_num2,$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2,
+                       json_encode($pos2),$q2['tax_type'] ?? 'kleinunternehmer',$summen2['netto'],$summen2['steuer']]);
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
         log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q2['quote_number']} zu Rechnung $inv_num2 konvertiert.");
         filter_redirect('finances', ['msg' => 'invoice_created']);

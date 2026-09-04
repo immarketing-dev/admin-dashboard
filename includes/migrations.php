@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -332,6 +332,31 @@ function migrations(): array
             . ' SET t.feedback_by_contact_id = c.id, t.feedback_by_name = c.name'
             . " WHERE t.client_feedback IS NOT NULL AND t.client_feedback != ''"
             . ' AND t.feedback_by_contact_id IS NULL',
+        ],
+
+        // Version 8: Rechnungen bekommen ihre Positionen.
+        //
+        // Bis hierher nahm invoice.php sie per POST entgegen, druckte sie
+        // ins PDF und warf sie weg - in finances stand nur ein Betrag.
+        // Eine Rechnung liess sich damit nicht korrigieren, ihr PDF nicht
+        // neu erzeugen und die Umsatzsteuer nicht auswerten. Das PDF war
+        // der einzige Ort, an dem die Aufstellung ueberhaupt existierte.
+        //
+        // Dasselbe Format wie bei den Angeboten (quotes.items), damit die
+        // Umwandlung Angebot -> Rechnung die Positionen uebernehmen kann.
+        8 => [
+            'ALTER TABLE finances'
+            . ' ADD COLUMN items JSON DEFAULT NULL,'
+            . " ADD COLUMN tax_type VARCHAR(30) NOT NULL DEFAULT 'kleinunternehmer',"
+            . ' ADD COLUMN net_amount DECIMAL(10,2) DEFAULT NULL,'
+            . ' ADD COLUMN tax_amount DECIMAL(10,2) DEFAULT NULL',
+
+            // Bestandsrechnungen behalten ihren Betrag; Positionen gibt es
+            // fuer sie nicht mehr, die stehen nur in ihrem PDF. net_amount
+            // bleibt deshalb NULL statt gleich amount gesetzt zu werden -
+            // eine erfundene Nettosumme waere schlimmer als gar keine, weil
+            // sie sich in einer Auswertung nicht von einer echten
+            // unterscheiden liesse.
         ],
     ];
 }

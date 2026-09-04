@@ -488,8 +488,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $inv_pdf_path = build_invoice_pdf_from_quote($q, $inv_num);
 
         $client_name = $q['custom_name'] ?: ($q['c_name'] ?? 'Unbekannt');
-        $pdo->prepare("INSERT INTO finances (type, title, invoice_number, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(), INTERVAL 14 DAY),?,?,0)")
-            ->execute([$inv_num, $inv_num, $q['contact_id'], $client_name, $q['total_amount'], $q['notes'], $inv_pdf_path]);
+        // Siehe finances.php: die Aufstellung geht mit ueber, nicht nur
+        // die Summe.
+        require_once __DIR__ . '/includes/invoice_items.php';
+        $pos_q    = positionen_aus_json($q['items'] ?? null);
+        $summen_q = positionen_summen($pos_q, $q['tax_type'] ?? 'kleinunternehmer');
+
+        $pdo->prepare("INSERT INTO finances (type, title, invoice_number, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring, items, tax_type, net_amount, tax_amount) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(), INTERVAL 14 DAY),?,?,0,?,?,?,?)")
+            ->execute([$inv_num, $inv_num, $q['contact_id'], $client_name, $q['total_amount'], $q['notes'], $inv_pdf_path,
+                       json_encode($pos_q), $q['tax_type'] ?? 'kleinunternehmer', $summen_q['netto'], $summen_q['steuer']]);
 
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
         log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q['quote_number']} zu Rechnung $inv_num konvertiert.");

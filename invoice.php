@@ -72,7 +72,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $iban   = safe_decode($_POST['iban'] ?? '');
     $paypal = safe_decode($_POST['paypal'] ?? '');
     $notes  = safe_decode($_POST['notes'] ?? '');
-    $items_unit = $_POST['item_unit'] ?? [];
+
+    // Die Positionen einmal einlesen und danach ueberall dieselbe Liste
+    // benutzen: das PDF, die Summen und der Datenbankeintrag. Frueher las
+    // die PDF-Schleife die POST-Felder direkt und rechnete dabei die
+    // Nettosumme mit - das Ergebnis existierte nur waehrend des Druckens.
+    require_once __DIR__ . '/includes/invoice_items.php';
+    $items  = positionen_aus_post($_POST);
+    $summen = positionen_summen($items, $tax_type);
 
     // PDF GENERIERUNG STARTEN
     $pdf = new FPDF();
@@ -172,22 +179,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->Ln(2);
 
     // --- POSITIONEN ---
-    $netto_total = 0;
-    $items_desc = $_POST['item_desc'] ?? [];
-    $items_qty = $_POST['item_qty'] ?? [];
-    $items_price = $_POST['item_price'] ?? [];
+    $netto_total = $summen['netto'];
 
     $pdf->SetFont('Arial', '', 9);
 
-    for ($i = 0; $i < count($items_desc); $i++) {
-        if (empty(trim($items_desc[$i]))) continue;
-
-        $desc  = safe_decode($items_desc[$i]);
-        $unit  = safe_decode($items_unit[$i] ?? '');
-        $qty   = (float)$items_qty[$i];
-        $price = (float)str_replace(',', '.', $items_price[$i]);
+    foreach ($items as $item) {
+        $desc  = safe_decode($item['desc']);
+        $unit  = safe_decode($item['unit']);
+        $qty   = $item['qty'];
+        $price = $item['price'];
         $total = $qty * $price;
-        $netto_total += $total;
 
         $startX = $pdf->GetX();
         $startY = $pdf->GetY();
@@ -211,9 +212,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->Ln(5);
 
     // --- SUMMEN ---
-    $tax_rate = ($tax_type == 'regel') ? 0.19 : 0.00;
-    $tax_amount = $netto_total * $tax_rate;
-    $brutto_total = $netto_total + $tax_amount;
+    // Aus derselben Rechnung wie der gespeicherte Eintrag - sonst koennte
+    // im PDF ein anderer Betrag stehen als in der Datenbank.
+    $tax_rate     = $summen['steuersatz'];
+    $tax_amount   = $summen['steuer'];
+    $brutto_total = $summen['brutto'];
 
     if ($tax_type == 'regel') {
         $pdf->SetFont('Arial', '', 10);
@@ -308,23 +311,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // NEU ANLEGEN
             $insert = $pdo->prepare("
                 INSERT INTO finances 
-                (type, title, invoice_number, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring)
-                VALUES ('INCOME', ?, ?, ?, ?, ?, 'Offen', ?, ?, ?, ?, 0)
+                (type, title, invoice_number, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring,
+                 items, tax_type, net_amount, tax_amount)
+                VALUES ('INCOME', ?, ?, ?, ?, ?, 'Offen', ?, ?, ?, ?, 0, ?, ?, ?, ?)
             ");
             // Die Nummer steht weiterhin im Titel – die Suche nach einer
             // bestehenden Rechnung weiter oben greift darauf zu – und
             // zusätzlich in ihrer eigenen Spalte mit eindeutigem Index.
-            $insert->execute([$invoice_number, $invoice_number, $db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path]);
+            $insert->execute([$invoice_number, $invoice_number, $db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path,
+                              json_encode($items), $tax_type, $summen['netto'], $summen['steuer']]);
 
             log_event($pdo, 'INVOICE_CREATED', "Rechnung $invoice_number für $db_client_name generiert.");
         } else {
             // AKTUALISIEREN (Wenn du die gleiche Rechnung noch mal überschreibst)
             $update = $pdo->prepare("
                 UPDATE finances 
-                SET deleted_at = NULL, contact_id = ?, custom_name = ?, amount = ?, record_date = ?, due_date = ?, notes = ?, invoice_pdf_path = ?
+                SET deleted_at = NULL, contact_id = ?, custom_name = ?, amount = ?, record_date = ?, due_date = ?, notes = ?, invoice_pdf_path = ?,
+                    items = ?, tax_type = ?, net_amount = ?, tax_amount = ?
                 WHERE id = ?
             ");
-            $update->execute([$db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path, $existing['id']]);
+            $update->execute([$db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path,
+                              json_encode($items), $tax_type, $summen['netto'], $summen['steuer'], $existing['id']]);
 
             log_event($pdo, 'INVOICE_UPDATED', "Rechnung $invoice_number wurde neu generiert und auf $db_amount € aktualisiert.");
         }

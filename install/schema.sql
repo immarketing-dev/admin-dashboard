@@ -247,6 +247,14 @@ CREATE TABLE IF NOT EXISTS finances (
   invoice_number   VARCHAR(50) DEFAULT NULL,
   invoice_pdf_path VARCHAR(255) DEFAULT NULL,
   is_recurring     TINYINT(1) NOT NULL DEFAULT 0,
+  -- Die Aufstellung der Rechnung, im selben Format wie quotes.items:
+  -- [{"desc":…,"qty":…,"price":…,"unit":…}]. NULL bei Eintraegen ohne
+  -- Positionen - eine Ausgabe hat keine, und Rechnungen aus der Zeit vor
+  -- Schemaversion 8 haben ihre nur im PDF.
+  items            JSON DEFAULT NULL,
+  tax_type         VARCHAR(30) NOT NULL DEFAULT 'kleinunternehmer',
+  net_amount       DECIMAL(10,2) DEFAULT NULL,
+  tax_amount       DECIMAL(10,2) DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_fin_contact (contact_id),
   KEY idx_fin_type_date (type, record_date),
@@ -404,7 +412,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '7')
+INSERT INTO settings (k, v) VALUES ('schema_version', '8')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;
