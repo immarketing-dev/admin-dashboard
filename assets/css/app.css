@@ -34,11 +34,35 @@ h1, h2, h3, h4, h5, h6, .brand, .widget-title {
    ADMIN PANEL: SIDEBAR & LAYOUT
    ========================================= */
 .sidebar {
-    width: var(--sidebar-width); min-width: var(--sidebar-width); height: 100vh;
+    width: var(--sidebar-width); min-width: var(--sidebar-width);
     background: var(--color-sidebar); color: var(--text-invert);
-    position: fixed; left: 0; top: 0; padding-top: var(--space-5);
-    z-index: 1050; transition: all 0.3s ease;
+    position: fixed; left: 0; top: 0;
+    padding: var(--space-5) 0;
+    /* Frueher "transition: all". Das animierte auf Mobilgeraeten auch die
+       Hoehe mit, sobald die Adressleiste ein- oder ausfaehrt - das Scrollen
+       fuehlte sich dadurch traege an. Hier nur, was sich wirklich aendert:
+       links beim Ein-/Ausblenden, Breite beim Einklappen. */
+    z-index: 1050; transition: left .3s ease, width .3s ease, min-width .3s ease;
+
+    /* Die Leiste ist fest positioniert und genau so hoch wie das
+       Sichtfeld. Ohne overflow-y ist alles, was nicht hineinpasst,
+       nicht nur unsichtbar, sondern unerreichbar - es gibt keine
+       Flaeche, an der man scrollen koennte. Bei zwoelf Eintraegen in
+       vier Gruppen sind das auf einem kleinen Geraet die unteren
+       Punkte samt Logout. Betrifft jedes niedrige Sichtfeld, auch ein
+       Tablet im Querformat, nicht nur Telefone. */
+    height: 100vh;
+    height: 100dvh;   /* mobil: folgt der ein- und ausfahrenden Adressleiste */
+    overflow-y: auto;
+    overscroll-behavior: contain;   /* am Ende nicht auf die Seite dahinter durchscrollen */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primary) transparent;
 }
+/* Gleiche schmale Laufleiste wie in den uebrigen Scrollflaechen. */
+.sidebar::-webkit-scrollbar       { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: var(--radius-lg); }
 .sidebar .brand { text-align: center; margin-bottom: var(--space-7); font-size: 22px; font-weight: 700; color: var(--color-primary); }
 .sidebar .nav-link { color: var(--text-nav-link); padding: var(--space-3) var(--space-6); font-size: 15px; display: flex; align-items: center; text-decoration: none; transition: 0.3s; }
 .sidebar .nav-link i { font-size: var(--text-lg); margin-right: var(--space-4); color: var(--text-nav-icon); transition: 0.3s;}

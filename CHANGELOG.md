@@ -176,3 +176,12 @@ private history.
 - The finance chart drew a light grid and light axis labels onto a dark
   background. Chart.js renders to a canvas and cannot resolve CSS custom
   properties, so the token values are read once through `getComputedStyle`.
+- The sidebar could not be scrolled when it outgrew the viewport. It is
+  fixed-position at the full viewport height with no \`overflow-y\`, so
+  anything past the bottom edge was not merely hidden but unreachable —
+  there was no surface to scroll. Twelve entries in four groups overflow a
+  375x667 screen by 252px, which is the lower half of the navigation
+  including Logout, and a tablet in landscape is affected as well. The
+  height now follows \`100dvh\` so it tracks the mobile address bar, and
+  \`transition: all\` is narrowed to the properties that actually change,
+  which kept the height from animating as that bar slid in and out.
