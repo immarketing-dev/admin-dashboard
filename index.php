@@ -1060,10 +1060,10 @@ require 'includes/layout_start.php';
         } else {
             emailEl.textContent = '-';
         }
-        document.getElementById('vl_phone').textContent = lead.phone || 'Keine Angabe';
+        document.getElementById('vl_phone').textContent = lead.phone || <?= tjs('Keine Angabe') ?>;
         document.getElementById('vl_source').textContent = lead.source || 'Unbekannt';
         document.getElementById('vl_subject').textContent = lead.subject || '-';
-        document.getElementById('vl_message').textContent = lead.message || 'Keine Nachricht hinterlassen.';
+        document.getElementById('vl_message').textContent = lead.message || <?= tjs('Keine Nachricht hinterlassen.') ?>;
 
         leadModal.show();
     }
@@ -1240,7 +1240,7 @@ require 'includes/layout_start.php';
             const el = document.getElementById('tickets_widget_body');
             if (!el) return;
             if (!list || list.length === 0) {
-                el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-check2-all d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>Keine offenen Support-Anfragen.</div>';
+                el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-check2-all d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i><?= te('Keine offenen Support-Anfragen.') ?></div>';
                 return;
             }
             const rows = list.map(t => {
@@ -1266,7 +1266,7 @@ require 'includes/layout_start.php';
             if (!el) return;
             _leadsCache = list || [];
             if (!list || list.length === 0) {
-                el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-inbox d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i>Keine neuen Anfragen über die Website.</div>';
+                el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-inbox d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i><?= te('Keine neuen Anfragen über die Website.') ?></div>';
                 return;
             }
             const rows = list.map((lead, i) => {
@@ -1291,13 +1291,13 @@ require 'includes/layout_start.php';
             if (kpiEl)  kpiEl.textContent = count;
             if (!listEl) return;
             if (!list || list.length === 0) {
-                listEl.innerHTML = '<div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-check2-circle me-1 text-success"></i>Keine Deadlines</div>';
+                listEl.innerHTML = '<div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-check2-circle me-1 text-success"></i><?= te('Keine Deadlines') ?></div>';
                 return;
             }
             listEl.innerHTML = list.slice(0, 2).map(dl => {
                 const d = parseInt(dl.days_left);
                 const k = d < 0 ? 'due-overdue' : (d === 0 ? 'due-today' : (d <= 3 ? 'due-soon' : ''));
-                const l = d < 0 ? 'Überfällig' : (d === 0 ? 'Heute' : `in ${d} T.`);
+                const l = d < 0 ? <?= tjs('Überfällig') ?> : (d === 0 ? 'Heute' : `in ${d} T.`);
                 const t = (dl.title || '').replace(/</g,'&lt;');
                 const s = t.length > 20 ? t.substring(0,20)+'…' : t;
                 return `<div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
@@ -1313,7 +1313,7 @@ require 'includes/layout_start.php';
             if (kpiEl)  kpiEl.textContent = count;
             if (!listEl) return;
             if (!list || list.length === 0) {
-                listEl.innerHTML = '<div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-calendar-check me-1 text-success"></i>Keine Termine</div>';
+                listEl.innerHTML = '<div class="small text-muted pt-2 border-top border-subtle-c"><i class="bi bi-calendar-check me-1 text-success"></i><?= te('Keine Termine') ?></div>';
                 return;
             }
             listEl.innerHTML = list.slice(0, 2).map(apt => {

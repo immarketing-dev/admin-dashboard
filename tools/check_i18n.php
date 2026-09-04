@@ -36,7 +36,7 @@ function verpackte_texte(string $pfad): array
     for ($i = 0, $n = count($tokens); $i < $n; $i++) {
         $t = $tokens[$i];
         if (!is_array($t) || $t[0] !== T_STRING) continue;
-        if ($t[1] !== 't' && $t[1] !== 'te') continue;
+        if (!in_array($t[1], ['t', 'te', 'tjs'], true)) continue;
 
         // Kein Methodenaufruf und keine Definition.
         $davor = null;

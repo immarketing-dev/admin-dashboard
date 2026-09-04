@@ -1197,7 +1197,7 @@ require 'includes/layout_start.php';
       const container = document.getElementById('invoice-items-container');
       const row = document.createElement('div');
       row.className = 'row g-2 mb-2 pb-2 border-bottom inv-item-row';
-      row.innerHTML = `<div class="col-md-5"><input type="text" name="item_desc[]" class="form-control form-control-sm" value="${desc}" placeholder="Leistungsbeschreibung..." required></div><div class="col-md-2"><input type="text" name="item_unit[]" class="form-control form-control-sm" value="${unit}" placeholder="Einheit" list="inv_unit_options"></div><div class="col-md-2"><input type="number" step="0.01" name="item_qty[]" class="form-control form-control-sm inv-qty" value="${qty}" oninput="calcInv()"></div><div class="col-md-2"><input type="number" step="0.01" name="item_price[]" class="form-control form-control-sm inv-price" value="${price}" oninput="calcInv()"></div><div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.parentElement.parentElement.remove(); calcInv();"><i class="bi bi-x-lg"></i></button></div>`;
+      row.innerHTML = `<div class="col-md-5"><input type="text" name="item_desc[]" class="form-control form-control-sm" value="${desc}" placeholder=<?= tjs('Leistungsbeschreibung...') ?> required></div><div class="col-md-2"><input type="text" name="item_unit[]" class="form-control form-control-sm" value="${unit}" placeholder="Einheit" list="inv_unit_options"></div><div class="col-md-2"><input type="number" step="0.01" name="item_qty[]" class="form-control form-control-sm inv-qty" value="${qty}" oninput="calcInv()"></div><div class="col-md-2"><input type="number" step="0.01" name="item_price[]" class="form-control form-control-sm inv-price" value="${price}" oninput="calcInv()"></div><div class="col-md-1"><button type="button" class="btn btn-sm btn-outline-danger w-100" onclick='this.parentElement.parentElement.remove(); calcInv();'><i class="bi bi-x-lg"></i></button></div>`;
       container.appendChild(row);
       calcInv();
     }
@@ -1297,7 +1297,7 @@ require 'includes/layout_start.php';
     const quoteEmailModal = new bootstrap.Modal(document.getElementById('quoteEmailModal'));
 
     function prepareNewQuote() {
-        document.getElementById('quoteModalTitle').innerHTML = '<i class="bi bi-file-earmark-plus me-2"></i> Neues Angebot';
+        document.getElementById('quoteModalTitle').innerHTML = '<i class="bi bi-file-earmark-plus me-2"></i> <?= te('Neues Angebot') ?>';
         document.getElementById('q_action').value = 'create_quote';
         document.getElementById('q_id').value = '';
         document.getElementById('q_contact').value = '';
@@ -1333,11 +1333,11 @@ require 'includes/layout_start.php';
     function addQuoteItem(desc='', qty=1, price=0, unit='') {
         const row = document.createElement('div');
         row.className = 'row g-2 mb-2 align-items-center q-item-row';
-        row.innerHTML = `<div class="col-md-5"><input type="text" name="item_desc[]" class="form-control form-control-sm" placeholder="Beschreibung..." value="${qEsc(desc)}" required></div>
+        row.innerHTML = `<div class="col-md-5"><input type="text" name="item_desc[]" class="form-control form-control-sm" placeholder=<?= tjs('Beschreibung...') ?> value="${qEsc(desc)}" required></div>
             <div class="col-md-2"><input type="text" name="item_unit[]" class="form-control form-control-sm" placeholder="Einheit" value="${qEsc(unit)}" list="q_unit_options"></div>
             <div class="col-md-2"><input type="number" name="item_qty[]" class="form-control form-control-sm q-qty" placeholder="Menge" value="${qty}" min="0.01" step="0.01" oninput="calcQuoteTotal()"></div>
             <div class="col-md-2"><div class="input-group input-group-sm"><input type="text" name="item_price[]" class="form-control q-price" placeholder="Preis" value="${price>0?price.toFixed(2).replace('.',','):''}" oninput="calcQuoteTotal()"><span class="input-group-text">€</span></div></div>
-            <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" onclick="this.closest('.q-item-row').remove(); calcQuoteTotal()"><i class="bi bi-trash3"></i></button></div>`;
+            <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger px-2 py-1" onclick='this.closest(\'.q-item-row\').remove(); calcQuoteTotal()'><i class="bi bi-trash3"></i></button></div>`;
         document.getElementById('q-items-container').appendChild(row);
     }
     function qEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1350,7 +1350,7 @@ require 'includes/layout_start.php';
             if (!isNaN(qty)&&!isNaN(price)) netto += qty*price;
         });
         const brutto = tax==='regel' ? netto*1.19 : netto;
-        document.getElementById('q-total-display').textContent = 'Gesamt: '+brutto.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+        document.getElementById('q-total-display').textContent = <?= tjs('Gesamt: ') ?>+brutto.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
     }
     document.getElementById('q_tax_type').addEventListener('change', calcQuoteTotal);
 
@@ -1392,7 +1392,7 @@ require 'includes/layout_start.php';
         if (btn.dataset.confirmed==='1') {
             document.getElementById('del_q_'+id).submit();
         } else {
-            btn.dataset.confirmed='1'; btn.innerHTML='Sicher?';
+            btn.dataset.confirmed='1'; btn.innerHTML=<?= tjs('Sicher?') ?>;
             btn.classList.replace('btn-outline-danger','btn-danger'); btn.classList.add('text-white');
             setTimeout(()=>{
                 if(btn.parentNode){btn.dataset.confirmed='0';btn.innerHTML='<i class="bi bi-trash3"></i>';btn.classList.replace('btn-danger','btn-outline-danger');btn.classList.remove('text-white');}

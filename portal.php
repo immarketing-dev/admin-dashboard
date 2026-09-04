@@ -457,17 +457,17 @@ if (!$_is_auth) {
 
   <?php if (demo_mode()): ?>
     <div class="demo-note">
-      <strong>Demo-Version</strong> &ndash; Zugangscode <code><?= htmlspecialchars(demo_portal_pin()) ?></code><br>
-      Alle Daten sind erfunden, Änderungen werden nicht gespeichert.
+      <strong><?= te('Demo-Version') ?></strong> <?= te('&ndash; Zugangscode') ?> <code><?= htmlspecialchars(demo_portal_pin()) ?></code><br>
+      <?= te('Alle Daten sind erfunden, Änderungen werden nicht gespeichert.') ?>
     </div>
   <?php endif; ?>
 
   <?php if ($_pin_is_set): ?>
-    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);">Willkommen zurück</h4>
+    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);"><?= te('Willkommen zurück') ?></h4>
     <p class="text-muted text-center mb-4" style="font-size:13.5px;">Hallo <?= $_first_name ?>, geben Sie Ihren Zugangscode ein.</p>
   <?php else: ?>
-    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);">Portal einrichten</h4>
-    <p class="text-muted text-center mb-4" style="font-size:13.5px;">Legen Sie einmalig einen persönlichen Zugangscode für Ihr Portal fest.</p>
+    <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);"><?= te('Portal einrichten') ?></h4>
+    <p class="text-muted text-center mb-4" style="font-size:13.5px;"><?= te('Legen Sie einmalig einen persönlichen Zugangscode für Ihr Portal fest.') ?></p>
   <?php endif; ?>
 
   <?php if ($_pin_error): ?>
@@ -480,58 +480,58 @@ if (!$_is_auth) {
   <?php if ($_locked): ?>
     <div class="text-center py-3 text-muted">
       <i class="bi bi-shield-lock-fill mb-3 d-block" style="font-size:3rem;color:var(--accent-danger);opacity:.7;"></i>
-      <p class="fw-bold mb-1">Zugang vorübergehend gesperrt</p>
-      <p class="small mb-0">Bitte kontaktieren Sie <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong> zum Zurücksetzen.</p>
+      <p class="fw-bold mb-1"><?= te('Zugang vorübergehend gesperrt') ?></p>
+      <p class="small mb-0"><?= te('Bitte kontaktieren Sie') ?> <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong> <?= te('zum Zurücksetzen.') ?></p>
     </div>
   <?php elseif ($_pin_is_set): ?>
     <form method="POST">
     <?= csrf_field() ?>
       <input type="hidden" name="action" value="verify_portal_pin">
       <div class="mb-4">
-        <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode</label>
+        <label class="form-label fw-semibold" style="font-size:13px;"><?= te('Zugangscode') ?></label>
         <div class="pin-wrap">
           <input type="password" name="pin" id="pi1" class="pin-input <?= $_pin_error ? 'err' : '' ?>"
                  placeholder="••••••" autofocus autocomplete="current-password" required>
           <button type="button" class="pin-toggle" onclick="tv('pi1',this)" tabindex="-1"><i class="bi bi-eye"></i></button>
         </div>
       </div>
-      <button type="submit" class="btn-pin"><i class="bi bi-shield-lock-fill me-2"></i>Einloggen</button>
+      <button type="submit" class="btn-pin"><i class="bi bi-shield-lock-fill me-2"></i><?= te('Einloggen') ?></button>
     </form>
   <?php else: ?>
     <form method="POST" autocomplete="off" onsubmit="return chkMatch()">
     <?= csrf_field() ?>
       <input type="hidden" name="action" value="set_portal_pin">
       <div class="mb-3">
-        <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode wählen <span class="text-muted fw-normal">(mind. 4 Zeichen)</span></label>
+        <label class="form-label fw-semibold" style="font-size:13px;"><?= te('Zugangscode wählen') ?> <span class="text-muted fw-normal"><?= te('(mind. 4 Zeichen)') ?></span></label>
         <div class="pin-wrap">
-          <input type="password" name="pin" id="pi1" class="pin-input" placeholder="Neuer Zugangscode"
+          <input type="password" name="pin" id="pi1" class="pin-input" placeholder="<?= te('Neuer Zugangscode') ?>"
                  autofocus autocomplete="new-password" required minlength="4" oninput="updStr(this.value)">
           <button type="button" class="pin-toggle" onclick="tv('pi1',this)" tabindex="-1"><i class="bi bi-eye"></i></button>
         </div>
         <div class="strength-bar"><div class="strength-fill" id="sf"></div></div>
       </div>
       <div class="mb-4">
-        <label class="form-label fw-semibold" style="font-size:13px;">Zugangscode bestätigen</label>
+        <label class="form-label fw-semibold" style="font-size:13px;"><?= te('Zugangscode bestätigen') ?></label>
         <div class="pin-wrap">
-          <input type="password" name="pin_confirm" id="pi2" class="pin-input" placeholder="Wiederholen"
+          <input type="password" name="pin_confirm" id="pi2" class="pin-input" placeholder="<?= te('Wiederholen') ?>"
                  autocomplete="new-password" required minlength="4" oninput="liveMatch()">
           <button type="button" class="pin-toggle" onclick="tv('pi2',this)" tabindex="-1"><i class="bi bi-eye"></i></button>
         </div>
         <div class="match-msg" id="mm"></div>
       </div>
-      <button type="submit" class="btn-pin"><i class="bi bi-check-circle-fill me-2"></i>Zugangscode festlegen</button>
+      <button type="submit" class="btn-pin"><i class="bi bi-check-circle-fill me-2"></i><?= te('Zugangscode festlegen') ?></button>
     </form>
   <?php endif; ?>
 
   <div class="text-center text-muted mt-4" style="font-size:11.5px;">
     <i class="bi bi-lock-fill" style="color:var(--color-primary);"></i>
-    Bereitgestellt von <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong>
+    <?= te('Bereitgestellt von') ?> <strong><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?></strong>
   </div>
 </div>
 <script>
 function tv(id,btn){const f=document.getElementById(id),s=f.type==='password';f.type=s?'text':'password';btn.innerHTML=s?'<i class="bi bi-eye-slash"></i>':'<i class="bi bi-eye"></i>';}
 function updStr(v){const f=document.getElementById('sf');let w=0,c='var(--accent-danger)';if(v.length>=4){w=33;c='var(--accent-warning)';}if(v.length>=7){w=66;c='var(--accent-warning)';}if(v.length>=10||v.length>=6&&/[^a-zA-Z0-9]/.test(v)){w=100;c='var(--accent-success)';}f.style.width=w+'%';f.style.background=c;}
-function liveMatch(){const p1=document.getElementById('pi1').value,p2=document.getElementById('pi2'),mm=document.getElementById('mm'),ok=p2.value===p1&&p2.value.length>0;mm.style.color=ok?'var(--accent-success)':'var(--accent-danger)';mm.textContent=p2.value?(ok?'✓ Übereinstimmend':'✗ Stimmt nicht überein'):'';p2.classList.toggle('err',!ok&&p2.value.length>0);}
+function liveMatch(){const p1=document.getElementById('pi1').value,p2=document.getElementById('pi2'),mm=document.getElementById('mm'),ok=p2.value===p1&&p2.value.length>0;mm.style.color=ok?'var(--accent-success)':'var(--accent-danger)';mm.textContent=p2.value?(ok?<?= tjs('✓ Übereinstimmend') ?>:<?= tjs('✗ Stimmt nicht überein') ?>):'';p2.classList.toggle('err',!ok&&p2.value.length>0);}
 function chkMatch(){const ok=document.getElementById('pi1').value===document.getElementById('pi2').value;if(!ok){liveMatch();return false;}return true;}
 </script>
 </body>
@@ -1064,7 +1064,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <p class="text-white-50 small mb-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
         <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
         <?php if($is_partner): ?>
-          <span style="background:rgba(255,193,7,0.25);color:var(--accent-warning);border:1px solid rgba(255,193,7,0.4);border-radius:20px;padding:1px 10px;font-size:10px;font-weight:700;letter-spacing:0.5px;">PARTNER</span>
+          <span style="background:rgba(255,193,7,0.25);color:var(--accent-warning);border:1px solid rgba(255,193,7,0.4);border-radius:20px;padding:1px 10px;font-size:10px;font-weight:700;letter-spacing:0.5px;"><?= te('PARTNER') ?></span>
         <?php endif; ?>
       </p>
       <h1 class="text-white fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:clamp(22px,5vw,36px);">
@@ -1075,17 +1075,17 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     <div class="d-flex gap-3 flex-wrap justify-content-center">
       <div class="portal-header-stat">
         <div class="stat-val"><?= $active_proj_count ?></div>
-        <div class="stat-lbl">Aktive Projekte</div>
+        <div class="stat-lbl"><?= te('Aktive Projekte') ?></div>
       </div>
       <?php if($is_partner): ?>
       <div class="portal-header-stat">
         <div class="stat-val"><?= count($projects) ?></div>
-        <div class="stat-lbl">Projekte gesamt</div>
+        <div class="stat-lbl"><?= te('Projekte gesamt') ?></div>
       </div>
       <?php else: ?>
       <div class="portal-header-stat">
         <div class="stat-val" style="<?= $open_inv_count > 0 ? 'color:var(--accent-warning);' : '' ?>"><?= $open_inv_count ?></div>
-        <div class="stat-lbl">Offene Rechnungen</div>
+        <div class="stat-lbl"><?= te('Offene Rechnungen') ?></div>
       </div>
       <?php endif; ?>
       <div class="portal-header-stat">
@@ -1128,7 +1128,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       </button>
       <?php endif; ?>
       <button class="portal-pill" data-tab="profile">
-        <i class="bi bi-person-fill"></i> Mein Profil
+        <i class="bi bi-person-fill"></i> <?= te('Mein Profil') ?>
       </button>
       </div>
       <a class="portal-theme-toggle portal-lang-toggle"
@@ -1165,7 +1165,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <div class="d-flex justify-content-end mb-3">
           <div class="input-group" style="max-width:280px;">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted small"></i></span>
-            <input type="text" id="projectSearch" class="form-control border-start-0 ps-0 bg-white" placeholder="Projekt suchen...">
+            <input type="text" id="projectSearch" class="form-control border-start-0 ps-0 bg-white" placeholder="<?= te('Projekt suchen...') ?>">
           </div>
         </div>
         <?php endif; ?>
@@ -1198,7 +1198,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             </div>
             <!-- Progress -->
             <div class="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
-              <span style="color:var(--color-primary);">Fortschritt</span>
+              <span style="color:var(--color-primary);"><?= te('Fortschritt') ?></span>
               <span style="color:<?= $prog==100?'var(--accent-success)':'var(--color-primary)' ?>;"><?= $prog ?>%</span>
             </div>
             <div class="project-progress-bar">
@@ -1224,7 +1224,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <?php if(!empty($milestones)): ?>
                 <div class="section-label"><i class="bi bi-list-check me-1"></i><?= $is_partner ? 'Projektschritte' : 'Roadmap & Meilensteine' ?></div>
                 <?php if(!$is_partner): ?>
-                <p class="text-muted small mb-3">Schließen Sie erledigte Schritte mit "Absegnen" ab, damit wir mit dem nächsten beginnen können.</p>
+                <p class="text-muted small mb-3"><?= te('Schließen Sie erledigte Schritte mit "Absegnen" ab, damit wir mit dem nächsten beginnen können.') ?></p>
                 <?php endif; ?>
                 <div class="timeline">
                   <?php foreach($milestones as $idx => $ms):
@@ -1256,9 +1256,9 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                             <div class="tl-meta"><i class="bi bi-patch-check-fill text-success me-1"></i><?= $is_partner ? 'Abgeschlossen am' : 'Freigegeben am' ?> <?= date('d.m.Y', strtotime($ms['approved_at'])) ?></div>
                           <?php elseif($ms['is_completed']): ?>
                             <?php if(!$is_partner): ?>
-                            <div class="tl-meta" style="color:var(--state-warn-fg);"><i class="bi bi-hourglass me-1"></i>Warten auf Ihre Freigabe</div>
+                            <div class="tl-meta" style="color:var(--state-warn-fg);"><i class="bi bi-hourglass me-1"></i><?= te('Warten auf Ihre Freigabe') ?></div>
                             <?php else: ?>
-                            <div class="tl-meta text-success"><i class="bi bi-check2 me-1"></i>Abgeschlossen</div>
+                            <div class="tl-meta text-success"><i class="bi bi-check2 me-1"></i><?= te('Abgeschlossen') ?></div>
                             <?php endif; ?>
                           <?php endif; ?>
                         </div>
@@ -1266,7 +1266,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                           <form method="POST" class="m-0 flex-shrink-0">
     <?= csrf_field() ?>
                             <input type="hidden" name="ms_id" value="<?= $ms['id'] ?>">
-                            <button type="submit" name="approve_ms" class="btn-approve"><i class="bi bi-check-circle me-1"></i>Absegnen</button>
+                            <button type="submit" name="approve_ms" class="btn-approve"><i class="bi bi-check-circle me-1"></i><?= te('Absegnen') ?></button>
                           </form>
                         <?php endif; ?>
                       </div>
@@ -1304,7 +1304,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                         <div class="ms-comment-form" id="cf_<?= $ms['id'] ?>">
                           <div class="d-flex gap-2 mt-2">
                             <textarea class="form-control form-control-sm" id="cft_<?= $ms['id'] ?>" rows="2"
-                                      placeholder="Ihre Anmerkung zu diesem Schritt..." style="font-size:13px;resize:none;border-radius:10px;"></textarea>
+                                      placeholder="<?= te('Ihre Anmerkung zu diesem Schritt...') ?>" style="font-size:13px;resize:none;border-radius:10px;"></textarea>
                             <div class="d-flex flex-column gap-1">
                               <button type="button" class="btn btn-sm btn-primary px-3 fw-bold" onclick="submitComment(<?= $ms['id'] ?>)" style="border-radius:8px;">
                                 <i class="bi bi-send-fill"></i>
@@ -1322,7 +1322,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   <?php endforeach; ?>
                 </div>
                 <?php else: ?>
-                  <div class="text-muted small fst-italic py-2">Noch keine Meilensteine für dieses Projekt.</div>
+                  <div class="text-muted small fst-italic py-2"><?= te('Noch keine Meilensteine für dieses Projekt.') ?></div>
                 <?php endif; ?>
               </div>
 
@@ -1358,16 +1358,16 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                              : ($lader !== '' ? htmlspecialchars($selbst ? 'Sie' : $lader) : 'Von Ihnen') ?>
                       </span>
                       <?php if($viewable): ?>
-                        <a href="<?= htmlspecialchars($asset['file_path']) ?>" target="_blank" class="text-muted" title="Ansehen"><i class="bi bi-eye small"></i></a>
+                        <a href="<?= htmlspecialchars($asset['file_path']) ?>" target="_blank" class="text-muted" title="<?= te('Ansehen') ?>"><i class="bi bi-eye small"></i></a>
                       <?php endif; ?>
-                      <a href="<?= htmlspecialchars($asset['file_path']) ?>" download class="text-primary" title="Herunterladen"><i class="bi bi-download small"></i></a>
+                      <a href="<?= htmlspecialchars($asset['file_path']) ?>" download class="text-primary" title="<?= te('Herunterladen') ?>"><i class="bi bi-download small"></i></a>
                       <?php if(!$is_admin): ?>
                       <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>">
                         <?= csrf_field() ?>
                         <input type="hidden" name="delete_asset" value="1">
                         <input type="hidden" name="asset_id" value="<?= $asset['id'] ?>">
                         <button type="button" class="btn-icon text-danger p-0" style="background:none;border:none;cursor:pointer;font-size:13px;"
-                                data-confirmed="0" onclick="confirmDeleteAsset(this,<?= $asset['id'] ?>)" title="Löschen"><i class="bi bi-trash3"></i></button>
+                                data-confirmed="0" onclick="confirmDeleteAsset(this,<?= $asset['id'] ?>)" title="<?= te('Löschen') ?>"><i class="bi bi-trash3"></i></button>
                       </form>
                       <?php endif; ?>
                     </div>
@@ -1377,8 +1377,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
                   <div class="upload-zone" data-task-id="<?= $p['id'] ?>" onclick="document.getElementById('file_<?= $p['id'] ?>').click()">
                     <i class="bi bi-cloud-upload-fill fs-2 mb-2 d-block" style="color:var(--color-primary);opacity:.6;"></i>
-                    <div class="fw-semibold small text-dark">Dateien hochladen</div>
-                    <div class="text-muted mt-1" style="font-size:11px;">Klicken oder Dateien hierher ziehen · max. 100 MB</div>
+                    <div class="fw-semibold small text-dark"><?= te('Dateien hochladen') ?></div>
+                    <div class="text-muted mt-1" style="font-size:11px;"><?= te('Klicken oder Dateien hierher ziehen · max. 100 MB') ?></div>
                     <input type="file" id="file_<?= $p['id'] ?>" multiple style="display:none;" onchange="autoUpload(this,<?= $p['id'] ?>)">
                   </div>
                   <div class="progress mt-2" id="box_<?= $p['id'] ?>" style="display:none;height:6px;border-radius:3px;">
@@ -1393,7 +1393,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
                 <!-- Beteiligte -->
                 <?php if(count($beteiligte) > 1): ?>
-                <div class="section-label mt-4"><i class="bi bi-people me-1"></i>Beteiligte</div>
+                <div class="section-label mt-4"><i class="bi bi-people me-1"></i><?= te('Beteiligte') ?></div>
                 <div class="d-flex flex-wrap gap-2 mb-2">
                   <?php foreach($beteiligte as $b): ?>
                     <span class="member-chip<?= (int)$b['contact_id'] === (int)$client['id'] ? ' member-chip-self' : '' ?>"
@@ -1438,12 +1438,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   <input type="hidden" name="task_id" value="<?= (int)$p['id'] ?>">
                   <div class="d-flex gap-2 align-items-end flex-wrap">
                     <div style="flex:1 1 240px;min-width:0;">
-                      <label class="visually-hidden" for="pc_<?= (int)$p['id'] ?>">Beitrag</label>
+                      <label class="visually-hidden" for="pc_<?= (int)$p['id'] ?>"><?= te('Beitrag') ?></label>
                       <textarea class="form-control" id="pc_<?= (int)$p['id'] ?>" name="message" rows="2"
-                                placeholder="Etwas mitteilen oder nachfragen …" required></textarea>
+                                placeholder="<?= te('Etwas mitteilen oder nachfragen …') ?>" required></textarea>
                     </div>
                     <button type="submit" name="add_project_comment" class="btn btn-sm btn-primary fw-bold">
-                      <i class="bi bi-send me-1"></i>Senden
+                      <i class="bi bi-send me-1"></i><?= te('Senden') ?>
                     </button>
                   </div>
                 </form>
@@ -1452,19 +1452,19 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <div class="feedback-card">
                   <?php if(trim((string)($p['client_feedback'] ?? '')) !== '' && !empty($p['feedback_by_name'])): ?>
                     <div class="section-hint mb-2">
-                      Zuletzt geschrieben von
+                      <?= te('Zuletzt geschrieben von') ?>
                       <strong><?= htmlspecialchars($p['feedback_by_name']) ?></strong><?php
                         if (!empty($p['feedback_at'])) echo ' am ' . date('d.m.Y H:i', strtotime($p['feedback_at']));
                       ?>.
                     </div>
                   <?php endif; ?>
-                  <div class="section-label" style="color:var(--state-warn-fg);"><i class="bi bi-chat-left-dots-fill me-1"></i>Allgemeines Feedback</div>
-                  <p class="text-muted small mb-3">Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?</p>
+                  <div class="section-label" style="color:var(--state-warn-fg);"><i class="bi bi-chat-left-dots-fill me-1"></i><?= te('Allgemeines Feedback') ?></div>
+                  <p class="text-muted small mb-3"><?= te('Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?') ?></p>
                   <form method="POST">
     <?= csrf_field() ?>
                     <input type="hidden" name="task_id" value="<?= $p['id'] ?>">
-                    <textarea name="feedback" rows="3" class="form-control mb-3" style="font-size:13px;border-radius:10px;resize:none;border-color:var(--accent-warning);background:var(--surface-card);" placeholder="Ihre Anmerkungen..."><?= htmlspecialchars($p['client_feedback'] ?? '') ?></textarea>
-                    <button type="submit" name="send_feedback" class="btn btn-sm fw-bold w-100 text-white" style="background:var(--color-sidebar);border-radius:10px;"><i class="bi bi-send me-1"></i>Feedback speichern</button>
+                    <textarea name="feedback" rows="3" class="form-control mb-3" style="font-size:13px;border-radius:10px;resize:none;border-color:var(--accent-warning);background:var(--surface-card);" placeholder="<?= te('Ihre Anmerkungen...') ?>"><?= htmlspecialchars($p['client_feedback'] ?? '') ?></textarea>
+                    <button type="submit" name="send_feedback" class="btn btn-sm fw-bold w-100 text-white" style="background:var(--color-sidebar);border-radius:10px;"><i class="bi bi-send me-1"></i><?= te('Feedback speichern') ?></button>
                   </form>
                 </div>
                 <?php endif; ?>
@@ -1483,7 +1483,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <div class="tab-pane" id="tab-quotes">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
           <div>
-            <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Angebote</h4>
+            <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= te('Angebote') ?></h4>
             <p class="text-muted mb-0 small">
               <?= $is_partner
                     ? 'Angebote zur gemeinsamen Zusammenarbeit.'
@@ -1500,7 +1500,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <?php if(empty($quotes)): ?>
           <div class="empty-state bg-surface rounded-4 border shadow-sm">
             <i class="bi bi-file-earmark-text"></i>
-            <p>Aktuell liegt kein Angebot vor.</p>
+            <p><?= te('Aktuell liegt kein Angebot vor.') ?></p>
           </div>
         <?php else: ?>
           <?php foreach($quotes as $q):
@@ -1549,7 +1549,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <?php if(!empty($q['quote_pdf_path']) && file_exists($q['quote_pdf_path'])): ?>
                   <a href="<?= htmlspecialchars($q['quote_pdf_path']) ?>" target="_blank" rel="noopener"
                      class="btn btn-sm btn-outline-secondary fw-bold">
-                    <i class="bi bi-file-earmark-pdf me-1"></i>Angebot als PDF
+                    <i class="bi bi-file-earmark-pdf me-1"></i><?= te('Angebot als PDF') ?>
                   </a>
                 <?php endif; ?>
 
@@ -1559,20 +1559,20 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                     <?= csrf_field() ?>
                     <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
                     <button type="submit" name="accept_quote" class="btn-approve">
-                      <i class="bi bi-check-circle me-1"></i>Angebot annehmen
+                      <i class="bi bi-check-circle me-1"></i><?= te('Angebot annehmen') ?>
                     </button>
                   </form>
                   <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
                           onclick="document.getElementById('qq_<?= (int)$q['id'] ?>').classList.toggle('d-none')">
-                    <i class="bi bi-chat-left-text me-1"></i>Rückfrage stellen
+                    <i class="bi bi-chat-left-text me-1"></i><?= te('Rückfrage stellen') ?>
                   </button>
                 <?php elseif($offen && $abgelaufen): ?>
                   <span class="text-muted small align-self-center">
-                    <i class="bi bi-info-circle me-1"></i>Die Frist ist abgelaufen — melden Sie sich gern, wir machen Ihnen ein neues Angebot.
+                    <i class="bi bi-info-circle me-1"></i><?= te('Die Frist ist abgelaufen — melden Sie sich gern, wir machen Ihnen ein neues Angebot.') ?>
                   </span>
                 <?php elseif($ja): ?>
                   <span class="small align-self-center" style="color:var(--state-success-fg);">
-                    <i class="bi bi-patch-check-fill me-1"></i>Angenommen — vielen Dank!
+                    <i class="bi bi-patch-check-fill me-1"></i><?= te('Angenommen — vielen Dank!') ?>
                   </span>
                 <?php endif; ?>
               </div>
@@ -1581,14 +1581,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <form method="POST" class="d-none mt-3" id="qq_<?= (int)$q['id'] ?>">
                   <?= csrf_field() ?>
                   <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
-                  <label class="section-label" for="qm_<?= (int)$q['id'] ?>">Ihre Rückfrage</label>
+                  <label class="section-label" for="qm_<?= (int)$q['id'] ?>"><?= te('Ihre Rückfrage') ?></label>
                   <textarea class="form-control mb-2" id="qm_<?= (int)$q['id'] ?>" name="quote_message" rows="3"
-                            placeholder="Was möchten Sie wissen oder anders haben?" required></textarea>
+                            placeholder="<?= te('Was möchten Sie wissen oder anders haben?') ?>" required></textarea>
                   <button type="submit" name="query_quote" class="btn btn-sm btn-primary fw-bold">
-                    <i class="bi bi-send me-1"></i>Rückfrage senden
+                    <i class="bi bi-send me-1"></i><?= te('Rückfrage senden') ?>
                   </button>
                   <div class="section-hint mt-2">
-                    Eine Rückfrage ändert am Angebot nichts — sie erreicht uns als Nachricht.
+                    <?= te('Eine Rückfrage ändert am Angebot nichts — sie erreicht uns als Nachricht.') ?>
                   </div>
                 </form>
               <?php endif; ?>
@@ -1614,7 +1614,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <?php if(empty($invoices)): ?>
         <div class="empty-state bg-white rounded-4 border shadow-sm">
           <i class="bi bi-receipt"></i>
-          <p>Noch keine Rechnungen vorhanden.</p>
+          <p><?= te('Noch keine Rechnungen vorhanden.') ?></p>
         </div>
       <?php else: ?>
         <div class="row g-3">
@@ -1647,17 +1647,17 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                    data-bic="<?= htmlspecialchars($bank['bic'], ENT_QUOTES) ?>"
                    data-amount="<?= htmlspecialchars(number_format((float)$inv['amount'], 2, '.', ''), ENT_QUOTES) ?>"
                    data-ref="<?= htmlspecialchars($vz, ENT_QUOTES) ?>">
-                <div class="section-label mb-2"><i class="bi bi-bank me-1"></i>Zahlung</div>
+                <div class="section-label mb-2"><i class="bi bi-bank me-1"></i><?= te('Zahlung') ?></div>
                 <div class="d-flex gap-3 flex-wrap align-items-start">
                   <div class="pay-qr" aria-hidden="true"></div>
                   <div class="pay-details">
-                    <div><span class="pay-key">Empfänger</span><span class="pay-val"><?= htmlspecialchars($bank['holder']) ?></span></div>
+                    <div><span class="pay-key"><?= te('Empfänger') ?></span><span class="pay-val"><?= htmlspecialchars($bank['holder']) ?></span></div>
                     <div><span class="pay-key">IBAN</span><span class="pay-val pay-mono"><?= htmlspecialchars(chunk_split($bank['iban'], 4, ' ')) ?></span></div>
                     <?php if($bank['bic'] !== ''): ?>
                       <div><span class="pay-key">BIC</span><span class="pay-val pay-mono"><?= htmlspecialchars($bank['bic']) ?></span></div>
                     <?php endif; ?>
-                    <div><span class="pay-key">Betrag</span><span class="pay-val fw-bold"><?= number_format((float)$inv['amount'], 2, ',', '.') ?> €</span></div>
-                    <div><span class="pay-key">Verwendungszweck</span><span class="pay-val pay-mono"><?= htmlspecialchars($vz) ?></span></div>
+                    <div><span class="pay-key"><?= te('Betrag') ?></span><span class="pay-val fw-bold"><?= number_format((float)$inv['amount'], 2, ',', '.') ?> €</span></div>
+                    <div><span class="pay-key"><?= te('Verwendungszweck') ?></span><span class="pay-val pay-mono"><?= htmlspecialchars($vz) ?></span></div>
                   </div>
                 </div>
                 <div class="pay-hint">
@@ -1670,14 +1670,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <?php if(!empty($inv['invoice_pdf_path'])): ?>
                 <div class="d-flex gap-2">
                   <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" target="_blank" class="btn btn-sm btn-outline-primary fw-bold flex-grow-1" style="border-radius:8px;">
-                    <i class="bi bi-eye me-1"></i>Ansehen
+                    <i class="bi bi-eye me-1"></i><?= te('Ansehen') ?>
                   </a>
-                  <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" download class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px;" title="Herunterladen">
+                  <a href="<?= htmlspecialchars($inv['invoice_pdf_path']) ?>" download class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px;" title="<?= te('Herunterladen') ?>">
                     <i class="bi bi-download"></i>
                   </a>
                 </div>
               <?php else: ?>
-                <div class="text-muted small text-center fst-italic py-1">PDF auf Anfrage</div>
+                <div class="text-muted small text-center fst-italic py-1"><?= te('PDF auf Anfrage') ?></div>
               <?php endif; ?>
             </div>
           </div>
@@ -1696,12 +1696,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <form method="POST">
     <?= csrf_field() ?>
               <div class="mb-3">
-                <label class="form-label small fw-bold">Betreff</label>
-                <input type="text" name="subject" class="form-control" required placeholder="Worum geht es?" style="border-radius:10px;">
+                <label class="form-label small fw-bold"><?= te('Betreff') ?></label>
+                <input type="text" name="subject" class="form-control" required placeholder="<?= te('Worum geht es?') ?>" style="border-radius:10px;">
               </div>
               <div class="mb-4">
-                <label class="form-label small fw-bold">Beschreibung</label>
-                <textarea name="message" class="form-control" rows="5" required placeholder="Beschreiben Sie Ihr Anliegen..." style="border-radius:10px;resize:none;"></textarea>
+                <label class="form-label small fw-bold"><?= te('Beschreibung') ?></label>
+                <textarea name="message" class="form-control" rows="5" required placeholder="<?= te('Beschreiben Sie Ihr Anliegen...') ?>" style="border-radius:10px;resize:none;"></textarea>
               </div>
               <button type="submit" name="create_ticket" class="btn btn-danger w-100 fw-bold py-2" style="border-radius:10px;">
                 <i class="bi bi-send me-2"></i><?= $is_partner ? 'Absenden' : 'Ticket absenden' ?>
@@ -1715,7 +1715,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
           <?php if(empty($tickets)): ?>
             <div class="empty-state bg-white rounded-4 border shadow-sm">
               <i class="bi bi-inbox" style="font-size:36px;"></i>
-              <p>Noch keine Anfragen gestellt.</p>
+              <p><?= te('Noch keine Anfragen gestellt.') ?></p>
             </div>
           <?php else: ?>
             <?php
@@ -1788,9 +1788,9 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                     <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                     <div class="d-flex gap-2">
                       <textarea name="reply" class="form-control form-control-sm" rows="2"
-                                placeholder="Antwort oder Rückfrage hinzufügen…"
+                                placeholder="<?= te('Antwort oder Rückfrage hinzufügen…') ?>"
                                 style="resize:none;border-radius:10px;" required></textarea>
-                      <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold align-self-end" style="border-radius:10px;" title="Absenden">
+                      <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold align-self-end" style="border-radius:10px;" title="<?= te('Absenden') ?>">
                         <i class="bi bi-send-fill"></i>
                       </button>
                     </div>
@@ -1802,7 +1802,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
                     <!-- Priorität -->
                     <div class="d-flex align-items-center gap-2">
-                      <span class="small text-muted fw-bold">Priorität:</span>
+                      <span class="small text-muted fw-bold"><?= te('Priorität:') ?></span>
                       <select class="form-select form-select-sm" style="width:auto;border-radius:8px;"
                               id="prio_sel_<?= $t['id'] ?>"
                               onchange="updatePortalPrio(<?= $t['id'] ?>, this)">
@@ -1821,7 +1821,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                         <input type="hidden" name="action" value="close_ticket">
                         <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-success fw-bold" style="border-radius:8px;">
-                          <i class="bi bi-check-circle me-1"></i>Erledigt
+                          <i class="bi bi-check-circle me-1"></i><?= te('Erledigt') ?>
                         </button>
                       </form>
                       <?php endif; ?>
@@ -1830,7 +1830,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                         <input type="hidden" name="action" value="delete_portal_ticket">
                         <input type="hidden" name="ticket_id" value="<?= $t['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius:8px;">
-                          <i class="bi bi-trash3 me-1"></i>Löschen
+                          <i class="bi bi-trash3 me-1"></i><?= te('Löschen') ?>
                         </button>
                       </form>
                     </div>
@@ -1850,7 +1850,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     <!-- ═══════════════════════════════════════ WIKI ═══ -->
     <?php if(!empty($wiki_articles)): ?>
     <div class="tab-pane" id="tab-wiki">
-      <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Wissensdatenbank</h4>
+      <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= te('Wissensdatenbank') ?></h4>
       <p class="text-muted small mb-4">Artikel, die <?= setting('company_short', COMPANY_SHORT) ?> für Sie freigegeben hat.</p>
 
       <?php
@@ -1895,28 +1895,28 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     <!-- ═══════════════════════════════════════ PROFIL ═══ -->
     <div class="tab-pane" id="tab-profile">
       <div class="project-card p-4" style="max-width:760px;">
-        <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;">Mein Profil</h4>
-        <p class="text-muted small mb-4">Ihre bei uns hinterlegten Stammdaten — werden u.a. für die Rechnungsstellung verwendet.</p>
+        <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= te('Mein Profil') ?></h4>
+        <p class="text-muted small mb-4"><?= te('Ihre bei uns hinterlegten Stammdaten — werden u.a. für die Rechnungsstellung verwendet.') ?></p>
         <form method="POST">
     <?= csrf_field() ?>
           <input type="hidden" name="update_profile" value="1">
-          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;">Kontaktdaten</h6>
+          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;"><?= te('Kontaktdaten') ?></h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-6"><label class="form-label small fw-bold">Vor- & Nachname *</label><input type="text" name="name" class="form-control" value="<?= htmlspecialchars($client['name']) ?>" required style="border-radius:10px;"></div>
-            <div class="col-md-6"><label class="form-label small fw-bold">Firmenname</label><input type="text" name="company" class="form-control" value="<?= htmlspecialchars($client['company'] ?? '') ?>" style="border-radius:10px;"></div>
-            <div class="col-md-4"><label class="form-label small fw-bold">E-Mail *</label><input type="email" name="email" class="form-control" value="<?= htmlspecialchars($client['email'] ?? '') ?>" required style="border-radius:10px;"></div>
-            <div class="col-md-4"><label class="form-label small fw-bold">Telefon</label><input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($client['phone'] ?? '') ?>" style="border-radius:10px;"></div>
-            <div class="col-md-4"><label class="form-label small fw-bold">Website</label><input type="text" name="website" class="form-control" value="<?= htmlspecialchars($client['website'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Vor- & Nachname *') ?></label><input type="text" name="name" class="form-control" value="<?= htmlspecialchars($client['name']) ?>" required style="border-radius:10px;"></div>
+            <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Firmenname') ?></label><input type="text" name="company" class="form-control" value="<?= htmlspecialchars($client['company'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold"><?= te('E-Mail *') ?></label><input type="email" name="email" class="form-control" value="<?= htmlspecialchars($client['email'] ?? '') ?>" required style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Telefon') ?></label><input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($client['phone'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Website') ?></label><input type="text" name="website" class="form-control" value="<?= htmlspecialchars($client['website'] ?? '') ?>" style="border-radius:10px;"></div>
           </div>
-          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;">Rechnungsadresse</h6>
+          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;"><?= te('Rechnungsadresse') ?></h6>
           <div class="row g-3 mb-4">
-            <div class="col-12"><label class="form-label small fw-bold">Straße & Hausnummer</label><input type="text" name="street" class="form-control" value="<?= htmlspecialchars($client['street'] ?? '') ?>" style="border-radius:10px;"></div>
-            <div class="col-md-3"><label class="form-label small fw-bold">PLZ</label><input type="text" name="zip" class="form-control" value="<?= htmlspecialchars($client['zip'] ?? '') ?>" style="border-radius:10px;"></div>
-            <div class="col-md-5"><label class="form-label small fw-bold">Ort</label><input type="text" name="city" class="form-control" value="<?= htmlspecialchars($client['city'] ?? '') ?>" style="border-radius:10px;"></div>
-            <div class="col-md-4"><label class="form-label small fw-bold">Land</label><input type="text" name="country" class="form-control" value="<?= htmlspecialchars($client['country'] ?? 'Deutschland') ?>" style="border-radius:10px;"></div>
+            <div class="col-12"><label class="form-label small fw-bold"><?= te('Straße & Hausnummer') ?></label><input type="text" name="street" class="form-control" value="<?= htmlspecialchars($client['street'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-3"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" class="form-control" value="<?= htmlspecialchars($client['zip'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-5"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" class="form-control" value="<?= htmlspecialchars($client['city'] ?? '') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control" value="<?= htmlspecialchars($client['country'] ?? 'Deutschland') ?>" style="border-radius:10px;"></div>
           </div>
           <button type="submit" class="btn btn-lg fw-bold w-100 text-white" style="background:var(--color-primary);border-radius:12px;">
-            <i class="bi bi-check-circle me-2"></i>Daten speichern
+            <i class="bi bi-check-circle me-2"></i><?= te('Daten speichern') ?>
           </button>
         </form>
       </div>
@@ -1940,7 +1940,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <div class="modal-body pt-3 px-4 pb-5">
         <div id="pw_content" style="font-size:15px;color:var(--text-body);line-height:1.8;"></div>
         <div id="pw_attachments" class="mt-5 pt-4 border-top" style="display:none;">
-          <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-paperclip me-2"></i>Angehängte Dateien</h6>
+          <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-paperclip me-2"></i><?= te('Angehängte Dateien') ?></h6>
           <div id="pw_attachments_list" class="d-flex flex-wrap gap-2"></div>
         </div>
       </div>
@@ -1976,7 +1976,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         var dark = document.documentElement.getAttribute("data-theme") === "dark";
         icon.className = dark ? "bi bi-sun" : "bi bi-moon-stars";
         btn.setAttribute("aria-pressed", dark ? "true" : "false");
-        btn.title = dark ? "Zum hellen Design wechseln" : "Zum dunklen Design wechseln";
+        btn.title = dark ? <?= tjs('Zum hellen Design wechseln') ?> : <?= tjs('Zum dunklen Design wechseln') ?>;
     }
 
     paint();
@@ -2125,8 +2125,8 @@ function autoUpload(input, taskId) {
     fd.append('task_id', taskId);
     for (let f of files) {
         const ext = f.name.split('.').pop().toLowerCase();
-        if (forbidden.includes(ext)) { alert('Dateityp .' + ext + ' ist nicht erlaubt.'); input.value=''; return; }
-        if (f.size > MAX) { alert(f.name + ' ist zu groß (max. 100 MB).'); input.value=''; return; }
+        if (forbidden.includes(ext)) { alert(<?= tjs('Dateityp .') ?> + ext + ' ist nicht erlaubt.'); input.value=''; return; }
+        if (f.size > MAX) { alert(f.name + <?= tjs(' ist zu groß (max. 100 MB).') ?>); input.value=''; return; }
         fd.append('asset_files[]', f);
     }
     document.getElementById('box_' + taskId).style.display = 'block';
@@ -2143,9 +2143,9 @@ function autoUpload(input, taskId) {
             return;
         }
         const r = xhr.responseText.trim();
-        if (r.startsWith('ERR_SIZE'))  { alert('Datei zu groß (max. 100 MB).'); document.getElementById('box_'+taskId).style.display='none'; }
-        else if (r.startsWith('ERR_FORBIDDEN')) { alert('Für dieses Projekt haben Sie keine Berechtigung.'); document.getElementById('box_'+taskId).style.display='none'; }
-        else if (r.startsWith('ERR_TYPE')) { alert('Dieser Dateityp ist gesperrt.'); document.getElementById('box_'+taskId).style.display='none'; }
+        if (r.startsWith('ERR_SIZE'))  { alert(<?= tjs('Datei zu groß (max. 100 MB).') ?>); document.getElementById('box_'+taskId).style.display='none'; }
+        else if (r.startsWith('ERR_FORBIDDEN')) { alert(<?= tjs('Für dieses Projekt haben Sie keine Berechtigung.') ?>); document.getElementById('box_'+taskId).style.display='none'; }
+        else if (r.startsWith('ERR_TYPE')) { alert(<?= tjs('Dieser Dateityp ist gesperrt.') ?>); document.getElementById('box_'+taskId).style.display='none'; }
         else if (xhr.status === 200)  { window.location.href = 'portal?token='+PORTAL_TOKEN+'&msg=uploaded'; }
     };
     xhr.send(fd);

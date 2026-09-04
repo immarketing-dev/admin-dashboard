@@ -699,7 +699,7 @@ function openNewModalForDay(dateStr) {
 }
 
 function openNewModal(preDate) {
-    document.getElementById('eventModalLabel').innerHTML = '<i class="bi bi-calendar-plus me-2"></i>Neuer Termin';
+    document.getElementById('eventModalLabel').innerHTML = '<i class="bi bi-calendar-plus me-2"></i><?= te('Neuer Termin') ?>';
     document.getElementById('eventForm').reset();
     document.getElementById('ev_id').value = '';
     if (preDate) document.getElementById('ev_date').value = preDate;
@@ -767,7 +767,7 @@ function showDayDetail(day, year, month) {
         const color   = ev.status === 'Abgesagt' ? '#6c757d' : ev.color;
         const timeStr = ev.start_time
             ? ev.start_time.substring(0,5) + (ev.end_time ? ' – '+ev.end_time.substring(0,5) : '') + ' Uhr'
-            : 'Ganztägig';
+            : <?= tjs('Ganztägig') ?>;
 
         const statusLabel = ev.status !== 'Geplant'
             ? `<span class="badge ms-1" style="font-size:9px;background:${color}22;color:${color};">${esc(ev.status)}</span>`
@@ -792,11 +792,11 @@ function showDayDetail(day, year, month) {
                     <span class="small text-strong-c" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</span>
                     <div class="d-flex gap-1 ms-auto">
                         <button class="btn btn-xs btn-outline-secondary" style="padding:1px 5px;font-size:10px;"
-                            onclick="copyLink('${esc(c.ics_link)}', this)" title="ICS-Einladungslink kopieren">
+                            onclick="copyLink('${esc(c.ics_link)}', this)" title=<?= tjs('ICS-Einladungslink kopieren') ?>>
                             <i class="bi bi-link-45deg"></i>
                         </button>
                         <button class="btn btn-xs" style="padding:1px 5px;font-size:10px;background:${color}22;color:${color};border:1px solid ${color}44;"
-                            onclick="sendInviteEmail(${ev.id}, ${c.id})" title="Einladung per E-Mail senden">
+                            onclick="sendInviteEmail(${ev.id}, ${c.id})" title=<?= tjs('Einladung per E-Mail senden') ?>>
                             <i class="bi bi-envelope"></i>
                         </button>
                     </div>
@@ -806,7 +806,7 @@ function showDayDetail(day, year, month) {
                 contactsHtml += `<button class="btn btn-xs w-100 mt-1"
                     style="font-size:10px;background:${color}11;color:${color};border:1px solid ${color}33;"
                     onclick="sendAllInvites(${ev.id})">
-                    <i class="bi bi-send me-1"></i>Alle einladen
+                    <i class="bi bi-send me-1"></i><?= te('Alle einladen') ?>
                 </button>`;
             }
             contactsHtml += '</div>';
@@ -827,7 +827,7 @@ function showDayDetail(day, year, month) {
                         <i class="bi bi-pencil"></i>
                     </button>
                     <button class="btn btn-xs btn-outline-danger" style="padding:2px 6px;font-size:10px;"
-                        onclick="triggerDeleteEvent(${ev.id})" title="Löschen">
+                        onclick="triggerDeleteEvent(${ev.id})" title=<?= tjs('Löschen') ?>>
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -857,8 +857,8 @@ function showDayDetail(day, year, month) {
 
     // Invoices
     invoices.forEach(inv => {
-        const cls  = inv.status === 'Bezahlt' ? 'tint-success' : (inv.status === 'Überfällig' ? 'tint-danger' : 'tint-warn');
-        const icon = inv.status === 'Bezahlt' ? 'bi-check-circle-fill text-success' : (inv.status === 'Überfällig' ? 'bi-exclamation-triangle-fill text-danger' : 'bi-receipt text-warning');
+        const cls  = inv.status === 'Bezahlt' ? 'tint-success' : (inv.status === <?= tjs('Überfällig') ?> ? 'tint-danger' : 'tint-warn');
+        const icon = inv.status === 'Bezahlt' ? 'bi-check-circle-fill text-success' : (inv.status === <?= tjs('Überfällig') ?> ? 'bi-exclamation-triangle-fill text-danger' : 'bi-receipt text-warning');
         const amt  = parseFloat(inv.amount).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 
         html += `<div class="d-flex align-items-start gap-2 mb-2 p-2 rounded ${cls}">
@@ -870,7 +870,7 @@ function showDayDetail(day, year, month) {
         </div>`;
     });
 
-    if (!html) html = '<p class="text-muted small m-0"><i class="bi bi-calendar-x me-1"></i>Keine Einträge für diesen Tag.</p>';
+    if (!html) html = '<p class="text-muted small m-0"><i class="bi bi-calendar-x me-1"></i><?= te('Keine Einträge für diesen Tag.') ?></p>';
 
     body.innerHTML = html;
     card.style.display = 'block';
@@ -890,18 +890,18 @@ function copyLink(url, btn) {
             btn.style.cssText = 'padding:1px 5px;font-size:10px;';
         }, 2000);
     }).catch(() => {
-        prompt('ICS-Link kopieren:', url);
+        prompt(<?= tjs('ICS-Link kopieren:') ?>, url);
     });
 }
 
 // Send invite email via form POST
 function sendInviteEmail(eventId, contactId) {
-    if (!confirm('Einladung per E-Mail an diesen Kontakt senden?')) return;
+    if (!confirm(<?= tjs('Einladung per E-Mail an diesen Kontakt senden?') ?>)) return;
     submitInviteForm('send_invite', eventId, contactId);
 }
 
 function sendAllInvites(eventId) {
-    if (!confirm('Einladungen an alle Kontakte dieses Termins senden?')) return;
+    if (!confirm(<?= tjs('Einladungen an alle Kontakte dieses Termins senden?') ?>)) return;
     submitInviteForm('send_all_invites', eventId, null);
 }
 

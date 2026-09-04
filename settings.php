@@ -570,8 +570,8 @@ require 'includes/layout_start.php';
       <!-- ── Rahmen: gilt für alle HTML-Mails ── -->
       <div class="settings-section-title"><i class="bi bi-window-sidebar me-2"></i><?= te('Rahmen aller E-Mails') ?></div>
       <p class="text-muted small mb-3">
-        <?= te('Kopfbereich, Farben und Logo kommen aus') ?> <a href="?tab=design"><?= te('Darstellung') ?></a> und
-        <a href="?tab=company"><?= te('Firma') ?></a>. Hier stellen Sie ein, was unter jeder Nachricht steht.
+        <?= te('Kopfbereich, Farben und Logo kommen aus') ?> <a href="?tab=design"><?= te('Darstellung') ?></a> <?= te('und') ?>
+        <a href="?tab=company"><?= te('Firma') ?></a>. <?= te('Hier stellen Sie ein, was unter jeder Nachricht steht.') ?>
       </p>
       <form method="POST" class="row g-3 mb-4">
         <?= csrf_field() ?>
@@ -613,7 +613,7 @@ require 'includes/layout_start.php';
                 </span>
               </span>
               <?php if($angepasst): ?>
-                <span class="badge <?= $k === $tpl_key ? 'bg-light text-dark' : 'bg-primary' ?>" title="<?= te('Von Ihnen angepasst') ?>">angepasst</span>
+                <span class="badge <?= $k === $tpl_key ? 'bg-light text-dark' : 'bg-primary' ?>" title="<?= te('Von Ihnen angepasst') ?>"><?= te('angepasst') ?></span>
               <?php endif; ?>
             </a>
             <?php endforeach; ?>
