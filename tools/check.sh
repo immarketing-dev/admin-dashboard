@@ -180,6 +180,13 @@ done
 # Demodaten gegen SQLite wirklich laufen - eine Syntaxpruefung wuerde
 # einen falschen Spaltennamen nicht bemerken.
 if command -v php >/dev/null 2>&1; then
+  # Aufgerufene, aber nicht geladene Projektfunktionen. "php -l" sieht die
+  # nicht - der Aufruf ist syntaktisch gueltig und faellt erst zur Laufzeit
+  # mit HTTP 500 auf, moeglicherweise erst Wochen spaeter.
+  if ! out=$(php tools/check_includes.php 2>&1); then
+    echo "INCLUDES: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_demo.php 2>&1); then
     echo "DEMO-RIEGEL: $out"
     fail=1

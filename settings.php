@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
 require_once 'includes/mail_templates.php';
 
@@ -25,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if ($_POST['action'] === 'reset_design') {
-        log_event($pdo, 'SETTINGS_DESIGN', 'Farben auf Standard zurückgesetzt.');
         $pdo->exec("DELETE FROM settings WHERE k IN ('color_primary','color_sidebar')");
+        log_event($pdo, 'SETTINGS_DESIGN', 'Farben auf Standard zurückgesetzt.');
         header("Location: settings?tab=design&saved=1"); exit();
     }
 

@@ -35,7 +35,18 @@ mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
   invoices and shared wiki articles, reached with a token and a PIN
 - **Dark mode**, responsive down to phone width
 
-Screenshots: see [docs/screenshots/README.md](docs/screenshots/README.md).
+## Screenshots
+
+Taken from the live demo linked above.
+
+| | |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Projects](docs/screenshots/projects.png) |
+| **Dashboard** — KPIs, deadlines, uptime monitor, lead inbox | **Projects** — milestones, time tracking, client feedback |
+| ![Finances](docs/screenshots/finances.png) | ![Client portal](docs/screenshots/portal.png) |
+| **Finances** — twelve months of income and expenses | **Client portal** — what a customer sees after logging in |
+
+How they were captured: [docs/screenshots/README.md](docs/screenshots/README.md).
 
 ## Requirements
 
