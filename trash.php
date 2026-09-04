@@ -48,8 +48,13 @@ const PAPIERKORB = [
 const AUFBEWAHRUNG_TAGE = 30;
 
 // ── Automatisches Aufräumen ─────────────────────────────────────────
+// Läuft bei jedem Aufruf der Seite, also auch auf einem GET. In der
+// Demo darf das nicht: der dortige Datenbankbenutzer hat nur SELECT,
+// das DELETE würde die Seite mit einer Ausnahme abbrechen lassen. Und
+// zu löschen gäbe es ohnehin nichts - der Bestand ist unveränderlich.
+// tools/check_demo.php führt diese Stelle als dokumentierte Ausnahme.
 $geraeumt = 0;
-foreach (array_keys(PAPIERKORB) as $tabelle) {
+foreach (demo_mode() ? [] : array_keys(PAPIERKORB) as $tabelle) {
     $st = $pdo->prepare(
         "DELETE FROM $tabelle WHERE deleted_at IS NOT NULL"
         . ' AND deleted_at < DATE_SUB(NOW(), INTERVAL ' . AUFBEWAHRUNG_TAGE . ' DAY)'

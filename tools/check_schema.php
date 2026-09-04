@@ -498,6 +498,44 @@ if ($check7_fail) {
 echo "\n";
 
 // ---------------------------------------------------------------------
+// Pruefung 8: Komma vor der schliessenden Klammer
+//
+// Zweimal passiert, beide Male gleich: eine Migration ergaenzt eine
+// Spalte, jemand haengt sie ans Ende der CREATE-TABLE-Klammer und laesst
+// das Komma der Vorgaengerzeile stehen. MySQL lehnt die Anweisung ab -
+// eine Neuinstallation bricht dann mitten im Schema ab, waehrend jede
+// bestehende Installation weiterlaeuft und nichts davon merkt. Genau
+// deshalb faellt es so spaet auf.
+// ---------------------------------------------------------------------
+echo "=== Pruefung 8: Komma vor der schliessenden Klammer ===\n";
+
+$zeilen   = file(__DIR__ . '/../install/schema.sql');
+$check8   = 0;
+$vorige   = '';
+$vorigeNr = 0;
+foreach ($zeilen as $i => $zeile) {
+    if (preg_match('/^\)\s*ENGINE/i', $zeile)) {
+        if (preg_match('/,\s*$/', $vorige)) {
+            echo 'FEHLER: Zeile ' . $vorigeNr . ' endet mit einem Komma, '
+               . "Zeile " . ($i + 1) . " schliesst die Klammer:\n";
+            echo '  ' . trim($vorige) . "\n";
+            $check8 = 1;
+        }
+        continue;
+    }
+    $roh = trim($zeile);
+    if ($roh === '' || strpos($roh, '--') === 0) continue;
+    $vorige   = $zeile;
+    $vorigeNr = $i + 1;
+}
+if ($check8) {
+    $fail = 1;
+} else {
+    echo "OK: keine CREATE-TABLE-Klammer wird durch ein ueberzaehliges Komma ungueltig.\n";
+}
+echo "\n";
+
+// ---------------------------------------------------------------------
 // Zusammenfassung
 // ---------------------------------------------------------------------
 echo "=== Zusammenfassung ===\n";

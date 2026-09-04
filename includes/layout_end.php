@@ -26,5 +26,8 @@
       }
   })();
   </script>
+<?php if (demo_mode()): ?>
+  <script src="assets/js/demo.js" defer></script>
+<?php endif; ?>
 </body>
 </html>

@@ -373,6 +373,16 @@ require 'includes/layout_start.php';
             const xhr  = new XMLHttpRequest();
             xhr.open("POST", "board", true);
             xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            // Kennzeichnet die Anfrage als AJAX: der Demo-Riegel antwortet
+            // darauf mit JSON statt mit einer Weiterleitung.
+            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            xhr.onload = function () {
+                if (xhr.status !== 403) return;
+                // Die Karte wurde nur im Browser verschoben. Kurz melden,
+                // dann den tatsächlichen Stand wiederherstellen.
+                if (window.demoHinweis) demoHinweis();
+                setTimeout(function () { location.reload(); }, 1600);
+            };
             xhr.send("action=update_status&task_id=" + taskId + "&new_status=" + encodeURIComponent(newStatus) + "&csrf_token=" + encodeURIComponent(csrf));
         },
     };

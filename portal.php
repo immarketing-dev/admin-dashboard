@@ -90,6 +90,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // fremdes Formular soll auch keinen Zugangscode setzen koennen.
     csrf_check();
 
+    // Demo-Modus: allein die PIN-Prüfung darf durch, sie berührt nur die
+    // Sitzung. Alles andere - Uploads, Angebotsentscheidungen, Kommentare
+    // und die Benachrichtigung an den Absender - endet hier.
+    demo_guard();
+
     // ── PIN: Zugangscode erstmalig vergeben
     if (isset($_POST['action']) && $_POST['action'] === 'set_portal_pin') {
         $pin  = trim($_POST['pin'] ?? '');
@@ -122,9 +127,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mins = (int)ceil((strtotime($locked_until) - time()) / 60);
                 $_pin_error = "Zu viele Fehlversuche. Bitte noch $mins Minute(n) warten.";
             } elseif (password_verify(trim($_POST['pin'] ?? ''), $fresh['portal_pin'])) {
-                $pdo->prepare("UPDATE contacts SET portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")->execute([$client['id']]);
+                // In der Demo bleibt der Zähler unberührt: der dortige
+                // Datenbankbenutzer darf ausschließlich lesen.
+                if (!demo_mode()) {
+                    $pdo->prepare("UPDATE contacts SET portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")->execute([$client['id']]);
+                }
                 $_SESSION[$_sess_key] = true;
                 header("Location: portal?token=$token"); exit();
+            } elseif (demo_mode()) {
+                // Kein Fehlversuchszähler in der Demo - ein einzelner
+                // Besucher könnte sonst das Portal für alle sperren.
+                $_pin_error = 'Falscher Zugangscode.';
             } else {
                 $attempts = (int)$fresh['portal_pin_attempts'] + 1;
                 if ($attempts >= 5) {
@@ -370,7 +383,9 @@ if (!$_is_auth) {
     $_name_parts = explode(' ', $client['name']);
     $_avatar     = strtoupper(substr($_name_parts[0], 0, 1) . (isset($_name_parts[1]) ? substr($_name_parts[1], 0, 1) : ''));
     $_first_name = htmlspecialchars($_name_parts[0]);
-    $_locked     = !empty($client['portal_pin_locked_until'] ?? null) && strtotime($client['portal_pin_locked_until']) > time();
+    $_locked     = !demo_mode()
+                   && !empty($client['portal_pin_locked_until'] ?? null)
+                   && strtotime($client['portal_pin_locked_until']) > time();
     ?><!DOCTYPE html>
 <html lang="de">
 <head>
@@ -381,6 +396,7 @@ if (!$_is_auth) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:700,800" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/tokens.css">
+  <?php if (demo_mode()): ?><link rel="stylesheet" href="assets/css/demo.css"><?php endif; ?>
   <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
     *{box-sizing:border-box}
@@ -415,11 +431,24 @@ if (!$_is_auth) {
     .strength-bar{height:4px;border-radius:2px;background:var(--surface-sunken);margin-top:6px;overflow:hidden}
     .strength-fill{height:100%;border-radius:2px;width:0;transition:width .3s,background .3s}
     .match-msg{font-size:12px;margin-top:4px;min-height:16px}
+    /* Demo-Hinweis auf der Zugangskarte. Eigene Regel, weil dieses
+       Dokument nur tokens.css lädt und nicht app.css. */
+    .demo-note{background:var(--accent-soft);border:1px solid var(--accent-soft-strong);border-radius:12px;
+      padding:12px 14px;margin-bottom:22px;font-size:13px;line-height:1.55;color:var(--text-body);text-align:center;}
+    .demo-note code{background:var(--surface-subtle);border:1px solid var(--border-subtle);border-radius:6px;
+      padding:2px 9px;font-size:14px;font-weight:700;letter-spacing:2px;color:var(--text-strong);}
   </style>
 </head>
 <body>
 <div class="pin-card">
   <div class="pin-avatar"><?= $_avatar ?></div>
+
+  <?php if (demo_mode()): ?>
+    <div class="demo-note">
+      <strong>Demo-Version</strong> &ndash; Zugangscode <code><?= htmlspecialchars(demo_portal_pin()) ?></code><br>
+      Alle Daten sind erfunden, Änderungen werden nicht gespeichert.
+    </div>
+  <?php endif; ?>
 
   <?php if ($_pin_is_set): ?>
     <h4 class="fw-bold text-center mb-1" style="font-family:'Poppins',sans-serif;color:var(--text-strong);">Willkommen zurück</h4>
@@ -648,6 +677,10 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/tokens.css">
+  <?php if (demo_mode()): ?>
+  <link rel="stylesheet" href="assets/css/demo.css">
+  <script src="assets/js/demo.js" defer></script>
+  <?php endif; ?>
   <?php $theme_follow_system = true; require 'includes/theme.php'; ?>
   <style>
     /* Die Textfarbe gehoert an den Rumpf. Ohne sie erben alle Elemente
@@ -2000,9 +2033,17 @@ function submitComment(msId) {
     const btn = ta.nextElementSibling?.querySelector('button');
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
 
-    fetch('portal?token=' + PORTAL_TOKEN, { method: 'POST', body: fd })
+    fetch('portal?token=' + PORTAL_TOKEN, { method: 'POST', body: fd,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
         .then(data => {
+            // Die Demo antwortet mit 403 und demo:true - ohne diesen
+            // Zweig bliebe der Knopf stumm im Ladezustand stehen.
+            if (data && data.demo) {
+                if (window.demoHinweis) demoHinweis(data.error);
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i>'; }
+                return;
+            }
             if (!data.success) return;
 
             const bubble = document.createElement('div');
@@ -2060,8 +2101,16 @@ function autoUpload(input, taskId) {
     document.getElementById('box_' + taskId).style.display = 'block';
     const xhr = new XMLHttpRequest();
     xhr.open('POST', 'portal?token=' + PORTAL_TOKEN, true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.upload.onprogress = e => { if (e.lengthComputable) document.getElementById('bar_'+taskId).style.width = Math.round(e.loaded/e.total*100)+'%'; };
     xhr.onload = () => {
+        if (xhr.status === 403) {
+            // In der Demo wird nichts gespeichert; die Fortschritts-
+            // anzeige bliebe sonst dauerhaft stehen.
+            if (window.demoHinweis) demoHinweis();
+            document.getElementById('box_' + taskId).style.display = 'none';
+            return;
+        }
         const r = xhr.responseText.trim();
         if (r.startsWith('ERR_SIZE'))  { alert('Datei zu groß (max. 100 MB).'); document.getElementById('box_'+taskId).style.display='none'; }
         else if (r.startsWith('ERR_FORBIDDEN')) { alert('Für dieses Projekt haben Sie keine Berechtigung.'); document.getElementById('box_'+taskId).style.display='none'; }
@@ -2080,9 +2129,14 @@ function updatePortalPrio(ticketId, sel) {
     fd.append('action',    'update_ticket_priority');
     fd.append('ticket_id', ticketId);
     fd.append('priority',  prio);
-    fetch('portal?token=' + PORTAL_TOKEN, { method: 'POST', body: fd })
+    fetch('portal?token=' + PORTAL_TOKEN, { method: 'POST', body: fd,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => r.json())
         .then(resp => {
+            if (resp && resp.demo) {
+                if (window.demoHinweis) demoHinweis(resp.error);
+                return;
+            }
             if (resp.ok && msg) {
                 msg.style.display = 'inline';
                 setTimeout(() => { msg.style.display = 'none'; }, 2000);

@@ -972,3 +972,43 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     --bs-table-active-bg:     var(--surface-sunken);
     --bs-table-active-color:  var(--text-strong);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   DEMO-MODUS
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Der Streifen steht auf jeder Seite, damit niemand die Demo für ein
+   echtes System hält. Bewusst ruhig gehalten: er soll einordnen, nicht
+   warnen - in dieser Installation ist die Demo der Normalzustand. */
+.demo-strip {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    margin-bottom: var(--space-4);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-soft-strong);
+    border-radius: var(--radius-lg);
+    color: var(--text-body);
+    font-size: var(--text-sm-plus);
+    line-height: 1.45;
+}
+.demo-strip i        { color: var(--color-primary); font-size: var(--text-base-plus); flex: 0 0 auto; }
+.demo-strip strong   { color: var(--text-strong); }
+.demo-strip span     { min-width: 0; }
+
+/* Rückmeldung nach einer abgelehnten Änderung. Gelb statt rot: es ist
+   kein Fehler, sondern die erwartete Antwort der Demo. */
+.demo-hinweis {
+    display: flex; align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    margin-bottom: var(--space-5);
+    background: var(--warning-soft);
+    border: 1px solid var(--accent-warning);
+    border-radius: var(--radius-lg);
+    color: var(--text-body);
+    font-size: var(--text-sm-plus);
+    line-height: 1.45;
+}
+.demo-hinweis i    { color: var(--accent-warning); font-size: var(--text-base-plus); flex: 0 0 auto; }
+.demo-hinweis span { min-width: 0; }

@@ -1,0 +1,43 @@
+/* ════════════════════════════════════════════════════════════════════
+   DEMO-MODUS: Rückmeldung auf abgelehnte Änderungen
+
+   Eigene Datei, weil das Kundenportal nur tokens.css lädt und nicht
+   app.css - beide Bereiche brauchen aber dieselbe Meldung. Wie app.css
+   ausschließlich mit Tokens, damit die helle und die dunkle Fassung
+   ohne Zusatzregeln stimmen.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Zentriert über left/right und margin, nicht über left:50%: eine
+   fixierte Box mit left:50% darf nur die rechte Hälfte belegen, ihre
+   max-width kommt dann gar nicht mehr zum Tragen. Auf 360 px blieb die
+   Meldung so 180 px schmal. */
+.demo-toast {
+    position: fixed;
+    left: var(--space-4);
+    right: var(--space-4);
+    bottom: var(--space-6);
+    margin: 0 auto;
+    width: fit-content;
+    transform: translateY(12px);
+    z-index: 2000;
+    max-width: min(440px, calc(100vw - 32px));
+    padding: var(--space-3) var(--space-5);
+    background: var(--surface-card);
+    border: 1px solid var(--accent-soft-strong);
+    border-left: 3px solid var(--color-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elev-raised);
+    color: var(--text-body);
+    font-size: var(--text-sm-plus);
+    line-height: 1.45;
+    text-align: center;
+    opacity: 0;
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: none;
+}
+
+.demo-toast.sichtbar { opacity: 1; transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+    .demo-toast { transition: none; }
+}
