@@ -5,6 +5,7 @@ use PHPMailer\PHPMailer\Exception;
 require_once __DIR__ . '/vendor/autoload.php';
 
 require_once 'config.php';
+require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/upload_helper.php';
 
@@ -178,7 +179,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $ms_id = (int)$_POST['milestone_id'];
 
         // Aktuellen Zustand lesen, bevor wir toggeln
-        $ms_row = $pdo->prepare("SELECT m.is_completed, m.title, m.task_id, t.title AS task_title, c.email AS c_email, c.name AS c_name
+        $ms_row = $pdo->prepare("SELECT m.is_completed, m.title, m.task_id, t.title AS task_title, c.email AS c_email, c.name AS c_name, c.portal_token
             FROM task_milestones m
             JOIN tasks t ON m.task_id = t.id
             LEFT JOIN contacts c ON t.contact_id = c.id
@@ -208,17 +209,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->addAddress($ms['c_email'], $ms['c_name']);
                 $mail->addReplyTo(setting('support_email', SUPPORT_EMAIL), setting('company_short', COMPANY_SHORT));
                 $mail->isHTML(true);
-                $mail->Subject = "Projektfortschritt: Meilenstein abgeschlossen | " . setting('company_short', COMPANY_SHORT);
-                $mail->Body = "<div style='font-family:Arial,sans-serif;max-width:600px;'>"
-                    . "<h3 style='color:" . setting('color_primary', COLOR_PRIMARY) . ";'>Gute Neuigkeiten, " . htmlspecialchars($ms['c_name']) . "!</h3>"
-                    . "<p>Ein weiterer Meilenstein in Ihrem Projekt wurde abgeschlossen:</p>"
-                    . "<div style='background:#f0f8ff;border-left:4px solid " . setting('color_primary', COLOR_PRIMARY) . ";padding:12px 16px;margin:16px 0;border-radius:4px;'>"
-                    . "<strong style='font-size:16px;'>&#10003; " . htmlspecialchars($ms['title']) . "</strong><br>"
-                    . "<span style='color:#666;font-size:13px;'>Projekt: " . htmlspecialchars($ms['task_title']) . "</span>"
-                    . "</div>"
-                    . "<p>Bei Fragen können Sie sich jederzeit an uns wenden.</p>"
-                    . "<hr><p style='color:#888;font-size:12px;'>" . setting('company_name', COMPANY_NAME) . " &bull; <a href='" . setting('main_website', MAIN_WEBSITE) . "' style='color:" . setting('color_primary', COLOR_PRIMARY) . ";'>" . setting('main_website', MAIN_WEBSITE) . "</a></p>"
-                    . "</div>";
+                // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
+                $_portal_url = $ms['portal_token']
+                    ? rtrim(setting('main_website', MAIN_WEBSITE), '/') . '/portal?token=' . urlencode($ms['portal_token'])
+                    : '';
+                $_m = mail_render('milestone', [
+                    'kunde'       => $ms['c_name'],
+                    'projekt'     => $ms['task_title'],
+                    'meilenstein' => $ms['title'],
+                    'firma'       => setting('company_short', COMPANY_SHORT),
+                ], $_portal_url);
+                $mail->Subject = $_m['subject'];
+                $mail->Body    = $_m['html'];
+                $mail->AltBody = $_m['text'];
                 $mail->send();
                 $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MILESTONE_MAIL',?)")
                     ->execute(["Meilenstein-E-Mail an {$ms['c_name']} gesendet: {$ms['title']}"]);

@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
 
@@ -919,17 +920,22 @@ function calcTotal() {
 document.getElementById('q_tax_type').addEventListener('change', calcTotal);
 
 const emailQuoteModal = new bootstrap.Modal(document.getElementById('emailQuoteModal'));
+// Vorlagentexte aus den Einstellungen; ersetzt wird mit mailTplFill().
+const MAIL_TPL = <?= mail_templates_json(['quote_send']) ?>;
+const MAIL_FIRMA = '<?= htmlspecialchars(setting('company_short', COMPANY_SHORT), ENT_QUOTES) ?>';
+
 function openEmailModal(q) {
     document.getElementById('eq_id').value      = q.id;
     document.getElementById('eq_to').value      = q.email || '';
-    document.getElementById('eq_subject').value = 'Angebot ' + q.quote_number + (q.client ? ' für ' + q.client : '');
-    const amount = parseFloat(q.total_amount).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
-    const salutation = q.client ? ('Sehr geehrte Damen und Herren,\n\n') : 'Sehr geehrte Damen und Herren,\n\n';
-    document.getElementById('eq_body').value = salutation +
-        'anbei erhalten Sie unser Angebot ' + q.quote_number + ' über ' + amount + ' €.\n\n' +
-        (q.notes ? q.notes.trim() + '\n\n' : '') +
-        'Bei Fragen stehe ich Ihnen gerne zur Verfügung.\n\n' +
-        'Mit freundlichen Grüßen\n<?= addslashes(COMPANY_NAME) ?>';
+    const _v = {
+        kunde:       q.client || 'Sie',
+        nummer:      q.quote_number,
+        betrag:      parseFloat(q.total_amount).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}),
+        anmerkungen: (q.notes || '').trim(),
+        firma:       MAIL_FIRMA
+    };
+    document.getElementById('eq_subject').value = mailTplFill(MAIL_TPL.quote_send.subject, _v);
+    document.getElementById('eq_body').value = mailTplFill(MAIL_TPL.quote_send.body, _v);
     emailQuoteModal.show();
 }
 
@@ -973,4 +979,7 @@ function confirmDeleteQuote(btn, id) {
     }
 }
 </script>
-<?php require 'includes/layout_end.php'; ?>
+<?php ?>
+<script src="assets/js/mail-templates.js"></script>
+<?php
+require 'includes/layout_end.php'; ?>

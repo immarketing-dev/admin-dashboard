@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once 'includes/auth.php';
+require_once 'includes/mail_templates.php';
 
 // ==========================================
 // SAVE ACTIONS
@@ -123,6 +124,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=company&saved=1"); exit();
     }
 
+    // Rahmen aller Mails: Fußzeile und Signatur. Logo, Firmenname und
+    // Farben stehen bereits unter ihren eigenen Schlüsseln und werden
+    // von mail_frame() mitbenutzt.
+    if ($_POST['action'] === 'save_mail_frame') {
+        $st = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
+        foreach (['mail_footer', 'mail_signature'] as $k) {
+            $v = trim($_POST[$k] ?? '');
+            $st->execute([$k, $v, $v]);
+        }
+        header("Location: settings?tab=mail&saved=1"); exit();
+    }
+
+    // Eine einzelne Vorlage. Stimmt der Text mit dem Standard überein,
+    // wird der Eintrag gelöscht statt gespeichert - dann zieht die Vorlage
+    // künftige Änderungen am Standard automatisch mit.
+    if ($_POST['action'] === 'save_mail_template') {
+        $key  = $_POST['tpl_key'] ?? '';
+        $alle = mail_templates();
+        if (isset($alle[$key])) {
+            $subject = trim($_POST['tpl_subject'] ?? '');
+            $body    = trim($_POST['tpl_body'] ?? '');
+            $del = $pdo->prepare("DELETE FROM settings WHERE k = ?");
+            $set = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
+
+            foreach ([['subject', $subject], ['body', $body]] as [$feld, $wert]) {
+                $sk = 'mailtpl_' . $key . '_' . $feld;
+                if ($wert === '' || $wert === trim($alle[$key][$feld])) {
+                    $del->execute([$sk]);
+                } else {
+                    $set->execute([$sk, $wert, $wert]);
+                }
+            }
+        }
+        header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
+    }
+
+    // Zurück auf den Standard: die gespeicherte Fassung wird entfernt.
+    if ($_POST['action'] === 'reset_mail_template') {
+        $key = $_POST['tpl_key'] ?? '';
+        if (isset(mail_templates()[$key])) {
+            $pdo->prepare("DELETE FROM settings WHERE k IN (?, ?)")
+                ->execute(['mailtpl_' . $key . '_subject', 'mailtpl_' . $key . '_body']);
+        }
+        header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
+    }
+
     if ($_POST['action'] === 'save_system') {
         $ll = max(50, min(2000, (int)($_POST['log_limit'] ?? 200)));
         $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_limit',?) ON DUPLICATE KEY UPDATE v=?");
@@ -196,6 +243,11 @@ require 'includes/layout_start.php';
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='notifications' ? 'active' : '' ?>" href="?tab=notifications">
           <i class="bi bi-bell me-1"></i> Benachrichtigungen
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link <?= $active_tab==='mail' ? 'active' : '' ?>" href="?tab=mail">
+          <i class="bi bi-envelope-paper me-1"></i> E-Mail-Vorlagen
         </a>
       </li>
       <li class="nav-item">
@@ -419,6 +471,151 @@ require 'includes/layout_start.php';
     </div>
 
     <!-- ========== TAB: SYSTEM ========== -->
+    <?php elseif($active_tab === 'mail'): ?>
+    <?php
+      $tpls    = mail_templates();
+      $tpl_key = $_GET['tpl'] ?? array_key_first($tpls);
+      if (!isset($tpls[$tpl_key])) $tpl_key = array_key_first($tpls);
+      $tpl     = $tpls[$tpl_key];
+      // Ist die Vorlage angepasst oder läuft sie noch auf dem Standard?
+      $ist_angepasst = setting('mailtpl_' . $tpl_key . '_subject', '') !== ''
+                    || setting('mailtpl_' . $tpl_key . '_body', '') !== '';
+      $vorschau = mail_render($tpl_key, mail_preview_vars(), 'https://example.com/portal');
+    ?>
+    <div class="settings-card" style="border-radius:0 10px 10px 10px;">
+
+      <!-- ── Rahmen: gilt für alle HTML-Mails ── -->
+      <div class="settings-section-title"><i class="bi bi-window-sidebar me-2"></i>Rahmen aller E-Mails</div>
+      <p class="text-muted small mb-3">
+        Kopfbereich, Farben und Logo kommen aus <a href="?tab=design">Darstellung</a> und
+        <a href="?tab=company">Firma</a>. Hier stellen Sie ein, was unter jeder Nachricht steht.
+      </p>
+      <form method="POST" class="row g-3 mb-4">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_mail_frame">
+        <div class="col-md-6">
+          <label class="fw-bold small mb-1" for="mail_signature">Signatur</label>
+          <textarea class="form-control" id="mail_signature" name="mail_signature" rows="3"
+                    placeholder="Mit freundlichen Grüßen&#10;David Imminger"><?= htmlspecialchars(setting('mail_signature', '')) ?></textarea>
+          <div class="form-text">Steht am Ende jeder Nachricht, vor der Fußzeile.</div>
+        </div>
+        <div class="col-md-6">
+          <label class="fw-bold small mb-1" for="mail_footer">Fußzeile</label>
+          <textarea class="form-control" id="mail_footer" name="mail_footer" rows="3"
+                    placeholder="<?= htmlspecialchars(setting('company_name', COMPANY_NAME) . ' · ' . setting('main_website', MAIN_WEBSITE)) ?>"><?= htmlspecialchars(setting('mail_footer', '')) ?></textarea>
+          <div class="form-text">Die kleine Zeile ganz unten. Leer lassen für Firmenname und Website.</div>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-save me-1"></i>Rahmen speichern</button>
+        </div>
+      </form>
+
+      <!-- ── Vorlagen ── -->
+      <div class="settings-section-title"><i class="bi bi-envelope-paper me-2"></i>Vorlagen</div>
+
+      <div class="row g-4">
+        <!-- Liste -->
+        <div class="col-lg-4">
+          <div class="list-group">
+            <?php foreach($tpls as $k => $t):
+              $angepasst = setting('mailtpl_' . $k . '_subject', '') !== ''
+                        || setting('mailtpl_' . $k . '_body', '') !== '';
+            ?>
+            <a href="?tab=mail&tpl=<?= urlencode($k) ?>"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2<?= $k === $tpl_key ? ' active' : '' ?>">
+              <span class="text-truncate">
+                <span class="d-block fw-semibold"><?= htmlspecialchars($t['label']) ?></span>
+                <span class="d-block small<?= $k === $tpl_key ? '' : ' text-muted' ?>" style="font-size:var(--text-2xs);">
+                  <?= !empty($t['plaintext']) ? 'Vorbelegung, reiner Text' : 'HTML mit Rahmen' ?>
+                </span>
+              </span>
+              <?php if($angepasst): ?>
+                <span class="badge <?= $k === $tpl_key ? 'bg-light text-dark' : 'bg-primary' ?>" title="Von Ihnen angepasst">angepasst</span>
+              <?php endif; ?>
+            </a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+
+        <!-- Editor -->
+        <div class="col-lg-8">
+          <form method="POST">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="save_mail_template">
+            <input type="hidden" name="tpl_key" value="<?= htmlspecialchars($tpl_key, ENT_QUOTES) ?>">
+
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
+              <div>
+                <div class="fw-bold"><?= htmlspecialchars($tpl['label']) ?></div>
+                <div class="text-muted small"><?= htmlspecialchars($tpl['hint']) ?></div>
+              </div>
+              <?php if($ist_angepasst): ?>
+              <button type="submit" form="reset_tpl_form" class="btn btn-outline-secondary btn-sm"
+                      onclick="return confirm('Diese Vorlage auf den Standardtext zurücksetzen?')">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Auf Standard zurücksetzen
+              </button>
+              <?php endif; ?>
+            </div>
+
+            <div class="mb-3">
+              <label class="fw-bold small mb-1" for="tpl_subject">Betreff</label>
+              <input type="text" class="form-control" id="tpl_subject" name="tpl_subject"
+                     value="<?= htmlspecialchars(mail_template_subject($tpl_key)) ?>">
+            </div>
+
+            <div class="mb-2">
+              <label class="fw-bold small mb-1" for="tpl_body">Nachricht</label>
+              <textarea class="form-control" id="tpl_body" name="tpl_body" rows="11"
+                        style="font-family:var(--font-mono);font-size:13px;line-height:1.6;"><?= htmlspecialchars(mail_template_body($tpl_key)) ?></textarea>
+              <div class="form-text">
+                Eine Leerzeile trennt Absätze. Enthält eine Zeile nur einen Platzhalter,
+                der leer bleibt, entfällt sie ganz.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="label-xs mb-1">Platzhalter — anklicken zum Einfügen</div>
+              <div class="d-flex flex-wrap gap-1">
+                <?php foreach($tpl['vars'] as $v): ?>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tpl-var"
+                        data-var="{{<?= htmlspecialchars($v, ENT_QUOTES) ?>}}"
+                        style="font-family:var(--font-mono);font-size:var(--text-2xs);">{{<?= htmlspecialchars($v) ?>}}</button>
+                <?php endforeach; ?>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-save me-1"></i>Vorlage speichern</button>
+          </form>
+
+          <form method="POST" id="reset_tpl_form" class="d-none">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="reset_mail_template">
+            <input type="hidden" name="tpl_key" value="<?= htmlspecialchars($tpl_key, ENT_QUOTES) ?>">
+          </form>
+
+          <!-- Vorschau -->
+          <div class="settings-section-title mt-4"><i class="bi bi-eye me-2"></i>Vorschau mit Beispieldaten</div>
+          <div class="mb-2 small"><span class="text-muted">Betreff:</span>
+            <span class="fw-semibold"><?= htmlspecialchars($vorschau['subject']) ?></span></div>
+          <?php if($vorschau['html'] !== ''): ?>
+            <iframe title="Vorschau der E-Mail" style="width:100%;height:520px;border:1px solid var(--border-base);border-radius:var(--radius-md);background:#fff;"
+                    srcdoc="<?= htmlspecialchars($vorschau['html'], ENT_QUOTES) ?>"></iframe>
+            <div class="form-text">
+              Die Vorschau zeigt die Mail so, wie sie beim Empfänger ankommt — immer hell,
+              unabhängig vom Design des Panels.
+            </div>
+          <?php else: ?>
+            <pre class="bg-subtle border border-subtle-c rounded-3 p-3 mb-0"
+                 style="white-space:pre-wrap;font-size:13px;"><?= htmlspecialchars($vorschau['text']) ?></pre>
+            <div class="form-text">
+              Diese Vorlage füllt nur das Versandfenster vor. Vor dem Absenden können Sie
+              den Text dort noch ändern.
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
     <?php elseif($active_tab === 'system'): ?>
     <div class="settings-card" style="border-radius:0 10px 10px 10px;">
 
@@ -501,4 +698,23 @@ require 'includes/layout_start.php';
         }
     }
   </script>
-<?php require 'includes/layout_end.php'; ?>
+<script>
+/* Platzhalter per Klick an der Cursorposition einsetzen - abtippen von
+   {{meilenstein}} ist fehleranfaellig, und ein Tippfehler faellt erst
+   auf, wenn die Mail beim Kunden liegt. */
+document.querySelectorAll('.tpl-var').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var feld = document.getElementById('tpl_body');
+        var aktiv = document.activeElement;
+        if (aktiv && aktiv.id === 'tpl_subject') feld = aktiv;
+        if (!feld) return;
+        var v = btn.dataset.var;
+        var a = feld.selectionStart, b = feld.selectionEnd;
+        feld.value = feld.value.slice(0, a) + v + feld.value.slice(b);
+        feld.focus();
+        feld.selectionStart = feld.selectionEnd = a + v.length;
+    });
+});
+</script>
+<?php
+require 'includes/layout_end.php'; ?>

@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
 // AJAX: Notizen laden
@@ -102,65 +103,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $preview   = mb_strimwidth(strip_tags($body), 0, 200, '…');
                 $body_html = nl2br(htmlspecialchars($body, ENT_QUOTES));
                 $first     = htmlspecialchars(explode(' ', $contact_name)[0] ?: 'Kunde', ENT_QUOTES);
-                $html = <<<HTML
-<!DOCTYPE html>
-<html lang="de">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:32px 16px;">
-  <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
-
-      <!-- Header -->
-      <tr><td style="background:#1a1a2e;padding:28px 32px;text-align:center;">
-        <p style="margin:0;color:rgba(255,255,255,.55);font-size:12px;letter-spacing:1px;text-transform:uppercase;">Support-Nachricht</p>
-        <h1 style="margin:6px 0 0;color:#fff;font-size:22px;font-weight:700;">{$company}</h1>
-      </td></tr>
-
-      <!-- Body -->
-      <tr><td style="padding:36px 32px;">
-        <p style="margin:0 0 6px;color:#6c757d;font-size:13px;">Hallo <strong style="color:#212529;">{$first}</strong>,</p>
-        <h2 style="margin:0 0 20px;font-size:19px;color:#1a1a2e;line-height:1.4;">
-          Sie haben eine neue Antwort auf Ihre Support-Anfrage erhalten.
-        </h2>
-
-        <!-- Ticket-Betreff -->
-        <p style="margin:0 0 16px;font-size:13px;color:#6c757d;">
-          <strong>Betreff:</strong> {$ticket_subject}
-        </p>
-
-        <!-- Antwort-Vorschau -->
-        <div style="background:#f0f7ff;border-left:4px solid #149ddd;border-radius:0 8px 8px 0;padding:18px 20px;margin:0 0 28px;">
-          <p style="margin:0 0 6px;font-size:11px;color:#149ddd;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Antwort von {$company}</p>
-          <p style="margin:0;font-size:15px;color:#343a40;line-height:1.7;">{$body_html}</p>
-        </div>
-
-        <!-- CTA-Button -->
-        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 32px;">
-          <a href="{$portal_url}" style="display:inline-block;background:#149ddd;color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:.3px;">
-            Zum Portal &rarr;
-          </a>
-        </td></tr></table>
-
-        <p style="margin:0;font-size:12px;color:#adb5bd;line-height:1.6;">
-          Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br>
-          <a href="{$portal_url}" style="color:#149ddd;word-break:break-all;">{$portal_url}</a>
-        </p>
-      </td></tr>
-
-      <!-- Footer -->
-      <tr><td style="background:#f8f9fa;padding:20px 32px;text-align:center;border-top:1px solid #e9ecef;">
-        <p style="margin:0;font-size:11px;color:#adb5bd;">
-          &copy; {$site} &bull; Diese E-Mail wurde automatisch versendet.
-        </p>
-      </td></tr>
-
-    </table>
-  </td></tr>
-</table>
-</body>
-</html>
-HTML;
+                // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
+                // Vorher stand hier ein fest verdrahtetes Tabellen-Layout.
+                $_m = mail_render('ticket_reply', [
+                    'kunde'   => explode(' ', $contact_name)[0] ?: 'Kunde',
+                    'betreff' => $ticket_subject,
+                    'antwort' => $body,
+                    'firma'   => $company,
+                ], $portal_url);
                 // ────────────────────────────────────────────────────
                 $mail = new PHPMailer\PHPMailer\PHPMailer(true);
                 $mail->isSMTP();
@@ -173,9 +123,9 @@ HTML;
                 $mail->CharSet    = 'UTF-8';
                 $mail->setFrom(SMTP_USER, $company);
                 $mail->addAddress($to, $contact_name);
-                $mail->Subject  = $company . ': Neue Antwort auf Ihre Support-Anfrage';
+                $mail->Subject  = $_m['subject'];
                 $mail->isHTML(true);
-                $mail->Body     = $html;
+                $mail->Body     = $_m['html'];
                 $mail->AltBody  = "Hallo $first,\n\nSie haben eine neue Antwort auf Ihre Support-Anfrage erhalten.\n\nBetreff: $ticket_subject\n\nAntwort:\n$body\n\nZum Portal: $portal_url\n\n-- $company";
                 $mail->send();
                 // Interner Log-Eintrag (nur für Admin sichtbar)
