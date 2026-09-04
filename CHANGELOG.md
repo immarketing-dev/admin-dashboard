@@ -66,6 +66,12 @@ private history.
   may be dropped below 480px. Secondary header actions fall back to their
   icon; the primary action keeps its wording, because an unlabelled primary
   button is a guess.
+- A dark theme for the client portal, with a toggle in its sticky
+  navigation bar. Without a stored choice the portal follows the visitor's
+  device setting (`prefers-color-scheme`), which suits a page someone opens
+  once or twice and never configures; the toggle then fixes the choice for
+  that browser. The admin panel is unaffected and still starts light.
+  `includes/theme.php` gained a `$theme_follow_system` flag for this.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -114,6 +120,12 @@ private history.
   stopped the search field from shrinking; the width cap now lives in the
   component. On `contacts.php` the search field also sat inside a wrapper
   `<div>`, so the component's rules never reached the flex child at all.
+- `portal.php` takes its colours from the design tokens: 117 literal hex
+  values are down to none, and `assets/css/tokens.css` is loaded by both of
+  the HTML documents the file contains (the PIN gate and the portal itself).
+  Card shadows use the shared elevation scale. Without this the theme
+  attribute had nothing to act on — the page would have stayed light
+  whatever the setting.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.
@@ -214,3 +226,10 @@ private history.
   leaving a dark border and dark text on a dark surface: the CSV export
   button in the finance header was invisible. The three places that used it
   now use `btn-outline-secondary`, which has one.
+- The portal never set a text colour on `body`. While everything was light
+  this was invisible, because the browser default is black and that fit.
+  Under a dark theme every element without its own colour disappeared:
+  ticket headings, the hint inside the upload area, the feedback card. The
+  page also carries the handful of `[data-theme]` rules for the Bootstrap
+  utilities it uses, which it could not inherit because it does not load
+  `app.css`.
