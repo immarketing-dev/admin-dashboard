@@ -140,8 +140,6 @@ return [
         => 'Delete',
     'Bearbeiten'
         => 'Edit',
-    'Hinzufügen'
-        => 'Add',
     '+ Hinzufügen'
         => '+ Add',
     'Schließen'
@@ -434,8 +432,6 @@ return [
         => 'Manage participants',
     'Weitere Beteiligte'
         => 'Additional participants',
-    'Person hinzufügen'
-        => 'Add person',
     'Projekt-Dateien'
         => 'Project files',
     'Eigene Dateien hinzufügen'
@@ -494,8 +490,6 @@ return [
         => 'Edit contact',
     'Kontakt suchen...'
         => 'Search contacts…',
-    'Kontakt wählen …'
-        => 'Choose a contact …',
     'Kunden'
         => 'Clients',
     'Interessenten'
@@ -1087,12 +1081,6 @@ return [
         => 'Saved, but some files were rejected:',
     'Bitte speichern Sie das Projekt zuerst, bevor Sie Dateien hochladen!'
         => 'Please save the project before uploading files.',
-    'Noch niemand zugeordnet.'
-        => 'Nobody assigned yet.',
-    ' · kein Portal-Zugang'
-        => ' · no portal access',
-    ' aus diesem Projekt entfernen?'
-        => ' from this project?',
     ' Tage alt'
         => ' days old',
     '--- Ursprüngliche Anfrage ---'
@@ -1471,4 +1459,13 @@ return [
         => "Projects (metric)",
     "Kontakte (Kennzahl)"
         => "Contacts (metric)",
+    // Beteiligten-Auswahl der Projekte
+    "Partner"
+        => "Partner",
+    "kein Portal-Zugang"
+        => "no portal access",
+    "Person suchen …"
+        => "Search for a person …",
+    "Niemand gefunden."
+        => "Nobody found.",
 ];

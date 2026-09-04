@@ -9,6 +9,7 @@ require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
+require_once 'includes/task_members.php';
 require_once 'includes/upload_helper.php';
 
 // HILFSFUNKTION: UPTIME CHECK
@@ -134,30 +135,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     // Seit Migration 5 kann ein Projekt mehrere Kontakte haben. Jeder
     // Beteiligte sieht es in seinem eigenen Portal - mit eigenem Link
     // und eigener PIN.
-    if ($action === 'add_task_contact') {
+    // Das Fenster sendet die vollstaendige Auswahl, nicht einzelne
+    // Aenderungen: mit Kaestchen gibt es kein "hinzufuegen" und
+    // "entfernen" mehr, sondern nur noch einen Stand.
+    if ($action === 'set_task_contacts') {
         $t_id = (int)($_POST['task_id'] ?? 0);
-        $c_id = (int)($_POST['contact_id'] ?? 0);
-        if ($t_id > 0 && $c_id > 0) {
-            $pdo->prepare("INSERT IGNORE INTO task_contacts (task_id, contact_id, role) VALUES (?, ?, 'member')")
-                ->execute([$t_id, $c_id]);
-            $n = $pdo->prepare("SELECT name FROM contacts WHERE deleted_at IS NULL AND id = ?");
-            $n->execute([$c_id]);
-            log_event($pdo, 'TASK_CONTACT_ADDED', ($n->fetchColumn() ?: "Kontakt $c_id") . " zu Projekt $t_id hinzugefügt.");
-        }
-        filter_redirect('tasks');
-    }
+        if ($t_id > 0) {
+            // Der Hauptansprechpartner steht am Projekt, nicht im Formular -
+            // er laesst sich hier nicht abwaehlen.
+            $h = $pdo->prepare("SELECT contact_id FROM tasks WHERE deleted_at IS NULL AND id = ?");
+            $h->execute([$t_id]);
+            $haupt = (int)$h->fetchColumn();
 
-    if ($action === 'remove_task_contact') {
-        $t_id = (int)($_POST['task_id'] ?? 0);
-        $c_id = (int)($_POST['contact_id'] ?? 0);
-        // Der Hauptansprechpartner bleibt: an ihm haengen Rechnungen und
-        // Auswertungen. Wer ihn wechseln will, aendert das Projekt selbst.
-        $ist_haupt = $pdo->prepare("SELECT 1 FROM tasks WHERE deleted_at IS NULL AND id = ? AND contact_id = ?");
-        $ist_haupt->execute([$t_id, $c_id]);
-        if (!$ist_haupt->fetchColumn()) {
-            $pdo->prepare("DELETE FROM task_contacts WHERE task_id = ? AND contact_id = ?")
-                ->execute([$t_id, $c_id]);
-            log_event($pdo, 'TASK_CONTACT_REMOVED', "Kontakt $c_id von Projekt $t_id entfernt.");
+            $vorher = $pdo->prepare("SELECT COUNT(*) FROM task_contacts WHERE task_id = ?");
+            $vorher->execute([$t_id]);
+            $anzahl_vorher = (int)$vorher->fetchColumn();
+
+            task_members_abgleichen($pdo, $t_id, $haupt, (array)($_POST['member_ids'] ?? []));
+
+            $nachher = $pdo->prepare("SELECT COUNT(*) FROM task_contacts WHERE task_id = ?");
+            $nachher->execute([$t_id]);
+            log_event($pdo, 'TASK_CONTACTS_SET',
+                "Beteiligte an Projekt $t_id gesetzt: $anzahl_vorher → " . (int)$nachher->fetchColumn() . " Person(en).");
         }
         filter_redirect('tasks');
     }
@@ -177,35 +176,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("UPDATE tasks SET title=?, category=?, description=?, contact_id=?, start_date=?, deadline=? WHERE id=?")
             ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, $task_id]);
             
-        // ── Beteiligte abgleichen ───────────────────────────────────
-        // Der Hauptansprechpartner ist immer dabei und traegt die Rolle
-        // 'owner'. Abgleich statt Neuschreiben, damit added_at erhalten
-        // bleibt und der Verlauf stimmt.
-        $haupt = (int)($_POST['contact_id'] ?? 0);
-        $soll  = array_values(array_unique(array_filter(array_map(
-            'intval', (array)($_POST['member_ids'] ?? [])
-        ))));
-        if ($haupt > 0) array_unshift($soll, $haupt);
-        $soll = array_values(array_unique($soll));
-
-        $ist_st = $pdo->prepare("SELECT contact_id FROM task_contacts WHERE task_id = ?");
-        $ist_st->execute([$task_id]);
-        $ist = array_map('intval', $ist_st->fetchAll(PDO::FETCH_COLUMN));
-
-        foreach (array_diff($ist, $soll) as $weg) {
-            $pdo->prepare("DELETE FROM task_contacts WHERE task_id = ? AND contact_id = ?")
-                ->execute([$task_id, $weg]);
-        }
-        foreach (array_diff($soll, $ist) as $neu) {
-            $pdo->prepare("INSERT IGNORE INTO task_contacts (task_id, contact_id, role) VALUES (?, ?, 'member')")
-                ->execute([$task_id, $neu]);
-        }
-        // Rollen richtigstellen - der Hauptkontakt kann gewechselt haben.
-        $pdo->prepare("UPDATE task_contacts SET role = 'member' WHERE task_id = ?")->execute([$task_id]);
-        if ($haupt > 0) {
-            $pdo->prepare("UPDATE task_contacts SET role = 'owner' WHERE task_id = ? AND contact_id = ?")
-                ->execute([$task_id, $haupt]);
-        }
+        // Beteiligte abgleichen - dieselbe Funktion wie im Fenster
+        // "Beteiligte am Projekt", damit beide Wege dasselbe tun.
+        task_members_abgleichen($pdo, (int)$task_id, (int)($_POST['contact_id'] ?? 0),
+                                (array)($_POST['member_ids'] ?? []));
 
         // Fallback Upload (Falls jemand ohne JS hochlädt)
         if (!empty($_FILES['admin_assets']['name'][0])) {
@@ -968,17 +942,11 @@ require 'includes/layout_start.php';
                     </div>
 
                     <div class="col-12">
-                      <label class="form-label" for="e_members"><?= te('Weitere Beteiligte') ?></label>
-                      <select name="member_ids[]" id="e_members" class="form-select" multiple size="5">
-                        <?php foreach($all_contacts as $c): ?>
-                          <option value="<?=$c['id']?>">
-                            <?=htmlspecialchars($c['name'])?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?><?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
-                          </option>
-                        <?php endforeach; ?>
-                      </select>
+                      <span class="form-label d-block"><?= te('Weitere Beteiligte') ?></span>
+                      <div id="e_members"><?= task_members_auswahl($all_contacts, 'e') ?></div>
                       <div class="form-text">
-                        Mit Strg bzw. ⌘ mehrere wählen. Jeder Beteiligte sieht das Projekt in
-                        seinem eigenen Portal — dafür braucht er unter
+                        Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — dafür
+                        braucht er unter
                         <a href="contacts" target="_blank" rel="noopener"><?= te('Kontakte') ?></a> einen
                         Portal-Zugang. Der Kunde oben ist immer dabei.
                       </div>
@@ -1259,14 +1227,13 @@ require 'includes/layout_start.php';
         document.getElementById('adminAssetUpload').value = '';
         document.getElementById('adminUploadProgressContainer').style.display = 'none';
         
-        // Beteiligte vorwaehlen. Der Hauptkontakt steht schon im Feld
-        // darueber und wird hier ausgelassen, damit er nicht doppelt wirkt.
-        const mitglieder = (TASK_MEMBERS[task.id] || [])
-            .filter(m => m.role !== 'owner')
-            .map(m => String(m.contact_id));
-        Array.from(document.getElementById('e_members').options).forEach(o => {
-            o.selected = mitglieder.includes(o.value);
-        });
+        // Beteiligte anhaken. Der Hauptkontakt wird mit angehakt und
+        // gesperrt - er steht im Kundenfeld darueber und laesst sich hier
+        // nicht abwaehlen.
+        const mitglieder = (TASK_MEMBERS[task.id] || []).map(m => String(m.contact_id));
+        const eMembers = document.getElementById('e_members');
+        membersSetzen(eMembers, mitglieder, task.contact_id);
+        membersFilterZuruecksetzen(eMembers);
 
         editModal.show();
     }
@@ -1504,30 +1471,20 @@ require 'includes/layout_start.php';
             Handlung im Portal trägt einen Namen.
           </p>
 
-          <div id="mm_list" class="mb-3"></div>
-
-          <form method="POST" class="d-flex gap-2 flex-wrap align-items-end">
+          <form method="POST" id="mm_form">
             <?= csrf_field() ?>
-            <input type="hidden" name="action" value="add_task_contact">
-            <input type="hidden" name="task_id" id="mm_task_add">
-            <div style="flex:1 1 220px;min-width:0;">
-              <label class="fw-bold small mb-1" for="mm_contact"><?= te('Person hinzufügen') ?></label>
-              <select name="contact_id" id="mm_contact" class="form-select form-select-sm" required>
-                <option value=""><?= te('Kontakt wählen …') ?></option>
-                <?php foreach($all_contacts as $c): ?>
-                  <option value="<?= (int)$c['id'] ?>">
-                    <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?>
-                    <?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
+            <input type="hidden" name="action" value="set_task_contacts">
+            <input type="hidden" name="task_id" id="mm_task_id">
+            <div id="mm_members"><?= task_members_auswahl($all_contacts, 'mm') ?></div>
+            <div class="form-text mt-2">
+              Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie
+              unter <a href="contacts"><?= te('Kontakte') ?></a>.
             </div>
-            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-plus-lg me-1"></i><?= te('Hinzufügen') ?></button>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+              <button type="submit" class="btn btn-primary btn-sm fw-bold"><i class="bi bi-check-lg me-1"></i><?= te('Speichern') ?></button>
+            </div>
           </form>
-          <div class="form-text mt-2">
-            Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie
-            unter <a href="contacts"><?= te('Kontakte') ?></a>.
-          </div>
         </div>
       </div>
     </div>
@@ -1536,64 +1493,44 @@ require 'includes/layout_start.php';
   <script>
   /* Die Beteiligten stehen bereits im Seitenquelltext - das Fenster baut
      seine Liste daraus, ohne weitere Anfrage. */
+  /* Die Beteiligten stehen bereits im Seitenquelltext - das Fenster hakt
+     daraus an, ohne weitere Anfrage. */
   const TASK_MEMBERS = <?= json_encode($task_members, JSON_HEX_TAG|JSON_HEX_APOS) ?>;
-  const MEMBERS_CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG|JSON_HEX_APOS) ?>;
+
+  /**
+   * Setzt in einer Auswahlliste die Haken und sperrt den
+   * Hauptansprechpartner.
+   *
+   * Gesperrt und nicht bloss angehakt: er haengt am Projekt selbst, nicht
+   * an der Beteiligtenliste. Ein deaktiviertes Kaestchen sendet nichts, er
+   * wird deshalb serverseitig ohnehin ergaenzt.
+   */
+  function membersSetzen(wurzel, ids, ownerId) {
+      wurzel.querySelectorAll('input[name="member_ids[]"]').forEach(function (box) {
+          const ist_owner = ownerId && box.value === String(ownerId);
+          box.checked  = ist_owner || ids.includes(box.value);
+          box.disabled = !!ist_owner;
+          const zeile = box.closest('[data-member-row]');
+          if (zeile) {
+              zeile.classList.toggle('is-owner', !!ist_owner);
+              const tag = zeile.querySelector('.member-owner-tag');
+              if (tag) tag.hidden = !ist_owner;
+          }
+      });
+  }
 
   function openMembers(taskId, titel) {
       document.getElementById('mm_title').textContent = titel;
-      document.getElementById('mm_task_add').value = taskId;
-      const liste = document.getElementById('mm_list');
-      liste.textContent = '';
+      document.getElementById('mm_task_id').value = taskId;
 
       const leute = TASK_MEMBERS[taskId] || [];
-      if (!leute.length) {
-          const p = document.createElement('p');
-          p.className = 'text-muted small mb-0';
-          p.textContent = <?= tjs('Noch niemand zugeordnet.') ?>;
-          liste.appendChild(p);
-          return;
-      }
-
-      leute.forEach(function (m) {
-          const zeile = document.createElement('div');
-          zeile.className = 'd-flex align-items-center justify-content-between gap-2 py-2 border-bottom border-subtle-c';
-
-          const links = document.createElement('div');
-          links.className = 'min-w-0';
-          const name = document.createElement('div');
-          name.className = 'fw-semibold text-strong-c';
-          name.textContent = m.name;
-          const meta = document.createElement('div');
-          meta.className = 'text-muted';
-          meta.style.fontSize = 'var(--text-2xs)';
-          meta.textContent = (m.role === 'owner' ? 'Hauptansprechpartner' : 'Beteiligt')
-                           + (m.company ? ' · ' + m.company : '')
-                           + (m.portal_token ? '' : <?= tjs(' · kein Portal-Zugang') ?>);
-          links.appendChild(name); links.appendChild(meta);
-
-          zeile.appendChild(links);
-
-          if (m.role !== 'owner') {
-              const f = document.createElement('form');
-              f.method = 'POST';
-              f.className = 'm-0';
-              f.onsubmit = function () { return confirm(m.name + <?= tjs(' aus diesem Projekt entfernen?') ?>); };
-              [['csrf_token', MEMBERS_CSRF], ['action', 'remove_task_contact'],
-               ['task_id', taskId], ['contact_id', m.contact_id]
-              ].forEach(function (kv) {
-                  const i = document.createElement('input');
-                  i.type = 'hidden'; i.name = kv[0]; i.value = kv[1];
-                  f.appendChild(i);
-              });
-              const b = document.createElement('button');
-              b.className = 'btn btn-sm btn-icon text-danger';
-              b.title = 'Entfernen';
-              b.innerHTML = '<i class="bi bi-x-lg"></i>';
-              f.appendChild(b);
-              zeile.appendChild(f);
-          }
-          liste.appendChild(zeile);
-      });
+      const owner = (leute.find(function (m) { return m.role === 'owner'; }) || {}).contact_id;
+      membersSetzen(
+          document.getElementById('mm_members'),
+          leute.map(function (m) { return String(m.contact_id); }),
+          owner
+      );
+      membersFilterZuruecksetzen(document.getElementById('mm_members'));
   }
   </script>
 
@@ -1602,5 +1539,90 @@ function toggleTalk(id) {
     var el = document.getElementById('talk-' + id);
     if (el) el.classList.toggle('d-none');
 }
+</script>
+
+<script>
+/* =====================================================================
+   Beteiligten-Auswahl: Suchfeld und Hauptansprechpartner
+   ---------------------------------------------------------------------
+   Gilt fuer jede Liste mit data-member-picker - beide Fenster benutzen
+   dieselbe, siehe includes/task_members.php.
+   ===================================================================== */
+(function () {
+    /** Blendet aus, was nicht zum Suchwort passt. Rein im Browser. */
+    function filtern(picker) {
+        const feld = picker.querySelector('[data-member-filter]');
+        const wort = (feld ? feld.value : '').trim().toLowerCase();
+        let treffer = 0;
+
+        picker.querySelectorAll('[data-member-row]').forEach(function (zeile) {
+            // Auch die Firma zaehlt: man sucht oefter nach dem Unternehmen
+            // als nach dem Namen der Person.
+            const text  = zeile.textContent.toLowerCase();
+            const box   = zeile.querySelector('input[type="checkbox"]');
+            const passt = wort === '' || text.indexOf(wort) !== -1;
+            if (passt) treffer++;
+            // Wer angehakt ist, bleibt sichtbar - sonst verschwindet die
+            // eigene Auswahl aus dem Blick, waehrend man weitersucht. Sie
+            // zaehlt aber nicht als Treffer: sonst faende man bei einem
+            // Suchwort ohne Treffer die eigene Auswahl vor und hielte sie
+            // fuer das Ergebnis.
+            zeile.hidden = !(passt || (box && box.checked));
+        });
+
+        const leer = picker.querySelector('.member-empty');
+        if (leer) leer.hidden = !(wort !== '' && treffer === 0);
+    }
+
+    document.addEventListener('input', function (e) {
+        if (e.target.matches('[data-member-filter]')) {
+            filtern(e.target.closest('[data-member-picker]'));
+        }
+    });
+
+    // Ein gerade abgehaktes Kaestchen darf nicht sofort verschwinden,
+    // solange ein Suchwort steht - erst beim naechsten Tippen.
+    document.addEventListener('change', function (e) {
+        if (e.target.matches('[data-member-picker] input[type="checkbox"]')) {
+            const zeile = e.target.closest('[data-member-row]');
+            if (zeile) zeile.classList.toggle('is-checked', e.target.checked);
+        }
+    });
+
+    /** Setzt das Suchfeld zurueck - beim Oeffnen eines Fensters. */
+    window.membersFilterZuruecksetzen = function (wurzel) {
+        if (!wurzel) return;
+        const picker = wurzel.matches('[data-member-picker]')
+            ? wurzel : wurzel.querySelector('[data-member-picker]');
+        if (!picker) return;
+        const feld = picker.querySelector('[data-member-filter]');
+        if (feld) feld.value = '';
+        filtern(picker);
+        picker.querySelectorAll('[data-member-row]').forEach(function (zeile) {
+            const box = zeile.querySelector('input[type="checkbox"]');
+            zeile.classList.toggle('is-checked', !!(box && box.checked));
+        });
+        // Angehakte nach oben waere ein Sprung mitten im Lesen - die Liste
+        // bleibt in ihrer Reihenfolge, nur der Anfang wird gezeigt.
+        const liste = picker.querySelector('[data-member-list]');
+        if (liste) liste.scrollTop = 0;
+    };
+
+    /* Wechselt im Bearbeiten-Fenster der Kunde, wandert die Sperre mit:
+       der neue Hauptansprechpartner wird angehakt und festgesetzt, der
+       alte wieder freigegeben. Ohne das bliebe ein Kaestchen gesperrt,
+       das gar nicht mehr der Hauptkontakt ist. */
+    const kundeFeld = document.getElementById('e_contact');
+    if (kundeFeld) {
+        kundeFeld.addEventListener('change', function () {
+            const wurzel = document.getElementById('e_members');
+            if (!wurzel) return;
+            const ids = Array.from(wurzel.querySelectorAll('input[name="member_ids[]"]'))
+                .filter(function (b) { return b.checked; })
+                .map(function (b) { return b.value; });
+            membersSetzen(wurzel, ids, this.value);
+        });
+    }
+})();
 </script>
 <?php require 'includes/layout_end.php'; ?>
