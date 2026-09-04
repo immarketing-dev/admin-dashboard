@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
 
@@ -1219,15 +1220,22 @@ require 'includes/layout_start.php';
         document.getElementById('inv_due_date').value = due.toISOString().split('T')[0];
     }
 
+// Vorlagentexte aus den Einstellungen; ersetzt wird mit mailTplFill().
+    const MAIL_TPL = <?= mail_templates_json(['invoice_send', 'quote_send']) ?>;
+    const MAIL_FIRMA = '<?= htmlspecialchars(setting('company_short', COMPANY_SHORT), ENT_QUOTES) ?>';
+
     function openInvEmailModal(id, title, client, email, amount) {
         document.getElementById('inv_email_record_id').value = id;
         document.getElementById('inv_email_to').value = email || '';
-        document.getElementById('inv_email_subject').value = 'Ihre Rechnung: ' + title;
-        document.getElementById('inv_email_body').value =
-            'Guten Tag' + (client ? ' ' + client : '') + ',\n\n' +
-            'anbei erhalten Sie Ihre Rechnung "' + title + '" über ' +
-            parseFloat(amount).toLocaleString('de-DE', {minimumFractionDigits: 2}) + ' €.\n\n' +
-            'Bei Fragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen';
+        const _v = {
+            kunde:   client || 'Sie',
+            nummer:  title,
+            betrag:  parseFloat(amount).toLocaleString('de-DE', {minimumFractionDigits: 2}),
+            faellig: document.getElementById('inv_due_date') ? '' : '',
+            firma:   MAIL_FIRMA
+        };
+        document.getElementById('inv_email_subject').value = mailTplFill(MAIL_TPL.invoice_send.subject, _v);
+        document.getElementById('inv_email_body').value    = mailTplFill(MAIL_TPL.invoice_send.body, _v);
         new bootstrap.Modal(document.getElementById('invoiceEmailModal')).show();
     }
 
@@ -1347,9 +1355,15 @@ require 'includes/layout_start.php';
     function openQuoteEmailModal(q) {
         document.getElementById('qeq_id').value = q.id;
         document.getElementById('qeq_to').value = q.email || '';
-        document.getElementById('qeq_subject').value = 'Angebot '+q.quote_number+(q.client?' für '+q.client:'');
-        const amount = parseFloat(q.total_amount).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
-        document.getElementById('qeq_body').value = 'Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unser Angebot '+q.quote_number+' über '+amount+' €.\n\n'+(q.notes?q.notes.trim()+'\n\n':'')+'Bei Fragen stehe ich Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\n<?= addslashes(COMPANY_NAME) ?>';
+        const _qv = {
+            kunde:       q.client || 'Sie',
+            nummer:      q.quote_number,
+            betrag:      parseFloat(q.total_amount).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}),
+            anmerkungen: (q.notes || '').trim(),
+            firma:       MAIL_FIRMA
+        };
+        document.getElementById('qeq_subject').value = mailTplFill(MAIL_TPL.quote_send.subject, _qv);
+        document.getElementById('qeq_body').value = mailTplFill(MAIL_TPL.quote_send.body, _qv);
         quoteEmailModal.show();
     }
     function validateQuoteForm() {
@@ -1384,4 +1398,7 @@ require 'includes/layout_start.php';
         }
     }
   </script>
-<?php require 'includes/layout_end.php'; ?>
+<?php ?>
+<script src="assets/js/mail-templates.js"></script>
+<?php
+require 'includes/layout_end.php'; ?>

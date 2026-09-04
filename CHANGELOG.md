@@ -79,6 +79,16 @@ private history.
   traversal, null bytes and overlong names.
 - `includes/numbering.php`, one place that hands out invoice and quote
   numbers, and `finances.invoice_number` with a unique index (migration 3).
+- An editor for the seven e-mail templates under Settings › E-Mail-Vorlagen.
+  Subject and message text are editable per template with a placeholder
+  reference, a live preview rendered from example data, and a reset to the
+  built-in default. The frame around every HTML mail — header, accent
+  colour, button, signature, footer — is configured once and applies to all
+  of them, so the wording can change without anyone having to touch the
+  table layout that keeps a mail intact in Outlook.
+- `includes/mail_templates.php` holds the templates and renders them;
+  `tools/test_mail_templates.php` covers substitution, escaping and the
+  frame, and runs in CI.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -144,6 +154,12 @@ private history.
 - The dark theme's blanket `.rounded` rule no longer overrides an explicit
   background. It painted a card surface onto every rounded element,
   including ones meant to show the card behind them.
+- The seven mails no longer carry their text in the code. `tasks.php`,
+  `contacts.php`, `tickets.php` and `calendar.php` each held a complete HTML
+  document inline, and `quotes.php` and `finances.php` built their prefill
+  text in JavaScript. All of them now read from the templates; the three
+  prefills substitute in the browser through `assets/js/mail-templates.js`,
+  following the same rule as the PHP side.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.

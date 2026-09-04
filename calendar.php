@@ -7,6 +7,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 ob_end_clean();
 
 require_once 'config.php';
+require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
 $year  = isset($_GET['year'])  ? (int)$_GET['year']  : (int)date('Y');
@@ -124,38 +125,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if (!$ec || empty($ec['email'])) continue;
 
                 $ics_link    = BASE_URL . '/event_ics?token=' . $ec['invite_token'];
-                $desc_html   = !empty($ev['description']) ? '<p style="margin:0 0 16px;color:#555;font-size:14px;">' . nl2br(htmlspecialchars($ev['description'])) . '</p>' : '';
-                $loc_row     = !empty($ev['location'])    ? '<p style="margin:4px 0;color:#555;font-size:14px;"><strong>Ort:</strong> ' . htmlspecialchars($ev['location']) . '</p>' : '';
-                $meeting_row = !empty($ev['meeting_url']) ? '<p style="margin:4px 0;color:#555;font-size:14px;"><strong>Meeting:</strong> <a href="' . htmlspecialchars($ev['meeting_url']) . '" style="color:' . $primary . ';">' . htmlspecialchars($ev['meeting_url']) . '</a></p>' : '';
-                $meeting_btn = !empty($ev['meeting_url']) ? '<p style="text-align:center;margin:12px 0;"><a href="' . htmlspecialchars($ev['meeting_url']) . '" style="background:#28a745;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:14px;">&#x1F4F9; Am Meeting teilnehmen</a></p>' : '';
-
-                $html_body = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px;">
-                    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
-                        <div style="background:' . $primary . ';padding:28px 32px;text-align:center;">
-                            <h1 style="color:#fff;margin:0;font-size:20px;">' . htmlspecialchars(setting('company_name', COMPANY_NAME)) . '</h1>
-                            <p style="color:rgba(255,255,255,.8);margin:6px 0 0;font-size:13px;">Termineinladung</p>
-                        </div>
-                        <div style="padding:32px;">
-                            <p style="margin:0 0 18px;color:#333;font-size:15px;">Hallo ' . htmlspecialchars($ec['name']) . ',</p>
-                            <p style="margin:0 0 20px;color:#555;font-size:14px;">Sie wurden zu folgendem Termin eingeladen:</p>
-                            <div style="background:#f8f9fa;border-left:4px solid ' . $primary . ';border-radius:4px;padding:16px 20px;margin:0 0 20px;">
-                                <h2 style="margin:0 0 10px;font-size:18px;color:#222;">' . htmlspecialchars($ev['title']) . '</h2>
-                                <p style="margin:4px 0;color:#555;font-size:14px;"><strong>Datum:</strong> ' . $date_fmt . ($time_str ? ' &middot; ' . $time_str : '') . '</p>'
-                                . $loc_row . $meeting_row . '
-                            </div>
-                            ' . $desc_html . '
-                            <p style="text-align:center;margin:24px 0 8px;">
-                                <a href="' . $ics_link . '" style="background:' . $primary . ';color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:15px;">&#x1F4C5; Termin im Kalender speichern</a>
-                            </p>
-                            ' . $meeting_btn . '
-                            <p style="margin:20px 0 0;color:#aaa;font-size:11px;text-align:center;">Klicken Sie auf den Button oben, um den Termin in Outlook, Google Kalender oder Apple Kalender zu importieren.</p>
-                        </div>
-                        <div style="background:#f8f9fa;padding:14px 32px;text-align:center;border-top:1px solid #eee;">
-                            <p style="margin:0;color:#bbb;font-size:11px;">' . htmlspecialchars(setting('company_name', COMPANY_NAME)) . '</p>
-                        </div>
-                    </div>
-                </body></html>';
-
+                // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
+                // Vorher stand hier ein fest verdrahtetes HTML-Dokument mit
+                // eigenen Farben und eigener Fusszeile.
+                $_ort = trim(($ev['location'] ?? '') . (
+                    !empty($ev['meeting_url']) ? ' · ' . $ev['meeting_url'] : ''
+                ));
+                $_m = mail_render('event_invite', [
+                    'kunde'        => $ec['name'],
+                    'titel'        => $ev['title'],
+                    'datum'        => $date_fmt . ($time_str ? ', ' . $time_str : ''),
+                    'ort'          => $_ort,
+                    'beschreibung' => $ev['description'] ?? '',
+                    'firma'        => setting('company_short', COMPANY_SHORT),
+                ], $ics_link);
+                $html_body = $_m['html'];
                 $alt_body = "Termineinladung: {$ev['title']}\nDatum: {$date_fmt}" . ($time_str ? " | $time_str" : '') . (!empty($ev['location']) ? "\nOrt: {$ev['location']}" : '') . (!empty($ev['meeting_url']) ? "\nMeeting: {$ev['meeting_url']}" : '') . "\n\nTermin herunterladen: $ics_link";
 
                 $mail = new PHPMailer(true);
@@ -170,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $mail->CharSet    = 'UTF-8';
                     $mail->setFrom(setting('admin_email', ADMIN_EMAIL), setting('company_name', COMPANY_NAME));
                     $mail->addAddress($ec['email'], $ec['name']);
-                    $mail->Subject    = 'Einladung: ' . $ev['title'] . ' am ' . $date_fmt;
+                    $mail->Subject    = $_m['subject'];
                     $mail->isHTML(true);
                     $mail->Body       = $html_body;
                     $mail->AltBody    = $alt_body;

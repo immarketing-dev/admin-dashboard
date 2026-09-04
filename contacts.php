@@ -11,6 +11,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 // 3. Zentrale Config laden (ob_end_clean verhindert, dass PHPMailer-Warnings die Session brechen)
 ob_end_clean();
 require_once 'config.php';
+require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
 // ==========================================
@@ -63,9 +64,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $qr_api = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($portal_link);
 
                 $mail->isHTML(true);
-                $mail->Subject = "Zugang zum Projekt-Portal | " . setting('company_short', COMPANY_SHORT);
-                $_cp = setting('color_primary', COLOR_PRIMARY);
-                $mail->Body = "<div style='font-family:Arial,sans-serif;'><h3>Hallo ".htmlspecialchars($c['name']).",</h3><p>".nl2br(htmlspecialchars($_POST['mail_text']))."</p><p><a href='$portal_link' style='background:".$_cp."; color:#fff; padding:10px 20px; text-decoration:none; border-radius:5px;'>Portal öffnen</a></p><p>QR-Code für den mobilen Zugriff:</p><img src='$qr_api' alt='QR'><br><br><hr><p>" . setting('company_name', COMPANY_NAME) . "<br><a href='" . setting('main_website', MAIN_WEBSITE) . "' style='color:".$_cp.";'>" . setting('main_website', MAIN_WEBSITE) . "</a></p></div>";
+                // Der QR-Code ist der eigentliche Zweck dieser Mail. Er ist
+                // kein Vorlagentext, sondern Beiwerk, und wird deshalb als
+                // Zusatzblock hinter die Nachricht in den Rahmen gesetzt.
+                $_qr = '<p style="margin:0 0 8px;font-size:14px;color:#6c757d;">'
+                     . 'QR-Code für den mobilen Zugriff:</p>'
+                     . '<img src="' . htmlspecialchars($qr_api, ENT_QUOTES) . '" alt="QR-Code" '
+                     . 'width="150" height="150" style="display:block;border:0;">';
+
+                // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
+                $_m = mail_render('portal_access', [
+                    'kunde'     => $c['name'],
+                    'nachricht' => $_POST['mail_text'] ?? '',
+                    'firma'     => setting('company_short', COMPANY_SHORT),
+                ], $portal_link, $_qr);
+
+                $mail->Subject = $_m['subject'];
+                $mail->Body    = $_m['html'];
+                $mail->AltBody = $_m['text'] . "\n\n" . $portal_link;
                 $mail->send();
                 
                 $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MAIL_SENT', ?)")->execute(["Portal-Link via E-Mail an ".$c['name']." gesendet."]);

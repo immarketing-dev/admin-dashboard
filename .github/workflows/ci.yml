@@ -29,3 +29,6 @@ jobs:
 
       - name: Upload validation tests
         run: php tools/test_upload.php
+
+      - name: Mail template tests
+        run: php tools/test_mail_templates.php
