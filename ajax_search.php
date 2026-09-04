@@ -62,7 +62,7 @@ $treffer = suche($pdo,
     "SELECT id, name AS titel,
             TRIM(CONCAT_WS(' · ', NULLIF(company,''), NULLIF(email,''), NULLIF(city,''))) AS unterzeile
      FROM contacts
-     WHERE name LIKE ? OR company LIKE ? OR email LIKE ? OR phone LIKE ? OR notes LIKE ?
+     WHERE deleted_at IS NULL AND name LIKE ? OR company LIKE ? OR email LIKE ? OR phone LIKE ? OR notes LIKE ?
      ORDER BY name LIMIT 5",
     $like, 5,
     fn($r) => 'contacts?search=' . urlencode($q)
@@ -74,7 +74,7 @@ $treffer = suche($pdo,
     "SELECT t.id, t.title AS titel,
             TRIM(CONCAT_WS(' · ', t.status, NULLIF(c.name,''), NULLIF(t.category,''))) AS unterzeile
      FROM tasks t LEFT JOIN contacts c ON t.contact_id = c.id
-     WHERE t.title LIKE ? OR t.description LIKE ? OR t.category LIKE ?
+     WHERE t.deleted_at IS NULL AND t.title LIKE ? OR t.description LIKE ? OR t.category LIKE ?
      ORDER BY t.deadline IS NULL, t.deadline LIMIT 5",
     $like, 3,
     fn($r) => 'tasks?q=' . urlencode($q)
@@ -89,7 +89,7 @@ $treffer = suche($pdo,
                  f.status,
                  NULLIF(COALESCE(c.name, f.custom_name),''))) AS unterzeile
      FROM finances f LEFT JOIN contacts c ON f.contact_id = c.id
-     WHERE f.title LIKE ? OR f.invoice_number LIKE ? OR f.notes LIKE ? OR f.custom_name LIKE ?
+     WHERE f.deleted_at IS NULL AND f.title LIKE ? OR f.invoice_number LIKE ? OR f.notes LIKE ? OR f.custom_name LIKE ?
      ORDER BY f.record_date DESC LIMIT 5",
     $like, 4,
     fn($r) => 'finances?search=' . urlencode($q)
@@ -104,7 +104,7 @@ $treffer = suche($pdo,
                  q.status,
                  NULLIF(COALESCE(c.name, q.custom_name),''))) AS unterzeile
      FROM quotes q LEFT JOIN contacts c ON q.contact_id = c.id
-     WHERE q.quote_number LIKE ? OR q.subject LIKE ? OR q.notes LIKE ? OR q.custom_name LIKE ?
+     WHERE q.deleted_at IS NULL AND q.quote_number LIKE ? OR q.subject LIKE ? OR q.notes LIKE ? OR q.custom_name LIKE ?
      ORDER BY q.created_at DESC LIMIT 5",
     $like, 4,
     fn($r) => 'quotes?status=all'

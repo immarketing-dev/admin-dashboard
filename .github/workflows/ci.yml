@@ -21,6 +21,9 @@ jobs:
         run: bash tools/check.sh
       - name: Schema check
         run: php tools/check_schema.php
+
+      - name: Soft-delete coverage
+        run: php tools/check_soft_delete.php
       - name: .env parser tests
         run: php tools/test_env.php
 

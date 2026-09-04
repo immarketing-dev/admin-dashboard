@@ -4,9 +4,9 @@
 // Notification-Counts für Badges
 $_sb_leads   = (int)$pdo->query("SELECT COUNT(*) FROM leads_inbox")->fetchColumn();
 $_sb_tickets = (int)$pdo->query("SELECT COUNT(*) FROM support_tickets WHERE status != 'Erledigt'")->fetchColumn();
-$_sb_portal  = (int)$pdo->query("SELECT (SELECT COUNT(*) FROM client_assets WHERE dashboard_seen=0 AND (uploaded_by IS NULL OR uploaded_by='client')) + (SELECT COUNT(*) FROM task_milestones WHERE approved_at IS NOT NULL AND approval_seen=0) + (SELECT COUNT(*) FROM tasks WHERE client_feedback IS NOT NULL AND client_feedback!='' AND feedback_seen=0)")->fetchColumn();
+$_sb_portal  = (int)$pdo->query("SELECT (SELECT COUNT(*) FROM client_assets WHERE dashboard_seen=0 AND (uploaded_by IS NULL OR uploaded_by='client')) + (SELECT COUNT(*) FROM task_milestones WHERE approved_at IS NOT NULL AND approval_seen=0) + (SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL AND client_feedback IS NOT NULL AND client_feedback!='' AND feedback_seen=0)")->fetchColumn();
 try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM milestone_comments WHERE author='client' AND admin_seen=0")->fetchColumn(); } catch (PDOException $e) {}
-$_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE type='INCOME' AND status IN ('Offen','Überfällig')")->fetchColumn();
+$_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status IN ('Offen','Überfällig')")->fetchColumn();
 ?>
 <script>if(localStorage.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');</script>
 <button id="sidebarCollapseBtn" aria-label="Sidebar einklappen" title="Sidebar einklappen"><i class="bi bi-chevron-left ci"></i></button>
@@ -52,6 +52,7 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE type='INCO
 
     <li class="nav-group">System</li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text">System-Logs</span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'trash.php') ? 'active' : '' ?>" href="trash"><i class="bi bi-trash3"></i> <span class="nav-text">Papierkorb</span></a></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text">Einstellungen</span></a></li>
     <li class="nav-item mt-4"><a class="nav-link text-danger" href="logout"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Logout</span></a></li>
 </ul>

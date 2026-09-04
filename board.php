@@ -15,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     if (in_array($new_status, ['Offen', 'In Bearbeitung', 'Erledigt'])) {
         
         // Titel für ein schöneres Logbuch holen
-        $stmt_title = $pdo->prepare("SELECT title FROM tasks WHERE id = ?");
+        $stmt_title = $pdo->prepare("SELECT title FROM tasks WHERE deleted_at IS NULL AND id = ?");
         $stmt_title->execute([$task_id]);
         $task_title = $stmt_title->fetchColumn() ?: "Aufgabe #$task_id";
 
@@ -41,12 +41,12 @@ $stmt = $pdo->query("
     SELECT t.*, c.name AS client_name
     FROM tasks t
     LEFT JOIN contacts c ON t.contact_id = c.id
-    WHERE t.status != 'Storniert'
+    WHERE t.deleted_at IS NULL AND t.status != 'Storniert'
     ORDER BY t.created_at DESC
 ");
 $all_tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$count_storniert = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE status = 'Storniert'")->fetchColumn();
+$count_storniert = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL AND status = 'Storniert'")->fetchColumn();
 
 $tasks_todo = [];
 $tasks_doing = [];

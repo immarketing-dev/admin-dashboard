@@ -284,6 +284,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // ==========================================
     try {
         // Prüfen, ob die Rechnung schon existiert
+        // Bewusst ohne deleted_at: traegt eine geloeschte Rechnung diese
+        // Nummer, wird sie unten wiederhergestellt und aktualisiert. Eine
+        // zweite Zeile mit derselben Nummer wuerde der eindeutige Index
+        // aus Migration 3 abweisen.
         $stmt = $pdo->prepare("SELECT id FROM finances WHERE title = ?");
         $stmt->execute([$invoice_number]);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -311,7 +315,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // AKTUALISIEREN (Wenn du die gleiche Rechnung noch mal überschreibst)
             $update = $pdo->prepare("
                 UPDATE finances 
-                SET contact_id = ?, custom_name = ?, amount = ?, record_date = ?, due_date = ?, notes = ?, invoice_pdf_path = ?
+                SET deleted_at = NULL, contact_id = ?, custom_name = ?, amount = ?, record_date = ?, due_date = ?, notes = ?, invoice_pdf_path = ?
                 WHERE id = ?
             ");
             $update->execute([$db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path, $existing['id']]);

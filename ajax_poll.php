@@ -12,9 +12,9 @@ try { $out['leads']      = (int)$pdo->query("SELECT COUNT(*) FROM leads_inbox")-
 try { $out['tickets']    = (int)$pdo->query("SELECT COUNT(*) FROM support_tickets WHERE status != 'Erledigt'")->fetchColumn(); } catch (Throwable $e) { $out['tickets'] = 0; }
 try { $out['uploads']    = (int)$pdo->query("SELECT COUNT(*) FROM client_assets WHERE dashboard_seen=0 AND (uploaded_by IS NULL OR uploaded_by='client')")->fetchColumn(); } catch (Throwable $e) { $out['uploads'] = 0; }
 try { $out['approvals']  = (int)$pdo->query("SELECT COUNT(*) FROM task_milestones WHERE approved_at IS NOT NULL AND approval_seen=0")->fetchColumn(); }                    catch (Throwable $e) { $out['approvals'] = 0; }
-try { $out['feedbacks']  = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE client_feedback IS NOT NULL AND client_feedback != '' AND feedback_seen=0")->fetchColumn(); } catch (Throwable $e) { $out['feedbacks'] = 0; }
-try { $out['open_tasks'] = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE status NOT IN ('Erledigt','Storniert')")->fetchColumn(); }                                    catch (Throwable $e) { $out['open_tasks'] = 0; }
-try { $out['contacts']   = (int)$pdo->query("SELECT COUNT(*) FROM contacts")->fetchColumn(); }                                                                              catch (Throwable $e) { $out['contacts'] = 0; }
+try { $out['feedbacks']  = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL AND client_feedback IS NOT NULL AND client_feedback != '' AND feedback_seen=0")->fetchColumn(); } catch (Throwable $e) { $out['feedbacks'] = 0; }
+try { $out['open_tasks'] = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL AND status NOT IN ('Erledigt','Storniert')")->fetchColumn(); }                                    catch (Throwable $e) { $out['open_tasks'] = 0; }
+try { $out['contacts']   = (int)$pdo->query("SELECT COUNT(*) FROM contacts WHERE deleted_at IS NULL")->fetchColumn(); }                                                                              catch (Throwable $e) { $out['contacts'] = 0; }
 try { $out['ms_comments']= (int)$pdo->query("SELECT COUNT(*) FROM milestone_comments WHERE author='client' AND admin_seen=0")->fetchColumn(); }                             catch (Throwable $e) { $out['ms_comments'] = 0; }
 
 // Ticket-Liste
@@ -41,7 +41,7 @@ try {
     $out['deadlines'] = $pdo->query("
         SELECT title, DATEDIFF(deadline, CURDATE()) AS days_left
         FROM tasks
-        WHERE status != 'Erledigt' AND deadline IS NOT NULL AND deadline > '0000-00-00'
+        WHERE deleted_at IS NULL AND status != 'Erledigt' AND deadline IS NOT NULL AND deadline > '0000-00-00'
           AND deadline <= DATE_ADD(CURDATE(), INTERVAL 14 DAY)
         UNION ALL
         SELECT f.title, DATEDIFF(f.due_date, CURDATE())

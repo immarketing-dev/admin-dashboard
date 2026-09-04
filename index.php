@@ -147,7 +147,7 @@ if (isset($_GET['ajax_widget'])) {
         header('Content-Type: text/html; charset=utf-8');
         $portal_uploads   = $pdo->query("SELECT ca.*, t.title as task_title, c.name as client_name FROM client_assets ca JOIN tasks t ON ca.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE ca.dashboard_seen = 0 AND (ca.uploaded_by IS NULL OR ca.uploaded_by = 'client') ORDER BY ca.uploaded_at DESC")->fetchAll(PDO::FETCH_ASSOC);
         $portal_approvals = $pdo->query("SELECT tm.*, t.title as task_title, c.name as client_name FROM task_milestones tm JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE tm.approved_at IS NOT NULL AND tm.approval_seen = 0 ORDER BY tm.approved_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-        $portal_feedbacks = $pdo->query("SELECT t.id, t.title, t.client_feedback, c.name as client_name FROM tasks t JOIN contacts c ON t.contact_id = c.id WHERE t.client_feedback IS NOT NULL AND t.client_feedback != '' AND t.feedback_seen = 0")->fetchAll(PDO::FETCH_ASSOC);
+        $portal_feedbacks = $pdo->query("SELECT t.id, t.title, t.client_feedback, c.name as client_name FROM tasks t JOIN contacts c ON t.contact_id = c.id WHERE t.deleted_at IS NULL AND t.client_feedback IS NOT NULL AND t.client_feedback != '' AND t.feedback_seen = 0")->fetchAll(PDO::FETCH_ASSOC);
         $portal_ms_comments = [];
         try { $portal_ms_comments = $pdo->query("SELECT mc.id, mc.message, mc.author_name, tm.title AS ms_title, t.title AS task_title, c.name AS client_name FROM milestone_comments mc JOIN task_milestones tm ON mc.milestone_id = tm.id JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE mc.author = 'client' AND mc.admin_seen = 0 ORDER BY mc.created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC); } catch (PDOException $e) {}
         ?>
@@ -263,7 +263,7 @@ $tickets = $pdo->query("SELECT t.*, c.name as contact_name FROM support_tickets 
 
 $portal_uploads = $pdo->query("SELECT ca.*, t.title as task_title, c.name as client_name FROM client_assets ca JOIN tasks t ON ca.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE ca.dashboard_seen = 0 AND (ca.uploaded_by IS NULL OR ca.uploaded_by = 'client') ORDER BY ca.uploaded_at DESC")->fetchAll(PDO::FETCH_ASSOC);
 $portal_approvals = $pdo->query("SELECT tm.*, t.title as task_title, c.name as client_name FROM task_milestones tm JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE tm.approved_at IS NOT NULL AND tm.approval_seen = 0 ORDER BY tm.approved_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-$portal_feedbacks = $pdo->query("SELECT t.id, t.title, t.client_feedback, c.name as client_name FROM tasks t JOIN contacts c ON t.contact_id = c.id WHERE t.client_feedback IS NOT NULL AND t.client_feedback != '' AND t.feedback_seen = 0")->fetchAll(PDO::FETCH_ASSOC);
+$portal_feedbacks = $pdo->query("SELECT t.id, t.title, t.client_feedback, c.name as client_name FROM tasks t JOIN contacts c ON t.contact_id = c.id WHERE t.deleted_at IS NULL AND t.client_feedback IS NOT NULL AND t.client_feedback != '' AND t.feedback_seen = 0")->fetchAll(PDO::FETCH_ASSOC);
 
 $portal_ms_comments = [];
 try {
@@ -274,7 +274,7 @@ try {
 $upcoming_deadlines = $pdo->query("
     SELECT 'task' AS item_type, t.id, t.title, t.deadline AS due_date, c.name AS client_name, DATEDIFF(t.deadline, CURDATE()) AS days_left
     FROM tasks t LEFT JOIN contacts c ON t.contact_id = c.id
-    WHERE t.status != 'Erledigt' AND t.deadline IS NOT NULL AND t.deadline > '0000-00-00'
+    WHERE t.deleted_at IS NULL AND t.status != 'Erledigt' AND t.deadline IS NOT NULL AND t.deadline > '0000-00-00'
       AND t.deadline <= DATE_ADD(CURDATE(), INTERVAL 14 DAY)
     UNION ALL
     SELECT 'invoice', f.id, f.title, f.due_date, c.name, DATEDIFF(f.due_date, CURDATE())
@@ -290,7 +290,7 @@ $upcoming_deadlines = $pdo->query("
 // dem Laden angestoßen wird: ein erreichbarer, aber langsamer Server darf
 // nicht den Aufbau der ganzen Seite aufhalten.
 $monitored_count = (int)$pdo->query("SELECT COUNT(*) FROM monitored_urls")->fetchColumn();
-$open_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE status != 'Erledigt'")->fetchColumn();
+$open_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL AND status != 'Erledigt'")->fetchColumn();
 
 // Termine heute & diese Woche
 $today_appointments = [];
@@ -310,14 +310,14 @@ try {
         LIMIT 10
     ")->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {}
-$total_contacts = $pdo->query("SELECT COUNT(*) FROM contacts")->fetchColumn();
+$total_contacts = $pdo->query("SELECT COUNT(*) FROM contacts WHERE deleted_at IS NULL")->fetchColumn();
 
 // Projekt-Abfrage
 $active_projects = $pdo->query("
     SELECT t.id, t.title, t.status, t.deadline, c.name as client_name
     FROM tasks t
     LEFT JOIN contacts c ON t.contact_id = c.id
-    WHERE t.status NOT IN ('Erledigt','Storniert')
+    WHERE t.deleted_at IS NULL AND t.status NOT IN ('Erledigt','Storniert')
     ORDER BY t.created_at DESC LIMIT 8
 ")->fetchAll(PDO::FETCH_ASSOC);
 

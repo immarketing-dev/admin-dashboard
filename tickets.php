@@ -191,7 +191,7 @@ $kpi_wip   = (int)($kpi_rows['In Bearbeitung'] ?? 0);
 $kpi_done  = (int)($kpi_rows['Erledigt']       ?? 0);
 $kpi_total = $kpi_open + $kpi_wip + $kpi_done;
 
-$all_contacts = $pdo->query("SELECT id, name, company FROM contacts ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$all_contacts = $pdo->query("SELECT id, name, company FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Prioritäts-Farben
 $prio_css = ['Kritisch' => 'var(--accent-danger)', 'Hoch' => 'var(--accent-warning)', 'Mittel' => 'var(--color-primary)', 'Niedrig' => 'var(--text-faint)'];

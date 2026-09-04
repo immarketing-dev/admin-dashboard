@@ -96,6 +96,16 @@ private history.
   knowing first whether it belonged to a contact, a project, an invoice or
   a ticket. Results are navigable by arrow keys and built with DOM methods
   rather than innerHTML, so a title containing markup is shown as text.
+- A trash. Deleting a contact, project, invoice or quote now sets
+  `deleted_at` (migration 4) instead of removing the row; `trash.php` lists
+  what was deleted, restores it, or removes it for good, and clears
+  anything older than 30 days when the page is opened. Deliberately limited
+  to those four: for logs, milestones, comments and files deleting is cheap
+  and a trash would only be in the way.
+- `tools/check_soft_delete.php`, in CI. It reads every SELECT on the four
+  tables out of the source with `token_get_all()` and fails when one does
+  not account for `deleted_at`. Exceptions are listed in the tool with a
+  reason, so an exception stays a decision instead of becoming an oversight.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -167,6 +177,9 @@ private history.
   text in JavaScript. All of them now read from the templates; the three
   prefills substitute in the browser through `assets/js/mail-templates.js`,
   following the same rule as the PHP side.
+- 64 queries across 13 files now exclude deleted rows. Without that a
+  deleted record comes back in a list, a total or a dropdown — which is why
+  the check above exists rather than a promise that all of them were found.
 ### Removed
 - `clear_lockout.php`, which deleted every failed-login record with no
   authentication at all.

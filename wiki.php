@@ -180,9 +180,9 @@ if (!empty($articles)) {
 }
 
 // Alle Kontakte mit Portal-Token (für das Freigabe-Modal)
-$portal_contacts = $pdo->query("SELECT id, name, company FROM contacts WHERE portal_token IS NOT NULL AND portal_token != '' ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+$portal_contacts = $pdo->query("SELECT id, name, company FROM contacts WHERE deleted_at IS NULL AND portal_token IS NOT NULL AND portal_token != '' ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 // Alle Kontakte ohne Portal-Zugang (zum Anzeigen eines Hinweises)
-$all_contacts_count = (int)$pdo->query("SELECT COUNT(*) FROM contacts")->fetchColumn();
+$all_contacts_count = (int)$pdo->query("SELECT COUNT(*) FROM contacts WHERE deleted_at IS NULL")->fetchColumn();
 
 $all_categories = $pdo->query("SELECT DISTINCT category FROM wiki_articles WHERE category != '' ORDER BY category ASC")->fetchAll(PDO::FETCH_COLUMN);
 

@@ -9,7 +9,7 @@ if (!isset($_GET['token']) || strlen($_GET['token']) < 10) {
     die("Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.");
 }
 $token = $_GET['token'];
-$stmt = $pdo->prepare("SELECT * FROM contacts WHERE portal_token = ?");
+$stmt = $pdo->prepare("SELECT * FROM contacts WHERE deleted_at IS NULL AND portal_token = ?");
 $stmt->execute([$token]);
 $client = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$client) { die("Zugang abgelaufen oder ungültig."); }
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── PIN: Zugangscode prüfen
     if (isset($_POST['action']) && $_POST['action'] === 'verify_portal_pin') {
-        $stmt_fresh = $pdo->prepare("SELECT portal_pin, portal_pin_attempts, portal_pin_locked_until FROM contacts WHERE id=?");
+        $stmt_fresh = $pdo->prepare("SELECT portal_pin, portal_pin_attempts, portal_pin_locked_until FROM contacts WHERE deleted_at IS NULL AND id=?");
         $stmt_fresh->execute([$client['id']]);
         $fresh = $stmt_fresh->fetch(PDO::FETCH_ASSOC);
 
@@ -217,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Asset löschen
     if (isset($_POST['delete_asset'])) {
         $aid  = (int)$_POST['asset_id'];
-        $row  = $pdo->prepare("SELECT file_path FROM client_assets WHERE id=? AND task_id IN (SELECT id FROM tasks WHERE contact_id=?)");
+        $row  = $pdo->prepare("SELECT file_path FROM client_assets WHERE id=? AND task_id IN (SELECT id FROM tasks WHERE deleted_at IS NULL AND contact_id=?)");
         $row->execute([$aid, $client['id']]);
         $file = $row->fetch();
         if ($file) {
@@ -367,7 +367,7 @@ function chkMatch(){const ok=document.getElementById('pi1').value===document.get
 // =============================================
 // DATEN LADEN (alles gebatcht vor dem HTML)
 // =============================================
-$projects = $pdo->prepare("SELECT * FROM tasks WHERE contact_id=? ORDER BY created_at DESC");
+$projects = $pdo->prepare("SELECT * FROM tasks WHERE deleted_at IS NULL AND contact_id=? ORDER BY created_at DESC");
 $projects->execute([$client['id']]);
 $projects = $projects->fetchAll(PDO::FETCH_ASSOC);
 
@@ -404,7 +404,7 @@ if (!empty($projects)) {
     }
 }
 
-$invoices = $pdo->prepare("SELECT * FROM finances WHERE contact_id=? AND type='INCOME' ORDER BY record_date DESC");
+$invoices = $pdo->prepare("SELECT * FROM finances WHERE deleted_at IS NULL AND contact_id=? AND type='INCOME' ORDER BY record_date DESC");
 $invoices->execute([$client['id']]);
 $invoices = $invoices->fetchAll(PDO::FETCH_ASSOC);
 

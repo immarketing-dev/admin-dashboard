@@ -1,0 +1,132 @@
+<?php
+/**
+ * Prüft, dass gelöschte Datensätze nirgends mehr auftauchen.
+ *
+ * Seit Migration 4 tragen contacts, tasks, finances und quotes eine Spalte
+ * deleted_at. Eine Abfrage, die sie nicht berücksichtigt, holt Gelöschtes
+ * zurück in eine Liste, eine Summe oder ein Auswahlfeld — und das fällt
+ * erst auf, wenn es jemandem auffällt.
+ *
+ * Geprüft wird jede SELECT-Abfrage, in der eine der vier Tabellen hinter
+ * FROM steht. Sie muss entweder deleted_at erwähnen oder in der Liste der
+ * geprüften Ausnahmen stehen — mit Begründung, damit eine Ausnahme eine
+ * Entscheidung bleibt und kein Versehen.
+ *
+ * Die Abfragen werden über token_get_all() aus dem Quelltext geholt, nicht
+ * über einen Ausdruck auf dem Rohtext: so werden auch über mehrere Zeilen
+ * verkettete Zeichenketten als eine Abfrage erkannt, und Vorkommen in
+ * Kommentaren zählen nicht mit.
+ *
+ * Aufruf: php tools/check_soft_delete.php
+ */
+
+const WEICHE_TABELLEN = ['contacts', 'tasks', 'finances', 'quotes'];
+
+/**
+ * Geprüfte Ausnahmen: Datei => ['*'] für die ganze Datei, sonst eine Liste
+ * von Textstücken, die eine Abfrage eindeutig kennzeichnen.
+ */
+const AUSNAHMEN = [
+    // Der Papierkorb zeigt das Gelöschte ja gerade.
+    'trash.php' => ['*'],
+    // Migrationen arbeiten am Schema, nicht an Nutzdaten.
+    'includes/migrations.php' => ['*'],
+
+    // invoice.php sucht eine bestehende Rechnung ueber ihre Nummer, um sie
+    // zu aktualisieren statt neu anzulegen. Wuerde sie Geloeschtes uebersehen,
+    // entstuende eine zweite Zeile mit derselben Nummer - und der eindeutige
+    // Index aus Migration 3 wiese sie ab. Eine geloeschte Rechnung wird beim
+    // Neuerzeugen wiederhergestellt (siehe dort).
+    'invoice.php' => ['SELECT id FROM finances WHERE title = ?'],
+
+    // Die Bedingung steht dort in $kpi_where, weil der Zeitraumfilter an
+    // dieselbe Stelle angehaengt wird. Der Pruefer sieht nur Zeichenketten,
+    // keine Variableninhalte - siehe finances.php an der Zuweisung.
+    'finances.php' => ['SELECT type, status, amount FROM finances'],
+];
+
+$wurzel  = dirname(__DIR__);
+$dateien = array_merge(glob($wurzel . '/*.php'), glob($wurzel . '/includes/*.php'));
+
+$funde    = [];
+$geprueft = 0;
+
+foreach ($dateien as $datei) {
+    $rel = str_replace('\\', '/', ltrim(str_replace($wurzel, '', $datei), '/\\'));
+    if ((AUSNAHMEN[$rel] ?? null) === ['*']) continue;
+
+    $quelle = file_get_contents($datei);
+    $tokens = token_get_all($quelle);
+
+    // Aufeinanderfolgende Zeichenketten, die mit '.' verkettet sind, zu
+    // einer logischen Abfrage zusammenfassen. Dazwischen dürfen Variablen
+    // stehen (Parameter, Tabellenpräfixe) - die werden übersprungen.
+    $puffer = '';
+    $zeile  = 0;
+    $spuel = function () use (&$puffer, &$zeile, &$funde, &$geprueft, $rel) {
+        if ($puffer === '') return;
+        $sql = $puffer;
+        $puffer = '';
+
+        if (stripos($sql, 'SELECT') === false) return;
+        if (!preg_match('/\bFROM\s+(' . implode('|', WEICHE_TABELLEN) . ')\b/i', $sql, $m)) return;
+
+        $geprueft++;
+        if (stripos($sql, 'deleted_at') !== false) return;
+
+        foreach (AUSNAHMEN[$rel] ?? [] as $muster) {
+            if ($muster !== '*' && strpos($sql, $muster) !== false) return;
+        }
+
+        $funde[] = [
+            'datei'   => $rel,
+            'zeile'   => $zeile,
+            'tabelle' => strtolower($m[1]),
+            'sql'     => trim(preg_replace('/\s+/', ' ', mb_substr($sql, 0, 100))),
+        ];
+    };
+
+    foreach ($tokens as $t) {
+        if (is_array($t)) {
+            $id = $t[0];
+            if ($id === T_CONSTANT_ENCAPSED_STRING || $id === T_ENCAPSED_AND_WHITESPACE) {
+                if ($puffer === '') $zeile = $t[2];
+                $puffer .= ' ' . trim($t[1], "\"'");
+                continue;
+            }
+            if ($id === T_WHITESPACE || $id === T_VARIABLE || $id === T_OBJECT_OPERATOR
+                || $id === T_STRING || $id === T_LNUMBER || $id === T_COMMENT
+                || $id === T_DOC_COMMENT || $id === T_START_HEREDOC || $id === T_END_HEREDOC) {
+                continue;   // unterbricht eine Verkettung nicht
+            }
+            $spuel();
+            continue;
+        }
+        if ($t === '.' || $t === '(' || $t === ')' || $t === '[' || $t === ']') continue;
+        $spuel();
+    }
+    $spuel();
+}
+
+echo "=== Papierkorb: Abfragen ohne deleted_at ===\n\n";
+echo "Geprueft: $geprueft SELECT-Abfrage(n) auf " . implode(', ', WEICHE_TABELLEN) . "\n\n";
+
+if (!$funde) {
+    echo "OK: jede Abfrage beruecksichtigt geloeschte Datensaetze.\n";
+    exit(0);
+}
+
+$proDatei = [];
+foreach ($funde as $f) { $proDatei[$f['datei']][] = $f; }
+ksort($proDatei);
+foreach ($proDatei as $datei => $liste) {
+    echo "$datei\n";
+    foreach ($liste as $f) {
+        printf("  Zeile %-5s [%-8s] %s\n", $f['zeile'], $f['tabelle'], $f['sql']);
+    }
+    echo "\n";
+}
+echo 'FEHLGESCHLAGEN: ' . count($funde) . " Abfrage(n) ohne deleted_at.\n";
+echo "Entweder die Bedingung ergaenzen oder die Abfrage in AUSNAHMEN\n";
+echo "in dieser Datei eintragen - mit Begruendung.\n";
+exit(1);
