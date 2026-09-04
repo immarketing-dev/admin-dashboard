@@ -154,7 +154,8 @@ CREATE TABLE IF NOT EXISTS task_milestones (
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_ms_task (task_id),
   CONSTRAINT fk_ms_task FOREIGN KEY (task_id)
-    REFERENCES tasks(id) ON DELETE CASCADE
+    REFERENCES tasks(id) ON DELETE CASCADE,
+  waiting_on   VARCHAR(20) NOT NULL DEFAULT '',
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Taken verbatim from d:\Downloads\admin-dashboard\portal.php:31
@@ -188,6 +189,19 @@ CREATE TABLE IF NOT EXISTS milestone_comments (
 -- orders by "uploaded_at", never "created_at" - the column is named
 -- uploaded_at here to match actual usage, not "created_at" as a naive
 -- reconstruction from the INSERT column list alone would suggest.
+CREATE TABLE IF NOT EXISTS project_comments (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  task_id           INT NOT NULL,
+  author_contact_id INT DEFAULT NULL,
+  author_name       VARCHAR(255) NOT NULL,
+  message           TEXT NOT NULL,
+  admin_seen        TINYINT(1) NOT NULL DEFAULT 0,
+  created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_pc_task (task_id, created_at),
+  CONSTRAINT fk_pc_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  CONSTRAINT fk_pc_contact FOREIGN KEY (author_contact_id) REFERENCES contacts(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS client_assets (
   id             INT AUTO_INCREMENT PRIMARY KEY,
   task_id        INT NOT NULL,
@@ -385,7 +399,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '5')
+INSERT INTO settings (k, v) VALUES ('schema_version', '6')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -256,6 +256,34 @@ function migrations(): array
             // am sichtbaren Bestand nichts aendert.
             'INSERT IGNORE INTO task_contacts (task_id, contact_id, role)'
             . " SELECT id, contact_id, 'owner' FROM tasks WHERE contact_id IS NOT NULL",
+        ],
+
+        // Version 6: gemeinsam an einem Projekt arbeiten.
+        //
+        // Bisher gab es Kommentare nur je Meilenstein - fuer eine Frage, die
+        // nicht an einem Schritt haengt, war kein Platz, und niemand sah, auf
+        // wen gerade gewartet wird.
+        6 => [
+            // Diskussion auf Projektebene. author_contact_id ist NULL, wenn
+            // der Eintrag aus dem Panel kommt; author_name haelt den Namen
+            // fest, damit ein spaeter geloeschter Kontakt den Verlauf nicht
+            // unlesbar macht.
+            'CREATE TABLE IF NOT EXISTS project_comments ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' task_id INT NOT NULL,'
+            . ' author_contact_id INT DEFAULT NULL,'
+            . ' author_name VARCHAR(255) NOT NULL,'
+            . ' message TEXT NOT NULL,'
+            . ' admin_seen TINYINT(1) NOT NULL DEFAULT 0,'
+            . ' created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' KEY idx_pc_task (task_id, created_at),'
+            . ' CONSTRAINT fk_pc_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,'
+            . ' CONSTRAINT fk_pc_contact FOREIGN KEY (author_contact_id) REFERENCES contacts(id) ON DELETE SET NULL'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+            // Auf wen wartet dieser Schritt? Leer heisst: nicht festgelegt,
+            // so wie alle bestehenden Meilensteine.
+            "ALTER TABLE task_milestones ADD COLUMN waiting_on VARCHAR(20) NOT NULL DEFAULT ''",
         ],
     ];
 }

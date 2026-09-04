@@ -6,6 +6,9 @@ $_sb_leads   = (int)$pdo->query("SELECT COUNT(*) FROM leads_inbox")->fetchColumn
 $_sb_tickets = (int)$pdo->query("SELECT COUNT(*) FROM support_tickets WHERE status != 'Erledigt'")->fetchColumn();
 $_sb_portal  = (int)$pdo->query("SELECT (SELECT COUNT(*) FROM client_assets WHERE dashboard_seen=0 AND (uploaded_by IS NULL OR uploaded_by='client')) + (SELECT COUNT(*) FROM task_milestones WHERE approved_at IS NOT NULL AND approval_seen=0) + (SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL AND client_feedback IS NOT NULL AND client_feedback!='' AND feedback_seen=0)")->fetchColumn();
 try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM milestone_comments WHERE author='client' AND admin_seen=0")->fetchColumn(); } catch (PDOException $e) {}
+// Beitraege aus der Projekt-Diskussion (Migration 6). In try/catch, damit
+// eine noch nicht migrierte Datenbank die Seitenleiste nicht kippt.
+try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM project_comments WHERE author_contact_id IS NOT NULL AND admin_seen=0")->fetchColumn(); } catch (PDOException $e) {}
 $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status IN ('Offen','Überfällig')")->fetchColumn();
 ?>
 <script>if(localStorage.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');</script>

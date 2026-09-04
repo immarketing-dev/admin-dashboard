@@ -125,6 +125,12 @@ private history.
   portal carries a name. `tasks.contact_id` remains the main contact, so
   invoicing and reporting are untouched, and existing projects are
   backfilled as members.
+- Working together on a project in the portal (migration 6). A discussion
+  per project for anything that does not belong to a single step, with the
+  author's name on each entry and everyone assigned seeing the thread; the
+  list of participants; and a "wer ist dran" marker per step that says
+  whether the ball is with us or with them. Set in `tasks.php`, shown in the
+  portal, counted in the sidebar badge.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
