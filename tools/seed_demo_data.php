@@ -90,7 +90,8 @@ $k_daten = [
         'website' => 'https://brandt-elektro.example',
         'street' => 'Industriering 8', 'zip' => '04347', 'city' => 'Leipzig',
         'contact_type' => 'Kunde', 'source' => 'Website-Formular',
-        'notes' => 'Erreichbar meist nur vormittags. Freigaben laufen über das Portal.',
+        'notes' => 'Firmierung laut Handelsregister: "Brandt Elektrotechnik GmbH & Co. KG". '
+                 . 'Erreichbar meist nur vormittags, Freigaben laufen über das Portal.',
         'tage' => -350,
     ],
     'weiss' => [
@@ -112,7 +113,7 @@ $k_daten = [
         'tage' => -320,
     ],
     'demir' => [
-        'name' => 'Aylin Demir', 'company' => 'Studio Demir',
+        'name' => 'Aylin Demir', 'company' => "Studio Demir & O'Neill",
         'email' => 'a.demir@studio-demir.example', 'phone' => '+49 89 5550478',
         'website' => 'https://studio-demir.example',
         'street' => 'Türkenstraße 52', 'zip' => '80799', 'city' => 'München',
@@ -162,7 +163,7 @@ $leads = [
      "Guten Tag,\n\nwir planen für das kommende Jahr einen Relaunch unserer Website und suchen dafür Unterstützung. Können Sie uns ein grobes Budget nennen?\n\nViele Grüße\nNina Alt",
      'Kontaktformular', -3],
     ['Jonas Reimer', 'j.reimer@reimer-baeckerei.example', null, 'Onlineshop für Backwaren',
-     "Hallo, wir möchten unsere Backwaren regional online anbieten. Ist so etwas mit Ihrem Shop-System möglich?",
+     "Hallo, wir möchten unsere Backwaren regional online anbieten - gern in einem 'schlanken', schnellen Auftritt. Ist so etwas mit Ihrem Shop-System möglich?",
      'Kontaktformular', -8],
     ['Claudia Berg', 'c.berg@bergpraxis.example', '+49 761 5550444', 'Terminbuchung einbinden',
      "Wir suchen eine Lösung, um Termine direkt auf der Praxisseite buchbar zu machen. Gerne ein kurzes Gespräch.",
@@ -667,7 +668,7 @@ $artikel = [
     ['Zugang zum Redaktionsbereich', 'Anleitungen', 'redaktion,login,anleitung', 1,
      "## Anmeldung\n\nDen Redaktionsbereich erreichen Sie unter `/redaktion`. Die Zugangsdaten haben Sie per E-Mail erhalten.\n\n## Eine Seite bearbeiten\n\n1. Links im Menü die gewünschte Seite auswählen\n2. Auf **Bearbeiten** klicken\n3. Änderungen vornehmen und **Speichern**\n\nDie Änderung ist sofort öffentlich sichtbar.\n\n## Bilder\n\nBilder bitte in der Mediathek hochladen, nicht direkt in den Text ziehen. Die Mediathek erzeugt automatisch kleinere Fassungen für Mobilgeräte.", -180],
     ['Bildgrößen und Dateiformate', 'Anleitungen', 'bilder,formate,upload', 0,
-     "## Empfohlene Größen\n\n| Einsatzort | Breite | Format |\n|---|---|---|\n| Kopfbild | 1920 px | JPG |\n| Artikelbild | 1200 px | JPG |\n| Logo | 600 px | PNG |\n\n## Hinweise\n\n- Fotos als JPG, Grafiken und Logos als PNG\n- Keine Dateien über 2 MB hochladen\n- Dateinamen ohne Umlaute und Leerzeichen", -150],
+     "## Ablage\n\nDruckvorlagen liegen im Netzlaufwerk unter `S:\\\\Marketing\\\\Vorlagen\\\\2026`. Bitte von dort kopieren, nicht per E-Mail weiterreichen.\n\n## Empfohlene Größen\n\n| Einsatzort | Breite | Format |\n|---|---|---|\n| Kopfbild | 1920 px | JPG |\n| Artikelbild | 1200 px | JPG |\n| Logo | 600 px | PNG |\n\n## Hinweise\n\n- Fotos als JPG, Grafiken und Logos als PNG\n- Keine Dateien über 2 MB hochladen\n- Dateinamen ohne Umlaute und Leerzeichen", -150],
     ['Ablauf einer Abnahme', 'Prozesse', 'abnahme,freigabe,portal', 1,
      "Jeder Meilenstein durchläuft dieselben Schritte:\n\n1. Wir stellen das Ergebnis im Portal bereit\n2. Sie prüfen und geben frei oder melden Änderungswünsche\n3. Nach der Freigabe gilt der Schritt als abgenommen\n\nOffene Punkte bleiben im Portal sichtbar, damit beide Seiten denselben Stand sehen.", -120],
     ['Sicherungen und Wiederherstellung', 'Betrieb', 'backup,sicherung,notfall', 0,

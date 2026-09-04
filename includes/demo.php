@@ -40,6 +40,26 @@ function demo_mode(): bool
 }
 
 /**
+ * Hält die Demo aus den Suchmaschinen.
+ *
+ * Als HTTP-Kopfzeile und nicht als Zeile in der .htaccess: der
+ * Auslieferungsstand wird von tools/deploy.php aus dem Repository
+ * erzeugt, eine von Hand ergänzte .htaccess-Zeile wäre beim nächsten
+ * Durchlauf wieder weg. Hier steht sie versioniert und gilt für jede
+ * Antwort - auch für PDFs, ICS-Dateien und JSON, die kein <meta> tragen.
+ *
+ * Warum überhaupt: die Demodaten sind erfundene Firmen mit erfundenen
+ * Rechnungsbeträgen. Im Suchindex würden sie mit der echten Seite
+ * konkurrieren - erst recht, wenn die Demo unter derselben Adresse in
+ * einem Unterverzeichnis liegt.
+ */
+function demo_send_headers(): void
+{
+    if (!demo_mode() || headers_sent()) return;
+    header('X-Robots-Tag: noindex, nofollow', true);
+}
+
+/**
  * Erkennt Anfragen, die eine Antwort erwarten statt einer Weiterleitung.
  *
  * Bewusst am Header und nicht an einer Liste von Aktionsnamen: eine Liste

@@ -97,6 +97,29 @@ php tools/seed_demo.php --yes --db-user=ADMIN --db-pass=SECRET
 It refuses to run unless `DEMO_MODE=true`, because it empties the tables
 before filling them. On success it prints the portal links.
 
+**No command line on the server?** Shared hosting often has none. Generate
+an importable file instead and load it through phpMyAdmin the same way you
+loaded the schema:
+
+```sh
+php tools/export_demo_sql.php ../demo_data.sql \
+    --uploads=../admin-dashboard-demo/uploads
+```
+
+This runs the seed locally against SQLite and writes the result as MySQL
+`INSERT` statements, with every reference already resolved. It then reads
+its own output back and compares all ~450 rows against the original, so a
+mis-escaped quote or a lost line break fails the export instead of
+surfacing as corrupted demo data. `--uploads` puts the placeholder files
+where the portal downloads expect them.
+
+One caveat: the dates freeze at generation time, because the seed computes
+them relative to "today". If the demo looks stale in a few months,
+regenerate and re-import.
+
+Keep the `.sql` file out of the web directory — it would be downloadable
+there.
+
 The data covers a full year: 6 contacts, 8 projects with milestones,
 comments and tracked time, 12 months of invoices and expenses, quotes in
 every state, tickets, wiki articles, calendar entries and a log history —
