@@ -266,6 +266,9 @@ php tools/test_env.php       # unit tests for the .env parser
 php tools/test_seed_demo.php # runs the demo seed against SQLite and
                               # checks the result
 php tools/check_demo.php     # verifies the demo-mode write guard holds
+php tools/export_demo_sql.php <file.sql>
+                              # writes the demo data as an importable
+                              # MySQL file, for hosting without a shell
 php tools/test_demo.php      # unit tests for the guard itself
 ```
 

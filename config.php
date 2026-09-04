@@ -43,6 +43,7 @@ define('SMTP_PORT', (int) env('SMTP_PORT', '587'));
 // Nur über die .env schaltbar - siehe includes/demo.php.
 define('DEMO_MODE', env_bool('DEMO_MODE', false));
 require_once __DIR__ . '/includes/demo.php';
+demo_send_headers();
 
 // ── Cross-Domain-SSO (standardmäßig aus) ───────────────────────────
 // In der Demo zwingend aus, unabhängig von der .env: sso.php entwertet
