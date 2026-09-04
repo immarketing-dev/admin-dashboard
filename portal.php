@@ -683,7 +683,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= $is_partner ? 'Partner-Portal' : 'Kundenportal' ?> | <?= setting('company_short', COMPANY_SHORT) ?></title>
+  <title><?= $is_partner ? 'Partner-Portal' : te('Kundenportal') ?> | <?= setting('company_short', COMPANY_SHORT) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700|Poppins:600,700,800" rel="stylesheet">
@@ -1102,11 +1102,11 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     <div class="portal-nav-row">
       <div class="portal-nav-inner" id="portalNav">
       <button class="portal-pill active" data-tab="projects">
-        <i class="bi bi-<?= $is_partner ? 'diagram-3-fill' : 'kanban-fill' ?>"></i> <?= $is_partner ? 'Zusammenarbeit' : 'Projekte' ?>
+        <i class="bi bi-<?= $is_partner ? 'diagram-3-fill' : 'kanban-fill' ?>"></i> <?= $is_partner ? te('Zusammenarbeit') : te('Projekte') ?>
         <?php if($active_proj_count > 0): ?><span class="pill-badge"><?= $active_proj_count ?></span><?php endif; ?>
       </button>
       <button class="portal-pill" data-tab="quotes">
-        <i class="bi bi-file-earmark-text"></i> Angebote
+        <i class="bi bi-file-earmark-text"></i> <?= te('Angebote') ?>
         <?php if($open_quote_count > 0): ?>
           <span class="pill-badge pill-badge-danger"><?= $open_quote_count ?></span>
         <?php elseif(count($quotes) > 0): ?>
@@ -1114,16 +1114,16 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <?php endif; ?>
       </button>
       <button class="portal-pill" data-tab="invoices">
-        <i class="bi bi-receipt"></i> <?= $is_partner ? 'Abrechnungen' : 'Rechnungen' ?>
+        <i class="bi bi-receipt"></i> <?= $is_partner ? te('Abrechnungen') : te('Rechnungen') ?>
         <?php if($open_inv_count > 0): ?><span class="pill-badge pill-badge-danger"><?= $open_inv_count ?></span><?php endif; ?>
       </button>
       <button class="portal-pill" data-tab="support">
-        <i class="bi bi-<?= $is_partner ? 'envelope-fill' : 'life-preserver' ?>"></i> <?= $is_partner ? 'Anfragen' : 'Support' ?>
+        <i class="bi bi-<?= $is_partner ? 'envelope-fill' : 'life-preserver' ?>"></i> <?= $is_partner ? te('Anfragen') : te('Support') ?>
         <?php if($open_ticket_count > 0): ?><span class="pill-badge"><?= $open_ticket_count ?></span><?php endif; ?>
       </button>
       <?php if(!empty($wiki_articles)): ?>
       <button class="portal-pill" data-tab="wiki">
-        <i class="bi bi-<?= $is_partner ? 'folder2-open' : 'book-fill' ?>"></i> <?= $is_partner ? 'Ressourcen' : 'Wissen' ?>
+        <i class="bi bi-<?= $is_partner ? 'folder2-open' : 'book-fill' ?>"></i> <?= $is_partner ? te('Ressourcen') : te('Wissen') ?>
         <span class="pill-badge"><?= count($wiki_articles) ?></span>
       </button>
       <?php endif; ?>
@@ -1205,7 +1205,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <div class="project-progress-fill <?= $prog==100?'complete':'' ?>" style="width:<?= $prog ?>%;"></div>
             </div>
             <?php if($total > 0): ?>
-              <div class="text-muted mt-1" style="font-size:11px;"><?= $done ?> von <?= $total ?> Schritten abgeschlossen</div>
+              <div class="text-muted mt-1" style="font-size:11px;"><?= $done ?> von <?= $total ?> <?= te('Schritten abgeschlossen') ?></div>
             <?php endif; ?>
           </div>
 
@@ -1285,7 +1285,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                                   && trim((string)$c['author_name']) === trim((string)$client['name']);
                             ?>
                             <?= $c['author']==='client'
-                                 ? '<i class="bi bi-person-fill me-1"></i>' . htmlspecialchars($c['author_name'] ?: 'Unbekannt') . ($c_ist_ich ? ' (Sie)' : '')
+                                 ? '<i class="bi bi-person-fill me-1"></i>' . htmlspecialchars($c['author_name'] ?: te('Unbekannt')) . ($c_ist_ich ? ' (Sie)' : '')
                                  : '<i class="bi bi-headset me-1"></i>'.htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
                             <span class="fw-normal ms-2 text-muted"><?= date('d.m.Y H:i', strtotime($c['created_at'])) ?></span>
                           </div>
@@ -1397,7 +1397,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <div class="d-flex flex-wrap gap-2 mb-2">
                   <?php foreach($beteiligte as $b): ?>
                     <span class="member-chip<?= (int)$b['contact_id'] === (int)$client['id'] ? ' member-chip-self' : '' ?>"
-                          title="<?= htmlspecialchars(trim($b['company'] . ' · ' . ($b['role'] === 'owner' ? 'Hauptansprechpartner' : 'Beteiligt'), ' ·')) ?>">
+                          title="<?= htmlspecialchars(trim($b['company'] . ' · ' . ($b['role'] === 'owner' ? te('Hauptansprechpartner') : te('Beteiligt')), ' ·')) ?>">
                       <span class="member-dot"><?= htmlspecialchars(mb_strtoupper(mb_substr($b['name'], 0, 1))) ?></span>
                       <?= htmlspecialchars($b['name']) ?><?= (int)$b['contact_id'] === (int)$client['id'] ? ' (Sie)' : '' ?>
                     </span>
@@ -1407,7 +1407,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
 
                 <!-- Projekt-Diskussion -->
                 <div class="section-label mt-4">
-                  <i class="bi bi-chat-square-text me-1"></i>Austausch zum Projekt
+                  <i class="bi bi-chat-square-text me-1"></i><?= te('Austausch zum Projekt') ?>
                   <?php if($beitraege): ?><span class="text-muted">(<?= count($beitraege) ?>)</span><?php endif; ?>
                 </div>
                 <p class="section-hint">
@@ -1492,7 +1492,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
           </div>
           <?php if($open_quote_count > 0): ?>
             <span class="badge rounded-pill px-3 py-2" style="background:var(--state-warn-bg);color:var(--state-warn-fg);">
-              <i class="bi bi-hourglass-split me-1"></i><?= $open_quote_count ?> wartet auf Ihre Antwort
+              <i class="bi bi-hourglass-split me-1"></i><?= $open_quote_count ?> <?= te('wartet auf Ihre Antwort') ?>
             </span>
           <?php endif; ?>
         </div>
@@ -1515,7 +1515,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <div class="d-flex align-items-start justify-content-between gap-3 mb-2 flex-wrap">
                 <div style="min-width:0;">
                   <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:18px;color:var(--text-strong);">
-                    <?= htmlspecialchars($q['subject'] ?: 'Angebot') ?>
+                    <?= htmlspecialchars($q['subject'] ?: te('Angebot')) ?>
                   </h4>
                   <div class="text-muted small"><?= htmlspecialchars($q['quote_number']) ?>
                     · <?= date('d.m.Y', strtotime($q['created_at'])) ?></div>
@@ -1601,12 +1601,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     <div class="tab-pane" id="tab-invoices">
       <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-          <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? 'Abrechnungen' : 'Rechnungsarchiv' ?></h4>
+          <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= $is_partner ? te('Abrechnungen') : te('Rechnungsarchiv') ?></h4>
           <p class="text-muted small m-0"><?= $is_partner ? te('Gemeinsame Abrechnungen auf einen Blick — als PDF herunterladbar.') : te('Alle Rechnungen auf einen Blick — als PDF herunterladbar.') ?></p>
         </div>
         <?php if($open_inv_count > 0): ?>
           <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 fs-6">
-            <i class="bi bi-exclamation-circle me-1"></i><?= $open_inv_count ?> offen / überfällig
+            <i class="bi bi-exclamation-circle me-1"></i><?= $open_inv_count ?> <?= te('offen / überfällig') ?>
           </span>
         <?php endif; ?>
       </div>
@@ -1633,7 +1633,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <div class="text-muted small mb-3">
                 <?= date('d.m.Y', strtotime($inv['record_date'])) ?>
                 <?php if($inv['due_date']): ?>
-                  · <span class="<?= $is_overdue ? 'text-danger fw-bold' : '' ?>">fällig <?= date('d.m.Y', strtotime($inv['due_date'])) ?></span>
+                  · <span class="<?= $is_overdue ? 'text-danger fw-bold' : '' ?>"><?= te('fällig') ?> <?= date('d.m.Y', strtotime($inv['due_date'])) ?></span>
                 <?php endif; ?>
               </div>
               <?php if($has_bank && !$is_paid):
@@ -1851,7 +1851,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
     <?php if(!empty($wiki_articles)): ?>
     <div class="tab-pane" id="tab-wiki">
       <h4 class="fw-bold mb-1" style="font-family:'Poppins',sans-serif;"><?= te('Wissensdatenbank') ?></h4>
-      <p class="text-muted small mb-4">Artikel, die <?= setting('company_short', COMPANY_SHORT) ?> für Sie freigegeben hat.</p>
+      <p class="text-muted small mb-4"><?= te('Artikel, die') ?> <?= setting('company_short', COMPANY_SHORT) ?> <?= te('für Sie freigegeben hat.') ?></p>
 
       <?php
       $wiki_grouped = [];
@@ -1913,7 +1913,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <div class="col-12"><label class="form-label small fw-bold"><?= te('Straße & Hausnummer') ?></label><input type="text" name="street" class="form-control" value="<?= htmlspecialchars($client['street'] ?? '') ?>" style="border-radius:10px;"></div>
             <div class="col-md-3"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" class="form-control" value="<?= htmlspecialchars($client['zip'] ?? '') ?>" style="border-radius:10px;"></div>
             <div class="col-md-5"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" class="form-control" value="<?= htmlspecialchars($client['city'] ?? '') ?>" style="border-radius:10px;"></div>
-            <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control" value="<?= htmlspecialchars($client['country'] ?? 'Deutschland') ?>" style="border-radius:10px;"></div>
+            <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control" value="<?= htmlspecialchars($client['country'] ?? te('Deutschland')) ?>" style="border-radius:10px;"></div>
           </div>
           <button type="submit" class="btn btn-lg fw-bold w-100 text-white" style="background:var(--color-primary);border-radius:12px;">
             <i class="bi bi-check-circle me-2"></i><?= te('Daten speichern') ?>

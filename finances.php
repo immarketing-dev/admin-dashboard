@@ -268,7 +268,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $quote_number = next_quote_number($pdo);
         $contact_id  = !empty($_POST['contact_id']) ? (int)$_POST['contact_id'] : null;
         $custom_name = trim($_POST['custom_name'] ?? '');
-        $tax_type    = in_array($_POST['tax_type']??'',['kleinunternehmer','regel'])?$_POST['tax_type']:'kleinunternehmer';
+        $tax_type    = in_array($_POST['tax_type']??'', ['kleinunternehmer','regel'])?$_POST['tax_type']:'kleinunternehmer';
         $valid_until = !empty($_POST['valid_until']) ? $_POST['valid_until'] : null;
         $notes       = trim($_POST['notes'] ?? '');
         $subject     = trim($_POST['subject'] ?? '');
@@ -284,7 +284,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $contact_id  = !empty($_POST['contact_id']) ? (int)$_POST['contact_id'] : null;
         $custom_name = trim($_POST['custom_name'] ?? '');
         $status      = trim($_POST['status'] ?? 'Entwurf');
-        $tax_type    = in_array($_POST['tax_type']??'',['kleinunternehmer','regel'])?$_POST['tax_type']:'kleinunternehmer';
+        $tax_type    = in_array($_POST['tax_type']??'', ['kleinunternehmer','regel'])?$_POST['tax_type']:'kleinunternehmer';
         $valid_until = !empty($_POST['valid_until']) ? $_POST['valid_until'] : null;
         $notes       = trim($_POST['notes'] ?? '');
         $subject     = trim($_POST['subject'] ?? '');
@@ -608,7 +608,7 @@ require 'includes/layout_start.php';
     <ul class="nav nav-tabs mb-4">
       <li class="nav-item">
         <a class="nav-link <?= $active_tab === 'finances' ? 'active fw-bold' : '' ?>" href="finances">
-          <i class="bi bi-currency-euro me-1"></i> Finanzen
+          <i class="bi bi-currency-euro me-1"></i> <?= te('Finanzen') ?>
           <?php if($_sb_open_inv > 0 && $active_tab !== 'finances'): ?><span class="badge bg-warning text-dark ms-1 rounded-pill"><?= $_sb_open_inv ?></span><?php endif; ?>
         </a>
       </li>
@@ -773,7 +773,7 @@ require 'includes/layout_start.php';
     </div>
 
     <div class="bg-surface rounded shadow-sm p-4 mb-4">
-        <h6 class="fw-bold mb-3 text-muted small text-uppercase">Einnahmen vs. Ausgaben — <?= htmlspecialchars($chart_title) ?></h6>
+        <h6 class="fw-bold mb-3 text-muted small text-uppercase"><?= te('Einnahmen vs. Ausgaben —') ?> <?= htmlspecialchars($chart_title) ?></h6>
         <canvas id="financeChart" style="max-height: 250px;"></canvas>
     </div>
 
@@ -802,7 +802,7 @@ require 'includes/layout_start.php';
             <option value="all"><?= te('Alle Status') ?></option>
             <option value="Offen" <?=$filter_status=='Offen'?'selected':''?>><?= te('Offen') ?></option>
             <option value="Bezahlt" <?=$filter_status=='Bezahlt'?'selected':''?>><?= te('Bezahlt') ?></option>
-            <option value="Überfällig" <?=$filter_status==te('Überfällig')?'selected':''?>><?= te('Überfällig') ?></option>
+            <option value="Überfällig" <?=$filter_status=='Überfällig'?'selected':''?>><?= te('Überfällig') ?></option>
         </select>
         <div class="form-check ms-2 me-2">
             <input type="checkbox" name="only_recurring" class="form-check-input" id="checkFix" onchange="this.form.submit()" <?=$filter_recurring?'checked':''?>>

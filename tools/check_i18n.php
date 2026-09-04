@@ -167,6 +167,52 @@ if ($schief === []) {
 }
 echo "\n";
 
+// ---------------------------------------------------------------------
+// 4. Uebersetzung in einem Vergleich
+//
+// In tasks.status steht 'Offen', nicht 'Open'. Ein Vergleich gegen
+// t('Offen') trifft auf englischer Oberflaeche nie zu: Filter finden ihre
+// Datensaetze nicht mehr, Statusfarben stimmen nicht, Durchstreichungen
+// bleiben aus - und nichts davon meldet sich. Genau das ist beim
+// automatischen Verpacken in 26 Zeilen passiert.
+// ---------------------------------------------------------------------
+echo "=== Pruefung 4: keine Uebersetzung in einem Vergleich ===\n";
+
+$vergleiche = [];
+foreach ($dateien as $pfad) {
+    // Kommentare ausblenden, Zeilennummern erhalten.
+    $roh = '';
+    foreach (token_get_all(file_get_contents($pfad)) as $t) {
+        if (is_array($t)) {
+            $roh .= ($t[0] === T_COMMENT || $t[0] === T_DOC_COMMENT)
+                  ? str_repeat("\n", substr_count($t[1], "\n"))
+                  : $t[1];
+        } else {
+            $roh .= $t;
+        }
+    }
+
+    foreach (preg_split('/\R/', $roh) as $nr => $zeile) {
+        $trifft = preg_match('/(!==?|===?)\s*\bte?\s*\(/', $zeile)
+               || preg_match('/\bte?\s*\([^()]*\)\s*(!==?|===?)/', $zeile)
+               || preg_match('/in_array\([^()]*\[[^\]]*\bte?\s*\(/', $zeile);
+        if (!$trifft) continue;
+
+        $vergleiche[] = basename($pfad) . ':' . ($nr + 1) . '  '
+                      . trim(mb_substr(trim($zeile), 0, 90));
+    }
+}
+
+if ($vergleiche === []) {
+    echo "OK: keine Uebersetzung wird gegen einen gespeicherten Wert verglichen.\n";
+} else {
+    foreach ($vergleiche as $v) echo "FEHLER: $v\n";
+    echo "  Der Vergleich muss gegen den deutschen Originalwert laufen -\n";
+    echo "  uebersetzt wird nur, was angezeigt wird.\n";
+    $fail = 1;
+}
+echo "\n";
+
 echo "=== Zusammenfassung ===\n";
 echo $fail
     ? "FEHLGESCHLAGEN: mindestens eine Pruefung ist fehlgeschlagen (siehe oben).\n"
