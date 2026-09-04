@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
@@ -33,8 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($contact_id && $subject && $message) {
             $pdo->prepare("INSERT INTO support_tickets (contact_id, subject, message, status, priority) VALUES (?, ?, ?, 'Offen', ?)")
                 ->execute([$contact_id, $subject, $message, $priority]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TICKET_CREATED', ?)")
-                ->execute(["Ticket '$subject' manuell angelegt."]);
+            log_event($pdo, 'TICKET_CREATED', "Ticket '$subject' manuell angelegt.");
         }
         header("Location: tickets?msg=created"); exit();
     }
@@ -45,8 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $new = $_POST['status'] ?? '';
         $s   = $pdo->prepare("SELECT subject FROM support_tickets WHERE id=?"); $s->execute([$id]); $sub = $s->fetchColumn();
         $pdo->prepare("UPDATE support_tickets SET status=? WHERE id=?")->execute([$new, $id]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TICKET_UPDATED', ?)")
-            ->execute(["Ticket '$sub' Status → '$new'."]);
+        log_event($pdo, 'TICKET_UPDATED', "Ticket '$sub' Status → '$new'.");
         echo "OK"; exit();
     }
 
@@ -55,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $id   = (int)$_POST['ticket_id'];
         $prio = in_array($_POST['priority'] ?? '', $valid_prios) ? $_POST['priority'] : 'Mittel';
         $pdo->prepare("UPDATE support_tickets SET priority=? WHERE id=?")->execute([$prio, $id]);
+        log_event($pdo, 'TICKET_PRIORITY', "Priorität von Ticket $id auf '$prio' gesetzt.");
         echo "OK"; exit();
     }
 
@@ -65,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $note = trim($_POST['note'] ?? '');
         if (!$id || $note === '') { echo json_encode(['ok' => false]); exit(); }
         $pdo->prepare("INSERT INTO ticket_notes (ticket_id, note) VALUES (?, ?)")->execute([$id, $note]);
+        log_event($pdo, 'TICKET_NOTE', "Interne Notiz zu Ticket $id gespeichert.");
         echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
         exit();
     }
@@ -131,16 +132,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 // Interner Log-Eintrag (nur für Admin sichtbar)
                 $pdo->prepare("INSERT INTO ticket_notes (ticket_id, note, author, is_public) VALUES (?, ?, 'admin', 0)")
                     ->execute([$id, "📧 E-Mail gesendet an: $to"]);
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TICKET_REPLY', ?)")
-                    ->execute(["Antwort auf Ticket #$id per E-Mail an $to gesendet."]);
+                log_event($pdo, 'TICKET_REPLY', "Antwort auf Ticket #$id per E-Mail an $to gesendet.");
             }
             // Öffentliche Antwort immer speichern (sichtbar im Kundenportal)
             $pdo->prepare("INSERT INTO ticket_notes (ticket_id, note, author, is_public) VALUES (?, ?, 'admin', 1)")
                 ->execute([$id, $body]);
             $pdo->prepare("UPDATE support_tickets SET status='In Bearbeitung' WHERE id=? AND status='Offen'")->execute([$id]);
             if (!$do_email) {
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TICKET_REPLY', ?)")
-                    ->execute(["Antwort auf Ticket #$id im Portal gespeichert (keine E-Mail)."]);
+                log_event($pdo, 'TICKET_REPLY', "Antwort auf Ticket #$id im Portal gespeichert (keine E-Mail).");
             }
             echo json_encode(['ok' => true, 'email_sent' => $do_email]);
         } catch (\Throwable $e) {
@@ -155,8 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $s  = $pdo->prepare("SELECT subject FROM support_tickets WHERE id=?"); $s->execute([$id]); $sub = $s->fetchColumn();
         $pdo->prepare("DELETE FROM ticket_notes WHERE ticket_id=?")->execute([$id]);
         $pdo->prepare("DELETE FROM support_tickets WHERE id=?")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TICKET_DELETED', ?)")
-            ->execute(["Ticket '$sub' gelöscht."]);
+        log_event($pdo, 'TICKET_DELETED', "Ticket '$sub' gelöscht.");
         header("Location: tickets"); exit();
     }
 }

@@ -141,6 +141,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   CONSTRAINT fk_tasks_contact FOREIGN KEY (contact_id)
     REFERENCES contacts(id) ON DELETE SET NULL,
   deleted_at     DATETIME DEFAULT NULL,
+  feedback_by_contact_id INT DEFAULT NULL,
+  feedback_by_name VARCHAR(255) NOT NULL DEFAULT '',
+  feedback_at      DATETIME DEFAULT NULL,
   KEY idx_tasks_deleted (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -212,7 +215,9 @@ CREATE TABLE IF NOT EXISTS client_assets (
   uploaded_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_assets_task (task_id),
   CONSTRAINT fk_assets_task FOREIGN KEY (task_id)
-    REFERENCES tasks(id) ON DELETE CASCADE
+    REFERENCES tasks(id) ON DELETE CASCADE,
+  uploaded_by_contact_id INT DEFAULT NULL,
+  uploaded_by_name VARCHAR(255) NOT NULL DEFAULT '',
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS time_entries (
@@ -399,7 +404,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '6')
+INSERT INTO settings (k, v) VALUES ('schema_version', '7')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

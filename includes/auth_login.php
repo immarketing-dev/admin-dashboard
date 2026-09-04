@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/logging.php';
+
 /**
  * Login-Logik. Ersetzt die früheren login_process.php-Varianten und die
  * settings-basierte Passwortprüfung in login.php.
@@ -27,8 +29,7 @@ function auth_create_first_user(PDO $pdo, string $email, string $password): int
 
     $id = (int) $pdo->lastInsertId();
 
-    $pdo->prepare('INSERT INTO logs (action_type, description) VALUES (?, ?)')
-        ->execute(['USER_CREATED', 'Erster Benutzer angelegt: ' . $email]);
+    log_event($pdo, 'USER_CREATED', 'Erster Benutzer angelegt: ' . $email);
 
     return $id;
 }

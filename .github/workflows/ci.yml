@@ -24,6 +24,9 @@ jobs:
 
       - name: Soft-delete coverage
         run: php tools/check_soft_delete.php
+
+      - name: Form integrity
+        run: php tools/check_forms.php
       - name: .env parser tests
         run: php tools/test_env.php
 

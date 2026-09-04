@@ -7,6 +7,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 ob_end_clean();
 
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
@@ -56,13 +57,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $pdo->prepare("UPDATE calendar_events SET title=?, description=?, location=?, meeting_url=?, event_date=?, start_time=?, end_time=?, category=?, color=?, status=? WHERE id=?")
                     ->execute([$title, $description, $location, $meeting_url, $ev_date, $start_time, $end_time, $category, $color, $status, $event_id]);
                 $pdo->prepare("DELETE FROM event_contacts WHERE event_id=?")->execute([$event_id]);
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('EVENT_UPDATED', ?)")->execute(["Termin '$title' aktualisiert."]);
+                log_event($pdo, 'EVENT_UPDATED', "Termin '$title' aktualisiert.");
             } else {
                 $ics_uid = uniqid('evt_', true) . '@' . parse_url(BASE_URL, PHP_URL_HOST);
                 $pdo->prepare("INSERT INTO calendar_events (title, description, location, meeting_url, event_date, start_time, end_time, category, color, status, ics_uid) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
                     ->execute([$title, $description, $location, $meeting_url, $ev_date, $start_time, $end_time, $category, $color, $status, $ics_uid]);
                 $event_id = (int)$pdo->lastInsertId();
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('EVENT_CREATED', ?)")->execute(["Termin '$title' am $ev_date erstellt."]);
+                log_event($pdo, 'EVENT_CREATED', "Termin '$title' am $ev_date erstellt.");
             }
             foreach ($contact_ids as $cid) {
                 $tok = bin2hex(random_bytes(32));
@@ -88,7 +89,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $pdo->prepare("DELETE FROM event_contacts WHERE event_id=?")->execute([$event_id]);
         $pdo->prepare("DELETE FROM calendar_events WHERE id=?")->execute([$event_id]);
         if ($ev) {
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('EVENT_DELETED', ?)")->execute(["Termin '{$ev['title']}' gelöscht."]);
+            log_event($pdo, 'EVENT_DELETED', "Termin '{$ev['title']}' gelöscht.");
         }
         header("Location: calendar?year=$year&month=$month");
         exit();

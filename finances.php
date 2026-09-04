@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
@@ -217,15 +218,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $pdo->prepare("UPDATE finances SET type=?, title=?, contact_id=?, custom_name=?, amount=?, status=?, record_date=?, due_date=?, notes=?, is_recurring=? WHERE id=?")
                 ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $id]);
             
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
-                ->execute(['FINANCE_UPDATED', "Finanzeintrag '$title' (ID: $id) wurde bearbeitet."]);
+            log_event($pdo, 'FINANCE_UPDATED', "Finanzeintrag '$title' (ID: $id) wurde bearbeitet.");
         } else {
             $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, is_recurring) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring]);
             
             $typ_name = ($type === 'INCOME') ? 'Einnahme' : 'Ausgabe';
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
-                ->execute(['FINANCE_ADDED', "Neue $typ_name angelegt: '$title' über $amount €."]);
+            log_event($pdo, 'FINANCE_ADDED', "Neue $typ_name angelegt: '$title' über $amount €.");
         }
         header("Location: finances"); exit();
     }
@@ -240,8 +239,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
         $pdo->prepare("UPDATE finances SET status = ? WHERE id = ?")->execute([$new_status, $id]);
         
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
-            ->execute(['FINANCE_UPDATED', "Status von '$fin_title' auf '$new_status' geändert."]);
+        log_event($pdo, 'FINANCE_UPDATED', "Status von '$fin_title' auf '$new_status' geändert.");
             
         echo "OK"; exit();
     }
@@ -260,8 +258,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
         $pdo->prepare("UPDATE finances SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
 
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
-            ->execute(['FINANCE_DELETED', "Finanzeintrag '{$row['title']}' (ID: $id) wurde dauerhaft gelöscht."]);
+        log_event($pdo, 'FINANCE_DELETED', "Finanzeintrag '{$row['title']}' (ID: $id) wurde dauerhaft gelöscht.");
 
         header("Location: finances"); exit();
     }
@@ -279,7 +276,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $items       = build_items(); $total = calc_total($items, $tax_type);
         $pdo->prepare("INSERT INTO quotes (quote_number,subject,intro_text,contact_id,custom_name,status,tax_type,items,notes,total_amount,valid_until) VALUES (?,?,?,?,?,'Entwurf',?,?,?,?,?)")
             ->execute([$quote_number,$subject,$intro_text,$contact_id,$custom_name,$tax_type,json_encode($items),$notes,$total,$valid_until]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_CREATED',?)")->execute(["Angebot $quote_number erstellt."]);
+        log_event($pdo, 'QUOTE_CREATED', "Angebot $quote_number erstellt.");
         header("Location: finances?tab=quotes"); exit();
     }
     if ($action === 'edit_quote') {
@@ -295,7 +292,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $items       = build_items(); $total = calc_total($items, $tax_type);
         $pdo->prepare("UPDATE quotes SET subject=?,intro_text=?,contact_id=?,custom_name=?,status=?,tax_type=?,items=?,notes=?,total_amount=?,valid_until=? WHERE id=?")
             ->execute([$subject,$intro_text,$contact_id,$custom_name,$status,$tax_type,json_encode($items),$notes,$total,$valid_until,$id]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_EDITED',?)")->execute(["Angebot #$id aktualisiert."]);
+        log_event($pdo, 'QUOTE_EDITED', "Angebot #$id aktualisiert.");
         header("Location: finances?tab=quotes"); exit();
     }
     if ($action === 'delete_quote') {
@@ -305,7 +302,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
         // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
         $pdo->prepare("UPDATE quotes SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_DELETED',?)")->execute(["Angebot {$q2['quote_number']} gelöscht."]);
+        log_event($pdo, 'QUOTE_DELETED', "Angebot {$q2['quote_number']} gelöscht.");
         header("Location: finances?tab=quotes"); exit();
     }
     if ($action === 'generate_pdf') {
@@ -315,7 +312,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
         $rel_path = build_quote_pdf($pdo, $q2);
         $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=? AND status='Entwurf'")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_PDF',?)")->execute(["PDF für Angebot {$q2['quote_number']} generiert."]);
+        log_event($pdo, 'QUOTE_PDF', "PDF für Angebot {$q2['quote_number']} generiert.");
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="'.basename($rel_path).'"');
         readfile(__DIR__.'/'.$rel_path); exit();
@@ -342,7 +339,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->addAttachment(__DIR__.'/'.$q2['quote_pdf_path'], 'Angebot_'.$q2['quote_number'].'.pdf');
             $mail->send();
             if ($q2['status']==='Entwurf') $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=?")->execute([$id]);
-            $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_EMAIL_SENT',?)")->execute(["Angebot {$q2['quote_number']} per E-Mail an $to_email gesendet."]);
+            log_event($pdo, 'QUOTE_EMAIL_SENT', "Angebot {$q2['quote_number']} per E-Mail an $to_email gesendet.");
             header("Location: finances?tab=quotes&msg=quote_email_sent"); exit();
         } catch (PHPMailerException $e) { header("Location: finances?tab=quotes&error=email_failed&detail=".urlencode($e->getMessage())); exit(); }
     }
@@ -357,7 +354,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("INSERT INTO finances (type,title,invoice_number,contact_id,custom_name,amount,status,record_date,due_date,notes,invoice_pdf_path,is_recurring) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(),INTERVAL 14 DAY),?,?,0)")
             ->execute([$inv_num2,$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2]);
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_CONVERTED',?)")->execute(["Angebot {$q2['quote_number']} zu Rechnung $inv_num2 konvertiert."]);
+        log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q2['quote_number']} zu Rechnung $inv_num2 konvertiert.");
         header("Location: finances?msg=invoice_created"); exit();
     }
     // ── END QUOTES ──────────────────────────────────────────────────
@@ -402,8 +399,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->addAttachment($pdf_path, basename($pdf_path));
             }
             $mail->send();
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('INVOICE_EMAIL_SENT',?)")
-                ->execute(["Rechnung {$rec['title']} per E-Mail an $to_email gesendet."]);
+            log_event($pdo, 'INVOICE_EMAIL_SENT', "Rechnung {$rec['title']} per E-Mail an $to_email gesendet.");
             header("Location: finances?msg=email_sent"); exit();
         } catch (PHPMailerException $e) {
             header("Location: finances?error=email_failed&detail=" . urlencode($e->getMessage())); exit();

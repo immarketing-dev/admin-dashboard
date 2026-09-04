@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/numbering.php';
 
 // Session ueber den gemeinsamen Bootstrap. Frueher setzte diese Datei ein
@@ -309,8 +310,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // zusätzlich in ihrer eigenen Spalte mit eindeutigem Index.
             $insert->execute([$invoice_number, $invoice_number, $db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path]);
 
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
-                ->execute(['INVOICE_CREATED', "Rechnung $invoice_number für $db_client_name generiert."]);
+            log_event($pdo, 'INVOICE_CREATED', "Rechnung $invoice_number für $db_client_name generiert.");
         } else {
             // AKTUALISIEREN (Wenn du die gleiche Rechnung noch mal überschreibst)
             $update = $pdo->prepare("
@@ -320,8 +320,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             ");
             $update->execute([$db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path, $existing['id']]);
 
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
-                ->execute(['INVOICE_UPDATED', "Rechnung $invoice_number wurde neu generiert und auf $db_amount € aktualisiert."]);
+            log_event($pdo, 'INVOICE_UPDATED', "Rechnung $invoice_number wurde neu generiert und auf $db_amount € aktualisiert.");
         }
     } catch (PDOException $e) {
         die("<b>Datenbankfehler beim Speichern der Rechnung:</b><br>" . $e->getMessage());

@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
 require_once 'includes/upload_helper.php';
 
@@ -28,11 +29,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $stmt = $pdo->prepare("INSERT INTO wiki_articles (title, content, category, tags, is_pinned) VALUES (?, ?, ?, ?, ?)");
                 $stmt->execute([$title, $content, $category, $tags, $is_pinned]);
                 $article_id = $pdo->lastInsertId(); // ID für Attachments abgreifen
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('WIKI_ADDED', ?)")->execute(["Wiki-Eintrag '". $title ."' wurde angelegt."]);
+                log_event($pdo, 'WIKI_ADDED', "Wiki-Eintrag '". $title ."' wurde angelegt.");
             } else {
                 $stmt = $pdo->prepare("UPDATE wiki_articles SET title=?, content=?, category=?, tags=?, is_pinned=? WHERE id=?");
                 $stmt->execute([$title, $content, $category, $tags, $is_pinned, $article_id]);
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('WIKI_EDITED', ?)")->execute(["Wiki-Eintrag '". $title ."' wurde aktualisiert."]);
+                log_event($pdo, 'WIKI_EDITED', "Wiki-Eintrag '". $title ."' wurde aktualisiert.");
             }
             
             // DATEI-UPLOAD VERARBEITEN
@@ -58,7 +59,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                     if (move_uploaded_file($tmp_name, $path)) {
                         $pdo->prepare("INSERT INTO wiki_attachments (article_id, file_name, file_path) VALUES (?, ?, ?)")
                             ->execute([$article_id, $name, $path]);
-                        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('WIKI_ATTACHMENT_ADDED',?)")->execute(["Anhang '$name' zu Wiki-Artikel #$article_id hochgeladen."]);
+                        log_event($pdo, 'WIKI_ATTACHMENT_ADDED', "Anhang '$name' zu Wiki-Artikel #$article_id hochgeladen.");
                     }
                 }
             }
@@ -88,7 +89,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $att = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($att && file_exists($att['file_path'])) @unlink($att['file_path']);
         $pdo->prepare("DELETE FROM wiki_attachments WHERE id = ?")->execute([$_POST['asset_id']]);
-        if ($att) $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('WIKI_ATTACHMENT_DELETED',?)")->execute(["Anhang '{$att['file_name']}' gelöscht."]);
+        if ($att) log_event($pdo, 'WIKI_ATTACHMENT_DELETED', "Anhang '{$att['file_name']}' gelöscht.");
         echo "DELETED"; exit();
     }
     
@@ -108,8 +109,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $stmt = $pdo->prepare("SELECT title FROM wiki_articles WHERE id = ?");
         $stmt->execute([$article_id]);
         $art_title = $stmt->fetchColumn();
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('WIKI_SHARED', ?)")
-            ->execute(["Artikel '". $art_title ."' für ". count($contact_ids) ." Kunde(n) freigegeben."]);
+        log_event($pdo, 'WIKI_SHARED', "Artikel '". $art_title ."' für ". count($contact_ids) ." Kunde(n) freigegeben.");
 
         header("Location: wiki"); exit();
     }
@@ -132,7 +132,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("DELETE FROM wiki_articles WHERE id = ?")->execute([$_POST['article_id']]);
         
         if($del_title) {
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('WIKI_DELETED', ?)")->execute(["Wiki-Eintrag '". $del_title ."' wurde gelöscht."]);
+            log_event($pdo, 'WIKI_DELETED', "Wiki-Eintrag '". $del_title ."' wurde gelöscht.");
         }
         header("Location: wiki"); exit();
     }

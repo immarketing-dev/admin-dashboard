@@ -952,3 +952,23 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     .gsearch-trigger .gsearch-trigger-text, .gsearch-trigger kbd { display: none; }
     .gsearch-panel { margin-top: 4vh; max-height: 88vh; }
 }
+
+/* =========================================================
+   Bootstrap faerbt Tabellenzellen ueber eigene Variablen, die
+   auf die Bootstrap-eigenen Themefarben zeigen - nicht auf
+   unsere Tokens. Ohne diese Zuordnung bleibt jede Zeile im
+   dunklen Thema weiss, waehrend die Schrift hell wird: also
+   unlesbar. Bewusst nicht in einen [data-theme]-Block, damit
+   beide Themen aus derselben Quelle kommen.
+   ========================================================= */
+.table {
+    --bs-table-bg:            transparent;
+    --bs-table-color:         var(--text-body);
+    --bs-table-border-color:  var(--border-subtle);
+    --bs-table-striped-bg:    var(--surface-subtle);
+    --bs-table-striped-color: var(--text-body);
+    --bs-table-hover-bg:      var(--surface-subtle);
+    --bs-table-hover-color:   var(--text-strong);
+    --bs-table-active-bg:     var(--surface-sunken);
+    --bs-table-active-color:  var(--text-strong);
+}

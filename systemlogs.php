@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 
 require_once 'includes/auth.php';
 
@@ -43,32 +44,63 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $pdo->exec("TRUNCATE TABLE logs"); 
     
     // 2. Direkt im Anschluss protokollieren, dass geleert wurde
-    $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('SYSTEM_RESET', ?)")
-        ->execute(["Das System-Logbuch wurde manuell geleert."]);
+    log_event($pdo, 'SYSTEM_RESET', "Das System-Logbuch wurde manuell geleert.");
         
     header("Location: logs");
     exit();
 }
 
-// Filter
+// ── Filter, Zeitraum und Blättern ───────────────────────────────────
 $log_filter = trim($_GET['filter'] ?? '');
 $log_search = trim($_GET['q'] ?? '');
+$log_range  = $_GET['range'] ?? '30';
+if (!in_array($log_range, ['1', '7', '30', 'all'], true)) $log_range = '30';
 
-$_log_limit = max(1, min(2000, (int)setting('log_limit', '200')));
-if ($log_filter || $log_search) {
-    $where = [];
-    $params = [];
-    if ($log_filter) { $where[] = "action_type LIKE ?"; $params[] = $log_filter . '%'; }
-    // Die IP wird mitdurchsucht - sie steht seit Schemaversion 2 in einer
-    // eigenen Spalte und nicht mehr in der Beschreibung.
-    if ($log_search) { $where[] = "(action_type LIKE ? OR description LIKE ? OR ip LIKE ?)"; $params[] = "%$log_search%"; $params[] = "%$log_search%"; $params[] = "%$log_search%"; }
-    $sql = "SELECT * FROM logs WHERE " . implode(' AND ', $where) . " ORDER BY created_at DESC LIMIT " . $_log_limit;
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-} else {
-    $stmt = $pdo->query("SELECT * FROM logs ORDER BY created_at DESC LIMIT " . $_log_limit);
+// Wie viele Zeilen je Seite. Die Einstellung bleibt die Obergrenze.
+$per_page = max(20, min(500, (int)setting('log_limit', '200')));
+$page     = max(1, (int)($_GET['page'] ?? 1));
+
+$where  = [];
+$params = [];
+if ($log_filter) { $where[] = 'action_type LIKE ?'; $params[] = $log_filter . '%'; }
+// Die IP wird mitdurchsucht - sie steht seit Schemaversion 2 in einer
+// eigenen Spalte und nicht mehr in der Beschreibung.
+if ($log_search) {
+    $where[]  = '(action_type LIKE ? OR description LIKE ? OR ip LIKE ?)';
+    $params[] = "%$log_search%"; $params[] = "%$log_search%"; $params[] = "%$log_search%";
 }
+if ($log_range !== 'all') {
+    $where[]  = 'created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+    $params[] = (int)$log_range;
+}
+$wsql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
+
+$cnt = $pdo->prepare("SELECT COUNT(*) FROM logs$wsql");
+$cnt->execute($params);
+$log_total  = (int)$cnt->fetchColumn();
+$page_count = max(1, (int)ceil($log_total / $per_page));
+if ($page > $page_count) $page = $page_count;
+$offset = ($page - 1) * $per_page;
+
+// LIMIT/OFFSET als Zahlen einsetzen: beide sind oben auf einen Bereich
+// begrenzt, und als gebundene Parameter behandelt MySQL sie je nach
+// Treibereinstellung als Zeichenkette und lehnt sie ab.
+$stmt = $pdo->prepare("SELECT * FROM logs$wsql ORDER BY created_at DESC LIMIT $per_page OFFSET $offset");
+$stmt->execute($params);
 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ── Kennzahlen ──────────────────────────────────────────────────────
+$log_stats = [
+    'gesamt' => (int)$pdo->query('SELECT COUNT(*) FROM logs')->fetchColumn(),
+    'heute'  => (int)$pdo->query('SELECT COUNT(*) FROM logs WHERE DATE(created_at) = CURDATE()')->fetchColumn(),
+];
+$log_stats['fehlversuche'] = (int)$pdo->query(
+    "SELECT COUNT(*) FROM logs WHERE action_type IN ('LOGIN_FAILED','PORTAL_PIN_FAILED','PORTAL_PIN_LOCKED','SYSTEM_LOCKOUT')
+     AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+)->fetchColumn();
+$log_stats['letzte_anmeldung'] = $pdo->query(
+    "SELECT created_at FROM logs WHERE action_type = 'LOGIN_SUCCESS' ORDER BY created_at DESC LIMIT 1"
+)->fetchColumn() ?: null;
 
 // Alle verfügbaren Präfixe für Filter-Dropdown
 $log_types_raw = $pdo->query("SELECT DISTINCT action_type FROM logs ORDER BY action_type ASC")->fetchAll(PDO::FETCH_COLUMN);
@@ -168,22 +200,80 @@ require 'includes/layout_start.php';
 ?>
 
     <!-- Filter & Suche -->
-    <form method="GET" class="bg-surface rounded-3 shadow-sm border p-3 mb-3 d-flex gap-2 flex-wrap align-items-center">
+    <div class="row g-3 mb-3 row-cols-2 row-cols-lg-4">
+      <div class="col">
+        <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
+          <div class="icon-tile icon-tile-primary"><i class="bi bi-journal-text"></i></div>
+          <div>
+            <div class="label-xs">Einträge gesamt</div>
+            <div class="fw-bold fs-5 lh-1 text-strong-c"><?= number_format($log_stats['gesamt'], 0, ',', '.') ?></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
+          <div class="icon-tile icon-tile-primary"><i class="bi bi-calendar-day"></i></div>
+          <div>
+            <div class="label-xs">Heute</div>
+            <div class="fw-bold fs-5 lh-1 text-strong-c"><?= number_format($log_stats['heute'], 0, ',', '.') ?></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
+          <?php $warn = $log_stats['fehlversuche'] > 0; ?>
+          <div class="icon-tile <?= $warn ? 'icon-tile-danger' : 'icon-tile-primary' ?>">
+            <i class="bi bi-shield-exclamation"></i>
+          </div>
+          <div>
+            <div class="label-xs">Fehlversuche (7 Tage)</div>
+            <div class="fw-bold fs-5 lh-1 <?= $warn ? 'text-danger' : 'text-strong-c' ?>">
+              <?= number_format($log_stats['fehlversuche'], 0, ',', '.') ?>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
+          <div class="icon-tile icon-tile-primary"><i class="bi bi-box-arrow-in-right"></i></div>
+          <div style="min-width:0;">
+            <div class="label-xs">Letzte Anmeldung</div>
+            <div class="fw-bold lh-1 text-strong-c" style="font-size:var(--text-base-plus);">
+              <?= $log_stats['letzte_anmeldung']
+                    ? date('d.m.Y H:i', strtotime($log_stats['letzte_anmeldung']))
+                    : '—' ?>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="GET" class="filter-bar">
       <select name="filter" class="form-select form-select-sm" style="max-width:180px;" onchange="this.form.submit()">
         <option value="">Alle Typen</option>
         <?php foreach($log_prefixes as $pre): ?>
           <option value="<?= htmlspecialchars($pre) ?>" <?= $log_filter === $pre ? 'selected' : '' ?>><?= htmlspecialchars($pre) ?>*</option>
         <?php endforeach; ?>
       </select>
-      <div class="input-group input-group-sm" style="max-width:260px;">
+      <select name="range" class="form-select form-select-sm w-auto" onchange="this.form.submit()"
+              aria-label="Zeitraum">
+        <?php foreach(['1'=>'Heute','7'=>'7 Tage','30'=>'30 Tage','all'=>'Gesamter Zeitraum'] as $v=>$t): ?>
+          <option value="<?= $v ?>" <?= $log_range === $v ? 'selected' : '' ?>><?= $t ?></option>
+        <?php endforeach; ?>
+      </select>
+      <div class="input-group input-group-sm search-box" style="max-width:260px;">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
         <input type="text" name="q" class="form-control" placeholder="In Beschreibung/IP suchen…" value="<?= htmlspecialchars($log_search) ?>">
       </div>
       <button type="submit" class="btn btn-sm btn-primary fw-bold">Filtern</button>
-      <?php if($log_filter || $log_search): ?>
+      <?php if($log_filter || $log_search || $log_range !== '30'): ?>
         <a href="systemlogs" class="btn btn-sm btn-outline-secondary">Zurücksetzen</a>
       <?php endif; ?>
-      <span class="text-muted small ms-auto"><?= count($logs) ?> Einträge</span>
+      <span class="text-muted small ms-auto">
+        <?= number_format($log_total, 0, ',', '.') ?> Treffer<?php
+          if ($page_count > 1) echo ' · Seite ' . $page . ' von ' . $page_count;
+        ?>
+      </span>
     </form>
 
     <div class="log-container">
@@ -215,6 +305,56 @@ require 'includes/layout_start.php';
             <?php endforeach; ?>
           </tbody>
         </table>
+
+        <?php if($page_count > 1):
+          // Beim Blättern die gesetzten Filter mitnehmen - sonst landet man
+          // auf Seite 2 einer anderen Liste als der, die man gerade ansieht.
+          $qs = function (int $seite) use ($log_filter, $log_search, $log_range) {
+              $teile = array_filter([
+                  'filter' => $log_filter,
+                  'q'      => $log_search,
+                  'range'  => $log_range !== '30' ? $log_range : '',
+                  'page'   => $seite > 1 ? (string)$seite : '',
+              ], fn($v) => $v !== '' && $v !== null);
+              return 'systemlogs' . ($teile ? '?' . http_build_query($teile) : '');
+          };
+          $von_ = max(1, $page - 2);
+          $bis_ = min($page_count, $page + 2);
+        ?>
+        <nav class="d-flex justify-content-center mt-3" aria-label="Seiten">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+              <a class="page-link" href="<?= htmlspecialchars($qs(max(1, $page - 1))) ?>" aria-label="Zurück">
+                <i class="bi bi-chevron-left"></i>
+              </a>
+            </li>
+            <?php if($von_ > 1): ?>
+              <li class="page-item"><a class="page-link" href="<?= htmlspecialchars($qs(1)) ?>">1</a></li>
+              <?php if($von_ > 2): ?>
+                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+              <?php endif; ?>
+            <?php endif; ?>
+            <?php for($i = $von_; $i <= $bis_; $i++): ?>
+              <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                <a class="page-link" href="<?= htmlspecialchars($qs($i)) ?>"><?= $i ?></a>
+              </li>
+            <?php endfor; ?>
+            <?php if($bis_ < $page_count): ?>
+              <?php if($bis_ < $page_count - 1): ?>
+                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+              <?php endif; ?>
+              <li class="page-item">
+                <a class="page-link" href="<?= htmlspecialchars($qs($page_count)) ?>"><?= $page_count ?></a>
+              </li>
+            <?php endif; ?>
+            <li class="page-item <?= $page >= $page_count ? 'disabled' : '' ?>">
+              <a class="page-link" href="<?= htmlspecialchars($qs(min($page_count, $page + 1))) ?>" aria-label="Weiter">
+                <i class="bi bi-chevron-right"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <?php endif; ?>
         <div class="text-muted mt-3" style="font-size: 12px;"><i class="bi bi-info-circle"></i> <?= $log_filter || $log_search ? count($logs) . ' gefilterte Einträge (max. ' . ($_log_limit*2>2000?2000:$_log_limit*2) . ').' : 'Anzeige der letzten ' . $_log_limit . ' Einträge.' ?></div>
       <?php else: ?>
         <div class="text-center py-5"><i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i><h4 class="mt-3 text-muted">Logbuch ist leer</h4></div>

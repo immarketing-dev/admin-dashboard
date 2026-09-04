@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/upload_helper.php';
 require_once 'includes/session.php';
 require_once 'includes/csrf.php';
@@ -75,8 +76,7 @@ function portal_notify_admin(PDO $pdo, array $client, string $was,
         // Throwable, nicht Exception: fehlt PHPMailer, wirft PHP einen Error -
         // der wuerde das Portal abbrechen, statt nur die Meldung ausfallen zu
         // lassen. Der Log-Eintrag oben ist die verlaessliche Spur.
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MAIL_ERROR', ?)")
-            ->execute(['Angebots-Benachrichtigung fehlgeschlagen: ' . $e->getMessage()]);
+        log_event($pdo, 'MAIL_ERROR', 'Angebots-Benachrichtigung fehlgeschlagen: ' . $e->getMessage());
     }
 }
 
@@ -102,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE contacts SET portal_pin=?, portal_pin_attempts=0, portal_pin_locked_until=NULL WHERE id=?")
                 ->execute([password_hash($pin, PASSWORD_DEFAULT), $client['id']]);
             $_SESSION[$_sess_key] = true;
+            log_event($pdo, 'PORTAL_PIN_SET', "{$client['name']} hat einen Zugangscode vergeben.");
             header("Location: portal?token=$token"); exit();
         }
     }
@@ -129,8 +130,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($attempts >= 5) {
                     $pdo->prepare("UPDATE contacts SET portal_pin_attempts=?, portal_pin_locked_until=DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id=?")
                         ->execute([$attempts, $client['id']]);
+                    log_event($pdo, 'PORTAL_PIN_LOCKED', "Portalzugang von {$client['name']} nach 5 Fehlversuchen für 30 Minuten gesperrt.");
                     $_pin_error = 'Zu viele Fehlversuche. Zugang für 30 Minuten gesperrt.';
                 } else {
+                    log_event($pdo, 'PORTAL_PIN_FAILED', "Falscher Zugangscode für {$client['name']} (Versuch $attempts von 5).");
                     $pdo->prepare("UPDATE contacts SET portal_pin_attempts=? WHERE id=?")->execute([$attempts, $client['id']]);
                     $_pin_error = 'Falscher Zugangscode. Noch ' . (5 - $attempts) . ' Versuch(e).';
                 }
@@ -157,8 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ->execute([$ms_id, $client['name'], $message]);
         $new_id = $pdo->lastInsertId();
 
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_MS_COMMENT',?)")
-            ->execute(["Kunde {$client['name']} kommentierte Meilenstein #$ms_id"]);
+        log_event($pdo, 'PORTAL_MS_COMMENT', "Kunde {$client['name']} kommentierte Meilenstein #$ms_id");
 
         echo json_encode([
             'success'     => true,
@@ -181,9 +183,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("INSERT INTO project_comments (task_id, author_contact_id, author_name, message)
                            VALUES (?, ?, ?, ?)")
                 ->execute([$t_id, $client['id'], $client['name'], $msg]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PROJECT_COMMENT', ?)")
-                ->execute(["{$client['name']} hat im Projekt $t_id geschrieben: "
-                           . mb_strimwidth($msg, 0, 120, '…')]);
+            log_event($pdo, 'PROJECT_COMMENT', "{$client['name']} hat im Projekt $t_id geschrieben: "
+                           . mb_strimwidth($msg, 0, 120, '…'));
         }
         header("Location: portal?token=$token&msg=comment#tab-projects"); exit();
     }
@@ -198,8 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk->execute([$qid, $client['id']]);
         if ($q = $chk->fetch(PDO::FETCH_ASSOC)) {
             $pdo->prepare("UPDATE quotes SET status = 'Angenommen' WHERE id = ?")->execute([$qid]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_ACCEPTED', ?)")
-                ->execute(["Angebot {$q['quote_number']} von {$client['name']} im Portal angenommen."]);
+            log_event($pdo, 'QUOTE_ACCEPTED', "Angebot {$q['quote_number']} von {$client['name']} im Portal angenommen.");
             portal_notify_admin($pdo, $client, 'angenommen', $q['quote_number'], $q['total_amount'], '');
             header("Location: portal?token=$token&msg=quote_accepted#quotes"); exit();
         }
@@ -216,9 +216,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                               WHERE id = ? AND contact_id = ? AND deleted_at IS NULL");
         $chk->execute([$qid, $client['id']]);
         if (($q = $chk->fetch(PDO::FETCH_ASSOC)) && $frage !== '') {
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_QUESTION', ?)")
-                ->execute(["Rückfrage von {$client['name']} zu Angebot {$q['quote_number']}: "
-                           . mb_strimwidth($frage, 0, 160, '…')]);
+            log_event($pdo, 'QUOTE_QUESTION', "Rückfrage von {$client['name']} zu Angebot {$q['quote_number']}: "
+                           . mb_strimwidth($frage, 0, 160, '…'));
             portal_notify_admin($pdo, $client, 'Rückfrage', $q['quote_number'], $q['total_amount'], $frage);
             header("Location: portal?token=$token&msg=quote_question#quotes"); exit();
         }
@@ -229,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_profile'])) {
         $pdo->prepare("UPDATE contacts SET name=?,company=?,email=?,phone=?,website=?,street=?,zip=?,city=?,country=? WHERE id=?")
             ->execute([trim($_POST['name']),trim($_POST['company']),trim($_POST['email']),trim($_POST['phone']),trim($_POST['website']),trim($_POST['street']),trim($_POST['zip']),trim($_POST['city']),trim($_POST['country']),$client['id']]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_PROFILE',?)")->execute(["Kunde {$client['name']} aktualisierte Kontaktdaten."]);
+        log_event($pdo, 'PORTAL_PROFILE', "Kunde {$client['name']} aktualisierte Kontaktdaten.");
         header("Location: portal?token=$token&msg=profile_updated"); exit();
     }
 
@@ -237,7 +236,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['create_ticket'])) {
         $pdo->prepare("INSERT INTO support_tickets (contact_id,subject,message) VALUES (?,?,?)")
             ->execute([$client['id'],trim($_POST['subject']),trim($_POST['message'])]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('TICKET_CREATED',?)")->execute(["Ticket von {$client['name']}: ".mb_strimwidth($_POST['subject'],0,30,'...')]);
+        log_event($pdo, 'TICKET_CREATED', "Ticket von {$client['name']}: ".mb_strimwidth($_POST['subject'],0,30,'...'));
         header("Location: portal?token=$token&msg=ticket_created"); exit();
     }
 
@@ -250,8 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk->execute([$tid, $client['id']]);
         if (!$chk->fetch()) { echo json_encode(['ok' => false]); exit(); }
         $pdo->prepare("UPDATE support_tickets SET priority=? WHERE id=?")->execute([$prio, $tid]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_UPDATE', ?)")
-            ->execute(["Kunde {$client['name']} änderte Priorität von Ticket #$tid auf '$prio'"]);
+        log_event($pdo, 'PORTAL_TICKET_UPDATE', "Kunde {$client['name']} änderte Priorität von Ticket #$tid auf '$prio'");
         echo json_encode(['ok' => true]);
         exit();
     }
@@ -263,8 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk->execute([$tid, $client['id']]);
         if ($chk->fetch()) {
             $pdo->prepare("UPDATE support_tickets SET status='Erledigt' WHERE id=?")->execute([$tid]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_CLOSE', ?)")
-                ->execute(["Kunde {$client['name']} markierte Ticket #$tid als Erledigt"]);
+            log_event($pdo, 'PORTAL_TICKET_CLOSE', "Kunde {$client['name']} markierte Ticket #$tid als Erledigt");
         }
         header("Location: portal?token=$token&msg=ticket_closed&open_ticket=$tid#support"); exit();
     }
@@ -277,8 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($chk->fetch()) {
             $pdo->prepare("DELETE FROM ticket_notes WHERE ticket_id=?")->execute([$tid]);
             $pdo->prepare("DELETE FROM support_tickets WHERE id=?")->execute([$tid]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_DELETE', ?)")
-                ->execute(["Kunde {$client['name']} löschte Ticket #$tid"]);
+            log_event($pdo, 'PORTAL_TICKET_DELETE', "Kunde {$client['name']} löschte Ticket #$tid");
         }
         header("Location: portal?token=$token&msg=ticket_deleted#support"); exit();
     }
@@ -294,8 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$tid, $reply]);
             // Ticket reaktivieren wenn es bereits Erledigt war
             $pdo->prepare("UPDATE support_tickets SET status='Offen' WHERE id=? AND status='Erledigt'")->execute([$tid]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('PORTAL_TICKET_REPLY', ?)")
-                ->execute(["Kunde {$client['name']} antwortete auf Ticket #$tid"]);
+            log_event($pdo, 'PORTAL_TICKET_REPLY', "Kunde {$client['name']} antwortete auf Ticket #$tid");
         }
         header("Location: portal?token=$token&msg=reply_sent#support"); exit();
     }
@@ -322,8 +317,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($err) { echo "ERR_TYPE:$name"; exit(); }
             $safe = safe_filename($name);
             if (move_uploaded_file($tmp, $upload_dir . $safe)) {
-                $pdo->prepare("INSERT INTO client_assets (task_id,file_name,file_path,dashboard_seen,uploaded_by) VALUES (?,?,?,0,'client')")->execute([$task_id,$name,$upload_dir.$safe]);
-                $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_UPLOAD',?)")->execute(["Kunde {$client['name']} lud hoch: $name"]);
+                $pdo->prepare("INSERT INTO client_assets (task_id,file_name,file_path,dashboard_seen,uploaded_by,uploaded_by_contact_id,uploaded_by_name) VALUES (?,?,?,0,'client',?,?)")->execute([$task_id,$name,$upload_dir.$safe,$client["id"],$client["name"]]);
+                log_event($pdo, 'PORTAL_UPLOAD', "Kunde {$client['name']} lud hoch: $name");
             }
         }
         echo "OK"; exit();
@@ -340,15 +335,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $check->execute([$ms_id, $client['id']]);
         if ($check->fetch()) {
             $pdo->prepare("UPDATE task_milestones SET approved_at=NOW(),is_completed=1,approval_seen=0 WHERE id=?")->execute([$ms_id]);
-            $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_APPROVAL',?)")->execute(["Kunde {$client['name']} segnete Meilenstein #$ms_id ab."]);
+            log_event($pdo, 'PORTAL_APPROVAL', "Kunde {$client['name']} segnete Meilenstein #$ms_id ab.");
         }
         header("Location: portal?token=$token&msg=approved"); exit();
     }
 
     // Allgemeines Projekt-Feedback
     if (isset($_POST['send_feedback'])) {
-        $pdo->prepare("UPDATE tasks SET client_feedback=?,feedback_seen=0 WHERE id=?")->execute([$_POST['feedback'],(int)$_POST['task_id']]);
-        $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_FEEDBACK',?)")->execute(["Kunde {$client['name']} sendete Projekt-Feedback."]);
+        $pdo->prepare("UPDATE tasks SET client_feedback=?,feedback_seen=0,feedback_by_contact_id=?,feedback_by_name=?,feedback_at=NOW() WHERE id=?")->execute([$_POST['feedback'], $client['id'], $client['name'], (int)$_POST['task_id']]);
+        log_event($pdo, 'PORTAL_FEEDBACK', "Kunde {$client['name']} sendete Projekt-Feedback.");
         header("Location: portal?token=$token&msg=feedback"); exit();
     }
 
@@ -361,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($file) {
             @unlink($file['file_path']);
             $pdo->prepare("DELETE FROM client_assets WHERE id=?")->execute([$aid]);
-            $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('PORTAL_DELETE',?)")->execute(["Kunde {$client['name']} löschte Datei."]);
+            log_event($pdo, 'PORTAL_DELETE', "Kunde {$client['name']} löschte Datei.");
         }
         header("Location: portal?token=$token&msg=deleted"); exit();
     }
@@ -1218,7 +1213,16 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                         <?php foreach($ms_coms as $c): ?>
                         <div class="ms-comment-bubble<?= $c['author']==='client' ? ' self' : '' ?>">
                           <div class="ms-comment-meta">
-                            <?= $c['author']==='client' ? '<i class="bi bi-person-fill me-1"></i>Sie' : '<i class="bi bi-headset me-1"></i>'.htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
+                            <?php
+                              // Vorher stand hier pauschal "Sie" - bei mehreren
+                              // Beteiligten war das schlicht falsch, sobald jemand
+                              // anderes geschrieben hatte.
+                              $c_ist_ich = $c['author'] === 'client'
+                                  && trim((string)$c['author_name']) === trim((string)$client['name']);
+                            ?>
+                            <?= $c['author']==='client'
+                                 ? '<i class="bi bi-person-fill me-1"></i>' . htmlspecialchars($c['author_name'] ?: 'Unbekannt') . ($c_ist_ich ? ' (Sie)' : '')
+                                 : '<i class="bi bi-headset me-1"></i>'.htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?>
                             <span class="fw-normal ms-2 text-muted"><?= date('d.m.Y H:i', strtotime($c['created_at'])) ?></span>
                           </div>
                           <div class="ms-comment-text"><?= nl2br(htmlspecialchars($c['message'])) ?></div>
@@ -1275,14 +1279,27 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                     <div class="file-row" id="asset_row_<?= $asset['id'] ?>">
                       <i class="bi bi-file-earmark text-muted flex-shrink-0"></i>
                       <span class="file-name" title="<?= htmlspecialchars($asset['file_name']) ?>"><?= htmlspecialchars($asset['file_name']) ?></span>
-                      <span class="<?= $is_admin ? 'file-badge-admin' : 'file-badge-client' ?>"><?= $is_admin ? 'Von uns' : 'Von Ihnen' ?></span>
+                      <?php
+                        // Vorher stand hier pauschal "Von Ihnen" - bei mehreren
+                        // Beteiligten sagt das nichts. Der Name kommt aus
+                        // Migration 7; fuer aeltere Uploads ohne Namen bleibt
+                        // die alte Beschriftung.
+                        $lader = trim((string)($asset['uploaded_by_name'] ?? ''));
+                        $selbst = isset($asset['uploaded_by_contact_id'])
+                               && (int)$asset['uploaded_by_contact_id'] === (int)$client['id'];
+                      ?>
+                      <span class="<?= $is_admin ? 'file-badge-admin' : 'file-badge-client' ?>"
+                            title="<?= $is_admin ? 'Von uns hochgeladen' : htmlspecialchars($lader !== '' ? "Hochgeladen von $lader" : 'Von Ihrer Seite hochgeladen') ?>">
+                        <?= $is_admin ? 'Von uns'
+                             : ($lader !== '' ? htmlspecialchars($selbst ? 'Sie' : $lader) : 'Von Ihnen') ?>
+                      </span>
                       <?php if($viewable): ?>
                         <a href="<?= htmlspecialchars($asset['file_path']) ?>" target="_blank" class="text-muted" title="Ansehen"><i class="bi bi-eye small"></i></a>
                       <?php endif; ?>
                       <a href="<?= htmlspecialchars($asset['file_path']) ?>" download class="text-primary" title="Herunterladen"><i class="bi bi-download small"></i></a>
                       <?php if(!$is_admin): ?>
-                      <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>
-    <?= csrf_field() ?>">
+                      <form method="POST" class="m-0 d-inline" id="del_asset_form_<?= $asset['id'] ?>">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="delete_asset" value="1">
                         <input type="hidden" name="asset_id" value="<?= $asset['id'] ?>">
                         <button type="button" class="btn-icon text-danger p-0" style="background:none;border:none;cursor:pointer;font-size:13px;"
@@ -1369,6 +1386,14 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <?php if(!$is_partner): ?>
                 <!-- Allgemeines Feedback -->
                 <div class="feedback-card">
+                  <?php if(trim((string)($p['client_feedback'] ?? '')) !== '' && !empty($p['feedback_by_name'])): ?>
+                    <div class="section-hint mb-2">
+                      Zuletzt geschrieben von
+                      <strong><?= htmlspecialchars($p['feedback_by_name']) ?></strong><?php
+                        if (!empty($p['feedback_at'])) echo ' am ' . date('d.m.Y H:i', strtotime($p['feedback_at']));
+                      ?>.
+                    </div>
+                  <?php endif; ?>
                   <div class="section-label" style="color:var(--state-warn-fg);"><i class="bi bi-chat-left-dots-fill me-1"></i>Allgemeines Feedback</div>
                   <p class="text-muted small mb-3">Haben Sie Fragen oder Korrekturwünsche zum aktuellen Stand?</p>
                   <form method="POST">

@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -284,6 +284,44 @@ function migrations(): array
             // Auf wen wartet dieser Schritt? Leer heisst: nicht festgelegt,
             // so wie alle bestehenden Meilensteine.
             "ALTER TABLE task_milestones ADD COLUMN waiting_on VARCHAR(20) NOT NULL DEFAULT ''",
+        ],
+
+        // Version 7: wer war es?
+        //
+        // Solange ein Projekt genau einem Kontakt gehoerte, genuegte
+        // 'client' als Absender - es gab ja nur einen. Seit mehrere
+        // Beteiligte moeglich sind (Migration 5), sagt 'client' nichts mehr:
+        // im Portal stand bei jedem Kommentar "Sie", auch wenn ihn jemand
+        // anderes geschrieben hatte.
+        //
+        // Der Name wird neben der Kontakt-ID gespeichert, nicht statt ihr:
+        // wird der Kontakt spaeter geloescht, bleibt der Verlauf lesbar.
+        7 => [
+            'ALTER TABLE client_assets'
+            . ' ADD COLUMN uploaded_by_contact_id INT DEFAULT NULL,'
+            . " ADD COLUMN uploaded_by_name VARCHAR(255) NOT NULL DEFAULT ''",
+            'ALTER TABLE client_assets ADD CONSTRAINT fk_ca_uploader'
+            . ' FOREIGN KEY (uploaded_by_contact_id) REFERENCES contacts(id) ON DELETE SET NULL',
+
+            'ALTER TABLE tasks'
+            . ' ADD COLUMN feedback_by_contact_id INT DEFAULT NULL,'
+            . " ADD COLUMN feedback_by_name VARCHAR(255) NOT NULL DEFAULT '',"
+            . ' ADD COLUMN feedback_at DATETIME DEFAULT NULL',
+            'ALTER TABLE tasks ADD CONSTRAINT fk_tasks_feedback_by'
+            . ' FOREIGN KEY (feedback_by_contact_id) REFERENCES contacts(id) ON DELETE SET NULL',
+
+            // Bestehende Kunden-Uploads dem Hauptansprechpartner zuordnen -
+            // damals gab es nur ihn, die Zuordnung ist also richtig.
+            'UPDATE client_assets ca'
+            . ' JOIN tasks t ON t.id = ca.task_id'
+            . ' JOIN contacts c ON c.id = t.contact_id'
+            . " SET ca.uploaded_by_contact_id = c.id, ca.uploaded_by_name = c.name"
+            . " WHERE ca.uploaded_by = 'client' AND ca.uploaded_by_contact_id IS NULL",
+
+            'UPDATE tasks t JOIN contacts c ON c.id = t.contact_id'
+            . ' SET t.feedback_by_contact_id = c.id, t.feedback_by_name = c.name'
+            . " WHERE t.client_feedback IS NOT NULL AND t.client_feedback != ''"
+            . ' AND t.feedback_by_contact_id IS NULL',
         ],
     ];
 }

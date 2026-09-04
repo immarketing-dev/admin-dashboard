@@ -5,6 +5,7 @@ use PHPMailer\PHPMailer\Exception;
 require_once __DIR__ . '/vendor/autoload.php';
 
 require_once 'config.php';
+require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/upload_helper.php';
@@ -80,7 +81,7 @@ if (isset($_POST['ajax_action'])) {
                     $html_response .= '<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">' . $badge . ' ' . htmlspecialchars($file_name) . '</span><div class="d-flex gap-2"><a href="' . $path . '" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(' . $asset_id . ')"><i class="bi bi-trash"></i></button></div></div>';
                 }
             }
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('ASSET_ADDED', ?)")->execute(["Admin hat neue Dateien zu Projekt #$task_id hochgeladen."]);
+            log_event($pdo, 'ASSET_ADDED', "Admin hat neue Dateien zu Projekt #$task_id hochgeladen.");
         }
         echo $html_response; exit();
     }
@@ -109,6 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $wert  = $_POST['waiting_on'] ?? '';
         if (!in_array($wert, ['', 'us', 'them'], true)) $wert = '';
         $pdo->prepare("UPDATE task_milestones SET waiting_on = ? WHERE id = ?")->execute([$wert, $ms_id]);
+        log_event($pdo, 'MILESTONE_WAITING', "Zuständigkeit für Schritt $ms_id: " . ($wert ?: 'offen') . '.');
         header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
     }
 
@@ -121,6 +123,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $pdo->prepare("INSERT INTO project_comments (task_id, author_contact_id, author_name, message, admin_seen)
                            VALUES (?, NULL, ?, ?, 1)")
                 ->execute([$t_id, setting('company_short', COMPANY_SHORT), $msg]);
+            log_event($pdo, 'PROJECT_REPLY', "Antwort im Austausch zu Projekt $t_id.");
         }
         header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
     }
@@ -138,8 +141,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 ->execute([$t_id, $c_id]);
             $n = $pdo->prepare("SELECT name FROM contacts WHERE deleted_at IS NULL AND id = ?");
             $n->execute([$c_id]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_CONTACT_ADDED', ?)")
-                ->execute([($n->fetchColumn() ?: "Kontakt $c_id") . " zu Projekt $t_id hinzugefügt."]);
+            log_event($pdo, 'TASK_CONTACT_ADDED', ($n->fetchColumn() ?: "Kontakt $c_id") . " zu Projekt $t_id hinzugefügt.");
         }
         header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
     }
@@ -154,8 +156,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if (!$ist_haupt->fetchColumn()) {
             $pdo->prepare("DELETE FROM task_contacts WHERE task_id = ? AND contact_id = ?")
                 ->execute([$t_id, $c_id]);
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_CONTACT_REMOVED', ?)")
-                ->execute(["Kontakt $c_id von Projekt $t_id entfernt."]);
+            log_event($pdo, 'TASK_CONTACT_REMOVED', "Kontakt $c_id von Projekt $t_id entfernt.");
         }
         header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
     }
@@ -164,6 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $mins = (int)$_POST['minutes'];
         $t_id = $_POST['task_id'];
         if($mins > 0 && !empty($t_id)) {
+            log_event($pdo, 'TIME_MANUAL', "Zeit manuell erfasst: $mins Minuten für Projekt $t_id.");
             $pdo->prepare("INSERT INTO time_entries (task_id, duration_minutes, note) VALUES (?, ?, 'Manuell nachgetragen')")->execute([$t_id, $mins]);
         }
     }
@@ -174,6 +176,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("UPDATE tasks SET title=?, category=?, description=?, contact_id=?, start_date=?, deadline=? WHERE id=?")
             ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, $task_id]);
             
+        // ── Beteiligte abgleichen ───────────────────────────────────
+        // Der Hauptansprechpartner ist immer dabei und traegt die Rolle
+        // 'owner'. Abgleich statt Neuschreiben, damit added_at erhalten
+        // bleibt und der Verlauf stimmt.
+        $haupt = (int)($_POST['contact_id'] ?? 0);
+        $soll  = array_values(array_unique(array_filter(array_map(
+            'intval', (array)($_POST['member_ids'] ?? [])
+        ))));
+        if ($haupt > 0) array_unshift($soll, $haupt);
+        $soll = array_values(array_unique($soll));
+
+        $ist_st = $pdo->prepare("SELECT contact_id FROM task_contacts WHERE task_id = ?");
+        $ist_st->execute([$task_id]);
+        $ist = array_map('intval', $ist_st->fetchAll(PDO::FETCH_COLUMN));
+
+        foreach (array_diff($ist, $soll) as $weg) {
+            $pdo->prepare("DELETE FROM task_contacts WHERE task_id = ? AND contact_id = ?")
+                ->execute([$task_id, $weg]);
+        }
+        foreach (array_diff($soll, $ist) as $neu) {
+            $pdo->prepare("INSERT IGNORE INTO task_contacts (task_id, contact_id, role) VALUES (?, ?, 'member')")
+                ->execute([$task_id, $neu]);
+        }
+        // Rollen richtigstellen - der Hauptkontakt kann gewechselt haben.
+        $pdo->prepare("UPDATE task_contacts SET role = 'member' WHERE task_id = ?")->execute([$task_id]);
+        if ($haupt > 0) {
+            $pdo->prepare("UPDATE task_contacts SET role = 'owner' WHERE task_id = ? AND contact_id = ?")
+                ->execute([$task_id, $haupt]);
+        }
+
         // Fallback Upload (Falls jemand ohne JS hochlädt)
         if (!empty($_FILES['admin_assets']['name'][0])) {
             $upload_dir = 'uploads/client_assets/';
@@ -201,13 +233,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             }
         }
         
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_EDITED', ?)")->execute(["Projekt '". $title ."' wurde aktualisiert."]);
+        log_event($pdo, 'TASK_EDITED', "Projekt '". $title ."' wurde aktualisiert.");
     }
     elseif ($action === 'add_task') {
         $title = trim($_POST['title']);
         $pdo->prepare("INSERT INTO tasks (title, category, description, status, contact_id, start_date, deadline) VALUES (?, ?, ?, 'In Bearbeitung', ?, ?, ?)")
             ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_ADDED', ?)")->execute(["Neues Projekt '". $title ."' wurde angelegt."]);
+        log_event($pdo, 'TASK_ADDED', "Neues Projekt '". $title ."' wurde angelegt.");
     }
     elseif ($action === 'delete_task') { 
         $stmt = $pdo->prepare("SELECT title FROM tasks WHERE deleted_at IS NULL AND id = ?");
@@ -218,7 +250,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // allen Ansichten, bleibt aber 30 Tage wiederherstellbar.
         $pdo->prepare("UPDATE tasks SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL")->execute([(int)$_POST['task_id']]); 
         if($del_title) {
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_DELETED', ?)")->execute(["Projekt '". $del_title ."' wurde gelöscht."]);
+            log_event($pdo, 'TASK_DELETED', "Projekt '". $del_title ."' wurde gelöscht.");
         }
     }
     elseif ($action === 'delete_asset') {
@@ -227,12 +259,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if($file) { 
             @unlink($file['file_path']); 
             $pdo->prepare("DELETE FROM client_assets WHERE id = ?")->execute([$_POST['asset_id']]); 
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('ASSET_DELETED', ?)")->execute(["Datei " . $file['file_name'] . " wurde gelöscht."]);
+            log_event($pdo, 'ASSET_DELETED', "Datei " . $file['file_name'] . " wurde gelöscht.");
         }
     }
     elseif ($action === 'add_milestone') {
         $pdo->prepare("INSERT INTO task_milestones (task_id, title) VALUES (?, ?)")->execute([$_POST['task_id'], trim($_POST['milestone_title'])]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MILESTONE_ADDED',?)")->execute(["Meilenstein '".trim($_POST['milestone_title'])."' zu Projekt #".(int)$_POST['task_id']." hinzugefügt."]);
+        log_event($pdo, 'MILESTONE_ADDED', "Meilenstein '".trim($_POST['milestone_title'])."' zu Projekt #".(int)$_POST['task_id']." hinzugefügt.");
     }
     elseif ($action === 'toggle_milestone') {
         $ms_id = (int)$_POST['milestone_id'];
@@ -249,7 +281,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $pdo->prepare("UPDATE task_milestones SET is_completed = NOT is_completed WHERE id = ?")->execute([$ms_id]);
         if ($ms) {
             $action_type = (int)$ms['is_completed'] === 0 ? 'MILESTONE_COMPLETED' : 'MILESTONE_REOPENED';
-            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?,?)")->execute([$action_type, "Meilenstein '{$ms['title']}' in Projekt '{$ms['task_title']}' ".((int)$ms['is_completed']===0?'abgeschlossen':'wieder geöffnet')."."]);
+            log_event($pdo, $action_type, "Meilenstein '{$ms['title']}' in Projekt '{$ms['task_title']}' ".((int)$ms['is_completed']===0?'abgeschlossen':'wieder geöffnet').".");
         }
 
         // Nur bei Abschluss (0→1), wenn Nutzer Ja gewählt hat und Kontakt eine E-Mail hat
@@ -282,11 +314,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->Body    = $_m['html'];
                 $mail->AltBody = $_m['text'];
                 $mail->send();
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MILESTONE_MAIL',?)")
-                    ->execute(["Meilenstein-E-Mail an {$ms['c_name']} gesendet: {$ms['title']}"]);
+                log_event($pdo, 'MILESTONE_MAIL', "Meilenstein-E-Mail an {$ms['c_name']} gesendet: {$ms['title']}");
             } catch (Exception $e) {
-                $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MAIL_ERROR',?)")
-                    ->execute(["SMTP-Fehler bei Meilenstein-Mail an {$ms['c_name']}: " . $mail->ErrorInfo]);
+                log_event($pdo, 'MAIL_ERROR', "SMTP-Fehler bei Meilenstein-Mail an {$ms['c_name']}: " . $mail->ErrorInfo);
             }
         }
     }
@@ -295,11 +325,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $ms_del->execute([(int)$_POST['milestone_id']]);
         $ms_del_title = $ms_del->fetchColumn();
         $pdo->prepare("DELETE FROM task_milestones WHERE id = ?")->execute([$_POST['milestone_id']]);
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('MILESTONE_DELETED',?)")->execute(["Meilenstein '".($ms_del_title?:'#'.$_POST['milestone_id'])."' gelöscht."]);
+        log_event($pdo, 'MILESTONE_DELETED', "Meilenstein '".($ms_del_title?:'#'.$_POST['milestone_id'])."' gelöscht.");
     }
     elseif ($action === 'update_task_status') { 
         $pdo->prepare("UPDATE tasks SET status = ? WHERE id = ?")->execute([$_POST['status'], $_POST['task_id']]); 
-        $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_STATUS', ?)")->execute(["Task ID #".$_POST['task_id']." Status geändert auf: ".$_POST['status']]);
+        log_event($pdo, 'TASK_STATUS', "Task ID #".$_POST['task_id']." Status geändert auf: ".$_POST['status']);
     }
     
     header("Location: tasks"); exit();
@@ -846,6 +876,13 @@ require 'includes/layout_start.php';
                   <?php if($task['client_feedback']): ?>
                       <div class="collapse mt-2" id="fb_<?=$task['id']?>">
                           <div class="feedback-box scroll-box-sm mb-0">
+                              <?php if(!empty($task['feedback_by_name'])): ?>
+                                <div class="fw-bold text-strong-c" style="font-size:11px;">
+                                  <i class="bi bi-person-fill me-1"></i><?= htmlspecialchars($task['feedback_by_name']) ?><?php
+                                    if (!empty($task['feedback_at'])) echo ' · ' . date('d.m.Y H:i', strtotime($task['feedback_at']));
+                                  ?>
+                                </div>
+                              <?php endif; ?>
                               <span class="text-muted"><?=nl2br(htmlspecialchars($task['client_feedback']))?></span>
                           </div>
                       </div>
@@ -931,6 +968,22 @@ require 'includes/layout_start.php';
                         </div>
                     </div>
 
+                    <div class="col-12">
+                      <label class="form-label" for="e_members">Weitere Beteiligte</label>
+                      <select name="member_ids[]" id="e_members" class="form-select" multiple size="5">
+                        <?php foreach($all_contacts as $c): ?>
+                          <option value="<?=$c['id']?>">
+                            <?=htmlspecialchars($c['name'])?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?><?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
+                          </option>
+                        <?php endforeach; ?>
+                      </select>
+                      <div class="form-text">
+                        Mit Strg bzw. ⌘ mehrere wählen. Jeder Beteiligte sieht das Projekt in
+                        seinem eigenen Portal — dafür braucht er unter
+                        <a href="contacts" target="_blank" rel="noopener">Kontakte</a> einen
+                        Portal-Zugang. Der Kunde oben ist immer dabei.
+                      </div>
+                    </div>
                     <div class="col-12"><label class="form-label">Kunde</label><select name="contact_id" id="e_contact" class="form-select"><option value="">-- Ohne Kunde --</option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
                     <div class="col-md-6"><label class="form-label">Start</label><input type="date" name="start_date" id="e_start" class="form-control"></div>
                     <div class="col-md-6"><label class="form-label">Deadline</label><input type="date" name="deadline" id="e_deadline" class="form-control"></div>
@@ -1193,9 +1246,11 @@ require 'includes/layout_start.php';
         let assetHtml = '';
         if(task.assets.length > 0) {
             task.assets.forEach(a => {
+                // Bei mehreren Beteiligten sagt "Kunde" nicht mehr, wer es war.
+                const lader = (a.uploaded_by_name || '').trim();
                 let badge = (a.uploaded_by === 'admin') 
                     ? '<span class="badge bg-primary me-2" style="font-size:9px; padding:3px 5px;">Admin</span>' 
-                    : '<span class="badge bg-secondary me-2" style="font-size:9px; padding:3px 5px;">Kunde</span>';
+                    : '<span class="badge bg-secondary me-2" style="font-size:9px; padding:3px 5px;">' + (lader || 'Kunde') + '</span>';
                     
                 assetHtml += `<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">${badge} ${a.file_name}</span><div class="d-flex gap-2"><a href="${a.file_path}" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(${a.id})"><i class="bi bi-trash"></i></button></div></div>`;
             });
@@ -1205,6 +1260,15 @@ require 'includes/layout_start.php';
         document.getElementById('adminAssetUpload').value = '';
         document.getElementById('adminUploadProgressContainer').style.display = 'none';
         
+        // Beteiligte vorwaehlen. Der Hauptkontakt steht schon im Feld
+        // darueber und wird hier ausgelassen, damit er nicht doppelt wirkt.
+        const mitglieder = (TASK_MEMBERS[task.id] || [])
+            .filter(m => m.role !== 'owner')
+            .map(m => String(m.contact_id));
+        Array.from(document.getElementById('e_members').options).forEach(o => {
+            o.selected = mitglieder.includes(o.value);
+        });
+
         editModal.show();
     }
 
