@@ -12,6 +12,26 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 }
 app_session_start();
 
+// ── Der Zugangslink darf nicht weiterwandern ───────────────────────
+// Der Token steht in der Adresszeile und ist damit der Schluessel zum
+// Portal. Zwei Wege, auf denen er das Haus verlaesst, werden hier
+// zugehalten:
+//
+//  - Der Verweisende. Klickt ein Kunde im Portal auf einen Link nach
+//    aussen, schickt der Browser die aktuelle Adresse mit - samt Token.
+//    Die allgemeine Regel in .htaccess ("strict-origin-when-cross-origin")
+//    kuerzt zwar auf die Herkunft, aber nur bei fremdem Ziel; hier gilt
+//    grundsaetzlich nichts zu senden.
+//
+//  - Suchmaschinen. Wird ein Portallink irgendwo veroeffentlicht - in
+//    einem Forum, in einer weitergeleiteten E-Mail -, hat er in keinem
+//    Index etwas verloren.
+//
+// Die PIN bleibt der eigentliche Schutz; das hier verhindert, dass der
+// Token ueberhaupt erst in fremde Haende geraet.
+header('Referrer-Policy: no-referrer');
+header('X-Robots-Tag: noindex, nofollow, noarchive');
+
 // Token-Prüfung
 if (!isset($_GET['token']) || strlen($_GET['token']) < 10) {
     die(t('Ungültiger Zugriff. Bitte nutzen Sie den Link aus Ihrer E-Mail.'));
