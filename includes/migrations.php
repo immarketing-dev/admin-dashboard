@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -226,6 +226,36 @@ function migrations(): array
             'ALTER TABLE finances ADD INDEX idx_finances_deleted (deleted_at)',
             'ALTER TABLE quotes ADD COLUMN deleted_at DATETIME DEFAULT NULL',
             'ALTER TABLE quotes ADD INDEX idx_quotes_deleted (deleted_at)',
+        ],
+
+        // Version 5: ein Projekt kann mehrere Beteiligte haben.
+        //
+        // Bisher gehoerte ein Projekt genau einem Kontakt (tasks.contact_id),
+        // und das Portal zeigte genau dessen Projekte. Damit liess sich nicht
+        // gemeinsam an einem Projekt arbeiten. tasks.contact_id bleibt als
+        // Hauptansprechpartner bestehen - bestehende Auswertungen und die
+        // Rechnungszuordnung haengen daran.
+        //
+        // Der Zugang bleibt bewusst pro Person: eigener Link, eigene PIN,
+        // eigene Sperre. Ein geteiltes Geheimnis liesse sich nicht einzeln
+        // entziehen, und jede Handlung braucht einen Namen.
+        5 => [
+            'CREATE TABLE IF NOT EXISTS task_contacts ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' task_id INT NOT NULL,'
+            . ' contact_id INT NOT NULL,'
+            . " role VARCHAR(20) NOT NULL DEFAULT 'member',"
+            . ' added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' UNIQUE KEY uq_task_contact (task_id, contact_id),'
+            . ' KEY idx_tc_contact (contact_id),'
+            . ' CONSTRAINT fk_tc_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,'
+            . ' CONSTRAINT fk_tc_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+            // Jeder bestehende Hauptansprechpartner wird Mitglied, damit sich
+            // am sichtbaren Bestand nichts aendert.
+            'INSERT IGNORE INTO task_contacts (task_id, contact_id, role)'
+            . " SELECT id, contact_id, 'owner' FROM tasks WHERE contact_id IS NOT NULL",
         ],
     ];
 }

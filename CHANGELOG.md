@@ -117,6 +117,14 @@ private history.
   configured under Settings › Firma. The code is generated in the
   visitor's browser: handing an IBAN and an amount to an image service
   would be the wrong trade for payment data.
+- Several contacts can share a project (migration 5, `task_contacts`).
+  Everyone assigned sees it in their own portal, so customers and business
+  partners can work on the same project. Access stays per person — own
+  link, own PIN, own lockout — rather than one shared token: an individual
+  can be removed without locking out the rest, and every action in the
+  portal carries a name. `tasks.contact_id` remains the main contact, so
+  invoicing and reporting are untouched, and existing projects are
+  backfilled as members.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -329,3 +337,7 @@ private history.
 - `qrcode.min.js` is loaded with a Subresource Integrity hash in
   `portal.php` and `contacts.php`. It renders payment data, so a
   compromised CDN could put a different IBAN into the code.
+- The portal's file upload never checked which project it was writing to.
+  `task_id` came straight out of the form into the insert, so any signed-in
+  portal user could place a file in any project, including another
+  client's. It now verifies membership and answers 403.

@@ -161,6 +161,18 @@ CREATE TABLE IF NOT EXISTS task_milestones (
 -- (base table) plus column admin_seen, which the same private
 -- installation later added via d:\Downloads\admin-dashboard\index.php:272.
 -- Only IF NOT EXISTS and the engine clause were added.
+CREATE TABLE IF NOT EXISTS task_contacts (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  task_id    INT NOT NULL,
+  contact_id INT NOT NULL,
+  role       VARCHAR(20) NOT NULL DEFAULT 'member',
+  added_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_task_contact (task_id, contact_id),
+  KEY idx_tc_contact (contact_id),
+  CONSTRAINT fk_tc_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tc_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS milestone_comments (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   milestone_id INT NOT NULL,
@@ -373,7 +385,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '4')
+INSERT INTO settings (k, v) VALUES ('schema_version', '5')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;
