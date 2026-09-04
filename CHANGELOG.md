@@ -89,6 +89,13 @@ private history.
 - `includes/mail_templates.php` holds the templates and renders them;
   `tools/test_mail_templates.php` covers substitution, escaping and the
   frame, and runs in CI.
+- A search across everything, opened with Ctrl+K (⌘+K) or the magnifier in
+  the page header. It covers contacts, projects, invoices and expenses,
+  quotes, support tickets and the wiki in one query and jumps straight to
+  the hit. Until now every page had its own search, so finding a name meant
+  knowing first whether it belonged to a contact, a project, an invoice or
+  a ticket. Results are navigable by arrow keys and built with DOM methods
+  rather than innerHTML, so a title containing markup is shown as text.
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into

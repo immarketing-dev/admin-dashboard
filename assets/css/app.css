@@ -866,3 +866,89 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
        mehr in dieselbe Zeile und faellt allein darunter. */
     .header-actions .btn-label-xs { display: none; }
 }
+/* =========================================================
+   GLOBALE SUCHE (Strg+K)
+   ---------------------------------------------------------
+   Bis hierher hatte jede Seite ihre eigene Suche: um einen
+   Namen zu finden, musste man wissen, ob er zu einem Kontakt,
+   einem Projekt, einer Rechnung oder einem Ticket gehoert.
+   ========================================================= */
+.gsearch { position: fixed; inset: 0; z-index: 1080; display: flex; justify-content: center; }
+.gsearch-backdrop { position: absolute; inset: 0; background: var(--overlay-scrim); }
+.gsearch-panel {
+    position: relative; z-index: 1;
+    width: min(640px, calc(100% - 32px));
+    margin-top: 10vh; max-height: 76vh;
+    display: flex; flex-direction: column;
+    background: var(--surface-card);
+    border: 1px solid var(--border-base);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elev-raised);
+    overflow: hidden;
+}
+.gsearch-inputrow {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.gsearch-inputrow > .bi { color: var(--text-muted); font-size: var(--text-md); flex-shrink: 0; }
+#gsearch-input {
+    flex: 1 1 auto; min-width: 0;
+    border: none; background: none; outline: none;
+    font-size: var(--text-md); color: var(--text-strong);
+    font-family: 'Open Sans', sans-serif;
+}
+#gsearch-input::placeholder { color: var(--text-faint); }
+.gsearch-esc {
+    flex-shrink: 0; border: 1px solid var(--border-base); background: var(--surface-subtle);
+    color: var(--text-muted); border-radius: var(--radius-sm);
+    font-size: var(--text-2xs); font-weight: 700; padding: 3px 8px; cursor: pointer;
+}
+.gsearch-esc:hover { color: var(--text-body); border-color: var(--border-strong); }
+
+.gsearch-results { overflow-y: auto; padding: var(--space-2) 0 var(--space-3); }
+.gsearch-hint { margin: 0; padding: var(--space-6) var(--space-5); text-align: center;
+                color: var(--text-muted); font-size: var(--text-sm-plus); }
+.gsearch-group {
+    font-size: var(--text-2xs); font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--text-muted);
+    padding: var(--space-3) var(--space-5) 4px;
+}
+.gsearch-item {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: 9px var(--space-5);
+    text-decoration: none; color: inherit;
+    border-left: 3px solid transparent;
+}
+.gsearch-item > .bi { color: var(--text-faint); font-size: var(--text-md); flex-shrink: 0; }
+.gsearch-item.active,
+.gsearch-item:hover { background: var(--accent-soft); border-left-color: var(--color-primary); }
+.gsearch-item.active > .bi, .gsearch-item:hover > .bi { color: var(--color-primary); }
+.gsearch-text { display: flex; flex-direction: column; min-width: 0; }
+.gsearch-title { font-weight: 600; font-size: var(--text-base); color: var(--text-strong);
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gsearch-sub { font-size: var(--text-2xs); color: var(--text-muted);
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gsearch-results mark {
+    background: var(--warning-soft); color: inherit;
+    padding: 0 1px; border-radius: 2px;
+}
+
+/* Die Lupe im Seitenkopf. Auf schmalen Geraeten faellt die Tastenangabe weg. */
+.gsearch-trigger {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    border: 1px solid var(--border-base); background: var(--surface-subtle);
+    color: var(--text-muted); border-radius: var(--radius-md);
+    padding: 5px 10px; font-size: var(--text-sm-plus); cursor: pointer;
+    white-space: nowrap;
+}
+.gsearch-trigger:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.gsearch-trigger kbd {
+    font-size: var(--text-2xs); font-family: var(--font-mono);
+    background: var(--surface-card); border: 1px solid var(--border-base);
+    border-radius: 4px; padding: 1px 5px; color: var(--text-faint);
+}
+@media (max-width: 768px) {
+    .gsearch-trigger .gsearch-trigger-text, .gsearch-trigger kbd { display: none; }
+    .gsearch-panel { margin-top: 4vh; max-height: 88vh; }
+}

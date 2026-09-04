@@ -22,7 +22,16 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
       <i class="bi bi-list mobile-toggle" id="mobile-toggle-btn"></i>
       <?= htmlspecialchars($page_heading ?? '') ?>
     </h2>
+    <button type="button" class="gsearch-trigger" data-gsearch-open
+            aria-label="Globale Suche öffnen" title="Globale Suche (Strg+K)">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <span class="gsearch-trigger-text">Suchen</span>
+      <kbd>Strg K</kbd>
+    </button>
     <?php if (!empty($header_actions)): ?>
       <div class="header-actions"><?= $header_actions ?></div>
     <?php endif; ?>
   </div>
+
+<?php require __DIR__ . "/search_overlay.php"; ?>
+<script src="assets/js/search.js" defer></script>
