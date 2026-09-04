@@ -25,6 +25,22 @@ $_sess_key  = 'portal_auth_' . $client['id'];
 $_pin_error = '';
 
 /**
+ * Darf dieser Kontakt in diesem Projekt handeln?
+ *
+ * Seit Migration 5 entscheidet die Mitgliedschaft, nicht mehr
+ * tasks.contact_id — sonst sähe ein hinzugefügter Beteiligter das Projekt
+ * zwar, dürfte aber nichts darin tun.
+ */
+function portal_darf_projekt(PDO $pdo, int $task_id, int $contact_id): bool
+{
+    $st = $pdo->prepare("SELECT 1 FROM task_contacts tc
+                         JOIN tasks t ON t.id = tc.task_id
+                         WHERE tc.task_id = ? AND tc.contact_id = ? AND t.deleted_at IS NULL");
+    $st->execute([$task_id, $contact_id]);
+    return (bool) $st->fetchColumn();
+}
+
+/**
  * Meldet dem Absender, was im Portal mit einem Angebot geschehen ist.
  *
  * Schlägt der Versand fehl, bleibt der Vorgang trotzdem gültig - der
@@ -130,7 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$ms_id || $message === '') { echo json_encode(['success' => false]); exit(); }
 
         // Sicherstellen dass dieser Meilenstein zu einem Projekt dieses Kunden gehört
-        $check = $pdo->prepare("SELECT m.id FROM task_milestones m JOIN tasks t ON m.task_id = t.id WHERE m.id = ? AND t.contact_id = ?");
+        $check = $pdo->prepare("SELECT m.id FROM task_milestones m
+                                JOIN task_contacts tc ON tc.task_id = m.task_id
+                                JOIN tasks t ON t.id = m.task_id
+                                WHERE m.id = ? AND tc.contact_id = ? AND t.deleted_at IS NULL");
         $check->execute([$ms_id, $client['id']]);
         if (!$check->fetch()) { echo json_encode(['success' => false, 'error' => 'forbidden']); exit(); }
 
@@ -266,6 +285,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Datei-Upload (AJAX)
     if (isset($_FILES['asset_files'])) {
         $task_id    = (int)$_POST['task_id'];
+
+        // Die Projektnummer kam bisher ungeprueft aus dem Formular - damit
+        // liess sich eine Datei in ein beliebiges fremdes Projekt legen.
+        if (!portal_darf_projekt($pdo, $task_id, (int)$client['id'])) {
+            http_response_code(403);
+            echo 'ERR_FORBIDDEN';
+            exit();
+        }
+
         $upload_dir = 'uploads/client_assets/';
         if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
         foreach ($_FILES['asset_files']['tmp_name'] as $k => $tmp) {
@@ -287,7 +315,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['approve_ms'])) {
         $ms_id = (int)$_POST['ms_id'];
         // Sicherstellen dass dieser Meilenstein zu diesem Kunden gehört
-        $check = $pdo->prepare("SELECT m.id FROM task_milestones m JOIN tasks t ON m.task_id=t.id WHERE m.id=? AND t.contact_id=?");
+        $check = $pdo->prepare("SELECT m.id FROM task_milestones m
+                                JOIN task_contacts tc ON tc.task_id = m.task_id
+                                JOIN tasks t ON t.id = m.task_id
+                                WHERE m.id=? AND tc.contact_id=? AND t.deleted_at IS NULL");
         $check->execute([$ms_id, $client['id']]);
         if ($check->fetch()) {
             $pdo->prepare("UPDATE task_milestones SET approved_at=NOW(),is_completed=1,approval_seen=0 WHERE id=?")->execute([$ms_id]);
@@ -306,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Asset löschen
     if (isset($_POST['delete_asset'])) {
         $aid  = (int)$_POST['asset_id'];
-        $row  = $pdo->prepare("SELECT file_path FROM client_assets WHERE id=? AND task_id IN (SELECT id FROM tasks WHERE deleted_at IS NULL AND contact_id=?)");
+        $row  = $pdo->prepare("SELECT file_path FROM client_assets WHERE id=? AND task_id IN (SELECT tc.task_id FROM task_contacts tc JOIN tasks t ON t.id = tc.task_id WHERE t.deleted_at IS NULL AND tc.contact_id=?)");
         $row->execute([$aid, $client['id']]);
         $file = $row->fetch();
         if ($file) {
@@ -458,7 +489,13 @@ function chkMatch(){const ok=document.getElementById('pi1').value===document.get
 // =============================================
 // DATEN LADEN (alles gebatcht vor dem HTML)
 // =============================================
-$projects = $pdo->prepare("SELECT * FROM tasks WHERE deleted_at IS NULL AND contact_id=? ORDER BY created_at DESC");
+// Mitgliedschaft statt Besitz: seit Migration 5 kann ein Projekt mehrere
+// Beteiligte haben. tasks.contact_id bleibt der Hauptansprechpartner und
+// steht per Rueckfuellung ebenfalls in task_contacts.
+$projects = $pdo->prepare("SELECT t.* FROM tasks t
+                           JOIN task_contacts tc ON tc.task_id = t.id
+                           WHERE t.deleted_at IS NULL AND tc.contact_id = ?
+                           ORDER BY t.created_at DESC");
 $projects->execute([$client['id']]);
 $projects = $projects->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1865,6 +1902,7 @@ function autoUpload(input, taskId) {
     xhr.onload = () => {
         const r = xhr.responseText.trim();
         if (r.startsWith('ERR_SIZE'))  { alert('Datei zu groß (max. 100 MB).'); document.getElementById('box_'+taskId).style.display='none'; }
+        else if (r.startsWith('ERR_FORBIDDEN')) { alert('Für dieses Projekt haben Sie keine Berechtigung.'); document.getElementById('box_'+taskId).style.display='none'; }
         else if (r.startsWith('ERR_TYPE')) { alert('Dieser Dateityp ist gesperrt.'); document.getElementById('box_'+taskId).style.display='none'; }
         else if (xhr.status === 200)  { window.location.href = 'portal?token='+PORTAL_TOKEN+'&msg=uploaded'; }
     };

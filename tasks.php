@@ -103,6 +103,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     csrf_check();
     $action = $_POST['action'];
     
+    // ── Beteiligte am Projekt ───────────────────────────────────────
+    // Seit Migration 5 kann ein Projekt mehrere Kontakte haben. Jeder
+    // Beteiligte sieht es in seinem eigenen Portal - mit eigenem Link
+    // und eigener PIN.
+    if ($action === 'add_task_contact') {
+        $t_id = (int)($_POST['task_id'] ?? 0);
+        $c_id = (int)($_POST['contact_id'] ?? 0);
+        if ($t_id > 0 && $c_id > 0) {
+            $pdo->prepare("INSERT IGNORE INTO task_contacts (task_id, contact_id, role) VALUES (?, ?, 'member')")
+                ->execute([$t_id, $c_id]);
+            $n = $pdo->prepare("SELECT name FROM contacts WHERE deleted_at IS NULL AND id = ?");
+            $n->execute([$c_id]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_CONTACT_ADDED', ?)")
+                ->execute([($n->fetchColumn() ?: "Kontakt $c_id") . " zu Projekt $t_id hinzugefügt."]);
+        }
+        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+    }
+
+    if ($action === 'remove_task_contact') {
+        $t_id = (int)($_POST['task_id'] ?? 0);
+        $c_id = (int)($_POST['contact_id'] ?? 0);
+        // Der Hauptansprechpartner bleibt: an ihm haengen Rechnungen und
+        // Auswertungen. Wer ihn wechseln will, aendert das Projekt selbst.
+        $ist_haupt = $pdo->prepare("SELECT 1 FROM tasks WHERE deleted_at IS NULL AND id = ? AND contact_id = ?");
+        $ist_haupt->execute([$t_id, $c_id]);
+        if (!$ist_haupt->fetchColumn()) {
+            $pdo->prepare("DELETE FROM task_contacts WHERE task_id = ? AND contact_id = ?")
+                ->execute([$t_id, $c_id]);
+            $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('TASK_CONTACT_REMOVED', ?)")
+                ->execute(["Kontakt $c_id von Projekt $t_id entfernt."]);
+        }
+        header("Location: tasks?q=" . urlencode($_POST['back_q'] ?? '')); exit();
+    }
+
     if ($action === 'add_manual_time') {
         $mins = (int)$_POST['minutes'];
         $t_id = $_POST['task_id'];
@@ -288,6 +322,23 @@ $sql .= ($sort_by === 'newest') ? " ORDER BY t.created_at DESC" : " ORDER BY CAS
 $stmt = $pdo->prepare($sql); $stmt->execute($params); $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $all_categories = $pdo->query("SELECT DISTINCT category FROM tasks WHERE deleted_at IS NULL AND category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
 $all_contacts = $pdo->query("SELECT * FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Beteiligte je Projekt - in einer Abfrage, nicht je Karte einzeln.
+$task_members = [];
+if (!empty($tasks)) {
+    $ids = array_column($tasks, 'id');
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    $mst = $pdo->prepare("SELECT tc.task_id, tc.contact_id, tc.role, c.name, c.company, c.contact_type,
+                                 c.portal_token
+                          FROM task_contacts tc
+                          JOIN contacts c ON c.id = tc.contact_id
+                          WHERE tc.task_id IN ($in) AND c.deleted_at IS NULL
+                          ORDER BY tc.role = 'owner' DESC, c.name ASC");
+    $mst->execute($ids);
+    foreach ($mst->fetchAll(PDO::FETCH_ASSOC) as $m) {
+        $task_members[$m['task_id']][] = $m;
+    }
+}
 
 // Batch-Abfragen statt N+1 Queries pro Task
 $task_ids = array_column($tasks, 'id');
@@ -546,8 +597,23 @@ require 'includes/layout_start.php';
                     </h4>
                     
                     <div class="small mt-1 text-muted d-flex flex-wrap gap-3">
+                        <?php
+                          $mitglieder = $task_members[$task['id']] ?? [];
+                          $weitere    = max(0, count($mitglieder) - 1);
+                        ?>
                         <?php if($task['contact_name']): ?>
-                            <span><i class="bi bi-person"></i> <?=$task['contact_name']?></span>
+                            <span role="button" data-bs-toggle="modal" data-bs-target="#membersModal"
+                                  onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'
+                                  title="Beteiligte verwalten">
+                              <i class="bi bi-person"></i> <?=$task['contact_name']?><?php
+                                if ($weitere > 0) echo ' <span class="badge rounded-pill bg-subtle text-strong-c" style="font-size:var(--text-2xs);">+' . $weitere . '</span>';
+                              ?>
+                            </span>
+                        <?php else: ?>
+                            <span role="button" class="text-muted" data-bs-toggle="modal" data-bs-target="#membersModal"
+                                  onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'>
+                              <i class="bi bi-person-plus"></i> Beteiligte
+                            </span>
                         <?php endif; ?>
                         
                         <span><i class="bi bi-calendar-event"></i> <?=$task['start_text']?></span>
@@ -1272,5 +1338,116 @@ require 'includes/layout_start.php';
                 }
             });
     }
+  </script>
+
+  <!-- ══════════ BETEILIGTE ══════════ -->
+  <div class="modal fade" id="membersModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title m-0 fw-bold"><i class="bi bi-people me-2"></i>Beteiligte am Projekt</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="fw-bold text-strong-c mb-1" id="mm_title"></div>
+          <p class="text-muted small">
+            Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — mit eigenem
+            Zugangslink und eigener PIN. So lässt sich einzeln entziehen, und jede
+            Handlung im Portal trägt einen Namen.
+          </p>
+
+          <div id="mm_list" class="mb-3"></div>
+
+          <form method="POST" class="d-flex gap-2 flex-wrap align-items-end">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="add_task_contact">
+            <input type="hidden" name="task_id" id="mm_task_add">
+            <input type="hidden" name="back_q" value="<?= htmlspecialchars($search_query, ENT_QUOTES) ?>">
+            <div style="flex:1 1 220px;min-width:0;">
+              <label class="fw-bold small mb-1" for="mm_contact">Person hinzufügen</label>
+              <select name="contact_id" id="mm_contact" class="form-select form-select-sm" required>
+                <option value="">Kontakt wählen …</option>
+                <?php foreach($all_contacts as $c): ?>
+                  <option value="<?= (int)$c['id'] ?>">
+                    <?= htmlspecialchars($c['name']) ?><?= $c['company'] ? ' · ' . htmlspecialchars($c['company']) : '' ?>
+                    <?= $c['contact_type'] === 'Geschäftspartner' ? ' (Partner)' : '' ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm fw-bold"><i class="bi bi-plus-lg me-1"></i>Hinzufügen</button>
+          </form>
+          <div class="form-text mt-2">
+            Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie
+            unter <a href="contacts">Kontakte</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* Die Beteiligten stehen bereits im Seitenquelltext - das Fenster baut
+     seine Liste daraus, ohne weitere Anfrage. */
+  const TASK_MEMBERS = <?= json_encode($task_members, JSON_HEX_TAG|JSON_HEX_APOS) ?>;
+  const MEMBERS_CSRF = <?= json_encode(csrf_token(), JSON_HEX_TAG|JSON_HEX_APOS) ?>;
+  const MEMBERS_BACK = <?= json_encode($search_query, JSON_HEX_TAG|JSON_HEX_APOS) ?>;
+
+  function openMembers(taskId, titel) {
+      document.getElementById('mm_title').textContent = titel;
+      document.getElementById('mm_task_add').value = taskId;
+      const liste = document.getElementById('mm_list');
+      liste.textContent = '';
+
+      const leute = TASK_MEMBERS[taskId] || [];
+      if (!leute.length) {
+          const p = document.createElement('p');
+          p.className = 'text-muted small mb-0';
+          p.textContent = 'Noch niemand zugeordnet.';
+          liste.appendChild(p);
+          return;
+      }
+
+      leute.forEach(function (m) {
+          const zeile = document.createElement('div');
+          zeile.className = 'd-flex align-items-center justify-content-between gap-2 py-2 border-bottom border-subtle-c';
+
+          const links = document.createElement('div');
+          links.className = 'min-w-0';
+          const name = document.createElement('div');
+          name.className = 'fw-semibold text-strong-c';
+          name.textContent = m.name;
+          const meta = document.createElement('div');
+          meta.className = 'text-muted';
+          meta.style.fontSize = 'var(--text-2xs)';
+          meta.textContent = (m.role === 'owner' ? 'Hauptansprechpartner' : 'Beteiligt')
+                           + (m.company ? ' · ' + m.company : '')
+                           + (m.portal_token ? '' : ' · kein Portal-Zugang');
+          links.appendChild(name); links.appendChild(meta);
+
+          zeile.appendChild(links);
+
+          if (m.role !== 'owner') {
+              const f = document.createElement('form');
+              f.method = 'POST';
+              f.className = 'm-0';
+              f.onsubmit = function () { return confirm(m.name + ' aus diesem Projekt entfernen?'); };
+              [['csrf_token', MEMBERS_CSRF], ['action', 'remove_task_contact'],
+               ['task_id', taskId], ['contact_id', m.contact_id], ['back_q', MEMBERS_BACK]
+              ].forEach(function (kv) {
+                  const i = document.createElement('input');
+                  i.type = 'hidden'; i.name = kv[0]; i.value = kv[1];
+                  f.appendChild(i);
+              });
+              const b = document.createElement('button');
+              b.className = 'btn btn-sm btn-icon text-danger';
+              b.title = 'Entfernen';
+              b.innerHTML = '<i class="bi bi-x-lg"></i>';
+              f.appendChild(b);
+              zeile.appendChild(f);
+          }
+          liste.appendChild(zeile);
+      });
+  }
   </script>
 <?php require 'includes/layout_end.php'; ?>
