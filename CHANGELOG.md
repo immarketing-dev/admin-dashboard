@@ -77,6 +77,8 @@ private history.
   (including the empty-session case `hash_equals` would otherwise accept),
   the upload type and size rules, and `safe_filename()` against path
   traversal, null bytes and overlong names.
+- `includes/numbering.php`, one place that hands out invoice and quote
+  numbers, and `finances.invoice_number` with a unique index (migration 3).
 ### Changed
 - The two parallel login paths (a settings-table password check with no
   rate limiting, and a separate users-table check) are consolidated into
@@ -256,3 +258,18 @@ private history.
   behind `detect_mime_type()`, and a file whose type cannot be established
   is rejected rather than waved through: the extension comes from whoever
   uploaded the file and is not a check.
+- Invoice and quote numbers were derived from `SELECT COUNT(*)` for the
+  current year. That counts rows, not numbers: delete one invoice and the
+  next one issued repeats a number already printed on a sent PDF, and
+  nothing rejected the duplicate because the number lived in the shared
+  `title` column with no unique index. Two concurrent requests got the same
+  number as well. §14 UStG requires outgoing invoices to carry a
+  consecutive, once-only number.
+
+  Numbers now come from the highest number already issued, are stored in
+  their own `finances.invoice_number` column, and a unique index rejects a
+  duplicate rather than accepting it silently. Migration 3 backfills in two
+  steps: invoices whose number was already kept in `title` (how
+  `invoice.php` writes them) keep it unchanged, because it is printed on
+  PDFs that have gone out; anything left is numbered by invoice date,
+  continuing after the highest number already used in that year.

@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
 
 // PHPMailer laden
@@ -23,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // Angebotsnummer generieren
     function next_quote_number(PDO $pdo): string {
         $y = date('Y');
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM quotes WHERE YEAR(created_at) = ?");
-        $stmt->execute([$y]);
-        return 'ANG-' . $y . '-' . str_pad((int)$stmt->fetchColumn() + 1, 3, '0', STR_PAD_LEFT);
+        // Zaehlt nicht mehr Zeilen, sondern nimmt die hoechste vergebene
+        // Nummer - siehe includes/numbering.php.
+        return next_quote_number($pdo, $y);
     }
 
     // Items-Array aus POST sauber zusammenbauen
@@ -482,15 +483,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (!$q) { header("Location: quotes"); exit(); }
 
         $y = date('Y');
-        $cnt_stmt = $pdo->prepare("SELECT COUNT(*) FROM finances WHERE type='INCOME' AND YEAR(record_date)=?");
-        $cnt_stmt->execute([$y]);
-        $inv_num = 'RE-' . $y . '-' . str_pad((int)$cnt_stmt->fetchColumn() + 1, 3, '0', STR_PAD_LEFT);
+        $inv_num = next_invoice_number($pdo, $y);
 
         $inv_pdf_path = build_invoice_pdf_from_quote($q, $inv_num);
 
         $client_name = $q['custom_name'] ?: ($q['c_name'] ?? 'Unbekannt');
-        $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring) VALUES ('INCOME',?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(), INTERVAL 14 DAY),?,?,0)")
-            ->execute([$inv_num, $q['contact_id'], $client_name, $q['total_amount'], $q['notes'], $inv_pdf_path]);
+        $pdo->prepare("INSERT INTO finances (type, title, invoice_number, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(), INTERVAL 14 DAY),?,?,0)")
+            ->execute([$inv_num, $inv_num, $q['contact_id'], $client_name, $q['total_amount'], $q['notes'], $inv_pdf_path]);
 
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
         $pdo->prepare("INSERT INTO logs (action_type, description) VALUES ('QUOTE_CONVERTED',?)")

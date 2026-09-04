@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -14,12 +15,9 @@ $_pm_available = class_exists(PHPMailer::class);
 function q_safe(string $str): string {
     return mb_convert_encoding($str, 'ISO-8859-1', 'UTF-8');
 }
-function next_quote_number(PDO $pdo): string {
-    $y = date('Y');
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM quotes WHERE YEAR(created_at) = ?");
-    $stmt->execute([$y]);
-    return 'ANG-' . $y . '-' . str_pad((int)$stmt->fetchColumn() + 1, 3, '0', STR_PAD_LEFT);
-}
+// next_quote_number() und next_invoice_number() stehen in
+// includes/numbering.php - vorher stand dieselbe COUNT(*)-Zeile hier
+// und in quotes.php.
 function build_items(): array {
     $descs = $_POST['item_desc'] ?? []; $qtys = $_POST['item_qty'] ?? [];
     $prices = $_POST['item_price'] ?? []; $units = $_POST['item_unit'] ?? [];
@@ -348,12 +346,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if (!$q2) { header("Location: finances?tab=quotes"); exit(); }
-        $y2 = date('Y'); $cnt2 = $pdo->prepare("SELECT COUNT(*) FROM finances WHERE type='INCOME' AND YEAR(record_date)=?"); $cnt2->execute([$y2]);
-        $inv_num2 = 'RE-'.$y2.'-'.str_pad((int)$cnt2->fetchColumn()+1,3,'0',STR_PAD_LEFT);
+        $inv_num2 = next_invoice_number($pdo);
         $inv_pdf2 = build_invoice_pdf_from_quote($q2, $inv_num2);
         $client_name2 = $q2['custom_name'] ?: ($q2['c_name'] ?? 'Unbekannt');
-        $pdo->prepare("INSERT INTO finances (type,title,contact_id,custom_name,amount,status,record_date,due_date,notes,invoice_pdf_path,is_recurring) VALUES ('INCOME',?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(),INTERVAL 14 DAY),?,?,0)")
-            ->execute([$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2]);
+        $pdo->prepare("INSERT INTO finances (type,title,invoice_number,contact_id,custom_name,amount,status,record_date,due_date,notes,invoice_pdf_path,is_recurring) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(),INTERVAL 14 DAY),?,?,0)")
+            ->execute([$inv_num2,$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2]);
         $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
         $pdo->prepare("INSERT INTO logs (action_type,description) VALUES ('QUOTE_CONVERTED',?)")->execute(["Angebot {$q2['quote_number']} zu Rechnung $inv_num2 konvertiert."]);
         header("Location: finances?msg=invoice_created"); exit();
@@ -491,9 +488,7 @@ if ($period === 'month') {
 
 // Nächste Rechnungsnummer serverseitig generieren (RE-YYYY-NNN)
 $current_year    = date('Y');
-$_inv_stmt       = $pdo->prepare("SELECT COUNT(*) FROM finances WHERE type='INCOME' AND YEAR(record_date) = ?");
-$_inv_stmt->execute([$current_year]);
-$next_inv_number = 'RE-' . $current_year . '-' . str_pad((int)$_inv_stmt->fetchColumn() + 1, 3, '0', STR_PAD_LEFT);
+$next_inv_number = next_invoice_number($pdo);
 
 // ==========================================
 // FILTER & LISTEN DATEN LADEN

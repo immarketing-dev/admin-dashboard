@@ -1,6 +1,7 @@
 <?php
 // 1. Zentrale Config laden
 require_once 'config.php';
+require_once 'includes/numbering.php';
 
 // Session ueber den gemeinsamen Bootstrap. Frueher setzte diese Datei ein
 // domainweites Cookie (abgeleitet aus MAIN_WEBSITE) und erzeugte damit
@@ -296,10 +297,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // NEU ANLEGEN
             $insert = $pdo->prepare("
                 INSERT INTO finances 
-                (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring) 
-                VALUES ('INCOME', ?, ?, ?, ?, 'Offen', ?, ?, ?, ?, 0)
+                (type, title, invoice_number, contact_id, custom_name, amount, status, record_date, due_date, notes, invoice_pdf_path, is_recurring)
+                VALUES ('INCOME', ?, ?, ?, ?, ?, 'Offen', ?, ?, ?, ?, 0)
             ");
-            $insert->execute([$invoice_number, $db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path]);
+            // Die Nummer steht weiterhin im Titel – die Suche nach einer
+            // bestehenden Rechnung weiter oben greift darauf zu – und
+            // zusätzlich in ihrer eigenen Spalte mit eindeutigem Index.
+            $insert->execute([$invoice_number, $invoice_number, $db_contact_id, $db_client_name, $db_amount, $raw_invoice_date, $raw_due_date, $db_notes, $relative_path]);
 
             $pdo->prepare("INSERT INTO logs (action_type, description) VALUES (?, ?)")
                 ->execute(['INVOICE_CREATED', "Rechnung $invoice_number für $db_client_name generiert."]);

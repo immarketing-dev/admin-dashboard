@@ -209,11 +209,13 @@ CREATE TABLE IF NOT EXISTS finances (
   record_date      DATE DEFAULT NULL,
   due_date         DATE DEFAULT NULL,
   notes            TEXT,
+  invoice_number   VARCHAR(50) DEFAULT NULL,
   invoice_pdf_path VARCHAR(255) DEFAULT NULL,
   is_recurring     TINYINT(1) NOT NULL DEFAULT 0,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_fin_contact (contact_id),
   KEY idx_fin_type_date (type, record_date),
+  UNIQUE KEY uq_fin_invoice_number (invoice_number),
   CONSTRAINT fk_fin_contact FOREIGN KEY (contact_id)
     REFERENCES contacts(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -363,7 +365,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '2')
+INSERT INTO settings (k, v) VALUES ('schema_version', '3')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;
