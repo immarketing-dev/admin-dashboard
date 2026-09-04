@@ -8,6 +8,88 @@ private history.
 
 ## [Unreleased]
 
+### Added
+- **Scheduled tasks: `cron.php`.** Nothing in this panel happened without a
+  visitor. `finances.php` stamped overdue invoices while rendering the
+  list, `includes/auth.php` trimmed the log on login, `index.php` queried
+  every monitored URL synchronously on each dashboard view. Whoever did not
+  look in for a week had none of it happen for a week.
+
+  One entry point now collects that work, plus the two things below that
+  cannot work without a schedule. Guarded twice: refused outright in demo
+  mode, and over HTTP only with `CRON_TOKEN` from the `.env`, compared with
+  `hash_equals`. An empty token keeps the HTTP route closed rather than
+  falling back to no check — an open endpoint here triggers mail to
+  customers. On the command line the token is moot: whoever can run it
+  already has the `.env`.
+
+  Every task is wrapped on its own, so one failure — an SMTP server that
+  does not answer — does not swallow everything scheduled after it. The run
+  prints what it did and exits non-zero when a task failed.
+  `tools/check_demo.php` now watches both guards, because `cron.php` is a
+  GET that writes and its SQL lives in `includes/cron_tasks.php`, where
+  check 3 cannot see it.
+
+- **Payment reminders.** The template `payment_reminder` had been sitting
+  complete in `includes/mail_templates.php` — subject, body, placeholders —
+  with **not one caller anywhere in the project**. Meanwhile the panel
+  stamped invoices "overdue" by itself and showed the count in the sidebar.
+  It knew who was not paying and told only you.
+
+  A bell button on each open invoice sends the reminder, prefilled from
+  that template and editable before it goes, with the invoice PDF attached
+  when one exists. Optionally automatic: "reminder stages" under
+  Settings → System takes days after the due date (`7, 21`). Empty by
+  default and staying empty on upgrade — a schema step must not make an
+  existing installation start mailing its customers.
+
+  Both routes run through the same `mahnung_senden()`, so a reminder sent
+  by hand advances the counter and pushes back the next automatic stage
+  instead of running beside it. After the last stage the panel stops rather
+  than escalating; no late fees, no interest — decisions with legal
+  consequences, not features. Two locks against a double send: a 20-hour
+  bar per invoice, and `UPDATE … WHERE reminder_count = ?`, so of two
+  concurrent runs only one raises the counter.
+
+- **Recurring entries that actually recur.** `is_recurring` was a label:
+  the switch said "monthly fixed costs", set a `1`, and was read as a
+  filter, a badge and a CSV column. It created nothing — a maintenance
+  contract was retyped by hand every month.
+
+  Schema version 10 adds `recurrence`, `next_run` and
+  `recurring_parent_id`. `is_recurring` stays and now follows the choice,
+  so filter, badge and CSV keep working. Existing rows are deliberately
+  **not** reinterpreted: an installation must not start creating invoices
+  because it applied an update.
+
+  The end of the month is handled with an anchor day — a series on the 31st
+  becomes the 28th in February and returns to the 31st in March instead of
+  drifting forward for good; `mktime(0,0,0,2,31,2026)` is the 3rd of March
+  in PHP, and that is exactly the bug. Income gets a fresh invoice number,
+  an expense does not: it is no outgoing invoice and must not consume a
+  number from that sequence, because every number without an invoice behind
+  it is a gap in the run that has to be explained later. A run creates at
+  most twelve entries per template, so a `next_run` left in the distant
+  past cannot produce a decade of invoices at once.
+
+  No PDF is generated — that code sits inside the POST handler of
+  `invoice.php` and would need that file rebuilt to reach from here. The
+  entry shows up as an open invoice; the existing button makes the PDF.
+
+  78 checks in `tools/test_cron_billing.php` against the SQLite mirror,
+  which learned `CURDATE()` and `SUBSTRING_INDEX` for the purpose — the
+  latter is what `includes/numbering.php` cuts invoice numbers with, and
+  therefore the place a duplicate number would appear.
+
+### Fixed
+- **`tools/check_placeholders.php` counted commas inside comments.** The
+  counter walks the value list character by character and knew nothing
+  about comments, so an explanatory sentence between two values — and in
+  this project comments sit exactly where something needs explaining —
+  added one value per comma to the tally. It reported "14 placeholders, 17
+  values" for a sound query. A checker that cries wolf gets ignored, so the
+  fix went into the checker rather than into a rearranged comment.
+
 ### Changed
 - **The demo notice now sits inside the page header and stays there.**
   It was a separate card above the header, which meant it scrolled out of

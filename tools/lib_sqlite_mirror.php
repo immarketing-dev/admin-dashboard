@@ -140,7 +140,48 @@ class SqliteSpiegelPDO extends PDO
      */
     private static function zeitfunktionen(string $sql): string
     {
-        return preg_replace('/\bNOW\s*\(\s*\)/i', 'CURRENT_TIMESTAMP', $sql);
+        $sql = preg_replace('/\bNOW\s*\(\s*\)/i', 'CURRENT_TIMESTAMP', $sql);
+        // CURDATE() kennt SQLite ebenfalls nicht. DATE('now') ist das
+        // Gegenstueck; dass es UTC liefert statt der Serverzeitzone,
+        // spielt fuer eine Spiegelung zu Pruefzwecken keine Rolle.
+        return preg_replace('/\bCURDATE\s*\(\s*\)/i', "DATE('now')", $sql);
+    }
+
+    /**
+     * Registriert die MySQL-Funktionen, die der gespiegelte Code
+     * aufruft und SQLite nicht mitbringt.
+     *
+     * SUBSTRING_INDEX steht in includes/numbering.php: dort wird die
+     * laufende Nummer hinter dem letzten Bindestrich herausgeschnitten
+     * ("RE-2026-014" -> "014"). Ohne diese Funktion laesst sich die
+     * Nummernvergabe hier gar nicht pruefen - und sie ist die Stelle,
+     * an der eine doppelte Rechnungsnummer entstuende.
+     */
+    public function __construct(string $dsn, ?string $user = null, ?string $pass = null, ?array $options = null)
+    {
+        parent::__construct($dsn, $user, $pass, $options ?? []);
+
+        $substring_index = static function ($text, $trenner, $anzahl) {
+            if ($text === null) return null;
+            $teile = explode((string) $trenner, (string) $text);
+            $anzahl = (int) $anzahl;
+
+            if ($anzahl === 0) return '';
+            if ($anzahl > 0)  return implode((string) $trenner, array_slice($teile, 0, $anzahl));
+            return implode((string) $trenner, array_slice($teile, $anzahl));
+        };
+
+        // PHP 8.5 hat sqliteCreateFunction() als veraltet markiert. Der
+        // Ersatz Pdo\Sqlite::createFunction() steht nur auf einer ueber
+        // PDO::connect() erzeugten Instanz bereit - diese Klasse erbt
+        // aber von PDO und wird mit new erzeugt, weil sie prepare() und
+        // exec() ueberschreiben muss. Solange das so ist, bleibt nur der
+        // alte Name; die Meldung deshalb fuer genau diesen Aufruf aus,
+        // statt sie im ganzen Testlauf zu unterdruecken.
+        $stufe = error_reporting();
+        error_reporting($stufe & ~E_DEPRECATED);
+        $this->sqliteCreateFunction('SUBSTRING_INDEX', $substring_index, 3);
+        error_reporting($stufe);
     }
 
     public function exec(string $statement): int|false

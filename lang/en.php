@@ -580,8 +580,6 @@ return [
         => 'All categories',
     'Fixkosten'
         => 'Recurring',
-    'Monatliche Fixkosten'
-        => 'Monthly recurring costs',
     'Monatliches Abo'
         => 'Monthly subscription',
     'Einmalzahlung'
@@ -1483,4 +1481,56 @@ return [
         => "Search for a person …",
     "Niemand gefunden."
         => "Nobody found.",
+    // ── Wiederkehrende Eintraege ─────────────────────────────────────
+    // Die drei Intervall-Bezeichnungen stehen als Wert in
+    // wiederholung_intervalle() (includes/recurring.php) und werden mit
+    // te($iv['label']) uebersetzt. check_i18n.php sieht dort kein
+    // Literal und kann sie deshalb weder anmahnen noch als verwaist
+    // melden - sie muessen hier von Hand gepflegt werden.
+    "Wiederholung"
+        => "Repeat",
+    "Keine – einmaliger Eintrag"
+        => "None – one-off entry",
+    "Monatlich"
+        => "Monthly",
+    "Vierteljährlich"
+        => "Quarterly",
+    "Jährlich"
+        => "Yearly",
+    "Legt den nächsten Eintrag beim Cron-Lauf automatisch an."
+        => "Creates the next entry automatically on the cron run.",
+    "Nächster Termin"
+        => "Next date",
+    "nächster Termin"
+        => "next date",
+    "Leer lassen: ein Intervall nach dem Datum oben."
+        => "Leave empty: one interval after the date above.",
+    "Als Fixkosten markiert"
+        => "Marked as a fixed cost",
+
+    // ── Zahlungserinnerungen ─────────────────────────────────────────
+    "Zahlungserinnerung"
+        => "Payment reminder",
+    "Zahlungserinnerungen"
+        => "Payment reminders",
+    "Zahlungserinnerung senden"
+        => "Send a payment reminder",
+    "Zahlungserinnerung gesendet."
+        => "Payment reminder sent.",
+    "Bisher verschickt:"
+        => "Sent so far:",
+    "Für diese Rechnung wurde noch nicht erinnert."
+        => "No reminder has been sent for this invoice yet.",
+    "Zuletzt erinnert am %s"
+        => "Last reminded on %s",
+    "Das Rechnungs-PDF wird angehängt, sofern eines vorliegt."
+        => "The invoice PDF is attached if one exists.",
+    "Mahnstufen (Tage nach Fälligkeit)"
+        => "Reminder stages (days after the due date)",
+    "z. B. 7, 21"
+        => "e.g. 7, 21",
+    "Leer lassen, um keine Erinnerungen automatisch zu versenden. Der Knopf in der Rechnungsliste funktioniert unabhängig davon."
+        => "Leave empty to send no reminders automatically. The button in the invoice list works regardless.",
+    "Automatische Erinnerungen werden nur verschickt, wenn cron.php regelmäßig läuft. Ohne eingerichteten Cron-Lauf passiert hier nichts."
+        => "Automatic reminders only go out if cron.php runs regularly. Without a scheduled cron run, nothing happens here.",
 ];

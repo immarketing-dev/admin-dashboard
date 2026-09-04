@@ -207,6 +207,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
     }
 
+    // Zahlungserinnerungen. Die Stufen sind Tage nach Faelligkeit, als
+    // Liste: "7, 21" heisst eine Erinnerung nach einer Woche und eine
+    // zweite nach drei. Leer bedeutet: keine Automatik - das ist der
+    // Auslieferungszustand, damit ein Update keine Installation dazu
+    // bringt, unaufgefordert Mails an ihre Kunden zu schicken.
+    if ($_POST['action'] === 'save_reminders') {
+        require_once __DIR__ . '/includes/reminders.php';
+
+        // Ueber mahnstufen() normalisiert und zurueckgeschrieben: was in
+        // der Einstellung steht, ist danach genau das, wonach sich der
+        // Cron-Lauf richtet - sortiert, ohne Dubletten, ohne Unsinn. Wer
+        // "21,7,abc" eintippt, sieht anschliessend "7, 21" und weiss,
+        // woran er ist.
+        $stufen = mahnstufen((string) ($_POST['reminder_days'] ?? ''));
+        $wert   = implode(', ', $stufen);
+
+        $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('reminder_days',?) ON DUPLICATE KEY UPDATE v=?");
+        $s->execute([$wert, $wert]);
+
+        log_event($pdo, 'SETTINGS_REMINDERS', $wert === ''
+            ? 'Automatische Zahlungserinnerungen abgeschaltet.'
+            : "Mahnstufen gesetzt: $wert Tage nach Fälligkeit.");
+        header("Location: settings?tab=system&saved=1"); exit();
+    }
+
     if ($_POST['action'] === 'save_system') {
         $ll = max(50, min(2000, (int)($_POST['log_limit'] ?? 200)));
         $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_limit',?) ON DUPLICATE KEY UPDATE v=?");
@@ -236,6 +261,9 @@ $s_support_email  = setting('support_email', SUPPORT_EMAIL);
 $s_notify_ms      = setting('notify_milestone_email', '1');
 $s_notify_quote   = setting('notify_quote_email', '1');
 $s_log_limit      = setting('log_limit', '200');
+// Tage nach Faelligkeit, an denen automatisch erinnert wird. Leer =
+// keine Automatik; der Knopf in der Rechnungsliste geht trotzdem.
+$s_reminder_days  = setting('reminder_days', '');
 $s_company_logo   = setting('company_logo', '');
 $s_favicon        = setting('favicon', '');
 
@@ -747,6 +775,26 @@ require 'includes/layout_start.php';
           </div>
         </div>
       </form>
+
+      <div class="settings-section-title mt-2"><i class="bi bi-bell me-2"></i><?= te('Zahlungserinnerungen') ?></div>
+      <form method="POST" class="mb-4">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_reminders">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold"><?= te('Mahnstufen (Tage nach Fälligkeit)') ?></label>
+            <input type="text" name="reminder_days" class="form-control" placeholder="<?= te('z. B. 7, 21') ?>" value="<?= htmlspecialchars($s_reminder_days) ?>">
+            <div class="form-text"><?= te('Leer lassen, um keine Erinnerungen automatisch zu versenden. Der Knopf in der Rechnungsliste funktioniert unabhängig davon.') ?></div>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
+          </div>
+        </div>
+      </form>
+      <div class="alert alert-info py-2 small">
+        <i class="bi bi-info-circle me-1"></i>
+        <?= te('Automatische Erinnerungen werden nur verschickt, wenn cron.php regelmäßig läuft. Ohne eingerichteten Cron-Lauf passiert hier nichts.') ?>
+      </div>
 
       <div class="settings-section-title mt-2"><i class="bi bi-info-circle me-2"></i><?= te('Systeminfo') ?></div>
       <table class="table table-borderless" style="max-width:400px;">

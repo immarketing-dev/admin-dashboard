@@ -4,6 +4,8 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
+require_once 'includes/reminders.php';
+require_once 'includes/recurring.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
 
@@ -213,16 +215,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $contact_id = !empty($_POST['contact_id']) ? $_POST['contact_id'] : null;
         $custom_name = trim($_POST['custom_name']);
         $notes = trim($_POST['notes']);
-        $is_recurring = isset($_POST['is_recurring']) ? 1 : 0;
+        // Die Wiederholung. is_recurring bleibt das Etikett ("Fixkosten"),
+        // an dem Filter, Abzeichen und CSV haengen - es folgt jetzt der
+        // Auswahl, statt getrennt davon gesetzt zu werden. Eine unbekannte
+        // Auswahl wird zu "keine Wiederholung", nicht zu einem Fehler.
+        $recurrence = (string) ($_POST['recurrence'] ?? '');
+        if (!wiederholung_gueltig($recurrence)) {
+            $recurrence = '';
+        }
+        $is_recurring = $recurrence !== '' ? 1 : 0;
+
+        // Der naechste Termin: was im Formular steht, sonst ein Intervall
+        // nach dem Eintragsdatum. Ohne next_run wuerde die Vorlage nie
+        // gefunden und die Wiederholung waere wieder nur ein Etikett.
+        $next_run = null;
+        if ($recurrence !== '') {
+            $next_run = trim((string) ($_POST['next_run'] ?? ''));
+            if ($next_run === '') {
+                $next_run = naechster_termin($record_date, $recurrence);
+            }
+        }
 
         if ($id) {
-            $pdo->prepare("UPDATE finances SET type=?, title=?, contact_id=?, custom_name=?, amount=?, status=?, record_date=?, due_date=?, notes=?, is_recurring=? WHERE id=?")
-                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $id]);
+            $pdo->prepare("UPDATE finances SET type=?, title=?, contact_id=?, custom_name=?, amount=?, status=?, record_date=?, due_date=?, notes=?, is_recurring=?, recurrence=?, next_run=? WHERE id=?")
+                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run, $id]);
             
             log_event($pdo, 'FINANCE_UPDATED', "Finanzeintrag '$title' (ID: $id) wurde bearbeitet.");
         } else {
-            $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, is_recurring) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring]);
+            $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, is_recurring, recurrence, next_run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run]);
             
             $typ_name = ($type === 'INCOME') ? 'Einnahme' : 'Ausgabe';
             log_event($pdo, 'FINANCE_ADDED', "Neue $typ_name angelegt: '$title' über $amount €.");
@@ -415,6 +436,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             filter_redirect('finances', ['error' => 'email_failed', 'detail' => $e->getMessage()]);
         }
     }
+
+    // Zahlungserinnerung. Bis hierher gab es fuer die fertig dastehende
+    // Vorlage 'payment_reminder' keinen einzigen Aufrufer: das Panel
+    // wusste, wer nicht zahlt, und sagte es nur dir.
+    //
+    // Der Versand laeuft ueber mahnung_senden() in includes/reminders.php
+    // - dieselbe Funktion, die auch der Cron-Lauf benutzt. Damit schreiben
+    // beide Wege denselben Zaehler fort, und eine von Hand verschickte
+    // Erinnerung verschiebt die naechste automatische Stufe, statt neben
+    // ihr herzulaufen.
+    if ($action === 'send_payment_reminder') {
+        $id = (int) ($_POST['record_id'] ?? 0);
+        $rechnung = rechnung_fuer_mahnung($pdo, $id);
+
+        if (!$rechnung) {
+            filter_redirect('finances', ['error' => 'not_found']);
+        }
+
+        // Der Empfaenger darf abweichen - etwa die Buchhaltung des Kunden
+        // statt des Ansprechpartners. Die Adresse aus dem Formular hat
+        // Vorrang vor der hinterlegten.
+        $an = trim((string) ($_POST['to_email'] ?? ''));
+        if ($an !== '') {
+            $rechnung['empfaenger'] = $an;
+        }
+        if (!filter_var((string) $rechnung['empfaenger'], FILTER_VALIDATE_EMAIL)) {
+            filter_redirect('finances', ['error' => 'invalid_email']);
+        }
+
+        $ergebnis = mahnung_senden(
+            $pdo,
+            $rechnung,
+            setting('company_name', COMPANY_NAME),
+            __DIR__,
+            trim((string) ($_POST['email_subject'] ?? '')),
+            trim((string) ($_POST['email_body'] ?? ''))
+        );
+
+        if ($ergebnis['ok']) {
+            filter_redirect('finances', ['msg' => 'reminder_sent']);
+        }
+        filter_redirect('finances', ['error' => 'email_failed', 'detail' => $ergebnis['error']]);
+    }
 }
 
 // Überfällige Rechnungen automatisch markieren
@@ -600,11 +664,17 @@ require 'includes/layout_start.php';
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
     <?php endif; ?>
+    <?php if(isset($_GET['msg']) && $_GET['msg'] === 'reminder_sent'): ?>
+    <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
+      <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-bell-fill me-2"></i><?= te('Zahlungserinnerung gesendet.') ?></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+    <?php endif; ?>
     <?php if(isset($_GET['error'])): ?>
     <div class="toast show align-items-center text-bg-danger border-0 shadow-lg" role="alert" aria-atomic="true">
       <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>
         <?php
-          $errs = ['email_failed'=>'E-Mail konnte nicht gesendet werden.','no_phpmailer'=>'PHPMailer nicht installiert.','invalid_email'=>'Ungültige E-Mail-Adresse.','no_pdf'=>'Kein PDF vorhanden – bitte zuerst Rechnung generieren.'];
+          $errs = ['email_failed'=>'E-Mail konnte nicht gesendet werden.','no_phpmailer'=>'PHPMailer nicht installiert.','invalid_email'=>'Ungültige E-Mail-Adresse.','no_pdf'=>'Kein PDF vorhanden – bitte zuerst Rechnung generieren.','not_found'=>'Eintrag nicht gefunden.'];
           $err_key = htmlspecialchars($_GET['error'], ENT_QUOTES);
           echo $errs[$err_key] ?? 'Fehler aufgetreten.';
           if(isset($_GET['detail'])) echo ' '.htmlspecialchars($_GET['detail']);
@@ -842,7 +912,25 @@ require 'includes/layout_start.php';
                             <td><span class="small"><?=date('d.m.Y', strtotime($row['record_date']))?></span></td>
                             <td>
                                 <span class="fw-bold text-strong-c"><?=htmlspecialchars($row['title'])?></span>
-                                <?php if($row['is_recurring']): ?> <span class="badge bg-info ms-1" style="font-size:9px;"><i class="bi bi-arrow-repeat"></i> <?= te('Fix') ?></span> <?php endif; ?>
+                                <?php if($row['is_recurring'] || $row['recurrence']): ?>
+                                  <?php
+                                    // Traegt die Zeile ein Intervall, steht der naechste
+                                    // Termin im Titel des Abzeichens - sonst bleibt es beim
+                                    // alten "Fix", das Bestandszeilen ohne Intervall tragen.
+                                    $_iv = $row['recurrence'] ? (wiederholung_intervalle()[$row['recurrence']]['label'] ?? '') : '';
+                                    // datenwert() statt t(): die Bezeichnung kommt aus
+                                    // wiederholung_intervalle() und ist an dieser Stelle
+                                    // eine Variable, kein Literal.
+                                    $_iv_anzeige = $_iv ? datenwert($_iv) : '';
+                                    $_titel = $_iv
+                                        ? $_iv_anzeige . ($row['next_run'] ? ' – ' . t('nächster Termin') . ' ' . date('d.m.Y', strtotime($row['next_run'])) : '')
+                                        : te('Als Fixkosten markiert');
+                                  ?>
+                                  <span class="badge bg-info ms-1" style="font-size:9px;" title="<?= htmlspecialchars($_titel, ENT_QUOTES) ?>"><i class="bi bi-arrow-repeat"></i> <?= $_iv ? htmlspecialchars($_iv_anzeige) : te('Fix') ?></span>
+                                <?php endif; ?>
+                                <?php if((int)($row['reminder_count'] ?? 0) > 0): ?>
+                                  <span class="badge bg-warning text-dark ms-1" style="font-size:9px;" title="<?= te('Zuletzt erinnert am %s', $row['last_reminder_at'] ? date('d.m.Y', strtotime($row['last_reminder_at'])) : '?') ?>"><i class="bi bi-bell-fill"></i> <?= (int)$row['reminder_count'] ?></span>
+                                <?php endif; ?>
                                 <?php if($row['notes']): ?> <i class="bi bi-chat-text text-muted ms-1" title="<?=htmlspecialchars($row['notes'])?>"></i> <?php endif; ?>
                             </td>
                             <td><span class="small"><?=$display_name?></span></td>
@@ -863,6 +951,19 @@ require 'includes/layout_start.php';
                                     <a href="file?type=invoice&amp;id=<?=(int)$row['id']?>" target="_blank" class="btn-icon text-primary" title="<?= te('Rechnung ansehen') ?>"><i class="bi bi-file-earmark-pdf-fill"></i></a>
                                     <a href="file?type=invoice&amp;id=<?=(int)$row['id']?>&amp;dl=1" download class="btn-icon text-muted" title="<?= te('Herunterladen') ?>"><i class="bi bi-download"></i></a>
                                     <button class="btn-icon text-info" title="<?= te('Per E-Mail senden') ?>" onclick='openInvEmailModal(<?= $row['id'] ?>, <?= json_encode($row['title'], JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_name'] ?: ($row['custom_name'] ?: ''), JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= json_encode($row['contact_email'] ?? '', JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= $row['amount'] ?>)'><i class="bi bi-envelope-fill"></i></button>
+                                <?php endif; ?>
+                                <?php
+                                  // Erinnern laesst sich nur, was offen ist und einen
+                                  // Empfaenger hat. Eine bezahlte, stornierte oder auf
+                                  // einen freien Namen ausgestellte Rechnung bekommt
+                                  // den Knopf gar nicht erst - ein Knopf, der beim
+                                  // Druecken erklaert, warum er nicht geht, ist keiner.
+                                  $_mahnbar = $is_income
+                                      && in_array($row['status'], ['Offen', 'Überfällig'], true)
+                                      && filter_var((string)($row['contact_email'] ?? ''), FILTER_VALIDATE_EMAIL);
+                                ?>
+                                <?php if($_mahnbar): ?>
+                                    <button class="btn-icon text-warning" title="<?= te('Zahlungserinnerung senden') ?>" onclick='openReminderModal(<?= $safe_json ?>)'><i class="bi bi-bell"></i></button>
                                 <?php endif; ?>
                                     <button class="btn-icon" onclick='openFinanceModal(<?=$safe_json?>)'><i class="bi bi-pencil-square"></i></button>
                                     <button class="btn-icon text-danger" onclick="triggerDelete(<?=$row['id']?>)"><i class="bi bi-trash3-fill"></i></button>
@@ -991,7 +1092,21 @@ require 'includes/layout_start.php';
                 <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Datum *') ?></label><input type="date" name="record_date" id="fm_date" class="form-control" required></div>
                 <div class="col-md-4" id="div_due_man"><label class="form-label small fw-bold"><?= te('Fällig am') ?></label><input type="date" name="due_date" id="fm_due" class="form-control"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Status *') ?></label><select name="status" id="fm_stat" class="form-select"><option value="Offen"><?= te('Offen') ?></option><option value="Bezahlt"><?= te('Bezahlt') ?></option><option value="Überfällig"><?= te('Überfällig') ?></option><option value="Storniert"><?= te('Storniert') ?></option></select></div>
-                <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="is_recurring" id="fm_rec"><label class="form-check-label fw-bold"><?= te('Monatliche Fixkosten') ?></label></div></div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold"><?= te('Wiederholung') ?></label>
+                  <select name="recurrence" id="fm_rec" class="form-select" onchange="toggleNextRun()">
+                    <option value=""><?= te('Keine – einmaliger Eintrag') ?></option>
+                    <?php foreach(wiederholung_intervalle() as $_key => $_iv): ?>
+                    <option value="<?= $_key ?>"><?= htmlspecialchars(datenwert($_iv['label'])) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                  <div class="form-text small"><?= te('Legt den nächsten Eintrag beim Cron-Lauf automatisch an.') ?></div>
+                </div>
+                <div class="col-md-6" id="div_next_run" style="display:none;">
+                  <label class="form-label small fw-bold"><?= te('Nächster Termin') ?></label>
+                  <input type="date" name="next_run" id="fm_next_run" class="form-control">
+                  <div class="form-text small"><?= te('Leer lassen: ein Intervall nach dem Datum oben.') ?></div>
+                </div>
                 <div class="col-12"><label class="form-label small fw-bold"><?= te('Notiz') ?></label><textarea name="notes" id="fm_notes" class="form-control" rows="2"></textarea></div>
             </div>
           </form>
@@ -1030,6 +1145,27 @@ require 'includes/layout_start.php';
             <div class="mb-3"><label class="fw-bold small"><?= te('Nachricht') ?></label><textarea name="email_body" id="inv_email_body" class="form-control" rows="6"></textarea></div>
           </div>
           <div class="modal-footer bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button><button type="submit" class="btn btn-info btn-sm px-4 fw-bold text-white"><i class="bi bi-send me-1"></i><?= te('Senden') ?></button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="reminderModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content border-0 shadow">
+        <form method="POST">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="send_payment_reminder">
+          <input type="hidden" name="record_id" id="rem_record_id">
+          <div class="modal-header bg-warning"><h5 class="mb-0"><i class="bi bi-bell me-2"></i><?= te('Zahlungserinnerung') ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body p-4">
+            <p class="small text-muted mb-3" id="rem_stand"></p>
+            <div class="mb-3"><label class="fw-bold small"><?= te('Empfänger-E-Mail *') ?></label><input type="email" name="to_email" id="rem_to" class="form-control" required></div>
+            <div class="mb-3"><label class="fw-bold small"><?= te('Betreff *') ?></label><input type="text" name="email_subject" id="rem_subject" class="form-control" required></div>
+            <div class="mb-3"><label class="fw-bold small"><?= te('Nachricht') ?></label><textarea name="email_body" id="rem_body" class="form-control" rows="8"></textarea></div>
+            <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i><?= te('Das Rechnungs-PDF wird angehängt, sofern eines vorliegt.') ?></p>
+          </div>
+          <div class="modal-footer bg-subtle"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button><button type="submit" class="btn btn-warning btn-sm px-4 fw-bold"><i class="bi bi-send me-1"></i><?= te('Senden') ?></button></div>
         </form>
       </div>
     </div>
@@ -1233,7 +1369,7 @@ require 'includes/layout_start.php';
     }
 
 // Vorlagentexte aus den Einstellungen; ersetzt wird mit mailTplFill().
-    const MAIL_TPL = <?= mail_templates_json(['invoice_send', 'quote_send']) ?>;
+    const MAIL_TPL = <?= mail_templates_json(['invoice_send', 'quote_send', 'payment_reminder']) ?>;
     const MAIL_FIRMA = '<?= htmlspecialchars(setting('company_short', COMPANY_SHORT), ENT_QUOTES) ?>';
 
     function openInvEmailModal(id, title, client, email, amount) {
@@ -1249,6 +1385,38 @@ require 'includes/layout_start.php';
         document.getElementById('inv_email_subject').value = mailTplFill(MAIL_TPL.invoice_send.subject, _v);
         document.getElementById('inv_email_body').value    = mailTplFill(MAIL_TPL.invoice_send.body, _v);
         new bootstrap.Modal(document.getElementById('invoiceEmailModal')).show();
+    }
+
+    // Füllt das Erinnerungsfenster aus der Vorlage vor. Derselbe Weg wie
+    // beim Rechnungsversand: der Text steht anschließend zum Bearbeiten
+    // da, statt fertig hinauszugehen.
+    function openReminderModal(row) {
+        document.getElementById('rem_record_id').value = row.id;
+        document.getElementById('rem_to').value = row.contact_email || '';
+
+        const _v = {
+            kunde:   row.contact_name || row.custom_name || 'Sie',
+            nummer:  row.invoice_number || row.title,
+            betrag:  parseFloat(row.amount).toLocaleString('de-DE', {minimumFractionDigits: 2}),
+            faellig: row.due_date ? new Date(row.due_date).toLocaleDateString('de-DE') : '',
+            firma:   MAIL_FIRMA
+        };
+        document.getElementById('rem_subject').value = mailTplFill(MAIL_TPL.payment_reminder.subject, _v);
+        document.getElementById('rem_body').value    = mailTplFill(MAIL_TPL.payment_reminder.body, _v);
+
+        const stand = document.getElementById('rem_stand');
+        const zahl  = parseInt(row.reminder_count || 0, 10);
+        stand.textContent = zahl > 0
+            ? <?= tjs('Bisher verschickt:') ?> + ' ' + zahl
+            : <?= tjs('Für diese Rechnung wurde noch nicht erinnert.') ?>;
+
+        new bootstrap.Modal(document.getElementById('reminderModal')).show();
+    }
+
+    // Das Terminfeld gehört nur zu einer Wiederholung.
+    function toggleNextRun() {
+        const gewaehlt = document.getElementById('fm_rec').value !== '';
+        document.getElementById('div_next_run').style.display = gewaehlt ? 'block' : 'none';
     }
 
     // Beim Laden der Seite automatisch eine leere Zeile im Rechnungs-Modal hinzufügen
@@ -1269,6 +1437,7 @@ require 'includes/layout_start.php';
             document.getElementById('fm_modal_title').innerHTML = dataOrType=='INCOME' ? '<i class="bi bi-plus-circle text-success me-2"></i> Einnahme' : '<i class="bi bi-dash-circle text-danger me-2"></i> Ausgabe';
             document.getElementById('div_due_man').style.display = (dataOrType=='INCOME' ? 'block' : 'none');
             document.getElementById('fm_date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('fm_next_run').value = '';
         } else {
             document.getElementById('fm_id').value = dataOrType.id;
             document.getElementById('fm_type').value = dataOrType.type;
@@ -1279,11 +1448,13 @@ require 'includes/layout_start.php';
             document.getElementById('fm_date').value = dataOrType.record_date;
             document.getElementById('fm_due').value = dataOrType.due_date || '';
             document.getElementById('fm_stat').value = dataOrType.status;
-            document.getElementById('fm_rec').checked = dataOrType.is_recurring == 1;
+            document.getElementById('fm_rec').value = dataOrType.recurrence || '';
+            document.getElementById('fm_next_run').value = dataOrType.next_run || '';
             document.getElementById('fm_notes').value = dataOrType.notes || '';
             document.getElementById('fm_modal_title').innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> Bearbeiten';
             document.getElementById('div_due_man').style.display = (dataOrType.type=='INCOME' ? 'block' : 'none');
         }
+        toggleNextRun();
         fmModal.show();
     }
 

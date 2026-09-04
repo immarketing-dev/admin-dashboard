@@ -194,6 +194,87 @@ overrides in the `settings` table and takes precedence over the `.env`
 value at render time. Colours, company name, contact addresses, logo and
 favicon are all editable from the UI once you're logged in.
 
+### Scheduled tasks
+
+Until you set this up, **nothing in the panel happens on its own.** Overdue
+invoices were only stamped when someone opened the finance page, the log
+was only trimmed on login, and the uptime checks only ran while a dashboard
+was on screen. `cron.php` collects that work into one entry point and adds
+what needs a schedule to work at all: payment reminders and recurring
+entries.
+
+Hourly is a sensible interval. Every task is repeatable — a second run in
+the same hour finds nothing left to do, and reminders carry their own
+20-hour lock per invoice on top of that.
+
+**With shell access**, no token is needed — whoever can run this already
+has the `.env`:
+
+```cron
+0 * * * * /usr/bin/php /path/to/panel/cron.php >/dev/null 2>&1
+```
+
+**Without shell access**, most shared hosts offer a "web cron" that fetches
+a URL. Set `CRON_TOKEN` in `.env` to a value of at least 16 characters
+(`php -r "echo bin2hex(random_bytes(24)), PHP_EOL;"`) and point it at:
+
+```
+https://admin.example.com/cron?token=THE_VALUE
+```
+
+Leaving `CRON_TOKEN` empty keeps the HTTP route **closed** — it is not a
+fallback to "no check". An open endpoint here would let anyone trigger
+mails to your customers.
+
+The run prints a plain-text report of what it did and exits non-zero if a
+task failed, so a monitoring service can watch it. In demo mode it refuses
+to run at all.
+
+### Payment reminders
+
+Off by default, and deliberately so: installing an update should never make
+a panel start mailing its customers unprompted. Under **Settings → System**,
+"reminder stages" takes a list of days after the due date — `7, 21` sends a
+friendly reminder after a week and a second one after three. Empty means no
+automatic reminders at all.
+
+The **bell button** in the invoice list works regardless of that setting and
+regardless of whether a cron run is set up. It opens the mail prefilled from
+the `payment_reminder` template, lets you edit it, and attaches the invoice
+PDF if one exists. Both routes go through the same code, so a reminder you
+send by hand advances the counter and pushes back the next automatic stage
+rather than running alongside it.
+
+After the last configured stage the panel stops. It does not escalate, and
+it adds no late fees or interest — those are decisions with legal
+consequences, not features.
+
+### Recurring entries
+
+`is_recurring` used to be a label and nothing more: the switch said
+"monthly fixed costs", set a `1`, and was read as a filter, a badge and a
+CSV column. It never created anything — a maintenance contract had to be
+retyped every month.
+
+The entry form now has a **Repeat** field (monthly, quarterly, yearly) plus
+the next date. On each cron run, entries that have come due are created
+from the template, carrying over the client, amount, line items and tax
+type. Income gets a fresh invoice number; an expense does not — it is not
+an outgoing invoice and must not consume a number from that sequence.
+
+Two details worth knowing:
+
+- **The end of the month is handled.** A series anchored on the 31st becomes
+  the 28th in February and returns to the 31st in March, rather than
+  drifting forward permanently.
+- **No PDF is generated.** The entry appears as an open invoice in the list;
+  use the existing button to produce the PDF — which is the moment you'd
+  look over a recurring invoice anyway, before it goes out.
+
+A single run creates at most twelve entries per template, so a `next_run`
+accidentally left in the distant past cannot produce a decade of invoices
+at once. The rest follows on the next run.
+
 ### Cross-domain single sign-on
 
 `SSO_ENABLED` is `false` by default. `sso.php` only **consumes** tokens — it
@@ -315,6 +396,8 @@ php tools/check_forms.php         # no form tag swallows its own CSRF field
 php tools/test_csrf.php           # CSRF helpers
 php tools/test_upload.php         # upload validation
 php tools/test_mail_templates.php # mail templates render without CSS variables
+php tools/test_cron_billing.php   # reminder stages, recurrence dates,
+                                  #   and the counters that stop a double send
 php tools/export_demo_sql.php <file.sql>
                                   # demo data as an importable MySQL file,
                                   #   for hosting without a shell

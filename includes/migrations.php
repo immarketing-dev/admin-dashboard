@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -382,6 +382,51 @@ function migrations(): array
             . ' FOREIGN KEY (invoice_id) REFERENCES finances(id) ON DELETE SET NULL',
 
             'CREATE INDEX idx_time_unbilled ON time_entries (task_id, billed_at)',
+        ],
+
+        // Version 10: Rechnungen, die sich selbst melden und sich selbst
+        // wiederholen.
+        //
+        // Zwei Dinge, die das Panel bisher wusste, aber nicht tat:
+        //
+        //  - Es markierte offene Rechnungen als ueberfaellig und zeigte
+        //    den Zaehler in der Seitenleiste. Gesagt hat es das nur dir,
+        //    nie dem Kunden - obwohl die Vorlage 'payment_reminder' in
+        //    includes/mail_templates.php fertig dastand und an keiner
+        //    einzigen Stelle aufgerufen wurde.
+        //  - is_recurring war ein Etikett. Der Schalter hiess "Monatliche
+        //    Fixkosten", setzte eine 1 und wurde als Filter, Abzeichen und
+        //    CSV-Spalte gelesen. Erzeugt hat er nie etwas; ein
+        //    Wartungsvertrag wurde jeden Monat von Hand abgetippt.
+        //
+        // is_recurring bleibt bestehen und wird nicht umgedeutet: der
+        // Filter, das Abzeichen und die CSV-Spalte haengen daran. Neu ist
+        // recurrence daneben - und zwar bewusst LEER fuer alle
+        // Bestandszeilen. Wuerde die Migration die vorhandenen
+        // is_recurring=1 auf 'monthly' setzen, faenge eine Installation
+        // nach dem Einspielen unaufgefordert an, Rechnungen anzulegen.
+        // Das ist nichts, was ein Schemaschritt still entscheiden darf.
+        10 => [
+            'ALTER TABLE finances'
+            . ' ADD COLUMN reminder_count INT NOT NULL DEFAULT 0,'
+            . ' ADD COLUMN last_reminder_at DATETIME DEFAULT NULL',
+
+            // recurrence: '' (keine), 'monthly', 'quarterly', 'yearly'.
+            // Bewusst kein ENUM - ein weiteres Intervall waere sonst ein
+            // ALTER TABLE statt eines Eintrags in einer Liste im Code.
+            'ALTER TABLE finances'
+            . " ADD COLUMN recurrence VARCHAR(20) NOT NULL DEFAULT '',"
+            . ' ADD COLUMN next_run DATE DEFAULT NULL,'
+            . ' ADD COLUMN recurring_parent_id INT DEFAULT NULL',
+
+            // ON DELETE SET NULL, nicht CASCADE: wird die Vorlage
+            // geloescht, sind die daraus entstandenen Rechnungen trotzdem
+            // gestellt worden. Sie verlieren nur ihre Herkunft.
+            'ALTER TABLE finances ADD CONSTRAINT fk_fin_recurring_parent'
+            . ' FOREIGN KEY (recurring_parent_id) REFERENCES finances(id) ON DELETE SET NULL',
+
+            // Der Cron-Lauf fragt genau danach: was ist heute faellig?
+            'CREATE INDEX idx_fin_next_run ON finances (next_run, recurrence)',
         ],
     ];
 }

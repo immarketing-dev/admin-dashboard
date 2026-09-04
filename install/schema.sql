@@ -266,12 +266,30 @@ CREATE TABLE IF NOT EXISTS finances (
   tax_type         VARCHAR(30) NOT NULL DEFAULT 'kleinunternehmer',
   net_amount       DECIMAL(10,2) DEFAULT NULL,
   tax_amount       DECIMAL(10,2) DEFAULT NULL,
+  -- Zahlungserinnerungen. Der Zaehler steht hier und nicht als
+  -- abgeleitete Groesse in den Logs, weil die Logs nach
+  -- log_retention_days geleert werden - die Mahnstufe einer Rechnung
+  -- darf nicht davon abhaengen, wie lange das Protokoll aufgehoben wird.
+  reminder_count   INT NOT NULL DEFAULT 0,
+  last_reminder_at DATETIME DEFAULT NULL,
+  -- Wiederkehrende Eintraege. is_recurring oben bleibt das Etikett
+  -- ("Fixkosten", Filter und CSV haengen daran); recurrence ist das,
+  -- was tatsaechlich etwas erzeugt: '', 'monthly', 'quarterly',
+  -- 'yearly'. next_run ist der naechste faellige Termin, gesetzt nur
+  -- auf der Vorlage. recurring_parent_id zeigt von der erzeugten
+  -- Rechnung zurueck auf die Vorlage.
+  recurrence       VARCHAR(20) NOT NULL DEFAULT '',
+  next_run         DATE DEFAULT NULL,
+  recurring_parent_id INT DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_fin_contact (contact_id),
   KEY idx_fin_type_date (type, record_date),
+  KEY idx_fin_next_run (next_run, recurrence),
   UNIQUE KEY uq_fin_invoice_number (invoice_number),
   CONSTRAINT fk_fin_contact FOREIGN KEY (contact_id)
     REFERENCES contacts(id) ON DELETE SET NULL,
+  CONSTRAINT fk_fin_recurring_parent FOREIGN KEY (recurring_parent_id)
+    REFERENCES finances(id) ON DELETE SET NULL,
   deleted_at     DATETIME DEFAULT NULL,
   KEY idx_finances_deleted (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -423,7 +441,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '9')
+INSERT INTO settings (k, v) VALUES ('schema_version', '10')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

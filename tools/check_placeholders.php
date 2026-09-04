@@ -17,6 +17,39 @@
  */
 
 /**
+ * Entfernt Kommentare aus einem Stueck PHP-Code.
+ *
+ * Der Zaehler weiter unten laeuft zeichenweise und wuerde jedes Komma in
+ * einem Kommentar als Werttrenner lesen. Ein erklaerender Satz zwischen
+ * zwei Werten - und in diesem Projekt stehen Kommentare gern genau dort,
+ * wo etwas erklaerungsbeduerftig ist - ergab so "14 Platzhalter, 17
+ * Werte" fuer eine tadellose Abfrage.
+ *
+ * token_get_all() braucht ein oeffnendes Tag; es wird vorn angesetzt und
+ * das entsprechende Token danach uebersprungen.
+ */
+function ohne_kommentare(string $abschnitt): string
+{
+    $aus = '';
+    foreach (token_get_all('<?php ' . $abschnitt) as $t) {
+        if (is_array($t)) {
+            if ($t[0] === T_COMMENT || $t[0] === T_DOC_COMMENT || $t[0] === T_OPEN_TAG) {
+                // Ein Zeilenkommentar traegt sein Zeilenende selbst; ohne
+                // Ersatz wuechse die naechste Zeile an die vorige an. Fuer
+                // die Zaehlung ist das gleichgueltig, fuer die Lesbarkeit
+                // beim Nachsehen nicht.
+                $aus .= "\n";
+                continue;
+            }
+            $aus .= $t[1];
+        } else {
+            $aus .= $t;
+        }
+    }
+    return $aus;
+}
+
+/**
  * Liest ab $start bis zur passenden schliessenden eckigen Klammer.
  *
  * $start zeigt hinter das oeffnende "[". Zeichenketten werden
@@ -83,6 +116,10 @@ foreach ($dateien as $datei) {
         if (strpos($sql, '$') !== false) {
             continue;
         }
+        // Kommentare heraus, bevor gezaehlt wird - ihre Kommas sind
+        // keine Werttrenner (siehe ohne_kommentare()).
+        $werte = ohne_kommentare($werte);
+
         // Werte, die selbst aus einem Aufruf oder einer Ausbreitung
         // kommen, lassen sich nicht zaehlen.
         if (strpos($werte, '...') !== false) {

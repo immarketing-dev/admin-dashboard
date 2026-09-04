@@ -200,6 +200,10 @@ function datenwert(string $wert): string
             'Anruf'            => t('Anruf'),
             'Deadline'         => t('Deadline'),
             'Sonstiges'        => t('Sonstiges'),
+            // Wiederholungsintervalle (includes/recurring.php)
+            'Monatlich'        => t('Monatlich'),
+            'Vierteljährlich'  => t('Vierteljährlich'),
+            'Jährlich'         => t('Jährlich'),
             // Terminzustaende
             'Geplant'          => t('Geplant'),
             'Bestätigt'        => t('Bestätigt'),

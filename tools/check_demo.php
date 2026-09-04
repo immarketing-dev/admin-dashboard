@@ -162,6 +162,18 @@ if (strpos(code_ohne_kommentare($wurzel . '/login.php'), 'demo_mode()') === fals
 if (strpos(code_ohne_kommentare($wurzel . '/invoice.php'), 'demo_guard()') === false) {
     $fehlend[] = 'invoice.php ruft demo_guard() nicht auf';
 }
+// cron.php laeuft ohne Sitzung und ohne auth.php - es ist ein GET, der
+// schreibt und Mails verschickt. Pruefung 3 sieht das nicht, weil das SQL
+// in includes/cron_tasks.php steht und nicht in der Datei selbst. Der
+// Riegel muss deshalb hier eigens nachgehalten werden.
+if (strpos(code_ohne_kommentare($wurzel . '/cron.php'), 'demo_mode()') === false) {
+    $fehlend[] = 'cron.php prueft den Demo-Modus nicht';
+}
+// Ohne Token waere cron.php ein offener Endpunkt, der Mails an Kunden
+// ausloest - auf jeder Installation, die die .env nicht angefasst hat.
+if (strpos(code_ohne_kommentare($wurzel . '/cron.php'), 'hash_equals') === false) {
+    $fehlend[] = 'cron.php prueft den CRON_TOKEN nicht mit hash_equals';
+}
 // SSO darf in der Demo nicht von der .env abhaengen - sso.php schreibt,
 // bevor ein POST im Spiel ist.
 if (!preg_match('/define\(\s*[\'"]SSO_ENABLED[\'"].*!\s*DEMO_MODE/s',
