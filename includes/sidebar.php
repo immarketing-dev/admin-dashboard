@@ -19,7 +19,7 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at
     <span class="brand-text"><?= htmlspecialchars(setting('company_short', APP_NAME)) ?></span>
   </div>
   <ul class="nav flex-column">
-    <li class="nav-group">Übersicht</li>
+    <li class="nav-group"><?= te('Übersicht') ?></li>
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'index.php') ? 'active' : '' ?>" href="index">
         <i class="bi bi-grid-1x2-fill"></i> <span class="nav-text">Dashboard</span>
@@ -27,36 +27,36 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at
                  nirgends benutzt. Das Abzeichen zählt jetzt beides: neue Anfragen
                  über die Website und ungesehene Vorgänge aus dem Kundenportal. */ ?>
         <?php $_sb_dash = $_sb_leads + $_sb_portal; ?>
-        <?php if($_sb_dash > 0): ?><span class="sidebar-badge" title="<?= $_sb_leads ?> Anfrage(n), <?= $_sb_portal ?> Portal-Vorgang/-Vorgänge"><?= $_sb_dash ?></span><?php endif; ?>
+        <?php if($_sb_dash > 0): ?><span class="sidebar-badge" title="<?= te('%d Anfrage(n), %d Portal-Vorgang/-Vorgänge', $_sb_leads, $_sb_portal) ?>"><?= $_sb_dash ?></span><?php endif; ?>
       </a>
     </li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'calendar.php') ? 'active' : '' ?>" href="calendar"><i class="bi bi-calendar3"></i> <span class="nav-text">Kalender</span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'calendar.php') ? 'active' : '' ?>" href="calendar"><i class="bi bi-calendar3"></i> <span class="nav-text"><?= te('Kalender') ?></span></a></li>
 
-    <li class="nav-group">Arbeit</li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'tasks.php') ? 'active' : '' ?>" href="tasks"><i class="bi bi-check2-square"></i> <span class="nav-text">Projekte &amp; Aufgaben</span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'board.php') ? 'active' : '' ?>" href="board"><i class="bi bi-kanban"></i> <span class="nav-text">Kanban Board</span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'wiki.php') ? 'active' : '' ?>" href="wiki"><i class="bi bi-book-half"></i> <span class="nav-text">Wiki / Wissen</span></a></li>
+    <li class="nav-group"><?= te('Arbeit') ?></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'tasks.php') ? 'active' : '' ?>" href="tasks"><i class="bi bi-check2-square"></i> <span class="nav-text"><?= te('Projekte & Aufgaben') ?></span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'board.php') ? 'active' : '' ?>" href="board"><i class="bi bi-kanban"></i> <span class="nav-text"><?= te('Kanban Board') ?></span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'wiki.php') ? 'active' : '' ?>" href="wiki"><i class="bi bi-book-half"></i> <span class="nav-text"><?= te('Wiki / Wissen') ?></span></a></li>
 
-    <li class="nav-group">Geschäft</li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'contacts.php') ? 'active' : '' ?>" href="contacts"><i class="bi bi-people-fill"></i> <span class="nav-text">Kontakte</span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'quotes.php') ? 'active' : '' ?>" href="quotes"><i class="bi bi-file-earmark-text"></i> <span class="nav-text">Angebote</span></a></li>
+    <li class="nav-group"><?= te('Geschäft') ?></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'contacts.php') ? 'active' : '' ?>" href="contacts"><i class="bi bi-people-fill"></i> <span class="nav-text"><?= te('Kontakte') ?></span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'quotes.php') ? 'active' : '' ?>" href="quotes"><i class="bi bi-file-earmark-text"></i> <span class="nav-text"><?= te('Angebote') ?></span></a></li>
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'finances.php') ? 'active' : '' ?>" href="finances">
-        <i class="bi bi-currency-euro"></i> <span class="nav-text">Finanzen</span>
+        <i class="bi bi-currency-euro"></i> <span class="nav-text"><?= te('Finanzen') ?></span>
         <?php if($_sb_open_inv > 0): ?><span class="sidebar-badge sidebar-badge-warning"><?= $_sb_open_inv ?></span><?php endif; ?>
       </a>
     </li>
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'tickets.php') ? 'active' : '' ?>" href="tickets">
-        <i class="bi bi-life-preserver"></i> <span class="nav-text">Support-Tickets</span>
+        <i class="bi bi-life-preserver"></i> <span class="nav-text"><?= te('Support-Tickets') ?></span>
         <?php if($_sb_tickets > 0): ?><span class="sidebar-badge sidebar-badge-danger"><?= $_sb_tickets ?></span><?php endif; ?>
       </a>
     </li>
 
     <li class="nav-group">System</li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text">System-Logs</span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'trash.php') ? 'active' : '' ?>" href="trash"><i class="bi bi-trash3"></i> <span class="nav-text">Papierkorb</span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text">Einstellungen</span></a></li>
-    <li class="nav-item mt-4"><a class="nav-link text-danger" href="logout"><i class="bi bi-box-arrow-right"></i> <span class="nav-text">Logout</span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text"><?= te('System-Logs') ?></span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'trash.php') ? 'active' : '' ?>" href="trash"><i class="bi bi-trash3"></i> <span class="nav-text"><?= te('Papierkorb') ?></span></a></li>
+    <li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text"><?= te('Einstellungen') ?></span></a></li>
+    <li class="nav-item mt-4"><a class="nav-link text-danger" href="logout"><i class="bi bi-box-arrow-right"></i> <span class="nav-text"><?= te('Logout') ?></span></a></li>
 </ul>
 </div>

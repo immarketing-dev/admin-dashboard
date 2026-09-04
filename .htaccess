@@ -32,6 +32,7 @@ Options -Indexes
     RewriteRule ^includes/ - [F,L]
     RewriteRule ^vendor/   - [F,L]
     RewriteRule ^tools/    - [F,L]
+    RewriteRule ^lang/     - [F,L]
 </IfModule>
 
 # ============================================

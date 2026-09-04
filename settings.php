@@ -10,6 +10,18 @@ require_once 'includes/mail_templates.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     csrf_check();
 
+    if ($_POST['action'] === 'save_language') {
+        $sprache = $_POST['ui_language'] ?? 'de';
+        // Nur bekannte Sprachen: ein fremder Wert wuerde lang() dazu
+        // bringen, eine nicht vorhandene Datei zu suchen.
+        if (in_array($sprache, SPRACHEN, true)) {
+            $pdo->prepare("INSERT INTO settings (k,v) VALUES ('ui_language',?) ON DUPLICATE KEY UPDATE v=?")
+                ->execute([$sprache, $sprache]);
+            log_event($pdo, 'SETTINGS_LANG', "Sprache der Oberfläche auf '$sprache' gesetzt.");
+        }
+        header("Location: settings?tab=design&saved=1"); exit();
+    }
+
     if ($_POST['action'] === 'save_design') {
         $cp = trim($_POST['color_primary'] ?? '');
         $cs = trim($_POST['color_sidebar'] ?? '');
@@ -196,6 +208,7 @@ $active_tab = $_GET['tab'] ?? 'design';
 $saved = isset($_GET['saved']);
 
 // Read current values (fall back to constants)
+$s_ui_language    = setting('ui_language', 'de');
 $s_color_primary  = setting('color_primary', COLOR_PRIMARY);
 $s_color_sidebar  = setting('color_sidebar', COLOR_SIDEBAR);
 $s_company_name   = setting('company_name', COMPANY_NAME);
@@ -274,6 +287,30 @@ require 'includes/layout_start.php';
     <!-- ========== TAB: DARSTELLUNG ========== -->
     <?php if($active_tab === 'design'): ?>
     <div class="settings-card" style="border-radius:0 10px 10px 10px;">
+
+      <!-- Sprache -->
+      <div class="settings-section-title"><i class="bi bi-translate me-2"></i><?= te('Sprache') ?></div>
+      <form method="POST" class="mb-4">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_language">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold" for="uiLanguage"><?= te('Sprache der Oberfläche') ?></label>
+            <select name="ui_language" id="uiLanguage" class="form-select">
+              <option value="de" <?= $s_ui_language === 'de' ? 'selected' : '' ?>><?= te('Deutsch') ?></option>
+              <option value="en" <?= $s_ui_language === 'en' ? 'selected' : '' ?>><?= te('Englisch') ?></option>
+            </select>
+          </div>
+          <div class="col-md-auto">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check2 me-1"></i> <?= te('Sprache speichern') ?>
+            </button>
+          </div>
+        </div>
+        <small class="text-muted d-block mt-2">
+          <?= te('Gilt für das gesamte Panel. Das Kundenportal folgt der Sprache des jeweiligen Kontakts.') ?>
+        </small>
+      </form>
 
       <!-- Dark Mode -->
       <div class="settings-section-title"><i class="bi bi-moon-stars me-2"></i>Dark Mode</div>

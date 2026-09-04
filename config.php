@@ -76,6 +76,8 @@ try {
 require_once __DIR__ . '/includes/migrations.php';
 run_migrations($pdo);
 
+require_once __DIR__ . '/includes/i18n.php';
+
 // Cached settings helper – available on every page
 function setting(string $key, string $default = ''): string {
     global $pdo;

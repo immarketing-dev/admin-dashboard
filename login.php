@@ -33,11 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pw2   = $_POST['password2'] ?? '';
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Bitte eine gültige E-Mail-Adresse angeben.';
+            $error = t('Bitte eine gültige E-Mail-Adresse angeben.');
         } elseif (strlen($pw) < 12) {
-            $error = 'Das Passwort muss mindestens 12 Zeichen lang sein.';
+            $error = t('Das Passwort muss mindestens 12 Zeichen lang sein.');
         } elseif ($pw !== $pw2) {
-            $error = 'Die Passwörter stimmen nicht überein.';
+            $error = t('Die Passwörter stimmen nicht überein.');
         } else {
             $newId = auth_create_first_user($pdo, $email, $pw);
             session_regenerate_id(true);
@@ -50,25 +50,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!$first_run && $action === 'login') {
         if (auth_is_locked($pdo, $ip)) {
             auth_note_lockout($pdo, $ip);
-            $error = 'Zu viele Fehlversuche. Bitte in '
-                   . AUTH_LOCKOUT_MIN . ' Minuten erneut versuchen.';
+            $error = t('Zu viele Fehlversuche. Bitte in %d Minuten erneut versuchen.',
+                        AUTH_LOCKOUT_MIN);
         } elseif (auth_attempt($pdo, trim($_POST['email'] ?? ''), $_POST['password'] ?? '', $ip)) {
             header('Location: index');
             exit();
         } else {
             // Bewusst unspezifisch: kein Rückschluss darauf, ob die
             // E-Mail existiert.
-            $error = 'E-Mail-Adresse oder Passwort ist falsch.';
+            $error = t('E-Mail-Adresse oder Passwort ist falsch.');
         }
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?= lang() ?>">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?> Admin</title>
+  <title><?= te('Login') ?> | <?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?> Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <?php require_once 'includes/theme.php'; ?>
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="login-logo"><i class="bi bi-grid-1x2-fill"></i></div>
       <div class="login-title mt-2"><?= htmlspecialchars(setting('company_short', COMPANY_SHORT)) ?> Admin</div>
       <?php if ($first_run): ?>
-        <p class="text-muted small mt-1">Erster Start – bitte ein Admin-Passwort festlegen.</p>
+        <p class="text-muted small mt-1"><?= te('Erster Start – bitte ein Admin-Passwort festlegen.') ?></p>
       <?php endif; ?>
     </div>
 
@@ -98,19 +98,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="setup">
       <div class="mb-3">
-        <label class="form-label fw-semibold small">E-Mail-Adresse</label>
+        <label class="form-label fw-semibold small"><?= te('E-Mail-Adresse') ?></label>
         <input type="email" name="email" class="form-control" required autofocus>
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold small">Neues Passwort</label>
-        <input type="password" name="password" class="form-control" required placeholder="Mindestens 12 Zeichen">
+        <label class="form-label fw-semibold small"><?= te('Neues Passwort') ?></label>
+        <input type="password" name="password" class="form-control" required placeholder="<?= te('Mindestens 12 Zeichen') ?>">
       </div>
       <div class="mb-4">
-        <label class="form-label fw-semibold small">Passwort wiederholen</label>
-        <input type="password" name="password2" class="form-control" required placeholder="Passwort bestätigen">
+        <label class="form-label fw-semibold small"><?= te('Passwort wiederholen') ?></label>
+        <input type="password" name="password2" class="form-control" required placeholder="<?= te('Passwort bestätigen') ?>">
       </div>
       <button type="submit" class="btn btn-primary w-100 fw-bold">
-        <i class="bi bi-shield-lock me-1"></i> Passwort setzen & einloggen
+        <i class="bi bi-shield-lock me-1"></i> <?= te('Passwort setzen & einloggen') ?>
       </button>
     </form>
     <?php else: ?>
@@ -118,15 +118,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="login">
       <div class="mb-3">
-        <label class="form-label fw-semibold small">E-Mail-Adresse</label>
+        <label class="form-label fw-semibold small"><?= te('E-Mail-Adresse') ?></label>
         <input type="email" name="email" class="form-control" required autofocus>
       </div>
       <div class="mb-4">
-        <label class="form-label fw-semibold small">Passwort</label>
+        <label class="form-label fw-semibold small"><?= te('Passwort') ?></label>
         <input type="password" name="password" class="form-control form-control-lg" required placeholder="••••••••">
       </div>
       <button type="submit" class="btn btn-primary w-100 fw-bold">
-        <i class="bi bi-box-arrow-in-right me-1"></i> Einloggen
+        <i class="bi bi-box-arrow-in-right me-1"></i> <?= te('Einloggen') ?>
       </button>
     </form>
     <?php endif; ?>

@@ -183,6 +183,14 @@ if command -v php >/dev/null 2>&1; then
   # Aufgerufene, aber nicht geladene Projektfunktionen. "php -l" sieht die
   # nicht - der Aufruf ist syntaktisch gueltig und faellt erst zur Laufzeit
   # mit HTTP 500 auf, moeglicherweise erst Wochen spaeter.
+  if ! out=$(php tools/check_i18n.php 2>&1); then
+    echo "I18N: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_i18n.php 2>&1); then
+    echo "I18N-RENDER: $out"
+    fail=1
+  fi
   if ! out=$(php tools/check_includes.php 2>&1); then
     echo "INCLUDES: $out"
     fail=1
