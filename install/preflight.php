@@ -476,7 +476,12 @@ foreach (array_merge(glob($wurzel . '/*.php') ?: [], glob($wurzel . '/includes/*
             if (is_file($k)) { $da = true; break; }
         }
         if (!$da) {
-            $fehlend[basename($ziel) . ' (verlangt von ' . basename($datei) . ')'] = true;
+            // Mit dem gesuchten Pfad: sonst steht da nur ein Dateiname,
+            // und ob die Datei fehlt oder anders heisst - Gross- und
+            // Kleinschreibung zaehlt auf einem Linux-Server - laesst
+            // sich nicht auseinanderhalten.
+            $fehlend[basename($ziel) . ' (verlangt von ' . basename($datei)
+                . ', gesucht: ' . $kandidaten[0] . ')'] = true;
         }
     }
 }
