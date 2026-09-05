@@ -469,6 +469,23 @@ body.sidebar-collapsed .sidebar .nav-group {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
 }
 
+/* Dieselbe Typografie fuer eine Tabellenkopfzeile - aber ohne das
+   display:flex darueber.
+
+   Auf einem <tr> nimmt flex die Zeile aus dem Tabellenlayout heraus. Die
+   Kopfzellen stehen dann links zusammengedraengt statt ueber ihren
+   Spalten, und eine Breitenangabe an einem <th> wirkt nicht mehr auf die
+   Spalte darunter. In der Auswertung fiel dadurch die Anteilsspalte auf
+   wenige Pixel zusammen: die Balken waren da, richtig berechnet, nur
+   nicht mehr breiter als ein Strich. */
+.table-label > th {
+    font-family: 'Open Sans', sans-serif;
+    font-size: var(--text-2xs); font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--text-muted);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
 /* Getoente Icon-Kachel. Ersetzt die vollflaechig eingefaerbten Kreise
    (style="background:#28a745;color:#fff"): der Glyph traegt die Farbe,
    die Flaeche nur eine Ahnung davon. */

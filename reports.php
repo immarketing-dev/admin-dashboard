@@ -147,7 +147,7 @@ require 'includes/layout_start.php';
       <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
-            <tr class="section-label">
+            <tr class="table-label">
               <th><?= te('Nummer') ?></th>
               <th><?= te('Kunde') ?></th>
               <th><?= te('Fällig') ?></th>
@@ -209,7 +209,7 @@ require 'includes/layout_start.php';
       <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
-            <tr class="section-label">
+            <tr class="table-label">
               <th><?= te('Kunde') ?></th>
               <th style="width:40%"><?= te('Anteil') ?></th>
               <th class="text-end"><?= te('Bezahlt') ?></th>
@@ -260,7 +260,7 @@ require 'includes/layout_start.php';
       <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">
           <thead>
-            <tr class="section-label">
+            <tr class="table-label">
               <th><?= te('Projekt') ?></th>
               <th><?= te('Kunde') ?></th>
               <th class="text-end"><?= te('Erfasst') ?></th>

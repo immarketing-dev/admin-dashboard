@@ -960,7 +960,7 @@ require 'includes/layout_start.php';
       <div class="table-responsive mb-4">
         <table class="table table-sm align-middle mb-0">
           <thead>
-            <tr class="section-label">
+            <tr class="table-label">
               <th><?= te('Name') ?></th>
               <th><?= te('E-Mail-Adresse') ?></th>
               <th><?= te('Rolle') ?></th>
