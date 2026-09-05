@@ -258,20 +258,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // einmal nach dem Erzeugen - danach steht er in der Einstellung und
     // laesst sich dort nachsehen, aber der Weg dahin ist bewusst der
     // laengere.
-    if ($_POST['action'] === 'generate_api_key') {
-        require_once __DIR__ . '/includes/api_leads.php';
+    if ($_POST['action'] === 'generate_api_key' || $_POST['action'] === 'revoke_api_key') {
+        require_once __DIR__ . '/includes/api_keys.php';
 
-        $key = api_leads_schluessel_erzeugen();
-        $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('api_key_leads',?) ON DUPLICATE KEY UPDATE v=?");
-        $s->execute([$key, $key]);
+        // Je Zweck ein eigener Schluessel: sie gehen an verschiedene
+        // Dienste - das Kontaktformular der Website, den Maildienst -,
+        // und wer einen davon wechselt, soll nicht den anderen
+        // mitentziehen muessen.
+        $zweck = in_array($_POST['zweck'] ?? '', ['leads', 'tickets'], true) ? $_POST['zweck'] : 'leads';
 
-        log_event($pdo, 'SETTINGS_API_KEY', 'Neuer API-Schlüssel für die Anfrage-Schnittstelle erzeugt.');
-        header("Location: settings?tab=system&saved=1&newkey=1"); exit();
-    }
+        if ($_POST['action'] === 'generate_api_key') {
+            $key = api_schluessel_erzeugen();
+            $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
+            $s->execute(['api_key_' . $zweck, $key, $key]);
 
-    if ($_POST['action'] === 'revoke_api_key') {
-        $pdo->prepare("DELETE FROM settings WHERE k = 'api_key_leads'")->execute();
-        log_event($pdo, 'SETTINGS_API_KEY', 'API-Schlüssel entzogen; die Schnittstelle ist wieder zu.');
+            log_event($pdo, 'SETTINGS_API_KEY', "Neuer API-Schlüssel erzeugt ($zweck).");
+            header("Location: settings?tab=system&saved=1&newkey=$zweck"); exit();
+        }
+
+        $pdo->prepare("DELETE FROM settings WHERE k = ?")->execute(['api_key_' . $zweck]);
+        log_event($pdo, 'SETTINGS_API_KEY', "API-Schlüssel entzogen ($zweck); die Schnittstelle ist wieder zu.");
         header("Location: settings?tab=system&saved=1"); exit();
     }
 
@@ -334,7 +340,7 @@ $s_log_limit      = setting('log_limit', '200');
 $s_reminder_days  = setting('reminder_days', '');
 // Der Schluessel der Anfrage-Schnittstelle. Leer = die Schnittstelle
 // ist zu, nicht offen.
-$s_api_key        = setting('api_key_leads', '');
+$s_api_keys       = ['leads' => setting('api_key_leads', ''), 'tickets' => setting('api_key_tickets', '')];
 
 // Zweiter Faktor. Im Demo-Modus gibt es keinen angemeldeten Benutzer,
 // dessen Faktor man einrichten koennte - dort bleibt der Abschnitt weg.
@@ -1001,68 +1007,92 @@ require 'includes/layout_start.php';
       <?php endif; ?>
       <?php endif; ?>
 
-      <div class="settings-section-title mt-2"><i class="bi bi-braces me-2"></i><?= te('Schnittstelle für Anfragen') ?></div>
+      <div class="settings-section-title mt-2"><i class="bi bi-braces me-2"></i><?= te('Schnittstellen') ?></div>
       <p class="text-muted small">
-        <?= te('Damit kann das Kontaktformular Ihrer Website Anfragen direkt an das Panel schicken, ohne Zugang zur Datenbank.') ?>
+        <?= te('Zwei Wege, auf denen etwas von außen ins Panel kommt. Je ein eigener Schlüssel: wer einen Dienst wechselt, muss den anderen nicht mitentziehen.') ?>
       </p>
 
-      <?php if ($s_api_key === ''): ?>
-        <div class="alert alert-secondary py-2 small">
-          <i class="bi bi-lock me-1"></i>
-          <?= te('Kein Schlüssel eingerichtet – die Schnittstelle ist geschlossen.') ?>
-        </div>
-        <form method="POST" class="mb-4">
-          <?= csrf_field() ?>
-          <input type="hidden" name="action" value="generate_api_key">
-          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-key me-1"></i> <?= te('Schlüssel erzeugen') ?></button>
-        </form>
-      <?php else: ?>
-        <?php if (isset($_GET['newkey'])): ?>
-          <div class="alert alert-success py-2 small">
-            <i class="bi bi-check-circle me-1"></i>
-            <?= te('Der Schlüssel wurde erzeugt. Tragen Sie ihn jetzt in Ihre Website ein.') ?>
-          </div>
-        <?php endif; ?>
-        <div class="row g-3 align-items-end mb-2">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold"><?= te('Schlüssel') ?></label>
-            <div class="input-group">
-              <input type="text" class="form-control font-monospace" id="api_key_feld"
-                     value="<?= htmlspecialchars($s_api_key) ?>" readonly>
-              <button class="btn btn-outline-secondary" type="button" onclick="apiSchluesselKopieren()">
+      <?php
+        // Zwei Bloecke, ein Aufbau. Als Schleife und nicht zweimal
+        // abgeschrieben - sonst weicht der zweite frueher oder spaeter ab.
+        $_apis = [
+            'leads' => [
+                'titel'   => te('Anfragen von der Website'),
+                'pfad'    => '/api/leads',
+                'hinweis' => te('Das Kontaktformular Ihrer Website schickt Anfragen hierher, ohne Zugang zur Datenbank.'),
+            ],
+            'tickets' => [
+                'titel'   => te('Eingehende E-Mails'),
+                'pfad'    => '/api/tickets',
+                'hinweis' => te('Ein Maildienst (etwa Cloudflare Email Routing, Postmark oder Mailgun) reicht eingehende Nachrichten hierher weiter. Sie werden zu Support-Anfragen; eine Antwort mit [#Nummer] im Betreff landet am richtigen Vorgang.'),
+            ],
+        ];
+      ?>
+
+      <?php foreach ($_apis as $_zweck => $_api): ?>
+        <?php $_key = $s_api_keys[$_zweck]; ?>
+        <div class="mb-4">
+          <div class="fw-bold mb-1"><?= $_api['titel'] ?></div>
+          <p class="text-muted small mb-2"><?= $_api['hinweis'] ?></p>
+
+          <?php if ($_key === ''): ?>
+            <div class="alert alert-secondary py-2 small d-flex justify-content-between align-items-center gap-2 flex-wrap">
+              <span><i class="bi bi-lock me-1"></i><?= te('Kein Schlüssel eingerichtet – geschlossen.') ?></span>
+              <form method="POST" class="m-0">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="generate_api_key">
+                <input type="hidden" name="zweck" value="<?= $_zweck ?>">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-key me-1"></i> <?= te('Schlüssel erzeugen') ?></button>
+              </form>
+            </div>
+          <?php else: ?>
+            <?php if (($_GET['newkey'] ?? '') === $_zweck): ?>
+              <div class="alert alert-success py-2 small">
+                <i class="bi bi-check-circle me-1"></i>
+                <?= te('Der Schlüssel wurde erzeugt. Tragen Sie ihn jetzt in Ihre Website ein.') ?>
+              </div>
+            <?php endif; ?>
+            <div class="input-group input-group-sm mb-2">
+              <span class="input-group-text font-monospace"><?= htmlspecialchars($_api['pfad']) ?></span>
+              <input type="text" class="form-control font-monospace" id="api_key_<?= $_zweck ?>"
+                     value="<?= htmlspecialchars($_key) ?>" readonly>
+              <button class="btn btn-outline-secondary" type="button" onclick="apiSchluesselKopieren('<?= $_zweck ?>')">
                 <i class="bi bi-clipboard"></i>
               </button>
             </div>
-            <div class="form-text"><?= te('Im Header mitschicken: X-Api-Key') ?></div>
-          </div>
-          <div class="col-md-4 d-flex gap-2">
-            <form method="POST" onsubmit="return confirm('<?= te('Einen neuen Schlüssel erzeugen? Der bisherige gilt danach nicht mehr.') ?>')">
-              <?= csrf_field() ?>
-              <input type="hidden" name="action" value="generate_api_key">
-              <button type="submit" class="btn btn-outline-secondary btn-sm"><?= te('Neu erzeugen') ?></button>
-            </form>
-            <form method="POST" onsubmit="return confirm('<?= te('Den Schlüssel entziehen? Die Schnittstelle ist danach geschlossen.') ?>')">
-              <?= csrf_field() ?>
-              <input type="hidden" name="action" value="revoke_api_key">
-              <button type="submit" class="btn btn-outline-danger btn-sm"><?= te('Entziehen') ?></button>
-            </form>
-          </div>
+            <div class="d-flex gap-2">
+              <form method="POST" onsubmit="return confirm('<?= te('Einen neuen Schlüssel erzeugen? Der bisherige gilt danach nicht mehr.') ?>')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="generate_api_key">
+                <input type="hidden" name="zweck" value="<?= $_zweck ?>">
+                <button type="submit" class="btn btn-outline-secondary btn-sm"><?= te('Neu erzeugen') ?></button>
+              </form>
+              <form method="POST" onsubmit="return confirm('<?= te('Den Schlüssel entziehen? Die Schnittstelle ist danach geschlossen.') ?>')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="revoke_api_key">
+                <input type="hidden" name="zweck" value="<?= $_zweck ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><?= te('Entziehen') ?></button>
+              </form>
+            </div>
+          <?php endif; ?>
         </div>
-        <div class="alert alert-warning py-2 small mb-4">
-          <i class="bi bi-exclamation-triangle me-1"></i>
-          <?= te('Der Schlüssel berechtigt zum Schreiben. Er gehört auf den Server Ihrer Website, niemals in ein Formular oder in JavaScript – dort wäre er öffentlich.') ?>
-        </div>
-        <script>
-          function apiSchluesselKopieren() {
-              var feld = document.getElementById('api_key_feld');
-              feld.select();
-              // Der moderne Weg braucht einen sicheren Kontext; das
-              // ausgewaehlte Feld bleibt als Rueckfall.
-              if (navigator.clipboard) { navigator.clipboard.writeText(feld.value); }
-          }
-        </script>
-      <?php endif; ?>
+      <?php endforeach; ?>
 
+      <?php if ($s_api_keys['leads'] !== '' || $s_api_keys['tickets'] !== ''): ?>
+      <div class="alert alert-warning py-2 small mb-4">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <?= te('Der Schlüssel berechtigt zum Schreiben. Er gehört auf den Server Ihrer Website, niemals in ein Formular oder in JavaScript – dort wäre er öffentlich.') ?>
+      </div>
+      <script>
+        function apiSchluesselKopieren(zweck) {
+            var feld = document.getElementById('api_key_' + zweck);
+            feld.select();
+            // Der moderne Weg braucht einen sicheren Kontext; das
+            // ausgewaehlte Feld bleibt als Rueckfall.
+            if (navigator.clipboard) { navigator.clipboard.writeText(feld.value); }
+        }
+      </script>
+      <?php endif; ?>
       <div class="settings-section-title mt-2"><i class="bi bi-info-circle me-2"></i><?= te('Systeminfo') ?></div>
       <table class="table table-borderless" style="max-width:400px;">
         <tbody>

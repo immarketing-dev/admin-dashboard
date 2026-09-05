@@ -86,3 +86,6 @@ jobs:
 
       - name: XRechnung tests
         run: php tools/test_xrechnung.php
+
+      - name: Incoming mail tests
+        run: php tools/test_api_tickets.php

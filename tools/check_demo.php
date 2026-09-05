@@ -47,7 +47,8 @@ const OHNE_AUTH = [
     // wird vom Server einer Website aufgerufen, nicht von einem
     // Browser. Ihre Tuer ist der Schluessel, und den Demo-Modus prueft
     // sie als Erstes selbst; Pruefung 1 haelt beides nach.
-    'leads.php'  => 'Eigene Tuer (API-Schluessel); prueft demo_mode() vor allem anderen.',
+    'leads.php'   => 'Eigene Tuer (API-Schluessel) ueber api_tuer(); prueft demo_mode() zuerst.',
+    'tickets.php' => 'Eigene Tuer (API-Schluessel) ueber api_tuer(); prueft demo_mode() zuerst.',
 ];
 
 /**
@@ -194,15 +195,24 @@ if (strpos(code_ohne_kommentare($wurzel . '/cron.php'), 'demo_mode()') === false
 if (strpos(code_ohne_kommentare($wurzel . '/cron.php'), 'hash_equals') === false) {
     $fehlend[] = 'cron.php prueft den CRON_TOKEN nicht mit hash_equals';
 }
-// Dasselbe fuer die Anfrage-Schnittstelle: sie hat keine Sitzung, ihre
-// einzige Tuer ist der Schluessel - und im Demo-Modus soll sie gar
-// nicht erst antworten.
-$api = code_ohne_kommentare($wurzel . '/api/leads.php');
-if (strpos($api, 'demo_mode()') === false) {
-    $fehlend[] = 'api/leads.php prueft den Demo-Modus nicht';
+// Die Schnittstellen haben keine Sitzung und koennen keine haben - sie
+// werden vom Server eines Dienstes aufgerufen, nicht von einem Browser.
+// Ihre Tuer steht seit dem zweiten Endpunkt gebuendelt in
+// includes/api_keys.php: Demo-Modus, Methode, Schluessel, Bremse.
+//
+// Geprueft wird deshalb zweierlei - dass die Tuer selbst alles enthaelt,
+// und dass JEDER Endpunkt sie benutzt. So faellt ein dritter auf, der
+// sie vergisst, statt still ohne Riegel zu laufen.
+$tuer = code_ohne_kommentare($wurzel . '/includes/api_keys.php');
+foreach (['demo_mode()' => 'den Demo-Modus', 'hash_equals' => 'den Schluessel mit hash_equals'] as $muster => $was) {
+    if (strpos($tuer, $muster) === false) {
+        $fehlend[] = "includes/api_keys.php prueft $was nicht";
+    }
 }
-if (strpos($api, 'hash_equals') === false) {
-    $fehlend[] = 'api/leads.php prueft den Schluessel nicht mit hash_equals';
+foreach (glob($wurzel . '/api/*.php') ?: [] as $endpunkt) {
+    if (strpos(code_ohne_kommentare($endpunkt), 'api_tuer(') === false) {
+        $fehlend[] = 'api/' . basename($endpunkt) . ' ruft api_tuer() nicht auf';
+    }
 }
 // SSO darf in der Demo nicht von der .env abhaengen - sso.php schreibt,
 // bevor ein POST im Spiel ist.

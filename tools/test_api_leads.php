@@ -28,6 +28,7 @@ if (!function_exists('setting')) {
     }
 }
 
+require_once __DIR__ . '/../includes/api_keys.php';
 require_once __DIR__ . '/../includes/api_leads.php';
 
 $wurzel = dirname(__DIR__);
@@ -44,48 +45,48 @@ $checks = [];
 // =====================================================================
 // Kein Schluessel eingerichtet heisst: zu, nicht offen. Dasselbe
 // Prinzip wie beim CRON_TOKEN.
-$checks['ohne Einstellung ist der Schluessel leer'] = api_leads_schluessel() === '';
+$checks['ohne Einstellung ist der Schluessel leer'] = api_schluessel('leads') === '';
 
 $EINSTELLUNGEN['api_key_leads'] = '  ';
-$checks['Leerzeichen zaehlen als leer'] = api_leads_schluessel() === '';
+$checks['Leerzeichen zaehlen als leer'] = api_schluessel('leads') === '';
 
-$erzeugt = api_leads_schluessel_erzeugen();
+$erzeugt = api_schluessel_erzeugen();
 $checks['erzeugter Schluessel ist 48 Hexzeichen'] = preg_match('/^[0-9a-f]{48}$/', $erzeugt) === 1;
-$checks['zwei Aufrufe geben verschiedene']        = api_leads_schluessel_erzeugen() !== $erzeugt;
+$checks['zwei Aufrufe geben verschiedene']        = api_schluessel_erzeugen() !== $erzeugt;
 
 $EINSTELLUNGEN['api_key_leads'] = $erzeugt;
-$checks['der eingestellte kommt zurueck'] = api_leads_schluessel() === $erzeugt;
+$checks['der eingestellte kommt zurueck'] = api_schluessel('leads') === $erzeugt;
 
 // --- Aus der Anfrage lesen ---------------------------------------------
 $checks['X-Api-Key wird gelesen']
-    = api_leads_schluessel_aus_anfrage(['HTTP_X_API_KEY' => 'abc123']) === 'abc123';
+    = api_schluessel_aus_anfrage(['HTTP_X_API_KEY' => 'abc123']) === 'abc123';
 $checks['Bearer wird gelesen']
-    = api_leads_schluessel_aus_anfrage(['HTTP_AUTHORIZATION' => 'Bearer abc123']) === 'abc123';
+    = api_schluessel_aus_anfrage(['HTTP_AUTHORIZATION' => 'Bearer abc123']) === 'abc123';
 $checks['Bearer ist unabhaengig von der Schreibweise']
-    = api_leads_schluessel_aus_anfrage(['HTTP_AUTHORIZATION' => 'bearer abc123']) === 'abc123';
+    = api_schluessel_aus_anfrage(['HTTP_AUTHORIZATION' => 'bearer abc123']) === 'abc123';
 $checks['X-Api-Key hat Vorrang']
-    = api_leads_schluessel_aus_anfrage(['HTTP_X_API_KEY' => 'eins', 'HTTP_AUTHORIZATION' => 'Bearer zwei']) === 'eins';
-$checks['ohne Header nichts']       = api_leads_schluessel_aus_anfrage([]) === '';
+    = api_schluessel_aus_anfrage(['HTTP_X_API_KEY' => 'eins', 'HTTP_AUTHORIZATION' => 'Bearer zwei']) === 'eins';
+$checks['ohne Header nichts']       = api_schluessel_aus_anfrage([]) === '';
 // Basic ist kein Bearer - eine Anmeldung mit Benutzername gilt hier nicht.
 $checks['Basic wird nicht gelesen']
-    = api_leads_schluessel_aus_anfrage(['HTTP_AUTHORIZATION' => 'Basic abc123']) === '';
+    = api_schluessel_aus_anfrage(['HTTP_AUTHORIZATION' => 'Basic abc123']) === '';
 
 // =====================================================================
 // Der Rumpf
 // =====================================================================
 $json = '{"name":"Anna","email":"anna@example.com"}';
 $checks['JSON wird gelesen']
-    = api_leads_rumpf($json, 'application/json', [])['name'] === 'Anna';
+    = api_rumpf($json, 'application/json', [])['name'] === 'Anna';
 $checks['JSON mit Zeichensatz im Typ']
-    = api_leads_rumpf($json, 'application/json; charset=utf-8', [])['email'] === 'anna@example.com';
+    = api_rumpf($json, 'application/json; charset=utf-8', [])['email'] === 'anna@example.com';
 // Formularfelder, weil ein Formularanbieter oft so sendet.
 $checks['Formularfelder werden gelesen']
-    = api_leads_rumpf('', 'application/x-www-form-urlencoded', ['name' => 'Bruno'])['name'] === 'Bruno';
+    = api_rumpf('', 'application/x-www-form-urlencoded', ['name' => 'Bruno'])['name'] === 'Bruno';
 // Kaputtes JSON gibt ein leeres Feld statt eines Fehlers - die Pruefung
 // darunter beanstandet dann den fehlenden Namen, und das ist die
 // verstaendlichere Antwort.
-$checks['kaputtes JSON gibt leer'] = api_leads_rumpf('{kaputt', 'application/json', []) === [];
-$checks['JSON-Liste gibt eine Liste'] = api_leads_rumpf('[1,2]', 'application/json', []) === [1, 2];
+$checks['kaputtes JSON gibt leer'] = api_rumpf('{kaputt', 'application/json', []) === [];
+$checks['JSON-Liste gibt eine Liste'] = api_rumpf('[1,2]', 'application/json', []) === [1, 2];
 
 // =====================================================================
 // Pruefen und saeubern
@@ -173,19 +174,19 @@ $checks['der Zeitpunkt wird gesetzt'] = !empty($zeile['created_at']);
 // Ohne sie liesse sich der Eingang fluten - und jede Anfrage erzeugt
 // ein Abzeichen in der Seitenleiste.
 $ip = '203.0.113.99';
-$checks['zu Beginn frei'] = api_leads_zu_haeufig($pdo, $ip) === false;
+$checks['zu Beginn frei'] = api_zu_haeufig($pdo, $ip, 'API_LEAD', API_LEADS_MAX_PRO_STUNDE) === false;
 
 $log = $pdo->prepare("INSERT INTO logs (action_type, description, ip) VALUES ('API_LEAD', 'Test', ?)");
 for ($i = 0; $i < API_LEADS_MAX_PRO_STUNDE - 1; $i++) {
     $log->execute([$ip]);
 }
-$checks['knapp darunter noch frei'] = api_leads_zu_haeufig($pdo, $ip) === false;
+$checks['knapp darunter noch frei'] = api_zu_haeufig($pdo, $ip, 'API_LEAD', API_LEADS_MAX_PRO_STUNDE) === false;
 $log->execute([$ip]);
-$checks['an der Grenze gebremst']   = api_leads_zu_haeufig($pdo, $ip) === true;
-$checks['andere IP bleibt frei']    = api_leads_zu_haeufig($pdo, '198.51.100.1') === false;
+$checks['an der Grenze gebremst']   = api_zu_haeufig($pdo, $ip, 'API_LEAD', API_LEADS_MAX_PRO_STUNDE) === true;
+$checks['andere IP bleibt frei']    = api_zu_haeufig($pdo, '198.51.100.1', 'API_LEAD', API_LEADS_MAX_PRO_STUNDE) === false;
 
 $pdo->exec("UPDATE logs SET created_at = '2020-01-01 00:00:00' WHERE action_type = 'API_LEAD'");
-$checks['alte Anfragen zaehlen nicht'] = api_leads_zu_haeufig($pdo, $ip) === false;
+$checks['alte Anfragen zaehlen nicht'] = api_zu_haeufig($pdo, $ip, 'API_LEAD', API_LEADS_MAX_PRO_STUNDE) === false;
 
 // =====================================================================
 // Ergebnis

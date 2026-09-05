@@ -9,6 +9,46 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Incoming e-mail becomes a ticket (`api/tickets.php`).** A ticket
+  appeared only when you created one or a client logged into the portal.
+  Clients write e-mails, and the `support@` address in `.env` was only
+  ever used for sending.
+
+  **A webhook, not an IMAP poll.** Fetching a mailbox in the cron run
+  would need the `imap` extension, which since PHP 8.4 is no longer part
+  of the core and only available through PECL — on shared hosting, not
+  available. A route that quietly stops working on the next PHP version
+  is not a good route. A mail service forwards messages to the endpoint
+  instead; no PHP extension involved.
+
+  A reply finds its ticket through `[#14]` in the subject, which outgoing
+  replies now carry. **The marker is checked against the sender**: it
+  sits in a mail anyone can write, and without verifying the ticket
+  actually belongs to that contact, a stranger could put a note into
+  someone else's ticket — visible in the real client's portal. Quoted
+  history is stripped, because by the third exchange the same question
+  would otherwise stand four times in the thread.
+
+  An unknown sender still gets a ticket, without a contact assigned:
+  that is how new customers get in touch. Their address goes into the
+  message text so it stays clear who wrote.
+
+  55 checks in `tools/test_api_tickets.php`.
+
+### Changed
+- **The two API endpoints share one door.** Key handling, the rate limit,
+  the JSON answer and reading the request body moved from
+  `includes/api_leads.php` into `includes/api_keys.php`; both endpoints
+  now call one `api_tuer()` that runs demo guard, method, key and limit
+  in order. A second, word-for-word copy would have been the same check
+  in two places to maintain — and the place where one of them later
+  forgets a step.
+
+  `tools/check_demo.php` checks it accordingly: that the door itself
+  contains both guards, and that **every** file under `api/` calls it. A
+  third endpoint that forgets now fails the check instead of running
+  unguarded.
+
 - **Invoices as XML (XRechnung, UBL 2.1).** Invoices have been stored in
   structured form since schema version 8 — `finances.items` as JSON with
   description, quantity, price and unit, plus `tax_type`, `net_amount`,

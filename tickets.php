@@ -2,6 +2,9 @@
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once __DIR__ . '/includes/mail_log.php';
+// Fuer ticket_betreffkennung(): ausgehende Antworten tragen die
+// Kennung, damit eine Rueckmeldung ihr Ticket wiederfindet.
+require_once __DIR__ . '/includes/api_tickets.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -126,7 +129,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $mail->CharSet    = 'UTF-8';
                 $mail->setFrom(SMTP_USER, $company);
                 $mail->addAddress($to, $contact_name);
-                $mail->Subject  = $_m['subject'];
+                // Die Kennung macht aus einer Antwort eine Notiz am
+                // selben Ticket statt eines neuen Vorgangs. Die meisten
+                // Mailprogramme lassen sie beim Antworten stehen.
+                $mail->Subject  = ticket_betreffkennung($id) . ' ' . $_m['subject'];
                 $mail->isHTML(true);
                 $mail->Body     = $_m['html'];
                 $mail->AltBody  = "Hallo $first,\n\nSie haben eine neue Antwort auf Ihre Support-Anfrage erhalten.\n\nBetreff: $ticket_subject\n\nAntwort:\n$body\n\nZum Portal: $portal_url\n\n-- $company";

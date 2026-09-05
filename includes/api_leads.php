@@ -19,6 +19,7 @@
  */
 
 require_once __DIR__ . '/logging.php';
+require_once __DIR__ . '/api_keys.php';
 
 /** Wie viele Anfragen eine IP je Stunde stellen darf. */
 const API_LEADS_MAX_PRO_STUNDE = 30;
@@ -33,63 +34,10 @@ const API_LEADS_GRENZEN = [
     'message' => 5000,
 ];
 
-/**
- * Der eingestellte Schlüssel, oder ''.
- *
- * Ohne Schlüssel ist der Endpunkt zu — nicht offen. Dasselbe Prinzip
- * wie beim CRON_TOKEN: eine Installation, die nichts eingerichtet hat,
- * bekommt keinen unbewachten Schreibzugang.
- */
-function api_leads_schluessel(): string
-{
-    return trim(setting('api_key_leads', ''));
-}
-
-/** Erzeugt einen neuen Schlüssel. */
-function api_leads_schluessel_erzeugen(): string
-{
-    return bin2hex(random_bytes(24));
-}
-
-/**
- * Liest den Schlüssel aus der Anfrage.
- *
- * Zwei Schreibweisen, weil beide verbreitet sind und die Wahl den
- * Absender nichts angeht.
- */
-function api_leads_schluessel_aus_anfrage(array $server): string
-{
-    $key = trim((string) ($server['HTTP_X_API_KEY'] ?? ''));
-    if ($key !== '') {
-        return $key;
-    }
-
-    $auth = (string) ($server['HTTP_AUTHORIZATION'] ?? '');
-    if (stripos($auth, 'Bearer ') === 0) {
-        return trim(substr($auth, 7));
-    }
-    return '';
-}
-
-/**
- * Hat diese IP zu oft angefragt?
- *
- * Zählt über das Protokoll, wie die Anmeldesperre und die
- * Rücksetz-Bremse — dieselbe Tabelle, dieselbe ip-Spalte, kein dritter
- * Mechanismus.
- */
-function api_leads_zu_haeufig(PDO $pdo, string $ip): bool
-{
-    $stmt = $pdo->prepare(
-        "SELECT COUNT(*) FROM logs
-          WHERE action_type = 'API_LEAD'
-            AND ip = ?
-            AND created_at > (NOW() - INTERVAL 60 MINUTE)"
-    );
-    $stmt->execute([$ip]);
-
-    return (int) $stmt->fetchColumn() >= API_LEADS_MAX_PRO_STUNDE;
-}
+// Schluessel, Bremse, Antwortform und das Lesen des Rumpfes stehen seit
+// dem zweiten Endpunkt in includes/api_keys.php: eine wortgleiche
+// zweite Fassung waere dieselbe Pruefung an zwei Stellen zu pflegen
+// gewesen.
 
 /**
  * Prüft und säubert die Felder einer Anfrage.
@@ -171,18 +119,4 @@ function api_leads_speichern(PDO $pdo, array $werte): int
     return (int) $pdo->lastInsertId();
 }
 
-/**
- * Liest den Rumpf einer Anfrage.
- *
- * JSON und Formularfelder, weil beides vorkommt: ein Skript schickt
- * JSON, ein Formularanbieter oft `application/x-www-form-urlencoded`.
- * Wer den Unterschied nicht kennen muss, soll ihn nicht kennen müssen.
- */
-function api_leads_rumpf(string $roh, string $content_type, array $post): array
-{
-    if (stripos($content_type, 'application/json') !== false) {
-        $daten = json_decode($roh, true);
-        return is_array($daten) ? $daten : [];
-    }
-    return $post;
-}
+

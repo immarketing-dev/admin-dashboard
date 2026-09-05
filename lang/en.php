@@ -1679,20 +1679,10 @@ return [
     "Verfügbarkeit der letzten 24 Stunden, %d Messungen"
         => "Availability over the last 24 hours, %d checks",
     // ── Schnittstelle für Anfragen ───────────────────────────────────
-    "Schnittstelle für Anfragen"
-        => "Enquiry API",
-    "Damit kann das Kontaktformular Ihrer Website Anfragen direkt an das Panel schicken, ohne Zugang zur Datenbank."
-        => "This lets your website's contact form send enquiries straight to the panel, without database access.",
-    "Kein Schlüssel eingerichtet – die Schnittstelle ist geschlossen."
-        => "No key set up – the API is closed.",
     "Schlüssel erzeugen"
         => "Generate a key",
     "Der Schlüssel wurde erzeugt. Tragen Sie ihn jetzt in Ihre Website ein."
         => "The key has been generated. Enter it in your website now.",
-    "Schlüssel"
-        => "Key",
-    "Im Header mitschicken: X-Api-Key"
-        => "Send it in the header: X-Api-Key",
     "Neu erzeugen"
         => "Generate a new one",
     "Entziehen"
@@ -1765,4 +1755,19 @@ return [
         => "Tax number",
     "Eines von beiden genügt für die XRechnung."
         => "Either one is enough for the XRechnung.",
+    // ── Schnittstellen ───────────────────────────────────────────────
+    "Schnittstellen"
+        => "APIs",
+    "Zwei Wege, auf denen etwas von außen ins Panel kommt. Je ein eigener Schlüssel: wer einen Dienst wechselt, muss den anderen nicht mitentziehen."
+        => "Two ways for something to reach the panel from outside. A separate key for each: changing one service does not mean revoking the other.",
+    "Anfragen von der Website"
+        => "Enquiries from your website",
+    "Das Kontaktformular Ihrer Website schickt Anfragen hierher, ohne Zugang zur Datenbank."
+        => "Your website's contact form sends enquiries here, without database access.",
+    "Eingehende E-Mails"
+        => "Incoming e-mail",
+    "Ein Maildienst (etwa Cloudflare Email Routing, Postmark oder Mailgun) reicht eingehende Nachrichten hierher weiter. Sie werden zu Support-Anfragen; eine Antwort mit [#Nummer] im Betreff landet am richtigen Vorgang."
+        => "A mail service (Cloudflare Email Routing, Postmark or Mailgun, for instance) forwards incoming messages here. They become support tickets; a reply carrying [#number] in the subject lands on the right one.",
+    "Kein Schlüssel eingerichtet – geschlossen."
+        => "No key set up – closed.",
 ];

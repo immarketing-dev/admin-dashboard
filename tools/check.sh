@@ -325,6 +325,12 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Eingehende Mails. Die gefaehrlichste Stelle ist die Zuordnung: die
+  # Kennung im Betreff kann jeder schreiben.
+  if ! out=$(php tools/test_api_tickets.php 2>&1); then
+    echo "MAIL->TICKET: $out"
+    fail=1
+  fi
   # Die elektronische Rechnung: wohlgeformt, Betraege stimmig,
   # Sonderzeichen maskiert. Ob ein konkreter Empfaenger die Datei
   # annimmt, prueft das NICHT - das gehoert vor dem ersten echten

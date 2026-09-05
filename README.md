@@ -440,6 +440,39 @@ Two details worth knowing:
 One of the nine used to have an entirely empty `catch` block: a failed
 calendar invitation left no trace at all. It does now.
 
+### Incoming e-mail becomes a ticket
+
+A ticket used to appear only when you created one or a client logged into
+the portal. Clients write e-mails, though — and the `support@` address in
+`.env` was only ever used for sending.
+
+`POST /api/tickets` takes an incoming message and turns it into a ticket,
+or into a note on an existing one. Point a mail service at it (Cloudflare
+Email Routing, Postmark and Mailgun all forward incoming mail to a URL).
+
+**Why a webhook and not an IMAP poll.** The obvious route would be
+fetching a mailbox in the cron run — but that needs the `imap` extension,
+which since PHP 8.4 is no longer part of the core and only available
+through PECL. On shared hosting that means: not available. A route that
+quietly stops working on the next PHP version is not a good route.
+
+Three things it does:
+
+- **A reply finds its ticket** through `[#14]` in the subject. Outgoing
+  replies carry it, and most mail clients leave it in place. No match
+  means a new ticket — better one too many than a message nobody sees.
+- **The subject line is checked against the sender.** That marker sits in
+  a mail anyone can write; without verifying the ticket actually belongs
+  to that contact, a stranger could put a note into someone else's ticket
+  — and it would be visible in the real client's portal.
+- **Quoted history is stripped.** By the third exchange the same question
+  would otherwise appear four times in the thread. What is not recognised
+  stays: better too much text than a truncated question.
+
+An unknown sender still gets a ticket, just without a contact assigned —
+that is exactly how new customers get in touch. Their address is put into
+the message text so it stays clear who wrote.
+
 ### Electronic invoices (XRechnung)
 
 Invoices have been stored in structured form since schema version 8 —
@@ -651,6 +684,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_api_leads.php` | key handling, validation, honeypot, per-IP rate limit |
 | `test_totp.php` | the RFC 6238 test vectors, plus single-use backup codes |
 | `test_xrechnung.php` | well-formedness, totals, escaping, the §19 exemption reason |
+| `test_api_tickets.php` | subject parsing, quote stripping, and the ownership check |
 
 Run separately when you need them:
 

@@ -28,63 +28,15 @@
  */
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/api_keys.php';
 require_once __DIR__ . '/../includes/api_leads.php';
 
-/** Antwortet mit JSON und beendet die Anfrage. */
-function api_antwort(int $status, array $daten): void
-{
-    http_response_code($status);
-    header('Content-Type: application/json; charset=utf-8');
-    header('X-Robots-Tag: noindex, nofollow', true);
-    header('Cache-Control: no-store');
-    echo json_encode($daten, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
-// ── Tür 1: nicht in der Demo ───────────────────────────────────────
-// Der Datenbankbenutzer der Demo darf ohnehin nur lesen; hier bricht es
-// mit einer verständlichen Antwort ab statt mit einem Datenbankfehler.
-if (demo_mode()) {
-    api_antwort(403, ['ok' => false, 'error' => 'Im Demo-Modus abgeschaltet.']);
-}
-
-// ── Tür 2: nur POST ────────────────────────────────────────────────
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-    header('Allow: POST');
-    api_antwort(405, ['ok' => false, 'error' => 'Nur POST.']);
-}
-
-// ── Tür 3: der Schlüssel ───────────────────────────────────────────
-$erwartet = api_leads_schluessel();
-
-// Kein Schlüssel eingerichtet heißt: dieser Weg ist nicht freigegeben.
-// Bewusst nicht "dann eben ohne Prüfung" - das wäre ein offener
-// Schreibzugang auf jeder Installation, die nichts eingestellt hat.
-if ($erwartet === '') {
-    api_antwort(503, [
-        'ok'    => false,
-        'error' => 'Kein API-Schlüssel eingerichtet. Einstellungen → System.',
-    ]);
-}
-
-if (!hash_equals($erwartet, api_leads_schluessel_aus_anfrage($_SERVER))) {
-    // Keine Auskunft darüber, was falsch war.
-    api_antwort(401, ['ok' => false, 'error' => 'Nicht berechtigt.']);
-}
-
-// ── Tür 4: nicht zu oft ────────────────────────────────────────────
-$ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-if (api_leads_zu_haeufig($pdo, $ip)) {
-    header('Retry-After: 3600');
-    api_antwort(429, ['ok' => false, 'error' => 'Zu viele Anfragen.']);
-}
-
-// Vor der Prüfung protokollieren, nicht danach: sonst zählt die Bremse
-// nur die gelungenen, und wer das Formular flutet, bleibt ungezählt.
-log_event($pdo, 'API_LEAD', 'Anfrage über die Schnittstelle empfangen.');
+// Demo-Modus, Methode, Schlüssel, Bremse - alle vier hinter einem
+// Aufruf, damit ein Endpunkt nicht eine davon vergessen kann.
+api_tuer($pdo, 'leads', 'API_LEAD', API_LEADS_MAX_PRO_STUNDE);
 
 // ── Inhalt ─────────────────────────────────────────────────────────
-$eingabe = api_leads_rumpf(
+$eingabe = api_rumpf(
     (string) file_get_contents('php://input'),
     (string) ($_SERVER['CONTENT_TYPE'] ?? ''),
     $_POST
