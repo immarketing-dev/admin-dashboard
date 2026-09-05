@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -130,6 +131,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $mail->Body     = $_m['html'];
                 $mail->AltBody  = "Hallo $first,\n\nSie haben eine neue Antwort auf Ihre Support-Anfrage erhalten.\n\nBetreff: $ticket_subject\n\nAntwort:\n$body\n\nZum Portal: $portal_url\n\n-- $company";
                 $mail->send();
+                mail_protokollieren($pdo, 'ticket_reply', $to, $_m['subject'], true,
+                    null, 'Ticket #' . $id);
                 // Interner Log-Eintrag (nur für Admin sichtbar)
                 $pdo->prepare("INSERT INTO ticket_notes (ticket_id, note, author, is_public) VALUES (?, ?, 'admin', 0)")
                     ->execute([$id, "📧 E-Mail gesendet an: $to"]);

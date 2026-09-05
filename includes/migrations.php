@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -478,6 +478,32 @@ function migrations(): array
             . ' KEY idx_reset_user (user_id, used_at),'
             . ' CONSTRAINT fk_reset_user FOREIGN KEY (user_id)'
             . '   REFERENCES users(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        ],
+
+        // Version 13: was verschickt wurde, steht nachher irgendwo.
+        //
+        // Das Panel verschickt neun Sorten Mail. Nirgends stand
+        // hinterher, was wann an wen ging und ob der Server es
+        // angenommen hat. Bei "ich habe nie ein Angebot bekommen" gab es
+        // nichts nachzusehen.
+        //
+        // Nicht in logs: dort steht ein Satz Freitext ohne Empfaenger,
+        // ohne Betreff, ohne Ergebnis - und die Tabelle wird nach
+        // log_retention_days geleert. Fuer einen Versandnachweis ist
+        // beides falsch.
+        13 => [
+            'CREATE TABLE IF NOT EXISTS mail_log ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . " template VARCHAR(50) NOT NULL DEFAULT '',"
+            . ' recipient VARCHAR(255) NOT NULL,'
+            . " subject VARCHAR(255) NOT NULL DEFAULT '',"
+            . " status VARCHAR(20) NOT NULL DEFAULT 'sent',"
+            . ' error TEXT,'
+            . ' context VARCHAR(255) DEFAULT NULL,'
+            . ' created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' KEY idx_mail_created (created_at),'
+            . ' KEY idx_mail_status (status, created_at)'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
         ],
     ];

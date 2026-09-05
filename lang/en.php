@@ -1649,4 +1649,23 @@ return [
         => "This link is no longer valid. Request a new one.",
     "Neuen Link anfordern"
         => "Request a new link",
+    // ── Mailprotokoll (systemlogs.php) ───────────────────────────────
+    "Ereignisse"
+        => "Events",
+    "Versendete E-Mails"
+        => "Sent e-mails",
+    "Sendungen gesamt"
+        => "Messages in total",
+    "Fehlgeschlagen"
+        => "Failed",
+    "Zugestellt"
+        => "Delivered",
+    "%d Einträge angezeigt"
+        => "%d entries shown",
+    "Noch keine Sendungen aufgezeichnet."
+        => "No messages recorded yet.",
+    "Vorlage"
+        => "Template",
+    "Bezug"
+        => "Relates to",
 ];

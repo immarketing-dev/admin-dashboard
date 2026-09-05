@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/upload_helper.php';
 require_once 'includes/session.php';
 require_once 'includes/csrf.php';
@@ -104,7 +105,14 @@ function portal_notify_admin(PDO $pdo, array $client, string $was,
             . "Vorgang: $was\n"
             . ($nachricht !== '' ? "\nNachricht:\n$nachricht\n" : '');
         $mail->send();
+        mail_protokollieren($pdo, 'quote_reaction', setting('admin_email', ADMIN_EMAIL),
+            "Angebot $nummer: $was", true, null, 'Angebot ' . $nummer);
     } catch (Throwable $e) {
+        // Im catch bewusst kein Zugriff auf $mail: fehlt PHPMailer, ist
+        // die Zuweisung oben nie zustande gekommen, und $mail->Subject
+        // waere ein zweiter Fehler mitten in der Fehlerbehandlung.
+        mail_protokollieren($pdo, 'quote_reaction', setting('admin_email', ADMIN_EMAIL),
+            "Angebot $nummer: $was", false, $e->getMessage(), 'Angebot ' . $nummer);
         // Throwable, nicht Exception: fehlt PHPMailer, wirft PHP einen Error -
         // der wuerde das Portal abbrechen, statt nur die Meldung ausfallen zu
         // lassen. Der Log-Eintrag oben ist die verlaessliche Spur.

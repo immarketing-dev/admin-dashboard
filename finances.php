@@ -432,8 +432,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $mail->send();
             if ($q2['status']==='Entwurf') $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=?")->execute([$id]);
             log_event($pdo, 'QUOTE_EMAIL_SENT', "Angebot {$q2['quote_number']} per E-Mail an $to_email gesendet.");
+            mail_protokollieren($pdo, 'quote_send', $to_email, $subj2, true,
+                null, 'Angebot ' . $q2['quote_number']);
             filter_redirect('finances', ['tab' => 'quotes', 'msg' => 'quote_email_sent']);
-        } catch (PHPMailerException $e) { filter_redirect('finances', ['tab' => 'quotes', 'error' => 'email_failed', 'detail' => $e->getMessage()]); }
+        } catch (PHPMailerException $e) {
+            mail_protokollieren($pdo, 'quote_send', $to_email, $subj2, false,
+                $e->getMessage(), 'Angebot ' . $q2['quote_number']);
+            filter_redirect('finances', ['tab' => 'quotes', 'error' => 'email_failed', 'detail' => $e->getMessage()]);
+        }
     }
     if ($action === 'convert_to_invoice') {
         $id   = (int)$_POST['quote_id'];
@@ -501,8 +507,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             }
             $mail->send();
             log_event($pdo, 'INVOICE_EMAIL_SENT', "Rechnung {$rec['title']} per E-Mail an $to_email gesendet.");
+            mail_protokollieren($pdo, 'invoice_send', $to_email, $subject, true,
+                null, 'Rechnung ' . ($rec['invoice_number'] ?: $rec['title']));
             filter_redirect('finances', ['msg' => 'email_sent']);
         } catch (PHPMailerException $e) {
+            mail_protokollieren($pdo, 'invoice_send', $to_email, $subject, false,
+                $e->getMessage(), 'Rechnung ' . ($rec['invoice_number'] ?: $rec['title']));
             filter_redirect('finances', ['error' => 'email_failed', 'detail' => $e->getMessage()]);
         }
     }

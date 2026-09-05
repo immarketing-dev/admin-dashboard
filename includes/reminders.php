@@ -296,6 +296,10 @@ function mahnung_senden(
         'body'            => $mail['text'],
         'attachment'      => $anhang,
         'attachment_name' => $anhang ? basename($anhang) : '',
+        // Fuer das Mailprotokoll: welche Vorlage, und woran die Mail hing.
+        'pdo'             => $pdo,
+        'template'        => 'payment_reminder',
+        'context'         => 'Rechnung ' . ($vars['nummer'] ?: '#' . $rechnung['id']),
     ]);
 
     if ($ergebnis['ok']) {

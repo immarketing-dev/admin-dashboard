@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/auth.php';
@@ -348,9 +349,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $pdo->prepare("UPDATE quotes SET status='Gesendet' WHERE id=?")->execute([$id]);
             }
             log_event($pdo, 'QUOTE_EMAIL_SENT', "Angebot {$q['quote_number']} per E-Mail an $to_email gesendet.");
+            mail_protokollieren($pdo, 'quote_send', $to_email, $subject, true,
+                null, 'Angebot ' . $q['quote_number']);
 
             filter_redirect('quotes', ['msg' => 'email_sent']);
         } catch (PHPMailerException $e) {
+            mail_protokollieren($pdo, 'quote_send', $to_email, $subject, false,
+                $e->getMessage(), 'Angebot ' . $q['quote_number']);
             filter_redirect('quotes', ['error' => 'email_failed', 'detail' => $e->getMessage()]);
         }
     }

@@ -8,6 +8,7 @@ ob_end_clean();
 
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 
@@ -160,7 +161,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $mail->Body       = $html_body;
                     $mail->AltBody    = $alt_body;
                     $mail->send();
-                } catch (Exception $e) {}
+                    mail_protokollieren($pdo, 'event_invite', $ec['email'], $_m['subject'], true,
+                        null, 'Termin: ' . ($ev['title'] ?? ''));
+                } catch (Exception $e) {
+                    // Der catch-Block war leer: ein fehlgeschlagener Versand
+                    // hinterliess ueberhaupt keine Spur.
+                    mail_protokollieren($pdo, 'event_invite', $ec['email'], $_m['subject'], false,
+                        $e->getMessage(), 'Termin: ' . ($ev['title'] ?? ''));
+                }
             }
         }
         header("Location: calendar?year=$year&month=$month&invited=1");

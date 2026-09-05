@@ -17,6 +17,7 @@
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/mail_log.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
@@ -28,10 +29,36 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
  * Cron-Lauf, der die restlichen Mails trotzdem verschicken soll, oder
  * ein Handler, der eine Meldung anzeigen will.
  *
- * @param array{to: string, subject: string, body: string, attachment?: ?string, attachment_name?: string} $opt
+ * Protokolliert jede Sendung, gelungen wie gescheitert. Dafür braucht
+ * die Funktion eine Datenbankverbindung; fehlt sie (etwa in einem Test,
+ * der nur den Versandweg prüft), wird still nicht protokolliert - ein
+ * fehlendes Protokoll darf keine Mail verhindern.
+ *
+ * @param array{to: string, subject: string, body: string, attachment?: ?string, attachment_name?: string, pdo?: ?PDO, template?: string, context?: ?string} $opt
  * @return array{ok: bool, error: string}
  */
 function mail_versenden(array $opt): array
+{
+    $ergebnis = mail_versenden_roh($opt);
+
+    $pdo = $opt['pdo'] ?? null;
+    if ($pdo instanceof PDO) {
+        mail_protokollieren(
+            $pdo,
+            (string) ($opt['template'] ?? ''),
+            (string) ($opt['to'] ?? ''),
+            (string) ($opt['subject'] ?? ''),
+            $ergebnis['ok'],
+            $ergebnis['ok'] ? null : $ergebnis['error'],
+            $opt['context'] ?? null
+        );
+    }
+
+    return $ergebnis;
+}
+
+/** Der eigentliche Versand, ohne Protokoll. */
+function mail_versenden_roh(array $opt): array
 {
     $to = trim((string) ($opt['to'] ?? ''));
 

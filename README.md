@@ -362,6 +362,31 @@ subdomain with its own database and a `SELECT`-only database user — never
 on a real installation. See [docs/DEMO.md](docs/DEMO.md) for the full
 setup.
 
+### What was sent
+
+The panel sends nine kinds of mail — quotes, invoices, portal invitations,
+milestone notices, ticket replies, calendar invitations, a notice to you
+when a client reacts to a quote in the portal, plus payment reminders and
+password links. **None of it was recorded.** Faced with "I never got that
+quote", there was nothing to look up.
+
+`mail_log` now holds recipient, subject, template, outcome and the error
+text when there is one, under **Settings → System-Logs → Sent e-mails**,
+with the failures counted in the tab itself.
+
+Two details worth knowing:
+
+- **It outlives the event log.** `logs` is trimmed to `log_retention_days`,
+  which may be a week. A proof of delivery is worthless in the short term
+  — it gets asked for months later — so the mail log keeps a floor of one
+  year regardless of that setting.
+- **A failed write never fails a send.** The mail goes first, the record
+  second; if the record cannot be written it goes to the PHP error log and
+  the send still counts.
+
+One of the nine used to have an entirely empty `catch` block: a failed
+calendar invitation left no trace at all. It does now.
+
 ### Forgotten password
 
 There was no way back in. No "forgot password", nothing on the sign-in
@@ -477,6 +502,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_reports_render.php` | renders the reports page in eight states, empty database included |
 | `test_receipts.php` | archive naming, the CSV, and the path guard on deletion |
 | `test_auth_reset.php` | single use, expiry, hashed storage, per-IP rate limit |
+| `test_mail_log.php` | truncation of over-long values, and the longer retention |
 
 Run separately when you need them:
 

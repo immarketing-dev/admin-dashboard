@@ -6,6 +6,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -290,8 +291,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->AltBody = $_m['text'];
                 $mail->send();
                 log_event($pdo, 'MILESTONE_MAIL', "Meilenstein-E-Mail an {$ms['c_name']} gesendet: {$ms['title']}");
+                mail_protokollieren($pdo, 'milestone', $ms['c_email'], $_m['subject'], true,
+                    null, 'Meilenstein: ' . $ms['title']);
             } catch (Exception $e) {
                 log_event($pdo, 'MAIL_ERROR', "SMTP-Fehler bei Meilenstein-Mail an {$ms['c_name']}: " . $mail->ErrorInfo);
+                mail_protokollieren($pdo, 'milestone', $ms['c_email'], $_m['subject'], false,
+                    $mail->ErrorInfo ?: $e->getMessage(), 'Meilenstein: ' . $ms['title']);
             }
         }
     }

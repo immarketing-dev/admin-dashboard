@@ -9,6 +9,36 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **A record of what was sent (`mail_log`).** The panel sends nine kinds of
+  mail — quotes, invoices, portal invitations, milestone notices, ticket
+  replies, calendar invitations, a notice when a client reacts to a quote
+  in the portal, plus the payment reminders and password links added
+  earlier in this release. **Not one of them was recorded.** Faced with "I
+  never got that quote", there was nothing to look up.
+
+  Schema version 13 adds the table; a tab under System-Logs shows it, with
+  the failure count on the tab itself. Recipient, subject, template,
+  outcome, error text, and what the mail was about ("Angebot
+  ANG-2026-003").
+
+  Not folded into `logs`: that table holds a line of free text with no
+  recipient, no subject and no outcome, and is emptied after
+  `log_retention_days` — which may be a week. A proof of delivery is
+  worthless in the short term, so the mail log carries its own floor of one
+  year regardless of that setting.
+
+  `mail_versenden()` records by itself. The seven older PHPMailer blocks
+  call `mail_protokollieren()` explicitly rather than being rewritten —
+  each carries its own quirks (attachments, HTML against text, a different
+  sender), and introducing a log is not the occasion to disturb them. One
+  of them, the calendar invitation, had an entirely **empty `catch` block**:
+  a failed send left no trace whatsoever. It does now.
+
+  31 checks in `tools/test_mail_log.php`. The two that matter most: an
+  over-long subject is truncated rather than throwing (it comes from a
+  form, and a throw here would report a delivered mail as failed), and a
+  broken log never breaks a send.
+
 - **A way back in: password reset.** There was none. No `password_reset`,
   no `forgot`, nothing on the sign-in screen but an address and a
   password. Whoever lost theirs needed database access — on someone

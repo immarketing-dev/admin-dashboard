@@ -4,6 +4,9 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 
 require_once 'includes/auth.php';
+require_once 'includes/mail_log.php';
+// Fuer die Bezeichnungen der Vorlagen in der Mailansicht.
+require_once 'includes/mail_templates.php';
 
 // ==========================================
 // AKTION: LOGS EXPORTIEREN (Als .txt Datei)
@@ -170,10 +173,23 @@ function getLogBadgeClass($action) {
 
     return 'bg-secondary';
 }
+// Zwei Ansichten auf derselben Seite: das Ereignisprotokoll (was ist im
+// Panel geschehen) und das Mailprotokoll (was ist hinausgegangen). Sie
+// beantworten verschiedene Fragen, teilen sich aber Rahmen, Filterleiste
+// und die Erwartung, hier nachzusehen.
+$log_view = ($_GET['view'] ?? '') === 'mail' ? 'mail' : 'events';
+
+$mail_filter = in_array($_GET['mstatus'] ?? '', ['sent', 'failed'], true) ? $_GET['mstatus'] : '';
+$mail_zahlen = mail_protokoll_zahlen($pdo);
+$mails       = $log_view === 'mail' ? mail_protokoll($pdo, $mail_filter, (int) setting('log_limit', '200')) : [];
+
 $page_title   = 'System-Logs';
 $page_heading = 'System-Logs';
 $current_page = basename($_SERVER['PHP_SELF']);
-$header_actions = '
+// Exportieren und Leeren betreffen das Ereignisprotokoll. In der
+// Mailansicht bleiben sie weg - ein Knopf, der etwas anderes leert als
+// das, was man gerade ansieht, ist eine Falle.
+$header_actions = $log_view === 'mail' ? '' : '
       <div class="d-flex gap-2">
         <form action="systemlogs" method="POST" style="margin: 0;">
           ' . csrf_field() . '
@@ -201,6 +217,110 @@ CSS;
 require 'includes/head.php';
 require 'includes/layout_start.php';
 ?>
+
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item">
+    <a class="nav-link <?= $log_view === 'events' ? 'active' : '' ?>" href="systemlogs">
+      <i class="bi bi-journal-text me-1"></i> <?= te('Ereignisse') ?>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link <?= $log_view === 'mail' ? 'active' : '' ?>" href="systemlogs?view=mail">
+      <i class="bi bi-envelope me-1"></i> <?= te('Versendete E-Mails') ?>
+      <?php if ($mail_zahlen['fehler'] > 0): ?>
+        <span class="badge bg-danger ms-1"><?= (int) $mail_zahlen['fehler'] ?></span>
+      <?php endif; ?>
+    </a>
+  </li>
+</ul>
+
+<?php if ($log_view === 'mail'): ?>
+
+    <div class="row g-3 mb-3 row-cols-2 row-cols-lg-4">
+      <div class="col">
+        <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
+          <div class="icon-tile icon-tile-primary"><i class="bi bi-envelope"></i></div>
+          <div>
+            <div class="label-xs"><?= te('Sendungen gesamt') ?></div>
+            <div class="fw-bold fs-5 lh-1 text-strong-c"><?= number_format($mail_zahlen['gesamt'], 0, ',', '.') ?></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="widget-box widget-accent-left h-100 d-flex align-items-center gap-3">
+          <div class="icon-tile <?= $mail_zahlen['fehler'] > 0 ? 'icon-tile-danger' : 'icon-tile-success' ?>">
+            <i class="bi <?= $mail_zahlen['fehler'] > 0 ? 'bi-exclamation-triangle' : 'bi-check2' ?>"></i>
+          </div>
+          <div>
+            <div class="label-xs"><?= te('Fehlgeschlagen') ?></div>
+            <div class="fw-bold fs-5 lh-1 text-strong-c"><?= number_format($mail_zahlen['fehler'], 0, ',', '.') ?></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="GET" class="filter-bar mb-3 d-flex flex-wrap gap-2 align-items-center">
+      <input type="hidden" name="view" value="mail">
+      <div class="btn-group btn-group-sm" role="group">
+        <a class="btn <?= $mail_filter === ''       ? 'btn-primary' : 'btn-outline-secondary' ?>" href="systemlogs?view=mail"><?= te('Alle') ?></a>
+        <a class="btn <?= $mail_filter === 'sent'   ? 'btn-primary' : 'btn-outline-secondary' ?>" href="systemlogs?view=mail&amp;mstatus=sent"><?= te('Zugestellt') ?></a>
+        <a class="btn <?= $mail_filter === 'failed' ? 'btn-primary' : 'btn-outline-secondary' ?>" href="systemlogs?view=mail&amp;mstatus=failed"><?= te('Fehlgeschlagen') ?></a>
+      </div>
+      <span class="text-muted small ms-auto"><?= te('%d Einträge angezeigt', count($mails)) ?></span>
+    </form>
+
+    <div class="log-container">
+      <?php if (!$mails): ?>
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-envelope-open fs-1 d-block mb-2"></i>
+          <?= te('Noch keine Sendungen aufgezeichnet.') ?>
+        </div>
+      <?php else: ?>
+        <table class="table table-borderless log-table w-100 mb-0">
+          <thead>
+            <tr>
+              <th width="15%"><?= te('Zeitpunkt') ?></th>
+              <th width="13%"><?= te('Vorlage') ?></th>
+              <th width="20%"><?= te('Empfänger') ?></th>
+              <th width="32%"><?= te('Betreff') ?></th>
+              <th width="20%"><?= te('Bezug') ?></th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php foreach ($mails as $m): ?>
+            <tr>
+              <td>
+                <span class="log-date"><?= date('d.m.Y', strtotime((string) $m['created_at'])) ?></span>
+                <span class="log-time"><?= date('H:i:s', strtotime((string) $m['created_at'])) ?></span>
+              </td>
+              <td>
+                <?php
+                  // Die Bezeichnung aus mail_templates(), sonst der rohe
+                  // Schluessel - eine Mail ohne Vorlage (etwa die
+                  // Angebotsreaktion aus dem Portal) hat dort keinen Eintrag.
+                  $_tpl = mail_templates()[$m['template']] ?? null;
+                ?>
+                <span class="log-badge log-badge-contact"><?= htmlspecialchars($_tpl['label'] ?? $m['template'] ?: '–') ?></span>
+              </td>
+              <td class="log-ip"><?= htmlspecialchars((string) $m['recipient']) ?></td>
+              <td>
+                <?= htmlspecialchars((string) $m['subject']) ?>
+                <?php if ($m['status'] === 'failed'): ?>
+                  <div class="small text-danger mt-1">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    <?= htmlspecialchars((string) ($m['error'] ?? '')) ?>
+                  </div>
+                <?php endif; ?>
+              </td>
+              <td class="small text-muted"><?= htmlspecialchars((string) ($m['context'] ?? '')) ?></td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </div>
+
+<?php else: ?>
 
     <!-- Filter & Suche -->
     <div class="row g-3 mb-3 row-cols-2 row-cols-lg-4">
@@ -395,4 +515,6 @@ require 'includes/layout_start.php';
     }
 
   </script>
+<?php endif; // Ende der Ansichtsumschaltung ?>
+
 <?php require 'includes/layout_end.php'; ?>

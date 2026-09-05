@@ -205,9 +205,12 @@ function reset_anfordern(PDO $pdo, string $email, string $ip, string $basis_url,
     ], $link);
 
     $ergebnis = mail_versenden([
-        'to'      => (string) $user['email'],
-        'subject' => $mail['subject'],
-        'body'    => $mail['text'] !== '' ? $mail['text'] : strip_tags($mail['html']),
+        'to'       => (string) $user['email'],
+        'subject'  => $mail['subject'],
+        'body'     => $mail['text'] !== '' ? $mail['text'] : strip_tags($mail['html']),
+        'pdo'      => $pdo,
+        'template' => 'password_reset',
+        'context'  => 'Benutzer ' . (int) $user['id'],
     ]);
 
     if (!$ergebnis['ok']) {

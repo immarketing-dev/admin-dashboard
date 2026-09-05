@@ -236,7 +236,7 @@ $known = [
     // dieser Liste vergessen - Pruefung 1 hat sie deshalb nicht
     // ueberwacht.
     'task_contacts', 'project_comments',
-    'password_resets',
+    'password_resets', 'mail_log',
 ];
 
 $check1_fail = 0;

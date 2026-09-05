@@ -103,6 +103,31 @@ CREATE TABLE IF NOT EXISTS password_resets (
     REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Was das Panel verschickt hat. Neun Sorten Mail gehen hinaus, und
+-- nirgends stand hinterher, was wann an wen ging und ob der Server es
+-- angenommen hat.
+--
+-- Bewusst nicht in logs: dort steht ein Satz Freitext ohne Empfaenger,
+-- ohne Betreff und ohne Ergebnis, und die Tabelle wird nach
+-- log_retention_days geleert. Ein Versandnachweis wird Monate spaeter
+-- gebraucht - siehe MAIL_LOG_MIN_TAGE in includes/mail_log.php.
+CREATE TABLE IF NOT EXISTS mail_log (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  -- Schluessel aus mail_templates(), oder ein eigener Name fuer die
+  -- wenigen Mails ohne Vorlage.
+  template   VARCHAR(50)  NOT NULL DEFAULT '',
+  recipient  VARCHAR(255) NOT NULL,
+  subject    VARCHAR(255) NOT NULL DEFAULT '',
+  -- 'sent' oder 'failed'.
+  status     VARCHAR(20)  NOT NULL DEFAULT 'sent',
+  error      TEXT,
+  -- Woran die Mail hing: "Angebot ANG-2026-003", "Ticket #14".
+  context    VARCHAR(255) DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_mail_created (created_at),
+  KEY idx_mail_status (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- -- CRM ----------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS contacts (
@@ -468,7 +493,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '12')
+INSERT INTO settings (k, v) VALUES ('schema_version', '13')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

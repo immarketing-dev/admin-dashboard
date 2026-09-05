@@ -12,6 +12,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 ob_end_clean();
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -87,8 +88,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $mail->send();
                 
                 log_event($pdo, 'MAIL_SENT', "Portal-Link via E-Mail an ".$c['name']." gesendet.");
+                mail_protokollieren($pdo, 'portal_access', $c['email'], $_m['subject'], true,
+                    null, 'Kontakt: ' . $c['name']);
             } catch (Exception $e) {
                 log_event($pdo, 'MAIL_ERROR', "SMTP Fehler beim Senden an ".$c['name'].": " . $mail->ErrorInfo);
+                mail_protokollieren($pdo, 'portal_access', $c['email'], $_m['subject'], false,
+                    $mail->ErrorInfo ?: $e->getMessage(), 'Kontakt: ' . $c['name']);
             }
         }
     }

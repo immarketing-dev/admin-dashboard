@@ -22,6 +22,7 @@ require_once __DIR__ . '/logging.php';
 require_once __DIR__ . '/reminders.php';
 require_once __DIR__ . '/recurring.php';
 require_once __DIR__ . '/auth_reset.php';
+require_once __DIR__ . '/mail_log.php';
 
 /**
  * Markiert offene Rechnungen nach Fristablauf als überfällig.
@@ -143,11 +144,16 @@ function cron_protokoll_kuerzen(PDO $pdo): array
 {
     $weg = logs_aufraeumen($pdo);
 
-    return [
-        'titel'   => 'Protokoll',
-        'ok'      => true,
-        'meldung' => $weg > 0 ? $weg . ' alte Einträge entfernt.' : 'Heute bereits geräumt oder nichts zu tun.',
-    ];
+    // Das Mailprotokoll hat eine eigene, längere Untergrenze: ein
+    // Versandnachweis wird Monate später gebraucht, nicht Tage.
+    $mails = mail_protokoll_kuerzen($pdo);
+
+    $meldung = $weg > 0 ? $weg . ' alte Einträge entfernt.' : 'Heute bereits geräumt oder nichts zu tun.';
+    if ($mails > 0) {
+        $meldung .= ' ' . $mails . ' Mailprotokoll-Einträge entfernt.';
+    }
+
+    return ['titel' => 'Protokoll', 'ok' => true, 'meldung' => $meldung];
 }
 
 /**

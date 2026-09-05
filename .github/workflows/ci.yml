@@ -68,3 +68,6 @@ jobs:
 
       - name: Password reset tests
         run: php tools/test_auth_reset.php
+
+      - name: Mail log tests
+        run: php tools/test_mail_log.php
