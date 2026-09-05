@@ -73,10 +73,43 @@ if ($tab === 'timesheet') {
         if (empty($e['billed_at'])) $offen_min += (int) $e['duration_minutes'];
     }
 } else {
-    $posten     = offene_posten($pdo);
-    $stufen     = offene_posten_verteilen($posten, date('Y-m-d'));
-    $umsatz     = umsatz_je_kunde($pdo, $jahr);
-    $projekte   = zeit_je_projekt($pdo, $standardsatz);
+    // Jeder der drei Abschnitte für sich, und jeder mit eigenem
+    // Auffangnetz.
+    //
+    // Vorher nahm eine einzige fehlgeschlagene Abfrage die ganze
+    // Seite mit: der Besucher sah eine Fehlerseite mit einer
+    // Vorgangsnummer, und was tatsächlich schiefging, stand allein im
+    // Fehlerprotokoll des Servers - an das man auf einem
+    // Hosting-Paket nicht ohne Weiteres herankommt. Die beiden
+    // anderen Abschnitte hätten dabei einwandfrei funktioniert.
+    //
+    // Jetzt trägt die Seite selbst, welcher Teil fehlt. Nur der Name
+    // des Abschnitts, nichts aus der Abfrage - die Einzelheiten
+    // bleiben im Protokoll, wo sie hingehören.
+    $abschnitt_fehler = [];
+    $posten = $stufen = $umsatz = $projekte = [];
+
+    try {
+        $posten = offene_posten($pdo);
+        $stufen = offene_posten_verteilen($posten, date('Y-m-d'));
+    } catch (Throwable $e) {
+        $abschnitt_fehler[] = 'Offene Posten nach Alter';
+        error_log('Auswertung, offene Posten: ' . $e->getMessage());
+    }
+
+    try {
+        $umsatz = umsatz_je_kunde($pdo, $jahr);
+    } catch (Throwable $e) {
+        $abschnitt_fehler[] = 'Umsatz je Kunde';
+        error_log('Auswertung, Umsatz je Kunde: ' . $e->getMessage());
+    }
+
+    try {
+        $projekte = zeit_je_projekt($pdo, $standardsatz);
+    } catch (Throwable $e) {
+        $abschnitt_fehler[] = 'Geleistet, noch nicht berechnet';
+        error_log('Auswertung, Zeit je Projekt: ' . $e->getMessage());
+    }
 
     $summe_offen = array_sum(array_column($stufen, 'betrag'));
     $summe_umsatz_bezahlt = array_sum(array_column($umsatz, 'bezahlt'));
@@ -111,6 +144,20 @@ require 'includes/layout_start.php';
 </ul>
 
 <?php if ($tab !== 'timesheet'): ?>
+
+  <?php if ($abschnitt_fehler !== []): ?>
+    <?php
+      // Nur der Name des Abschnitts. Was genau schiefging, steht im
+      // Fehlerprotokoll des Servers - auf einer oeffentlich
+      // erreichbaren Seite hat eine Fehlermeldung aus der Datenbank
+      // nichts verloren.
+    ?>
+    <div class="alert alert-warning py-2 px-3 small mb-4">
+      <i class="bi bi-exclamation-triangle-fill me-1"></i>
+      <?= te('Dieser Abschnitt konnte nicht geladen werden: %s. Der Grund steht im Fehlerprotokoll des Servers.',
+             htmlspecialchars(implode(', ', array_map('datenwert', $abschnitt_fehler)))) ?>
+    </div>
+  <?php endif; ?>
 
   <!-- ============ Offene Posten nach Alter ============ -->
   <div class="widget-box widget-accent-left mb-4">

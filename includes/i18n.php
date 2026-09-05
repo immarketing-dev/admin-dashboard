@@ -293,6 +293,11 @@ function datenwert(string $wert): string
                 => t('Zahlungserinnerung (Vorbelegung)'),
             'Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.'
                 => t('Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.'),
+            // Abschnitte der Auswertung (reports.php). Sie stehen im
+            // Hinweis, wenn einer davon nicht geladen werden konnte.
+            'Offene Posten nach Alter'        => t('Offene Posten nach Alter'),
+            'Umsatz je Kunde'                 => t('Umsatz je Kunde'),
+            'Geleistet, noch nicht berechnet' => t('Geleistet, noch nicht berechnet'),
             // Monatsnamen (monatsnamen()). Sie erreichen die Ausgabe
             // in calendar.php, finances.php und tasks.php als Variable.
             'Januar'           => t('Januar'),

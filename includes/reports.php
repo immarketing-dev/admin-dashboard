@@ -218,6 +218,11 @@ function zeitraum_verschieben(string $modus, string $anker, int $richtung): stri
  */
 function umsatz_je_kunde(PDO $pdo, int $jahr): array
 {
+    // GROUP BY und ORDER BY wiederholen den Ausdruck, statt den Alias
+    // zu nennen. Einen Alias dort zu verwenden ist eine Erweiterung
+    // von MySQL und nicht Standard-SQL; die Prüfumgebung dieses
+    // Projekts läuft gegen SQLite und winkt beides durch, ein echter
+    // Server muss das nicht. Ausgeschrieben läuft die Abfrage überall.
     $stmt = $pdo->prepare(
         "SELECT COALESCE(NULLIF(c.name, ''), NULLIF(f.custom_name, ''), '—') AS kunde,
                 SUM(CASE WHEN f.status = 'Bezahlt' THEN f.amount ELSE 0 END) AS bezahlt,
@@ -228,8 +233,9 @@ function umsatz_je_kunde(PDO $pdo, int $jahr): array
           WHERE f.deleted_at IS NULL
             AND f.type = 'INCOME'
             AND f.record_date >= ? AND f.record_date <= ?
-          GROUP BY kunde
-          ORDER BY bezahlt DESC, offen DESC"
+          GROUP BY COALESCE(NULLIF(c.name, ''), NULLIF(f.custom_name, ''), '—')
+          ORDER BY SUM(CASE WHEN f.status = 'Bezahlt' THEN f.amount ELSE 0 END) DESC,
+                   SUM(CASE WHEN f.status IN ('Offen', 'Überfällig') THEN f.amount ELSE 0 END) DESC"
     );
     $stmt->execute([$jahr . '-01-01', $jahr . '-12-31']);
 
@@ -305,9 +311,14 @@ function zeit_je_projekt(PDO $pdo, float $standardsatz): array
            LEFT JOIN contacts c ON c.id = t.contact_id AND c.deleted_at IS NULL
            LEFT JOIN time_entries te ON te.task_id = t.id
           WHERE t.deleted_at IS NULL
-          GROUP BY t.id, t.title, t.status, kunde, t.hourly_rate, c.hourly_rate
-          HAVING minuten > 0
-          ORDER BY (minuten - minuten_berechnet) DESC, minuten DESC"
+          GROUP BY t.id, t.title, t.status,
+                   COALESCE(NULLIF(c.name, ''), '—'),
+                   t.hourly_rate, c.hourly_rate
+          HAVING SUM(te.duration_minutes) > 0
+          ORDER BY (COALESCE(SUM(te.duration_minutes), 0)
+                    - COALESCE(SUM(CASE WHEN te.billed_at IS NOT NULL
+                                        THEN te.duration_minutes ELSE 0 END), 0)) DESC,
+                   COALESCE(SUM(te.duration_minutes), 0) DESC"
     );
 
     $aus = [];

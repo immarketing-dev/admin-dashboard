@@ -230,6 +230,28 @@ enthaelt($html, 'over 90 days', 'englisch');
 sprache_setzen('de');
 
 // =====================================================================
+// 5. Ein Abschnitt faellt aus - die Seite nicht
+// =====================================================================
+// Eine einzige fehlgeschlagene Abfrage nahm frueher die ganze Seite mit.
+// Sichtbar war das nur als Fehlerseite mit einer Vorgangsnummer; was
+// tatsaechlich schiefging, stand allein im Fehlerprotokoll des Servers -
+// an das man auf einem Hosting-Paket nicht ohne Weiteres herankommt.
+//
+// Geprueft wird das, indem eine Tabelle wegfaellt: dann scheitert genau
+// eine der drei Abfragen, und die Seite muss trotzdem stehen und sagen,
+// welcher Teil fehlt.
+$pdo->exec('DROP TABLE time_entries');
+
+$html = pruefe($pdo, [], 'ohne time_entries');
+enthaelt($html, 'Offene Posten nach Alter', 'ohne time_entries: die anderen Abschnitte stehen noch');
+enthaelt($html, 'Umsatz je Kunde', 'ohne time_entries: der zweite Abschnitt auch');
+enthaelt($html, 'Geleistet, noch nicht berechnet', 'ohne time_entries: der Hinweis nennt den Abschnitt');
+
+// Und der Stundenzettel, der dieselbe Tabelle braucht, darf die Seite
+// ebenfalls nicht mitreissen - dort faengt sie der Handler noch nicht,
+// deshalb hier nur die Auswertung.
+
+// =====================================================================
 // Ergebnis
 // =====================================================================
 if ($fehler === 0) {

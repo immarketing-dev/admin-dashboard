@@ -1139,6 +1139,8 @@ return [
         => 'Overdue (%dd)',
     'In %d T.'
         => 'In %dd',
+    'Dieser Abschnitt konnte nicht geladen werden: %s. Der Grund steht im Fehlerprotokoll des Servers.'
+        => 'This section could not be loaded: %s. The reason is in the server error log.',
     // Monatsnamen
     'Januar'    => 'January',
     'Februar'   => 'February',

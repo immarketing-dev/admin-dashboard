@@ -352,6 +352,14 @@ if command -v php >/dev/null 2>&1; then
     echo "AUSGABE: $out"
     fail=1
   fi
+  # SQL, das auf einer MySQL-Erweiterung beruht. Hier laeuft alles
+  # gegen die SQLite-Spiegelung; was die durchwinkt, muss ein echter
+  # Server nicht annehmen. Genau daran ist die Auswertungsseite auf
+  # der Demo mit HTTP 500 gelaufen, waehrend sie hier rendert.
+  if ! out=$(php tools/check_sql_portability.php 2>&1); then
+    echo "SQL-PORTABILITAET: $out"
+    fail=1
+  fi
   # Einstellungsschluessel, die ins Leere gehen. Der Demo-Seed setzte
   # fuenf, die niemand liest, und liess vier ungesetzt, die gelesen
   # werden - sichtbar nur an leeren Feldern in der Demo.
