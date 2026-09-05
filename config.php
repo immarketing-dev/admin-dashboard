@@ -114,7 +114,13 @@ function setting(string $key, string $default = ''): string {
         try {
             foreach ($pdo->query("SELECT k, v FROM settings")->fetchAll(PDO::FETCH_ASSOC) as $r)
                 $cache[$r['k']] = $r['v'];
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) {
+            // Weiterlaufen mit Vorgabewerten ist richtig - eine Seite,
+            // die wegen der Firmenanschrift abbricht, hilft niemandem.
+            // Ohne diese Zeile blieb aber offen, warum ploetzlich
+            // ueberall die Vorgaben stehen.
+            error_log('Einstellungen konnten nicht gelesen werden: ' . $e->getMessage());
+        }
     }
     return $cache[$key] ?? $default;
 }

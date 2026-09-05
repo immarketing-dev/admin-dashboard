@@ -69,7 +69,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             foreach ($contact_ids as $cid) {
                 $tok = bin2hex(random_bytes(32));
                 try { $pdo->prepare("INSERT IGNORE INTO event_contacts (event_id, contact_id, invite_token) VALUES (?,?,?)")->execute([$event_id, $cid, $tok]); }
-                catch (PDOException $e) {}
+                catch (PDOException $e) {
+                    // Der Termin steht, diese eine Einladung nicht. Den
+                    // ganzen Speichervorgang deswegen abzubrechen waere
+                    // falsch - spurlos verschwinden darf sie aber auch
+                    // nicht.
+                    error_log('Einladung fuer Kontakt ' . (int) $cid
+                        . ' zu Termin ' . (int) $event_id . ' fehlgeschlagen: '
+                        . $e->getMessage());
+                }
             }
         }
         $goto_y = !empty($ev_date) ? (int)date('Y', strtotime($ev_date)) : $year;

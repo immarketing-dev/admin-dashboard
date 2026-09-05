@@ -487,7 +487,10 @@ if (!empty($task_ids)) {
             // Mark all client comments as seen
             $pdo->prepare("UPDATE milestone_comments SET admin_seen=1 WHERE milestone_id IN ($ms_ph) AND author='client' AND admin_seen=0")
                 ->execute($all_ms_ids);
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) {
+            error_log('Meilenstein-Kommentare als gelesen zu markieren schlug fehl: '
+                . $e->getMessage());
+        }
     }
 }
 

@@ -74,7 +74,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($type === 'upload')       $pdo->prepare("UPDATE client_assets SET dashboard_seen = 1 WHERE id = ?")->execute([$id]);
         elseif ($type === 'approval') $pdo->prepare("UPDATE task_milestones SET approval_seen = 1 WHERE id = ?")->execute([$id]);
         elseif ($type === 'feedback') $pdo->prepare("UPDATE tasks SET feedback_seen = 1 WHERE id = ?")->execute([$id]);
-        elseif ($type === 'ms_comment') { try { $pdo->prepare("UPDATE milestone_comments SET admin_seen = 1 WHERE id = ?")->execute([$id]); } catch (PDOException $e) {} }
+        elseif ($type === 'ms_comment') {
+            try {
+                $pdo->prepare("UPDATE milestone_comments SET admin_seen = 1 WHERE id = ?")->execute([$id]);
+            } catch (PDOException $e) {
+                // Bleibt die Meldung stehen, klickt der Benutzer sie
+                // wieder und wieder an, ohne zu erfahren warum.
+                error_log('Kommentar ' . $id . ' als gelesen zu markieren schlug fehl: ' . $e->getMessage());
+            }
+        }
     }
 
     // 3. Monitoring URLs
