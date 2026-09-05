@@ -591,6 +591,47 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 .list-row-main h6 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-row-side { flex-shrink: 0; }
 
+/* Portal-Aktivitaeten
+
+   Eine Liste, keine vier Spalten. In einer Kachel von acht
+   Rasterspalten blieben je Unterspalte rund 150 Pixel - Dateinamen
+   und Projekttitel wurden darin zu "Untertitel_fin...", waehrend
+   leere Kategorien ihr Viertel behielten und "Keine Absegnungen"
+   anzeigten. Ueber die volle Breite passt jeder Eintrag. */
+.portal-activity-row {
+    display: flex; align-items: flex-start; gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.portal-activity-row:last-child { border-bottom: 0; }
+
+/* Feste Breite: die Kennzeichen stehen dadurch untereinander in
+   einer Spalte, statt die Titel je nach Wortlaenge zu verschieben. */
+.portal-activity-badge {
+    flex: 0 0 96px;
+    font-size: var(--text-2xs); font-weight: 700; letter-spacing: .5px;
+    line-height: 1.5; padding-top: 2px;
+}
+
+/* min-width: 0, sonst kann der Text nicht schmaler werden als sein
+   laengstes Wort und schiebt den Schliessen-Knopf hinaus. */
+.portal-activity-main {
+    flex: 1 1 auto; min-width: 0; text-decoration: none; color: inherit;
+}
+.portal-activity-title {
+    font-weight: 600; font-size: var(--text-sm); color: var(--text-strong);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.portal-activity-quote {
+    font-size: var(--text-xs); color: var(--text-muted); font-style: italic;
+    margin-top: 2px;
+}
+.portal-activity-meta {
+    font-size: var(--text-2xs); color: var(--text-faint); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.portal-activity-dismiss { flex-shrink: 0; }
+
 /* Uptime-Monitor */
 .uptime-header { display: flex; align-items: center; font-weight: 600; font-size: var(--text-sm-plus); color: var(--text-strong); min-width: 0; }
 .uptime-header span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

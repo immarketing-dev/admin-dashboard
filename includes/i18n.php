@@ -298,6 +298,13 @@ function datenwert(string $wert): string
             'Offene Posten nach Alter'        => t('Offene Posten nach Alter'),
             'Umsatz je Kunde'                 => t('Umsatz je Kunde'),
             'Geleistet, noch nicht berechnet' => t('Geleistet, noch nicht berechnet'),
+            // Kennzeichen der Portal-Aktivitaeten
+            // (includes/portal_activity.php). Sie stehen dort im
+            // Datensatz und erreichen die Ausgabe als Variable.
+            'DATEI'            => t('DATEI'),
+            'BESTÄTIGT'        => t('BESTÄTIGT'),
+            'NEUES FEEDBACK'   => t('NEUES FEEDBACK'),
+            'KOMMENTAR'        => t('KOMMENTAR'),
             // Monatsnamen (monatsnamen()). Sie erreichen die Ausgabe
             // in calendar.php, finances.php und tasks.php als Variable.
             'Januar'           => t('Januar'),

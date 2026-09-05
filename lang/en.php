@@ -309,22 +309,8 @@ return [
         => 'Master data',
     'Portal Aktivitäten'
         => 'Portal activity',
-    'Uploads'
-        => 'Uploads',
-    'Absegnungen'
-        => 'Approvals',
-    'Kommentare'
-        => 'Comments',
     'Kommentare anzeigen'
         => 'Show comments',
-    'Keine Uploads'
-        => 'No uploads',
-    'Keine Absegnungen'
-        => 'No approvals',
-    'Kein neues Feedback'
-        => 'No new feedback',
-    'Keine Kommentare'
-        => 'No comments',
     'DATEI'
         => 'FILE',
     'BESTÄTIGT'
@@ -1018,6 +1004,8 @@ return [
         => 'Backups',
     'Datenauskunft'
         => 'Data export',
+    'Nichts Offenes aus dem Portal.'
+        => 'Nothing open from the portal.',
     // ── Zahlungsabgleich (finances.php) ──────────────────────────────
     'Kontoauszug'
         => 'Bank statement',

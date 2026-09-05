@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/portal_activity.php';
 require_once 'includes/uptime.php';
 require_once 'includes/auth.php';
 require_once 'includes/dashboard_layout.php';
@@ -166,75 +167,13 @@ if (isset($_GET['ajax_widget'])) {
     header('Cache-Control: no-store, no-cache');
 
     if ($aw === 'portal_activity') {
+        // Dieselbe Quelle wie beim Seitenaufbau. Vorher stand das
+        // Markup hier ein zweites Mal - eine Aenderung an einer der
+        // beiden Stellen waere der anderen still davongelaufen, und
+        // aufgefallen waere es erst, wenn die Kachel nach dem ersten
+        // Abruf anders aussieht als beim Laden.
         header('Content-Type: text/html; charset=utf-8');
-        $portal_uploads   = $pdo->query("SELECT ca.*, t.title as task_title, c.name as client_name FROM client_assets ca JOIN tasks t ON ca.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE ca.dashboard_seen = 0 AND (ca.uploaded_by IS NULL OR ca.uploaded_by = 'client') ORDER BY ca.uploaded_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-        $portal_approvals = $pdo->query("SELECT tm.*, t.title as task_title, c.name as client_name FROM task_milestones tm JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE tm.approved_at IS NOT NULL AND tm.approval_seen = 0 ORDER BY tm.approved_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-        $portal_feedbacks = $pdo->query("SELECT t.id, t.title, t.client_feedback, c.name as client_name FROM tasks t JOIN contacts c ON t.contact_id = c.id WHERE t.deleted_at IS NULL AND t.client_feedback IS NOT NULL AND t.client_feedback != '' AND t.feedback_seen = 0")->fetchAll(PDO::FETCH_ASSOC);
-        $portal_ms_comments = [];
-        try { $portal_ms_comments = $pdo->query("SELECT mc.id, mc.message, mc.author_name, tm.title AS ms_title, t.title AS task_title, c.name AS client_name FROM milestone_comments mc JOIN task_milestones tm ON mc.milestone_id = tm.id JOIN tasks t ON tm.task_id = t.id JOIN contacts c ON t.contact_id = c.id WHERE mc.author = 'client' AND mc.admin_seen = 0 ORDER BY mc.created_at DESC LIMIT 20")->fetchAll(PDO::FETCH_ASSOC); } catch (PDOException $e) {}
-        ?>
-        <div class="col-md-3">
-            <h6 class="section-label"><?= te('Uploads') ?></h6>
-            <?php if(count($portal_uploads) > 0): foreach($portal_uploads as $u): ?>
-            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="upload"><input type="hidden" name="activity_id" value="<?=$u['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
-                <a href="tasks?q=<?=urlencode($u['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size:9px;letter-spacing:.5px;"><?= te('DATEI') ?></span>
-                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($u['file_name'])?></div>
-                    <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($u['client_name'])?></div>
-                </a>
-            </div>
-            <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-file-earmark-check d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Keine Uploads') ?></span></div>
-            <?php endif; ?>
-        </div>
-        <div class="col-md-3">
-            <h6 class="section-label"><?= te('Absegnungen') ?></h6>
-            <?php if(count($portal_approvals) > 0): foreach($portal_approvals as $a): ?>
-            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="approval"><input type="hidden" name="activity_id" value="<?=$a['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
-                <a href="tasks?q=<?=urlencode($a['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size:9px;letter-spacing:.5px;"><?= te('BESTÄTIGT') ?></span>
-                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($a['title'])?></div>
-                    <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($a['client_name'])?></div>
-                </a>
-            </div>
-            <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-check-circle d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Keine Absegnungen') ?></span></div>
-            <?php endif; ?>
-        </div>
-        <div class="col-md-3">
-            <h6 class="section-label">Feedback</h6>
-            <?php if(count($portal_feedbacks) > 0): foreach($portal_feedbacks as $f): ?>
-            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="feedback"><input type="hidden" name="activity_id" value="<?=$f['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
-                <a href="tasks?q=<?=urlencode($f['title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size:9px;letter-spacing:.5px;"><?= te('NEUES FEEDBACK') ?></span>
-                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($f['title'])?></div>
-                    <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars($f['client_feedback'])?>"</div>
-                </a>
-            </div>
-            <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Kein neues Feedback') ?></span></div>
-            <?php endif; ?>
-        </div>
-        <div class="col-md-3">
-            <h6 class="section-label"><?= te('Kommentare') ?></h6>
-            <?php if(count($portal_ms_comments) > 0): foreach($portal_ms_comments as $mc): ?>
-            <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                <form method="POST" class="position-absolute" style="top:5px;right:5px;"><?= csrf_field() ?><input type="hidden" name="activity_type" value="ms_comment"><input type="hidden" name="activity_id" value="<?=$mc['id']?>"><button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size:.65rem;" title="<?= te('Ausblenden') ?>"></button></form>
-                <a href="tasks?q=<?=urlencode($mc['task_title'])?>" class="text-decoration-none d-block pe-3">
-                    <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;"><?= te('KOMMENTAR') ?></span>
-                    <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size:13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
-                    <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars(mb_strimwidth($mc['message'],0,60,'…'))?>"</div>
-                    <div class="text-muted small mt-1 text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($mc['client_name'])?></div>
-                </a>
-            </div>
-            <?php endforeach; else: ?>
-            <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2"><i class="bi bi-chat-dots d-block mb-1" style="font-size:1.2rem;color:var(--text-faint);"></i><span style="font-size:10px;"><?= te('Keine Kommentare') ?></span></div>
-            <?php endif; ?>
-        </div>
-        <?php
+        portal_aktivitaeten_rendern(portal_aktivitaeten($pdo));
         exit();
     }
 
@@ -627,118 +566,12 @@ require 'includes/layout_start.php';
       <?php dash_widget_close(); ?>
 
       <?php dash_widget_open('portal_activity'); ?>
-            <div class="widget-box widget-accent-left">
+            <div class="widget-box widget-accent-left h-100">
                 <div class="widget-title"><span><i class="bi bi-magic"></i> <?= te('Portal Aktivitäten') ?></span></div>
-                
-                <div class="scroll-container">
-                    <div class="row g-3 w-100" id="portal_activity_body">
-                        
-                        <div class="col-md-3">
-                            <h6 class="section-label"><?= te('Uploads') ?></h6>
-                            <?php if(count($portal_uploads) > 0): ?>
-                                <?php foreach($portal_uploads as $u): ?>
-                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                                        <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="activity_type" value="upload">
-                                            <input type="hidden" name="activity_id" value="<?=$u['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
-                                        </form>
-                                        <a href="tasks?q=<?=urlencode($u['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge bg-primary bg-opacity-10 text-primary mb-2" style="font-size: 9px; letter-spacing: 0.5px;"><?= te('DATEI') ?></span>
-                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($u['file_name'])?></div>
-                                            <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($u['client_name'])?></div>
-                                        </a>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
-                                    <i class="bi bi-file-earmark-check d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;"><?= te('Keine Uploads') ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="col-md-3">
-                            <h6 class="section-label"><?= te('Absegnungen') ?></h6>
-                            <?php if(count($portal_approvals) > 0): ?>
-                                <?php foreach($portal_approvals as $a): ?>
-                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                                        <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="activity_type" value="approval">
-                                            <input type="hidden" name="activity_id" value="<?=$a['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
-                                        </form>
-                                        <a href="tasks?q=<?=urlencode($a['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge bg-success bg-opacity-10 text-success mb-2" style="font-size: 9px; letter-spacing: 0.5px;"><?= te('BESTÄTIGT') ?></span>
-                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($a['title'])?></div>
-                                            <div class="text-muted small text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($a['client_name'])?></div>
-                                        </a>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
-                                    <i class="bi bi-check-circle d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;"><?= te('Keine Absegnungen') ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="col-md-3">
-                            <h6 class="section-label">Feedback</h6>
-                            <?php if(count($portal_feedbacks) > 0): ?>
-                                <?php foreach($portal_feedbacks as $f): ?>
-                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                                        <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="activity_type" value="feedback">
-                                            <input type="hidden" name="activity_id" value="<?=$f['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
-                                        </form>
-                                        <a href="tasks?q=<?=urlencode($f['title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge bg-warning bg-opacity-10 text-dark mb-2" style="font-size: 9px; letter-spacing: 0.5px;"><?= te('NEUES FEEDBACK') ?></span>
-                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($f['title'])?></div>
-                                            <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars($f['client_feedback'])?>"</div>
-                                        </a>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
-                                    <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;"><?= te('Kein neues Feedback') ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="col-md-3">
-                            <h6 class="section-label"><?= te('Kommentare') ?></h6>
-                            <?php if(count($portal_ms_comments) > 0): ?>
-                                <?php foreach($portal_ms_comments as $mc): ?>
-                                    <div class="position-relative bg-surface border border-subtle-c rounded-3 p-3 mb-2 portal-item-hover">
-                                        <form method="POST" class="position-absolute" style="top: 5px; right: 5px;">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="activity_type" value="ms_comment">
-                                            <input type="hidden" name="activity_id" value="<?=$mc['id']?>">
-                                            <button type="submit" name="dismiss_portal_activity" class="btn-close" style="font-size: 0.65rem;" title="<?= te('Ausblenden') ?>"></button>
-                                        </form>
-                                        <a href="tasks?q=<?=urlencode($mc['task_title'])?>" class="text-decoration-none d-block pe-3">
-                                            <span class="badge mb-2" style="background:var(--neutral-soft);color:var(--text-muted);font-size:9px;letter-spacing:.5px;"><?= te('KOMMENTAR') ?></span>
-                                            <div class="fw-bold text-strong-c text-truncate mb-1" style="font-size: 13px;"><?=htmlspecialchars($mc['ms_title'])?></div>
-                                            <div class="text-muted fst-italic text-truncate" style="font-size:11px;">"<?=htmlspecialchars(mb_strimwidth($mc['message'],0,60,'…'))?>"</div>
-                                            <div class="text-muted small mt-1 text-truncate"><i class="bi bi-person"></i> <?=htmlspecialchars($mc['client_name'])?></div>
-                                        </a>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">
-                                    <i class="bi bi-chat-dots d-block mb-1" style="font-size: 1.2rem; color:var(--text-faint);"></i>
-                                    <span style="font-size:10px;"><?= te('Keine Kommentare') ?></span>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                    </div>
+                <?php // Markup und Abfragen stehen in includes/portal_activity.php -
+                      // dieselbe Quelle, aus der der AJAX-Abruf oben schoepft. ?>
+                <div class="scroll-container" id="portal_activity_body">
+                    <?php portal_aktivitaeten_rendern(portal_aktivitaeten($pdo)); ?>
                 </div>
             </div>
       <?php dash_widget_close(); ?>
