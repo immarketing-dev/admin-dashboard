@@ -402,7 +402,11 @@ if (!$envExists) {
         pf_add('Datenbank', 'Server-Version', 'FAIL', 'Konnte nicht ermittelt werden: ' . pf_mask_secrets($e->getMessage()));
     }
 
-    // -- Tabellen: welche der 27 erwarteten existieren --------------------
+    // -- Tabellen: welche der erwarteten existieren -----------------------
+    // Die Zahl kommt aus der Liste selbst. Sie stand dreimal als 21 im
+    // Text, waehrend die Liste laengst 27 Eintraege hatte: eine
+    // vollstaendige Datenbank meldete "21 von 21" und verschwieg sechs
+    // Tabellen, eine unvollstaendige rechnete falsch.
     // task_contacts und project_comments standen hier lange nicht drin,
     // obwohl install/schema.sql sie anlegt: sie kamen ueber die
     // Migrationen 5 und 6 dazu, und diese Liste wurde nicht mitgezogen.
@@ -425,13 +429,14 @@ if (!$envExists) {
         $missing = array_values(array_diff($expectedTables, $existingTables));
         $present = array_values(array_intersect($expectedTables, $existingTables));
         if ($missing === []) {
-            pf_add('Datenbank', 'Tabellen (21 erwartet)', 'PASS', 'Alle 21 erwarteten Tabellen vorhanden.');
+            pf_add('Datenbank', 'Tabellen (' . count($expectedTables) . ' erwartet)', 'PASS',
+                   'Alle ' . count($expectedTables) . ' erwarteten Tabellen vorhanden.');
         } else {
             pf_add(
                 'Datenbank',
-                'Tabellen (21 erwartet)',
+                'Tabellen (' . count($expectedTables) . ' erwartet)',
                 'FAIL',
-                count($present) . ' von 21 vorhanden. Fehlend: ' . implode(', ', $missing) . '. Vorhanden: ' . implode(', ', $present) . '. install/schema.sql importieren.'
+                count($present) . ' von ' . count($expectedTables) . ' vorhanden. Fehlend: ' . implode(', ', $missing) . '. Vorhanden: ' . implode(', ', $present) . '. install/schema.sql importieren.'
             );
         }
     } catch (Throwable $e) {

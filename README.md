@@ -3,6 +3,7 @@
 [![CI](https://github.com/immarketing-dev/admin-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/immarketing-dev/admin-dashboard/actions/workflows/ci.yml)
 [![PHP 8.1+](https://img.shields.io/badge/PHP-8.1%2B-777bb4)](https://www.php.net/)
 [![No build step](https://img.shields.io/badge/build%20step-none-lightgrey)](#installation)
+[![Live demo](https://img.shields.io/badge/live-demo-149ddd)](https://admin.david-imminger.de/demo)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Self-hosted admin panel for freelancers and small agencies. Projects with
@@ -11,6 +12,8 @@ support tickets, a wiki, and a client portal your customers log into with a
 token and a PIN.
 
 Plain PHP and MySQL. No framework, no build step — upload it and it runs.
+
+![The dashboard](docs/screenshots/dashboard.png)
 
 ### ▶ [Try the live demo](https://admin.david-imminger.de/demo)
 
@@ -24,45 +27,81 @@ mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
 
 ---
 
+### At a glance
+
+| | |
+|---|---|
+| **Runtime** | PHP 8.1+, MySQL 5.7.8+ / MariaDB 10.2.7+, Apache with `mod_rewrite` |
+| **Dependencies** | PHPMailer and FPDF, both committed to `vendor/` — `composer install` is optional |
+| **Build step** | None. No bundler, no transpiler, no `node_modules` |
+| **Front end** | Bootstrap 5 and a handful of vendored libraries, all served from the project |
+| **Scheduled work** | One cron entry calling `cron.php`; everything else is on-request |
+| **Checks** | `bash tools/check.sh` runs the full suite; CI covers PHP 8.1, 8.2 and 8.3 |
+
 **Contents** — [Features](#features) · [Screenshots](#screenshots) · [Requirements](#requirements) · [Installation](#installation) · [Configuration](#configuration) · [Security](#security) · [Tooling](#tooling)
 
 ## Features
 
-- **Dashboard** — KPIs, upcoming deadlines, parallel uptime monitoring for a
-  list of URLs, an inbox for leads coming from your website's contact form
-- **Projects** — milestones, file attachments, time tracking, client feedback
+**Work**
+
+- **Dashboard** — KPIs, upcoming deadlines, uptime monitoring with a
+  24-hour history per address, an inbox for leads coming from your
+  website's contact form. The widgets can be rearranged and the layout is
+  remembered per user
+- **Projects** — milestones, file attachments, time tracking with a
+  running timer, client feedback straight from the portal
 - **Kanban board** — drag and drop across three columns
-- **CRM** — contacts, companies, portal access per contact
+- **Calendar** — deadlines and due dates, appointments with .ics
+  invitations
+- **Wiki** — articles with attachments, selectively shareable with clients
+- **Support tickets** — priorities, internal and client-visible notes,
+  and an endpoint that turns an incoming e-mail into a ticket
+
+**Money**
+
 - **Finances** — income and expenses, invoice PDFs, receipts attached to
-  expenses, recurring entries, payment reminders, charts by month, year or
-  lifetime
+  expenses with a yearly CSV or ZIP export, recurring entries, payment
+  reminders in stages, charts by month, year or lifetime
 - **Quotes** — PDF generation, status tracking, one-click conversion to an
-  invoice, e-mail delivery with the PDF attached
+  invoice or to a project with milestones, e-mail delivery with the PDF
+  attached
+- **Electronic invoices** — XRechnung 3.0 / UBL 2.1 output for public
+  sector customers, and a Girocode (EPC069-12) on the printed invoice
 - **Reports** — revenue per client, outstanding invoices by age, hours
   worked but not yet billed, and a timesheet with CSV export
-- **Support tickets** — priorities, internal and client-visible notes
-- **Calendar** — deadlines and due dates, appointments with .ics invitations
-- **Wiki** — articles with attachments, selectively shareable with clients
+
+**People and access**
+
+- **CRM** — contacts, companies, portal access per contact
 - **Client portal** — projects, milestone approval, file upload, tickets,
   invoices and shared wiki articles, reached with a token and a PIN
 - **Multiple users with roles** — administration, staff, accounting; every
-  log entry and every tracked hour now carries who it was
+  log entry and every tracked hour carries who it was
+- **Two-factor sign-in** — TOTP with backup codes, plus a password reset
+  by e-mail and a lockout after repeated failures
+
+**Everywhere**
+
 - **German or English**, switchable in the settings; the client portal
   follows each contact's own language
 - **Dark mode**, responsive down to phone width
+- **Soft delete** — a trash bin that holds deleted records, with the files
+  that belong to them
 
 ## Screenshots
 
-Taken from the live demo linked above.
+From a demo instance with generated data — every name, company and amount
+in them is invented. How to capture your own:
+[docs/screenshots/README.md](docs/screenshots/README.md).
 
 | | |
 |---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Projects](docs/screenshots/projects.png) |
-| **Dashboard** — KPIs, deadlines, uptime monitor, lead inbox | **Projects** — milestones, time tracking, client feedback |
-| ![Finances](docs/screenshots/finances.png) | ![Client portal](docs/screenshots/portal.png) |
-| **Finances** — twelve months of income and expenses | **Client portal** — what a customer sees after logging in |
-
-How they were captured: [docs/screenshots/README.md](docs/screenshots/README.md).
+| [![Projects](docs/screenshots/projects.png)](docs/screenshots/projects.png) | [![Kanban board](docs/screenshots/board.png)](docs/screenshots/board.png) |
+| **Projects** — milestones, tracked time, uploads and client feedback | **Kanban board** — the same projects, dragged across three columns |
+| [![Finances](docs/screenshots/finances.png)](docs/screenshots/finances.png) | [![Reports](docs/screenshots/reports.png)](docs/screenshots/reports.png) |
+| **Finances** — twelve months of income and expenses | **Reports** — outstanding invoices by age, revenue per client, unbilled hours |
+| [![Client portal](docs/screenshots/portal.png)](docs/screenshots/portal.png) | [![Dashboard](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png) |
+| **Client portal** — what a customer sees after the PIN | **Dashboard** — KPIs, deadlines, uptime history, lead inbox |
 
 ## Requirements
 
@@ -142,7 +181,7 @@ target server and open `install/preflight.php` in a browser. It works
 without any configuration and reports what the server already has — PHP
 version and extensions, whether `uploads/` and its six subdirectories are
 writable, and, once `.env` exists, whether the database is reachable,
-which of the 21 expected tables are present, and current row counts
+which of the expected tables are present, and current row counts
 (useful for confirming nothing was lost when migrating an existing
 installation onto this codebase). Act on anything it reports as FAIL, then
 **delete the file** — it reads server and database internals and must not
