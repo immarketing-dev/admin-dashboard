@@ -1442,8 +1442,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   <?php if($beitraege): ?><span class="text-muted">(<?= count($beitraege) ?>)</span><?php endif; ?>
                 </div>
                 <p class="section-hint">
-                  Für alles, was sich keinem einzelnen Schritt zuordnen lässt. Alle
-                  Beteiligten sehen den Verlauf.
+                  <?= te('Für alles, was sich keinem einzelnen Schritt zuordnen lässt. Alle Beteiligten sehen den Verlauf.') ?>
                 </p>
 
                 <?php if($beitraege): ?>
@@ -1692,8 +1691,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   </div>
                 </div>
                 <div class="pay-hint">
-                  Mit der Banking-App scannen — Empfänger, Betrag und Verwendungszweck
-                  sind dann bereits ausgefüllt.
+                  <?= te('Mit der Banking-App scannen — Empfänger, Betrag und Verwendungszweck sind dann bereits ausgefüllt.') ?>
                   <?php if($bank['note'] !== ''): ?><br><?= htmlspecialchars($bank['note']) ?><?php endif; ?>
                 </div>
               </div>

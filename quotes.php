@@ -564,7 +564,7 @@ $page_heading = 'Angebote';
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
     <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#quoteModal" onclick="prepareNewQuote()">
-      <i class="bi bi-plus-lg me-1"></i> Neues Angebot
+      <i class="bi bi-plus-lg me-1"></i> ' . te('Neues Angebot') . '
     </button>';
 
 require 'includes/head.php';

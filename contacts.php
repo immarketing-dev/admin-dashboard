@@ -214,7 +214,7 @@ $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $page_title   = 'Kontakte';
 $page_heading = 'CRM & Kontakte';
 $current_page = basename($_SERVER['SCRIPT_NAME']);
-$header_actions = '<button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addContactModal" onclick="prepareAdd()"><i class="bi bi-person-plus-fill"></i> Neu anlegen</button>';
+$header_actions = '<button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addContactModal" onclick="prepareAdd()"><i class="bi bi-person-plus-fill"></i> ' . te('Neu anlegen') . '</button>';
 // QR-Code-Bibliothek wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<script src="' . asset('assets/vendor/qrcode/qrcode.min.js') . '"
         integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"

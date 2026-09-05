@@ -524,18 +524,18 @@ foreach ($tasks as &$task) {
         $diff_days_start = (int)$diff_start->format('%R%a'); 
         
         if ($diff_days_start == 0) {
-            $task['start_text'] = "Start: Heute";
+            $task['start_text'] = t('Start: Heute');
         } elseif ($diff_days_start == -1) {
-            $task['start_text'] = "Start: Gestern";
+            $task['start_text'] = t('Start: Gestern');
         } elseif ($diff_days_start == 1) {
-            $task['start_text'] = "Start: Morgen";
+            $task['start_text'] = t('Start: Morgen');
         } elseif ($diff_days_start < -1) {
-            $task['start_text'] = "Start: Vor " . abs($diff_days_start) . " T.";
+            $task['start_text'] = t('Start: vor %d T.', abs($diff_days_start));
         } else {
-            $task['start_text'] = "Start: In " . $diff_days_start . " T.";
+            $task['start_text'] = t('Start: in %d T.', $diff_days_start);
         }
     } else {
-        $task['start_text'] = "Start: Unbekannt";
+        $task['start_text'] = t('Start: unbekannt');
     }
     
     if ($task['deadline']) {
@@ -549,15 +549,18 @@ foreach ($tasks as &$task) {
 }
 unset($task);
 
-$german_months = ['01'=>'Januar','02'=>'Februar','03'=>'März','04'=>'April','05'=>'Mai','06'=>'Juni','07'=>'Juli','08'=>'August','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Dezember'];
+// Aus includes/i18n.php, damit die Liste nicht mehrfach im
+// Projekt steht. Uebersetzt wird sie an der Ausgabestelle mit
+// datenwert().
+$german_months = monatsnamen();
 
 $page_title   = 'Aufgaben & Projekte';
 $page_heading = 'Projekte & Aufgaben';
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
       <div class="d-flex gap-2">
-          <a href="board" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-kanban"></i> <span class="btn-label">Boardansicht</span></a>
-          <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addTaskModal"><i class="bi bi-plus-lg"></i> Neues Projekt</button>
+          <a href="board" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-kanban"></i> <span class="btn-label">' . te('Boardansicht') . '</span></a>
+          <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addTaskModal"><i class="bi bi-plus-lg"></i> ' . te('Neues Projekt') . '</button>
       </div>';
 $extra_head = <<<'CSS'
   <style>
@@ -645,9 +648,9 @@ require 'includes/layout_start.php';
                                 foreach($available_months as $ym):
                                     if(!$ym) continue;
                                     list($y, $m) = explode('-', $ym);
-                                    $display = $german_months[$m] . ' ' . $y;
+                                    $display = datenwert($german_months[$m]) . ' ' . $y;
                                 ?>
-                                    <option value="<?=htmlspecialchars($ym)?>" <?= $filter_month === $ym ? 'selected' : '' ?>><?= $display ?></option>
+                                    <option value="<?=htmlspecialchars($ym)?>" <?= $filter_month === $ym ? 'selected' : '' ?>><?= htmlspecialchars($display) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -746,9 +749,9 @@ require 'includes/layout_start.php';
                                 <i class="bi bi-alarm"></i>
                                 <?php
                                     if($task['days_until_deadline'] < 0 && $is_active) {
-                                        echo 'Überfällig (' . abs($task['days_until_deadline']) . ' T.)';
+                                        echo te('Überfällig (%d T.)', abs($task['days_until_deadline']));
                                     } else {
-                                        echo 'In ' . $task['days_until_deadline'] . ' T.';
+                                        echo te('In %d T.', $task['days_until_deadline']);
                                     }
                                 ?>
                             </span>
@@ -759,7 +762,7 @@ require 'includes/layout_start.php';
                 <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
                   <div class="dropdown">
                     <?php $_sc = ['Offen'=>'status-offen','In Bearbeitung'=>'status-in-bearbeitung','Erledigt'=>'status-erledigt','Storniert'=>'status-storniert'][$task['status']] ?? 'status-offen'; ?>
-                    <button class="status-badge <?=$_sc?> dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= htmlspecialchars($task['status']); ?></button>
+                    <button class="status-badge <?=$_sc?> dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= htmlspecialchars(datenwert($task['status'])); ?></button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                       <li><form method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="Offen"><button type="submit" class="btn btn-sm btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('Offen') ?></button></form></li>
                       <li><form method="POST" class="px-3 py-1 m-0"><?= csrf_field() ?><input type="hidden" name="action" value="update_task_status"><input type="hidden" name="task_id" value="<?=$task['id']?>"><input type="hidden" name="status" value="In Bearbeitung"><button type="submit" class="btn-sm btn btn-link text-strong-c text-start p-0 text-decoration-none w-100"><?= te('In Bearbeitung') ?></button></form></li>
@@ -951,8 +954,8 @@ require 'includes/layout_start.php';
                           <div class="p-2 bg-subtle rounded border scroll-box-sm mb-0">
                               <?php foreach($task['assets'] as $a): 
                                   $uploaderBadge = (isset($a['uploaded_by']) && $a['uploaded_by'] === 'admin') 
-                                      ? '<span class="badge bg-primary me-2" style="font-size:8px; padding: 3px 5px;">Admin</span>' 
-                                      : '<span class="badge bg-secondary me-2" style="font-size:8px; padding: 3px 5px;">Kunde</span>';
+                                      ? '<span class="badge bg-primary me-2" style="font-size:8px; padding: 3px 5px;">' . te('Admin') . '</span>'
+                                      : '<span class="badge bg-secondary me-2" style="font-size:8px; padding: 3px 5px;">' . te('Kunde') . '</span>';
                               ?>
                                   <div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-1 px-2 rounded small shadow-sm">
                                       <span class="text-truncate d-flex align-items-center" style="max-width:65%">
@@ -1030,10 +1033,14 @@ require 'includes/layout_start.php';
                       <span class="form-label d-block"><?= te('Weitere Beteiligte') ?></span>
                       <div id="e_members"><?= task_members_auswahl($all_contacts, 'e') ?></div>
                       <div class="form-text">
-                        Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — dafür
-                        braucht er unter
-                        <a href="contacts" target="_blank" rel="noopener"><?= te('Kontakte') ?></a> einen
-                        Portal-Zugang. Der Kunde oben ist immer dabei.
+                        <?php
+                          // Der Verweis steckt im Satz, deshalb %s statt zweier
+                          // Halbsaetze: eine Uebersetzung darf die Wortstellung
+                          // aendern, ohne dass der Link an der falschen Stelle landet.
+                          $_kontakte_link = '<a href="contacts" target="_blank" rel="noopener">'
+                                          . te('Kontakte') . '</a>';
+                        ?>
+                        <?= t('Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — dafür braucht er unter %s einen Portal-Zugang. Der Kunde oben ist immer dabei.', $_kontakte_link) ?>
                       </div>
                     </div>
                     <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div>
@@ -1575,9 +1582,7 @@ require 'includes/layout_start.php';
         <div class="modal-body">
           <div class="fw-bold text-strong-c mb-1" id="mm_title"></div>
           <p class="text-muted small">
-            Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — mit eigenem
-            Zugangslink und eigener PIN. So lässt sich einzeln entziehen, und jede
-            Handlung im Portal trägt einen Namen.
+            <?= te('Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — mit eigenem Zugangslink und eigener PIN. So lässt sich einzeln entziehen, und jede Handlung im Portal trägt einen Namen.') ?>
           </p>
 
           <form method="POST" id="mm_form">
@@ -1586,8 +1591,8 @@ require 'includes/layout_start.php';
             <input type="hidden" name="task_id" id="mm_task_id">
             <div id="mm_members"><?= task_members_auswahl($all_contacts, 'mm') ?></div>
             <div class="form-text mt-2">
-              Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie
-              unter <a href="contacts"><?= te('Kontakte') ?></a>.
+              <?php $_kontakte_link2 = '<a href="contacts">' . te('Kontakte') . '</a>'; ?>
+              <?= t('Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie unter %s.', $_kontakte_link2) ?>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-3">
               <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>

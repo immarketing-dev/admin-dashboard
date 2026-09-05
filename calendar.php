@@ -258,7 +258,9 @@ $today_m  = (int)date('m');
 $today_y  = (int)date('Y');
 $is_current_month = ($today_m === $month && $today_y === $year);
 
-$month_names = ['','Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+// monatsnamen() steht in includes/i18n.php - dieselbe Liste stand
+// vorher dreimal im Projekt.
+$month_names = array_merge([''], array_values(monatsnamen()));
 
 // Monthly stats
 $total_tasks_month    = 0; $overdue_tasks_month  = 0;
@@ -305,9 +307,9 @@ $current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
     <div class="d-flex align-items-center gap-2">
         <button class="btn btn-sm btn-primary fw-bold" onclick="openNewModal(\'\')">
-            <i class="bi bi-calendar-plus me-1"></i> Neuer Termin
+            <i class="bi bi-calendar-plus me-1"></i> ' . te('Neuer Termin') . '
         </button>
-        <a href="calendar?year=' . $today_y . '&month=' . $today_m . '" class="btn btn-sm btn-outline-secondary fw-bold">Heute</a>
+        <a href="calendar?year=' . $today_y . '&month=' . $today_m . '" class="btn btn-sm btn-outline-secondary fw-bold">' . te('Heute') . '</a>
         <a href="calendar?year=' . $prev_year . '&month=' . $prev_month . '" class="btn btn-sm btn-outline-primary px-2"><i class="bi bi-chevron-left"></i></a>
         <a href="calendar?year=' . $next_year . '&month=' . $next_month . '" class="btn btn-sm btn-outline-primary px-2"><i class="bi bi-chevron-right"></i></a>
     </div>';
@@ -333,7 +335,7 @@ require 'includes/layout_start.php';
     <div class="col-lg-9">
       <div class="bg-surface rounded-3 shadow-sm border p-4">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-          <h4 class="fw-bold m-0 text-strong-c"><?= $month_names[$month] ?> <?= $year ?></h4>
+          <h4 class="fw-bold m-0 text-strong-c"><?= htmlspecialchars(datenwert($month_names[$month])) ?> <?= $year ?></h4>
           <div class="d-flex gap-3 small flex-wrap">
             <span class="legend-chip"><span class="legend-dot legend-dot-task"></span><?= te('Deadline') ?></span>
             <span class="legend-chip"><span class="legend-dot legend-dot-inv"></span><?= te('Rechnung') ?></span>
@@ -578,7 +580,7 @@ require 'includes/layout_start.php';
               <label class="form-label fw-bold small"><?= te('Farbe') ?></label>
               <div class="d-flex gap-2 flex-wrap">
                 <?php foreach($preset_colors as $hex => $name): ?>
-                <label class="color-swatch-label" title="<?= $name ?>">
+                <label class="color-swatch-label" title="<?= htmlspecialchars(datenwert($name)) ?>">
                   <input type="radio" name="color" value="<?= $hex ?>" class="d-none color-radio" <?= $hex === '#4a90d9' ? 'checked' : '' ?>>
                   <span class="color-swatch" style="background:<?= $hex ?>;"></span>
                 </label>

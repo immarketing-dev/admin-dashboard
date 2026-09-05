@@ -103,8 +103,7 @@ require 'includes/layout_start.php';
     <div>
       <div class="fw-bold text-strong-c"><?= $gesamt ?> <?= te('Eintrag/Einträge im Papierkorb') ?></div>
       <div class="text-muted small">
-        <?= te('Gelöschtes bleibt') ?> <?= AUFBEWAHRUNG_TAGE ?> Tage wiederherstellbar und wird danach
-        beim Öffnen dieser Seite automatisch entfernt.
+        <?= te('Gelöschtes bleibt %d Tage wiederherstellbar und wird danach vom nächtlichen Lauf endgültig entfernt.', AUFBEWAHRUNG_TAGE) ?>
         <?php if ($geraeumt > 0): ?>
           <span class="text-strong-c"><?= te('Soeben aufgeräumt:') ?> <?= $geraeumt ?>.</span>
         <?php endif; ?>

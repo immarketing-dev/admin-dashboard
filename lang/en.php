@@ -1018,6 +1018,135 @@ return [
         => 'Backups',
     'Datenauskunft'
         => 'Data export',
+    // ── Beschriftungen, die als roher Text in einer Zeichenkette
+    //    standen und deshalb nie uebersetzt wurden ────────────────
+    'Board durchsuchen...'
+        => 'Search the board...',
+    'Listenansicht'
+        => 'List view',
+    'Boardansicht'
+        => 'Board view',
+    'Neu anlegen'
+        => 'Add new',
+    'Ausgabe'
+        => 'Expense',
+    'Einnahme'
+        => 'Income',
+    'Neues Ticket'
+        => 'New ticket',
+    'Daten werden automatisch aktualisiert'
+        => 'Data refreshes on its own',
+    'Als .txt exportieren'
+        => 'Export as .txt',
+    '7 Tage'
+        => '7 days',
+    '30 Tage'
+        => '30 days',
+    'Gesamter Zeitraum'
+        => 'All time',
+    'Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — dafür braucht er unter %s einen Portal-Zugang. Der Kunde oben ist immer dabei.'
+        => 'Everyone involved sees the project in their own portal - for that they need portal access under %s. The client above is always included.',
+    'Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — mit eigenem Zugangslink und eigener PIN. So lässt sich einzeln entziehen, und jede Handlung im Portal trägt einen Namen.'
+        => 'Everyone involved sees the project in their own portal, with their own link and their own PIN. Access can be withdrawn one at a time that way, and every action in the portal carries a name.',
+    'Gelöschtes bleibt %d Tage wiederherstellbar und wird danach vom nächtlichen Lauf endgültig entfernt.'
+        => 'Deleted items stay recoverable for %d days and are then removed for good by the nightly run.',
+    'Für %d Kunde(n) freigegeben'
+        => 'Shared with %d client(s)',
+    // ── Beschriftungen der Mailvorlagen ──────────────────────────────
+    // Nur die Beschriftungen. Der Text der Vorlagen bleibt deutsch:
+    // das ist der Inhalt, der beim Kunden ankommt, und den bearbeitet
+    // der Betreiber selbst. Ihn hier zu uebersetzen hiesse, zu
+    // aendern, was verschickt wird.
+    'Admin'
+        => 'Admin',
+    'Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie unter %s.'
+        => 'Without portal access the person sees nothing - you grant it under %s.',
+    'Meilenstein abgeschlossen'
+        => 'Milestone completed',
+    'Geht an den Projektkontakt, sobald ein Meilenstein abgehakt wird.'
+        => 'Goes to the project contact as soon as a milestone is ticked off.',
+    'Portal-Zugang'
+        => 'Portal access',
+    'Die Einladung mit Zugangslink und QR-Code, versendet aus den Kontakten.'
+        => 'The invitation with link and QR code, sent from the contacts page.',
+    'Antwort auf eine Support-Anfrage'
+        => 'Reply to a support request',
+    'Geht an den Kunden, wenn Sie eine Anfrage öffentlich beantworten.'
+        => 'Goes to the client when you answer a request publicly.',
+    'Termineinladung'
+        => 'Appointment invitation',
+    'Die Einladung aus dem Kalender, mit Kalenderdatei im Anhang.'
+        => 'The invitation from the calendar, with the calendar file attached.',
+    'Geht an Sie selbst, wenn Sie im Anmeldebild "Passwort vergessen" benutzen.'
+        => 'Goes to you, when you use "forgot password" on the sign-in screen.',
+    'Angebot versenden (Vorbelegung)'
+        => 'Sending a quote (prefill)',
+    'Rechnung versenden (Vorbelegung)'
+        => 'Sending an invoice (prefill)',
+    'Zahlungserinnerung (Vorbelegung)'
+        => 'Payment reminder (prefill)',
+    'Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.'
+        => 'Prefills subject and body in the send dialog. Plain text, no frame.',
+    // Datumsangaben an der Projektkarte
+    'Start: Heute'
+        => 'Starts today',
+    'Start: Gestern'
+        => 'Started yesterday',
+    'Start: Morgen'
+        => 'Starts tomorrow',
+    'Start: vor %d T.'
+        => 'Started %dd ago',
+    'Start: in %d T.'
+        => 'Starts in %dd',
+    'Start: unbekannt'
+        => 'Start unknown',
+    'Überfällig (%d T.)'
+        => 'Overdue (%dd)',
+    'In %d T.'
+        => 'In %dd',
+    // Monatsnamen
+    'Januar'    => 'January',
+    'Februar'   => 'February',
+    'März'      => 'March',
+    'April'     => 'April',
+    'Mai'       => 'May',
+    'Juni'      => 'June',
+    'Juli'      => 'July',
+    'August'    => 'August',
+    'September' => 'September',
+    'Oktober'   => 'October',
+    'November'  => 'November',
+    'Dezember'  => 'December',
+    '(täglich)'
+        => '(daily)',
+    '(monatlich)'
+        => '(monthly)',
+    'Gesamtübersicht (jährlich)'
+        => 'All time (yearly)',
+    // Das Span blendet den Zusatz auf schmalen Geraeten aus. Im
+    // Deutschen steht es hinten, im Englischen vorn - deshalb ist der
+    // ganze Knopf eine Zeichenkette und nicht zwei.
+    'Rechnung <span class="btn-label-xs">erstellen</span>'
+        => '<span class="btn-label-xs">New </span>invoice',
+    'Für alles, was sich keinem einzelnen Schritt zuordnen lässt. Alle Beteiligten sehen den Verlauf.'
+        => 'For anything that belongs to no single step. Everyone involved sees the thread.',
+    'Mit der Banking-App scannen — Empfänger, Betrag und Verwendungszweck sind dann bereits ausgefüllt.'
+        => 'Scan it with your banking app - payee, amount and reference are filled in already.',
+    'Erscheint im Kundenportal bei offenen Rechnungen, zusammen mit einem Überweisungs-Code zum Scannen. Leer lassen blendet den Bereich aus. Die Daten verlassen den eigenen Server nicht — der Code wird im Browser des Kunden erzeugt.'
+        => 'Shown in the client portal on open invoices, together with a scannable transfer code. Leave it empty and the section disappears. The data never leaves your own server - the code is generated in the client\'s browser.',
+    'Eine Leerzeile trennt Absätze. Enthält eine Zeile nur einen Platzhalter, der leer bleibt, entfällt sie ganz.'
+        => 'A blank line separates paragraphs. A line holding nothing but a placeholder that stays empty is dropped entirely.',
+    'Die Vorschau zeigt die Mail so, wie sie beim Empfänger ankommt — immer hell, unabhängig vom Design des Panels.'
+        => 'The preview shows the mail as it arrives - always light, regardless of the panel theme.',
+    // Farbnamen der Termine
+    'Blau'   => 'Blue',
+    'Grün'   => 'Green',
+    'Orange' => 'Orange',
+    'Rot'    => 'Red',
+    'Lila'   => 'Purple',
+    'Türkis' => 'Teal',
+    'Pink'   => 'Pink',
+    'Dunkel' => 'Dark',
     // ── Rechtematrix (settings.php, Reiter Benutzer) ─────────────────
     'Wer welche Seite sieht'
         => 'Who sees which page',
@@ -1518,8 +1647,6 @@ return [
         => 'd old',
     'Eintrag/Einträge im Papierkorb'
         => 'entry/entries in the trash',
-    'Gelöschtes bleibt'
-        => 'Deleted items stay recoverable for',
     'Soeben aufgeräumt:'
         => 'Just cleaned up:',
     ' Tage'

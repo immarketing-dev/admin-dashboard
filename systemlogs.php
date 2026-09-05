@@ -194,7 +194,7 @@ $header_actions = $log_view === 'mail' ? '' : '
         <form action="systemlogs" method="POST" style="margin: 0;">
           ' . csrf_field() . '
           <input type="hidden" name="action" value="export_logs">
-          <button type="submit" class="btn btn-success btn-sm fw-bold"><i class="bi bi-download"></i> <span class="btn-label">Als .txt exportieren</span></button>
+          <button type="submit" class="btn btn-success btn-sm fw-bold"><i class="bi bi-download"></i> <span class="btn-label">' . te('Als .txt exportieren') . '</span></button>
         </form>
 
         <button type="button" class="btn btn-outline-danger btn-sm fw-bold" onclick="triggerClearLogs()">
@@ -380,7 +380,9 @@ require 'includes/layout_start.php';
       </select>
       <select name="range" class="form-select form-select-sm w-auto" onchange="this.form.submit()"
               aria-label="<?= te('Zeitraum') ?>">
-        <?php foreach(['1'=>'Heute','7'=>'7 Tage','30'=>'30 Tage','all'=>'Gesamter Zeitraum'] as $v=>$t): ?>
+        <?php // te() schon hier: unten steht nur noch die Variable.
+        foreach(['1'=>te('Heute'),'7'=>te('7 Tage'),'30'=>te('30 Tage'),
+                 'all'=>te('Gesamter Zeitraum')] as $v=>$t): ?>
           <option value="<?= $v ?>" <?= $log_range === $v ? 'selected' : '' ?>><?= $t ?></option>
         <?php endforeach; ?>
       </select>

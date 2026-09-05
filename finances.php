@@ -665,7 +665,10 @@ $pdo->query("UPDATE finances SET status = 'Überfällig' WHERE type = 'INCOME' A
 // ==========================================
 // KPI & DIAGRAMM DATEN BERECHNEN
 // ==========================================
-$german_months = ['01'=>'Januar','02'=>'Februar','03'=>'März','04'=>'April','05'=>'Mai','06'=>'Juni','07'=>'Juli','08'=>'August','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Dezember'];
+// Aus includes/i18n.php, damit die Liste nicht mehrfach im
+// Projekt steht. Uebersetzt wird sie an der Ausgabestelle mit
+// datenwert().
+$german_months = monatsnamen();
 
 $period = $_GET['period'] ?? 'month'; 
 // Die Bedingung des Papierkorbs steht hier, nicht in der Abfrage: dort
@@ -692,7 +695,7 @@ if ($period === 'month') {
     $cur_month = (int)date('m');
     $days_in_month = (int)date('t');
     $ym = date('Y-m');
-    $chart_title = $german_months[date('m')] . ' ' . $cur_year . ' (täglich)';
+    $chart_title = datenwert($german_months[date('m')]) . ' ' . $cur_year . ' ' . t('(täglich)');
 
     $inc_rows = $pdo->prepare("SELECT DAY(record_date) AS d, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status='Bezahlt' AND DATE_FORMAT(record_date,'%Y-%m')=? GROUP BY DAY(record_date)");
     $inc_rows->execute([$ym]); $inc_by_day = array_column($inc_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'd');
@@ -708,7 +711,7 @@ if ($period === 'month') {
 } elseif ($period === 'year') {
     // Monthly view: current year
     $cur_year = (int)date('Y');
-    $chart_title = $cur_year . ' (monatlich)';
+    $chart_title = $cur_year . ' ' . t('(monatlich)');
 
     $inc_rows = $pdo->prepare("SELECT MONTH(record_date) AS m, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status='Bezahlt' AND YEAR(record_date)=? GROUP BY MONTH(record_date)");
     $inc_rows->execute([$cur_year]); $inc_by_month = array_column($inc_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'm');
@@ -716,14 +719,14 @@ if ($period === 'month') {
     $exp_rows->execute([$cur_year]); $exp_by_month = array_column($exp_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'm');
 
     for ($mo = 1; $mo <= 12; $mo++) {
-        $chart_labels[] = $german_months[sprintf('%02d', $mo)];
+        $chart_labels[] = datenwert($german_months[sprintf('%02d', $mo)]);
         $chart_inc[]    = (float)($inc_by_month[$mo] ?? 0);
         $chart_exp[]    = (float)($exp_by_month[$mo] ?? 0);
     }
 
 } else {
     // Yearly view: all years with data
-    $chart_title = 'Gesamtübersicht (jährlich)';
+    $chart_title = t('Gesamtübersicht (jährlich)');
 
     $inc_rows = $pdo->query("SELECT YEAR(record_date) AS y, SUM(amount) AS total FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status='Bezahlt' GROUP BY YEAR(record_date)");
     $inc_by_year = array_column($inc_rows->fetchAll(PDO::FETCH_ASSOC), 'total', 'y');
@@ -844,16 +847,16 @@ if (beleg_zip_moeglich()) {
 if ($active_tab === 'quotes') {
     $header_actions = '
       <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#quoteModal" onclick="prepareNewQuote()">
-        <i class="bi bi-plus-lg me-1"></i> Neues Angebot
+        <i class="bi bi-plus-lg me-1"></i> ' . te('Neues Angebot') . '
       </button>';
 } else {
     $header_actions = '
       <div class="d-flex gap-2">
           <a href="?export=csv" class="btn btn-outline-secondary btn-sm fw-bold px-3"><i class="bi bi-filetype-csv"></i> <span class="btn-label">CSV</span></a>
           ' . $beleg_export_html . '
-          <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#invoiceModal"><i class="bi bi-file-earmark-plus"></i> Rechnung <span class="btn-label-xs">erstellen</span></button>
-          <button class="btn btn-outline-danger btn-sm" onclick="openFinanceModal(\'EXPENSE\')"><i class="bi bi-dash-circle"></i> <span class="btn-label">Ausgabe</span></button>
-          <button class="btn btn-outline-success btn-sm" onclick="openFinanceModal(\'INCOME\')"><i class="bi bi-plus-circle"></i> <span class="btn-label">Einnahme</span></button>
+          <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#invoiceModal"><i class="bi bi-file-earmark-plus"></i> ' . t('Rechnung <span class="btn-label-xs">erstellen</span>') . '</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="openFinanceModal(\'EXPENSE\')"><i class="bi bi-dash-circle"></i> <span class="btn-label">' . te('Ausgabe') . '</span></button>
+          <button class="btn btn-outline-success btn-sm" onclick="openFinanceModal(\'INCOME\')"><i class="bi bi-plus-circle"></i> <span class="btn-label">' . te('Einnahme') . '</span></button>
       </div>';
 }
 // Chart.js wird nur hier gebraucht, daher hier statt in head.php.
@@ -1101,7 +1104,7 @@ require 'includes/layout_start.php';
             <option value="year" <?= $filter_month === 'year' ? 'selected' : '' ?>><?= te('Zeitraum: Aktuelles Jahr') ?></option>
             <option disabled>──────────</option>
             <?php foreach($available_months as $ym): ?>
-                <option value="<?=$ym?>" <?=$filter_month==$ym?'selected':''?>><?=$german_months[substr($ym,5,2)]?> <?=substr($ym,0,4)?></option>
+                <option value="<?=$ym?>" <?=$filter_month==$ym?'selected':''?>><?= htmlspecialchars(datenwert($german_months[substr($ym,5,2)])) ?> <?=substr($ym,0,4)?></option>
             <?php endforeach; ?>
         </select>
         <select name="type" class="form-select form-select-sm w-auto" onchange="this.form.submit()">

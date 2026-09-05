@@ -151,6 +151,28 @@ function te(string $text, ...$werte): string
 }
 
 /**
+ * Die Monatsnamen, an einer Stelle.
+ *
+ * Sie standen dreimal im Projekt (calendar.php, finances.php,
+ * tasks.php) und gingen an allen drei Stellen ungefiltert in die
+ * Ausgabe. Uebersetzt werden sie ueber datenwert() an der
+ * Anzeigestelle - dort sind sie eine Variable, hier stehen die
+ * Literale.
+ *
+ * Der Schluessel ist zweistellig, weil finances.php mit date('m')
+ * hineingreift.
+ */
+function monatsnamen(): array
+{
+    return [
+        '01' => 'Januar',    '02' => 'Februar',  '03' => 'März',
+        '04' => 'April',     '05' => 'Mai',      '06' => 'Juni',
+        '07' => 'Juli',      '08' => 'August',   '09' => 'September',
+        '10' => 'Oktober',   '11' => 'November', '12' => 'Dezember',
+    ];
+}
+
+/**
  * Uebersetzt einen Datenbankwert fuer die Anzeige.
  *
  * In tasks.status steht 'Offen', in finances.status 'Bezahlt' - deutsche
@@ -241,6 +263,61 @@ function datenwert(string $wert): string
             'Papierkorb'         => t('Papierkorb'),
             'Einstellungen'      => t('Einstellungen'),
             'Kein Zugriff'       => t('Kein Zugriff'),
+            // Beschriftungen der Mailvorlagen (includes/mail_templates.php).
+            // Sie erreichen settings.php als Variable.
+            'Meilenstein abgeschlossen'
+                => t('Meilenstein abgeschlossen'),
+            'Geht an den Projektkontakt, sobald ein Meilenstein abgehakt wird.'
+                => t('Geht an den Projektkontakt, sobald ein Meilenstein abgehakt wird.'),
+            'Portal-Zugang'
+                => t('Portal-Zugang'),
+            'Die Einladung mit Zugangslink und QR-Code, versendet aus den Kontakten.'
+                => t('Die Einladung mit Zugangslink und QR-Code, versendet aus den Kontakten.'),
+            'Antwort auf eine Support-Anfrage'
+                => t('Antwort auf eine Support-Anfrage'),
+            'Geht an den Kunden, wenn Sie eine Anfrage öffentlich beantworten.'
+                => t('Geht an den Kunden, wenn Sie eine Anfrage öffentlich beantworten.'),
+            'Termineinladung'
+                => t('Termineinladung'),
+            'Die Einladung aus dem Kalender, mit Kalenderdatei im Anhang.'
+                => t('Die Einladung aus dem Kalender, mit Kalenderdatei im Anhang.'),
+            'Passwort zurücksetzen'
+                => t('Passwort zurücksetzen'),
+            'Geht an Sie selbst, wenn Sie im Anmeldebild "Passwort vergessen" benutzen.'
+                => t('Geht an Sie selbst, wenn Sie im Anmeldebild "Passwort vergessen" benutzen.'),
+            'Angebot versenden (Vorbelegung)'
+                => t('Angebot versenden (Vorbelegung)'),
+            'Rechnung versenden (Vorbelegung)'
+                => t('Rechnung versenden (Vorbelegung)'),
+            'Zahlungserinnerung (Vorbelegung)'
+                => t('Zahlungserinnerung (Vorbelegung)'),
+            'Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.'
+                => t('Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.'),
+            // Monatsnamen (monatsnamen()). Sie erreichen die Ausgabe
+            // in calendar.php, finances.php und tasks.php als Variable.
+            'Januar'           => t('Januar'),
+            'Februar'          => t('Februar'),
+            'März'             => t('März'),
+            'April'            => t('April'),
+            'Mai'              => t('Mai'),
+            'Juni'             => t('Juni'),
+            'Juli'             => t('Juli'),
+            'August'           => t('August'),
+            'September'        => t('September'),
+            'Oktober'          => t('Oktober'),
+            'November'         => t('November'),
+            'Dezember'         => t('Dezember'),
+            // Farbnamen der Termine (calendar.php). Sie stehen dort als
+            // Werte in $preset_colors und erreichen die Ausgabe als
+            // Variable.
+            'Blau'             => t('Blau'),
+            'Grün'             => t('Grün'),
+            'Orange'           => t('Orange'),
+            'Rot'              => t('Rot'),
+            'Lila'             => t('Lila'),
+            'Türkis'           => t('Türkis'),
+            'Pink'             => t('Pink'),
+            'Dunkel'           => t('Dunkel'),
             // Terminzustaende
             'Geplant'          => t('Geplant'),
             'Bestätigt'        => t('Bestätigt'),

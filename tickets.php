@@ -222,7 +222,7 @@ $page_heading = 'Support Zentrale';
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
       <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#newTicketModal">
-        <i class="bi bi-plus-lg"></i> Neues Ticket
+        <i class="bi bi-plus-lg"></i> ' . te('Neues Ticket') . '
       </button>';
 
 require 'includes/head.php';

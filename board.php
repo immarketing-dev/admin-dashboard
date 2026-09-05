@@ -101,9 +101,9 @@ $header_actions = '
       <div class="d-flex gap-2 align-items-center flex-wrap" style="max-width: 560px;">
           <div class="input-group input-group-sm search-box" style="flex-grow: 1;">
               <span class="input-group-text bg-surface border-end-0 text-muted"><i class="bi bi-search"></i></span>
-              <input type="text" id="boardSearch" class="form-control border-start-0 ps-0" placeholder="Board durchsuchen...">
+              <input type="text" id="boardSearch" class="form-control border-start-0 ps-0" placeholder="' . te('Board durchsuchen...') . '">
           </div>
-          <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Listenansicht</span></a>
+          <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">' . te('Listenansicht') . '</span></a>
       </div>';
 // Sortable.js (Drag & Drop) wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<script src="' . asset('assets/vendor/sortable/Sortable.min.js') . '"></script>';

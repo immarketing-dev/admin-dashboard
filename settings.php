@@ -709,10 +709,7 @@ require 'includes/layout_start.php';
 
         <div class="settings-section-title mt-4"><i class="bi bi-bank me-2"></i><?= te('Bankverbindung') ?></div>
         <p class="text-muted small mb-3">
-          Erscheint im Kundenportal bei offenen Rechnungen, zusammen mit einem
-          Überweisungs-Code zum Scannen. Leer lassen blendet den Bereich aus.
-          Die Daten verlassen den eigenen Server nicht — der Code wird im
-          Browser des Kunden erzeugt.
+          <?= te('Erscheint im Kundenportal bei offenen Rechnungen, zusammen mit einem Überweisungs-Code zum Scannen. Leer lassen blendet den Bereich aus. Die Daten verlassen den eigenen Server nicht — der Code wird im Browser des Kunden erzeugt.') ?>
         </p>
         <div class="row g-3 mb-2">
           <div class="col-md-6">
@@ -909,7 +906,7 @@ require 'includes/layout_start.php';
             <a href="?tab=mail&tpl=<?= urlencode($k) ?>"
                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2<?= $k === $tpl_key ? ' active' : '' ?>">
               <span class="text-truncate">
-                <span class="d-block fw-semibold"><?= htmlspecialchars($t['label']) ?></span>
+                <span class="d-block fw-semibold"><?= htmlspecialchars(datenwert($t['label'])) ?></span>
                 <span class="d-block small<?= $k === $tpl_key ? '' : ' text-muted' ?>" style="font-size:var(--text-2xs);">
                   <?= !empty($t['plaintext']) ? te('Vorbelegung, reiner Text') : te('HTML mit Rahmen') ?>
                 </span>
@@ -931,8 +928,8 @@ require 'includes/layout_start.php';
 
             <div class="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
               <div>
-                <div class="fw-bold"><?= htmlspecialchars($tpl['label']) ?></div>
-                <div class="text-muted small"><?= htmlspecialchars($tpl['hint']) ?></div>
+                <div class="fw-bold"><?= htmlspecialchars(datenwert($tpl['label'])) ?></div>
+                <div class="text-muted small"><?= htmlspecialchars(datenwert($tpl['hint'])) ?></div>
               </div>
               <?php if($ist_angepasst): ?>
               <button type="submit" form="reset_tpl_form" class="btn btn-outline-secondary btn-sm"
@@ -953,8 +950,7 @@ require 'includes/layout_start.php';
               <textarea class="form-control" id="tpl_body" name="tpl_body" rows="11"
                         style="font-family:var(--font-mono);font-size:13px;line-height:1.6;"><?= htmlspecialchars(mail_template_body($tpl_key)) ?></textarea>
               <div class="form-text">
-                Eine Leerzeile trennt Absätze. Enthält eine Zeile nur einen Platzhalter,
-                der leer bleibt, entfällt sie ganz.
+                <?= te('Eine Leerzeile trennt Absätze. Enthält eine Zeile nur einen Platzhalter, der leer bleibt, entfällt sie ganz.') ?>
               </div>
             </div>
 
@@ -986,8 +982,7 @@ require 'includes/layout_start.php';
             <iframe title="<?= te('Vorschau der E-Mail') ?>" style="width:100%;height:520px;border:1px solid var(--border-base);border-radius:var(--radius-md);background:#fff;"
                     srcdoc="<?= htmlspecialchars($vorschau['html'], ENT_QUOTES) ?>"></iframe>
             <div class="form-text">
-              Die Vorschau zeigt die Mail so, wie sie beim Empfänger ankommt — immer hell,
-              unabhängig vom Design des Panels.
+              <?= te('Die Vorschau zeigt die Mail so, wie sie beim Empfänger ankommt — immer hell, unabhängig vom Design des Panels.') ?>
             </div>
           <?php else: ?>
             <pre class="bg-subtle border border-subtle-c rounded-3 p-3 mb-0"

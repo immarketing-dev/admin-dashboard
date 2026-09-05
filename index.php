@@ -428,7 +428,7 @@ foreach (dash_layout()['items'] as $dash_id => $dash_i) {
 }
 $header_actions = '
       <div class="d-flex align-items-center gap-3">
-        <span id="live_indicator" title="Daten werden automatisch aktualisiert"
+        <span id="live_indicator" title="' . te('Daten werden automatisch aktualisiert') . '"
               style="font-size:var(--text-2xs);color:var(--text-muted);display:flex;align-items:center;gap:5px;">
           <span id="live_dot" style="width:7px;height:7px;border-radius:50%;background:var(--accent-success);display:inline-block;"></span>
           <span id="live_label">Live</span>

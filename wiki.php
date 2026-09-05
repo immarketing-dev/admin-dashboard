@@ -200,7 +200,7 @@ foreach($articles as $art) {
 $page_title   = 'Wiki & Snippets';
 $page_heading = 'Wiki & Snippets';
 $current_page = basename($_SERVER['SCRIPT_NAME']);
-$header_actions = '<button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> Neuer Eintrag</button>';
+$header_actions = '<button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> ' . te('Neuer Eintrag') . '</button>';
 // Prism-Theme (Code-Highlighting) wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<link href="' . asset('assets/vendor/prism/prism-tomorrow.min.css') . '" rel="stylesheet" />';
 
@@ -274,7 +274,7 @@ require 'includes/layout_start.php';
                                       <?= htmlspecialchars($article['title']); ?>
 
                                       <?php if($share_count > 0): ?>
-                                          <span class="badge bg-success ms-1" style="font-size: 10px;" title="Für <?=$share_count?> Kunde(n) freigegeben">
+                                          <span class="badge bg-success ms-1" style="font-size: 10px;" title="<?= te('Für %d Kunde(n) freigegeben', $share_count) ?>">
                                               <i class="bi bi-globe2"></i> <?= $share_count ?>
                                           </span>
                                       <?php endif; ?>
