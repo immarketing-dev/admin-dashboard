@@ -2325,4 +2325,5 @@ function openPaymentModal(id, titel, betrag, offen, zahlungen) {
 }
 </script>
 
-<?phprequire 'includes/layout_end.php'; ?>
+<?php
+require 'includes/layout_end.php'; ?>
