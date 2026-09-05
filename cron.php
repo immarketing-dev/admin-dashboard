@@ -89,6 +89,10 @@ $ergebnis = cron_ausfuehren($pdo, [
     'mahnstufen' => setting('reminder_days', ''),
     // Wohin die Ausfallmeldungen des Monitors gehen.
     'admin_email' => setting('admin_email', ADMIN_EMAIL),
+    // Leer heisst: das Modul sucht sich selbst ein Verzeichnis,
+    // vorzugsweise ausserhalb des Webstamms.
+    'backup_dir'  => setting('backup_dir', ''),
+    'backup_keep' => (int) setting('backup_keep', (string) SICHERUNG_BEHALTEN),
 ]);
 
 $zeilen = ['Cron-Lauf ' . date('d.m.Y H:i:s')];

@@ -3,6 +3,7 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/auth.php';
 require_once 'includes/mail_templates.php';
+require_once 'includes/backup.php';
 
 // ==========================================
 // SAVE ACTIONS
@@ -350,6 +351,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=system&saved=1"); exit();
     }
 
+    // Eigene Aktion, nicht save_system: dort wird log_limit aus dem
+    // POST gelesen und faellt sonst auf den Standard zurueck.
+    if ($_POST['action'] === 'save_backup') {
+        // Der Pfad bleibt so stehen, wie er eingegeben wurde. Geprueft
+        // wird er beim Lauf - dort faellt auch auf, ob der Webserver
+        // dort ueberhaupt schreiben darf.
+        $bd = trim($_POST['backup_dir'] ?? '');
+        $pdo->prepare("INSERT INTO settings (k,v) VALUES ('backup_dir',?) ON DUPLICATE KEY UPDATE v=?")
+            ->execute([$bd, $bd]);
+        $bk = max(1, min(90, (int)($_POST['backup_keep'] ?? SICHERUNG_BEHALTEN)));
+        $pdo->prepare("INSERT INTO settings (k,v) VALUES ('backup_keep',?) ON DUPLICATE KEY UPDATE v=?")
+            ->execute([$bk, $bk]);
+        log_event($pdo, 'SETTINGS_BACKUP', 'Einstellungen der Datensicherung geändert.');
+        header("Location: settings?tab=system&saved=1"); exit();
+    }
+
     if ($_POST['action'] === 'save_system') {
         $ll = max(50, min(2000, (int)($_POST['log_limit'] ?? 200)));
         $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_limit',?) ON DUPLICATE KEY UPDATE v=?");
@@ -363,6 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $lr = max(7, min(3650, (int)($_POST['log_retention_days'] ?? 365)));
         $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_retention_days',?) ON DUPLICATE KEY UPDATE v=?")
             ->execute([$lr, $lr]);
+
         log_event($pdo, 'SETTINGS_SYSTEM', 'Systemeinstellungen gespeichert.');
         header("Location: settings?tab=system&saved=1"); exit();
     }
@@ -389,6 +407,12 @@ $s_notify_ms      = setting('notify_milestone_email', '1');
 $s_notify_quote   = setting('notify_quote_email', '1');
 $s_log_limit      = setting('log_limit', '200');
 $s_log_retention  = setting('log_retention_days', '365');
+$s_backup_dir     = setting('backup_dir', '');
+$s_backup_keep    = setting('backup_keep', (string) SICHERUNG_BEHALTEN);
+$s_backup_last    = setting('backup_last', '');
+// Wohin der naechste Lauf schreiben wuerde, und was schon dort liegt.
+[$s_backup_dir_ist, $s_backup_aussen] = sicherung_verzeichnis(__DIR__, $s_backup_dir);
+$s_backups = sicherungen_auflisten($s_backup_dir_ist);
 // Tage nach Faelligkeit, an denen automatisch erinnert wird. Leer =
 // keine Automatik; der Knopf in der Rechnungsliste geht trotzdem.
 $s_reminder_days  = setting('reminder_days', '');
@@ -1088,6 +1112,91 @@ require 'includes/layout_start.php';
         </div>
       </form>
 
+      <div class="settings-section-title mt-2"><i class="bi bi-shield-check me-2"></i><?= te('Datensicherung') ?></div>
+
+      <p class="text-muted small mb-3">
+        <?= te('Der nächtliche Lauf schreibt einen vollständigen Abzug der Datenbank und hebt die letzten Stände auf. Ohne eingerichteten Cron passiert nichts — siehe Cron-Einrichtung in der README.') ?>
+        <strong><?= te('Nicht enthalten sind die Dateien unter uploads/') ?></strong>
+        <?= te('(Rechnungs-PDFs, Belege, Portaldateien). Dafür ist die Dateisicherung Ihres Hosters zuständig.') ?>
+      </p>
+
+      <?php if ($s_backup_last !== ''): ?>
+        <?php
+          // Format: Zeitpunkt|ok|Meldung - vom Cron-Lauf so abgelegt.
+          [$_bl_zeit, $_bl_status, $_bl_text] = array_pad(explode('|', $s_backup_last, 3), 3, '');
+          $_bl_ok = $_bl_status === 'ok';
+        ?>
+        <div class="alert <?= $_bl_ok ? 'alert-success' : 'alert-danger' ?> py-2 px-3 small mb-3">
+          <i class="bi <?= $_bl_ok ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill' ?> me-1"></i>
+          <strong><?= te('Zuletzt gesichert:') ?></strong>
+          <?= htmlspecialchars(date('d.m.Y H:i', strtotime($_bl_zeit) ?: time())) ?>
+          — <?= htmlspecialchars($_bl_text) ?>
+        </div>
+      <?php else: ?>
+        <div class="alert alert-warning py-2 px-3 small mb-3">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <?= te('Es wurde noch nie gesichert. Der Eintrag erscheint hier nach dem ersten nächtlichen Lauf.') ?>
+        </div>
+      <?php endif; ?>
+
+      <form method="POST" class="mb-3">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_backup">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><?= te('Verzeichnis') ?></label>
+            <input type="text" name="backup_dir" class="form-control font-monospace"
+                   value="<?= htmlspecialchars($s_backup_dir) ?>"
+                   placeholder="<?= htmlspecialchars($s_backup_dir_ist !== '' ? $s_backup_dir_ist : '/pfad/ausserhalb/des/webstamms') ?>">
+            <div class="form-text">
+              <?= te('Leer lassen, dann sucht sich das Panel selbst einen Platz — bevorzugt außerhalb des Webverzeichnisses.') ?>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold"><?= te('Stände aufheben') ?></label>
+            <input type="number" name="backup_keep" class="form-control" min="1" max="90" step="1"
+                   value="<?= htmlspecialchars($s_backup_keep) ?>">
+            <div class="form-text"><?= te('Ältere werden nach dem Schreiben entfernt.') ?></div>
+          </div>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
+          </div>
+        </div>
+      </form>
+
+      <table class="table table-sm align-middle mb-4">
+        <thead>
+          <tr class="table-label">
+            <th><?= te('Datei') ?></th>
+            <th><?= te('Erzeugt') ?></th>
+            <th class="text-end"><?= te('Größe') ?></th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php if ($s_backups === []): ?>
+          <tr><td colspan="3" class="text-muted small">
+            <?= $s_backup_dir_ist === ''
+                ? te('Kein beschreibbares Verzeichnis gefunden. Bitte oben einen Pfad angeben.')
+                : te('Noch keine Stände in %s.', htmlspecialchars($s_backup_dir_ist)) ?>
+          </td></tr>
+        <?php else: ?>
+          <?php foreach (array_slice($s_backups, 0, 10) as $_b): ?>
+            <tr>
+              <td class="font-monospace small"><?= htmlspecialchars($_b['name']) ?></td>
+              <td class="small text-muted"><?= htmlspecialchars(date('d.m.Y H:i', strtotime($_b['zeit']))) ?></td>
+              <td class="text-end small"><?= number_format($_b['bytes'] / 1024, 0, ',', '.') ?> KB</td>
+            </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+        </tbody>
+      </table>
+
+      <?php if ($s_backup_dir_ist !== '' && !$s_backup_aussen): ?>
+        <div class="small text-muted mb-4">
+          <i class="bi bi-info-circle me-1"></i>
+          <?= te('Die Stände liegen im Webverzeichnis und sind durch eine .htaccess gesperrt. Auf einem Server ohne Apache greift diese Sperre nicht — dort besser ein Verzeichnis außerhalb angeben.') ?>
+        </div>
+      <?php endif; ?>
       <div class="settings-section-title mt-2"><i class="bi bi-bell me-2"></i><?= te('Zahlungserinnerungen') ?></div>
       <form method="POST" class="mb-4">
         <?= csrf_field() ?>

@@ -350,6 +350,12 @@ if command -v php >/dev/null 2>&1; then
   # Mahnstufen und wiederkehrende Eintraege. Die gefaehrlichen Faelle
   # sind hier das doppelte Verschicken und die Reihe, die sich bei jedem
   # Lauf verdoppelt.
+  # Die Datensicherung. Sie wird an genau einem Tag gebraucht, und an
+  # dem muss sie stimmen - der Test spielt den Abzug zurueck.
+  if ! out=$(php tools/test_backup.php 2>&1); then
+    echo "SICHERUNG: $out"
+    fail=1
+  fi
   # Der Verfall im Papierkorb. Er entfernt Zeilen und Dateien - beides
   # endgueltig, beides ohne Rueckfrage.
   if ! out=$(php tools/test_trash_retention.php 2>&1); then

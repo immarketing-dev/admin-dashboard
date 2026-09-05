@@ -1013,6 +1013,39 @@ return [
         => 'Maximum number of entries on the log page (default 200, max 2000).',
     'Protokoll aufbewahren'
         => 'Keep the log for',
+    // ── Datensicherung (settings.php, Reiter System) ─────────────────
+    'Datensicherung'
+        => 'Backups',
+    'Der nächtliche Lauf schreibt einen vollständigen Abzug der Datenbank und hebt die letzten Stände auf. Ohne eingerichteten Cron passiert nichts — siehe Cron-Einrichtung in der README.'
+        => 'The nightly run writes a full dump of the database and keeps the most recent ones. Nothing happens without a configured cron entry - see the cron section in the README.',
+    'Nicht enthalten sind die Dateien unter uploads/'
+        => 'The files under uploads/ are not included',
+    '(Rechnungs-PDFs, Belege, Portaldateien). Dafür ist die Dateisicherung Ihres Hosters zuständig.'
+        => '(invoice PDFs, receipts, portal files). Your host\'s file backup covers those.',
+    'Zuletzt gesichert:'
+        => 'Last backup:',
+    'Es wurde noch nie gesichert. Der Eintrag erscheint hier nach dem ersten nächtlichen Lauf.'
+        => 'Nothing has been backed up yet. The entry appears here after the first nightly run.',
+    'Verzeichnis'
+        => 'Directory',
+    'Leer lassen, dann sucht sich das Panel selbst einen Platz — bevorzugt außerhalb des Webverzeichnisses.'
+        => 'Leave empty and the panel picks a place itself, preferring one outside the web root.',
+    'Stände aufheben'
+        => 'Keep versions',
+    'Ältere werden nach dem Schreiben entfernt.'
+        => 'Older ones are removed after writing.',
+    'Datei'
+        => 'File',
+    'Erzeugt'
+        => 'Created',
+    'Größe'
+        => 'Size',
+    'Kein beschreibbares Verzeichnis gefunden. Bitte oben einen Pfad angeben.'
+        => 'No writable directory found. Enter a path above.',
+    'Noch keine Stände in %s.'
+        => 'No backups in %s yet.',
+    'Die Stände liegen im Webverzeichnis und sind durch eine .htaccess gesperrt. Auf einem Server ohne Apache greift diese Sperre nicht — dort besser ein Verzeichnis außerhalb angeben.'
+        => 'The backups sit inside the web root, blocked by an .htaccess. That block does nothing on a server without Apache - give a directory outside the root there.',
     'Tage, nach denen der nächtliche Lauf ältere Einträge entfernt (Standard: 365, mindestens 7). Das Mailprotokoll behält unabhängig davon ein Jahr.'
         => 'Days after which the nightly run removes older entries (default 365, minimum 7). The mail log keeps a year regardless.',
     'Systeminfo'

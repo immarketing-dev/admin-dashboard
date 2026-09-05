@@ -246,8 +246,9 @@ Until you set this up, **nothing in the panel happens on its own.** Overdue
 invoices were only stamped when someone opened the finance page, the log
 was only trimmed on login, and the uptime checks only ran while a dashboard
 was on screen. `cron.php` collects that work into one entry point and adds
-what needs a schedule to work at all: payment reminders and recurring
-entries.
+what needs a schedule to work at all: payment reminders, recurring
+entries, emptying the trash after its thirty days, and a nightly
+backup of the database.
 
 Hourly is a sensible interval. Every task is repeatable — a second run in
 the same hour finds nothing left to do, and reminders carry their own
@@ -275,6 +276,38 @@ mails to your customers.
 The run prints a plain-text report of what it did and exits non-zero if a
 task failed, so a monitoring service can watch it. In demo mode it refuses
 to run at all.
+
+### Backups
+
+The nightly run writes a full dump of the database and keeps the most
+recent ones — seven by default, adjustable in Settings → System. There was
+no backup at all before: a botched migration or a misplaced `DELETE` had no
+way back, and you find that out on the day you need one.
+
+No `mysqldump` and no `exec()` is involved, because simple hosting packages
+have neither. The dump is written through PDO, the same way
+`tools/export_demo_sql.php` has been doing it. The structure comes from
+`SHOW CREATE TABLE`; where a server will not give it, the file says in its
+header that `install/schema.sql` has to be imported first — and empties
+each table before filling it, so a restore does not collide with the rows
+`schema.sql` creates itself.
+
+**Where it writes.** Outside the web root by default (`../backups` next to
+the installation), because a `.sql` file inside it would be downloadable
+and it holds everything, password hashes included. Where a package forbids
+writing above the root, it falls back to `uploads/backups/` and puts the
+same deny-all `.htaccess` there that already covers customer documents.
+On a server without Apache that block does nothing — give a directory
+outside the root there. Settings → System shows which directory is in use
+and says so when it is inside the root.
+
+**What is not in it: the files under `uploads/`** — invoice PDFs, receipts,
+portal uploads. Your host's file backup covers those. A backup that holds
+half of it and looks complete is worse than none, so this is stated in the
+settings page, in the header of every generated file, and here.
+
+The last run is recorded and shown in Settings → System with its result. A
+backup nobody knows the state of is not a backup.
 
 ### Payment reminders
 

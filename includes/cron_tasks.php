@@ -25,6 +25,7 @@ require_once __DIR__ . '/auth_reset.php';
 require_once __DIR__ . '/mail_log.php';
 require_once __DIR__ . '/uptime.php';
 require_once __DIR__ . '/trash_retention.php';
+require_once __DIR__ . '/backup.php';
 
 /**
  * Markiert offene Rechnungen nach Fristablauf als überfällig.
@@ -188,6 +189,39 @@ function cron_papierkorb(PDO $pdo): array
 }
 
 /**
+ * Schreibt eine Datensicherung und raeumt alte Staende ab.
+ *
+ * Vorher gab es keine. Eine misslungene Migration oder ein
+ * verrutschtes DELETE waren ohne Rueckweg - und das faellt erst auf,
+ * wenn man den Rueckweg braucht.
+ *
+ * Das Ergebnis wandert in die Einstellungen (backup_last), damit die
+ * Systemseite sagen kann, wann zuletzt gesichert wurde. Eine
+ * Sicherung, von der niemand weiss, ob sie laeuft, ist keine.
+ */
+function cron_sicherung(PDO $pdo, string $wurzel, string $verzeichnis, int $behalten): array
+{
+    $ergebnis = sicherung_laufen($pdo, $wurzel, $verzeichnis, $behalten);
+
+    try {
+        $pdo->prepare("INSERT INTO settings (k,v) VALUES ('backup_last',?)
+                       ON DUPLICATE KEY UPDATE v = VALUES(v)")
+            ->execute([date('Y-m-d H:i:s') . '|' . ($ergebnis['ok'] ? 'ok' : 'fehler')
+                       . '|' . $ergebnis['meldung']]);
+    } catch (Throwable $e) {
+        // Der Stand liegt, nur der Vermerk fehlt. Kein Grund, den Lauf
+        // als gescheitert zu melden - aber auch keiner zu schweigen.
+        error_log('Sicherungsvermerk nicht gespeichert: ' . $e->getMessage());
+    }
+
+    return [
+        'titel'   => 'Datensicherung',
+        'ok'      => $ergebnis['ok'],
+        'meldung' => $ergebnis['meldung'],
+    ];
+}
+
+/**
  * Räumt verbrauchte und abgelaufene Rücksetz-Token weg.
  *
  * Kein dringender Vorgang - ein abgelaufenes Token ist bereits wirkungslos,
@@ -263,6 +297,14 @@ function cron_ausfuehren(PDO $pdo, array $umgebung): array
         fn() => cron_papierkorb($pdo),
         fn() => cron_reset_token($pdo),
         fn() => cron_uptime($pdo, (string) ($umgebung['admin_email'] ?? ''), $firma),
+        // Zuletzt: so haelt der Stand fest, was die Aufgaben davor
+        // veraendert haben.
+        fn() => cron_sicherung(
+            $pdo,
+            $wurzel,
+            (string) ($umgebung['backup_dir'] ?? ''),
+            (int) ($umgebung['backup_keep'] ?? SICHERUNG_BEHALTEN)
+        ),
     ];
 
     $ergebnisse = [];
