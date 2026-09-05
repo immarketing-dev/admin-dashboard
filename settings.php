@@ -1283,6 +1283,47 @@ require 'includes/layout_start.php';
             <td class="text-muted fw-semibold"><?= te('Zeitzone') ?></td>
             <td><code><?= htmlspecialchars(date_default_timezone_get()) ?></code></td>
           </tr>
+          <tr>
+            <td class="text-muted fw-semibold"><?= te('Schemastand') ?></td>
+            <td>
+              <?php
+                // setting() hat die Tabelle ohnehin geladen - das kostet
+                // keine weitere Abfrage.
+                $_schema_ist  = (int) setting('schema_version', '0');
+                $_schema_soll = SCHEMA_VERSION;
+              ?>
+              <code><?= $_schema_ist ?></code>
+              <?php if ($_schema_ist === $_schema_soll): ?>
+                <i class="bi bi-check-circle-fill text-success ms-1" aria-hidden="true"></i>
+                <span class="text-muted small"><?= te('aktuell') ?></span>
+              <?php else: ?>
+                <span class="badge bg-danger ms-1"><?= te('erwartet: %d', $_schema_soll) ?></span>
+                <div class="small text-danger mt-1">
+                  <i class="bi bi-exclamation-triangle me-1"></i>
+                  <?= te('Eine Migration ist nicht durchgelaufen. Der Grund steht im Fehlerprotokoll des Servers.') ?>
+                </div>
+              <?php endif; ?>
+            </td>
+          </tr>
+          <tr>
+            <td class="text-muted fw-semibold"><?= te('Tabellen') ?></td>
+            <td>
+              <?php
+                // Die Zahl der Tabellen sagt dasselbe noch einmal von
+                // der anderen Seite: eine Migration kann die Version
+                // stempeln und trotzdem an einem Schritt gescheitert
+                // sein.
+                try {
+                    $_tabellen = (int) $pdo->query('SELECT COUNT(*) FROM information_schema.tables
+                                                     WHERE table_schema = DATABASE()')->fetchColumn();
+                } catch (PDOException $e) {
+                    $_tabellen = 0;
+                }
+              ?>
+              <code><?= $_tabellen ?></code>
+              <span class="text-muted small"><?= te('in der Datenbank') ?></span>
+            </td>
+          </tr>
         </tbody>
       </table>
 

@@ -1815,4 +1815,17 @@ return [
         => "Projects, tasks, contacts, tickets, wiki and calendar. No finances, no settings.",
     "Finanzen, Angebote, Auswertungen und Kontakte. Keine Projekte, keine Einstellungen."
         => "Finances, quotes, reports and contacts. No projects, no settings.",
+    // ── Schemastand in der Systeminfo ────────────────────────────────
+    "Schemastand"
+        => "Schema version",
+    "aktuell"
+        => "current",
+    "erwartet: %d"
+        => "expected: %d",
+    "Eine Migration ist nicht durchgelaufen. Der Grund steht im Fehlerprotokoll des Servers."
+        => "A migration did not complete. The reason is in the server error log.",
+    "Tabellen"
+        => "Tables",
+    "in der Datenbank"
+        => "in the database",
 ];
