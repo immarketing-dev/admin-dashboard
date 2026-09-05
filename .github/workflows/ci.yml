@@ -12,11 +12,37 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.1', '8.2', '8.3']
+
+    # Ein echter Server, gegen den geprueft werden kann.
+    #
+    # Die uebrige Suite laeuft gegen die SQLite-Spiegelung in
+    # tools/lib_sqlite_mirror.php, weil auf der Entwicklungsmaschine kein
+    # Datenbankserver steht. Das war ein blinder Fleck mit Ansage: die
+    # Auswertungsseite lief auf der oeffentlichen Demo mit HTTP 500,
+    # waehrend sie lokal einwandfrei rendert - und keine der vierzig
+    # Pruefungen konnte das sehen.
+    #
+    # MariaDB und nicht MySQL, weil die Zielumgebung MariaDB ist.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: pruefpasswort
+          MARIADB_DATABASE: adminpanel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
+          extensions: pdo_mysql
 
       # Eine Suite, nicht zwei.
       #
@@ -28,5 +54,15 @@ jobs:
       #
       # tools/check.sh nennt bei einem Fehlschlag selbst, welche Pruefung
       # gefallen ist; die einzelnen Schritte hier waren nur Kosmetik.
+      #
+      # Die TEST_DB_*-Werte reicht check.sh an tools/test_mysql.php
+      # weiter. Ohne sie ueberspringt der sich - so bleibt derselbe
+      # Aufruf auf der Entwicklungsmaschine gruen.
       - name: Full check suite
         run: bash tools/check.sh
+        env:
+          TEST_DB_HOST: 127.0.0.1
+          TEST_DB_PORT: 3306
+          TEST_DB_NAME: adminpanel_test
+          TEST_DB_USER: root
+          TEST_DB_PASS: pruefpasswort

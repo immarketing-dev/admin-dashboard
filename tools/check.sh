@@ -352,6 +352,17 @@ if command -v php >/dev/null 2>&1; then
     echo "AUSGABE: $out"
     fail=1
   fi
+  # Gegen einen echten Server, sofern einer bereitsteht. Ohne
+  # TEST_DB_HOST ueberspringt sich der Test - auf der
+  # Entwicklungsmaschine gibt es keinen, in der CI schon.
+  #
+  # Das ist die Pruefung, die es lange nicht gab: alles andere hier
+  # laeuft gegen SQLite, und was die Spiegelung durchwinkt, muss ein
+  # echter Server nicht annehmen.
+  if ! out=$(php tools/test_mysql.php 2>&1); then
+    echo "MYSQL: $out"
+    fail=1
+  fi
   # SQL, das auf einer MySQL-Erweiterung beruht. Hier laeuft alles
   # gegen die SQLite-Spiegelung; was die durchwinkt, muss ein echter
   # Server nicht annehmen. Genau daran ist die Auswertungsseite auf
