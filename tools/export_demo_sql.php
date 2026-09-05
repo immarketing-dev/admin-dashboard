@@ -73,7 +73,14 @@ require_once __DIR__ . '/seed_demo_lib.php';
 
 // Merken, was vor dem Lauf in uploads/ lag - der Seed legt dort
 // Platzhalterdateien an, und die gehoeren nicht ins Repository.
-$upload_verzeichnisse = [$wurzel . '/uploads/client_assets', $wurzel . '/uploads/wiki'];
+$upload_verzeichnisse = [
+    $wurzel . '/uploads/client_assets',
+    $wurzel . '/uploads/wiki',
+    // Seit die Demo Belege zu Ausgaben führt, entstehen auch hier
+    // Platzhalter. Fehlten sie im Ziel, liefe in der Demo jeder Klick
+    // auf einen Beleg ins Leere.
+    $wurzel . '/uploads/receipts',
+];
 $vorher = [];
 foreach ($upload_verzeichnisse as $dir) {
     $vorher[$dir] = is_dir($dir) ? array_diff(scandir($dir), ['.', '..']) : null;
@@ -170,12 +177,37 @@ function spalten(PDO $pdo, string $tabelle): array
 // waehrend des Imports zwar aus, aber eine sinnvolle Reihenfolge macht
 // die Datei lesbar und erlaubt einen Import auch ohne das SET.
 $reihenfolge = [
-    'settings', 'users', 'contacts', 'leads_inbox', 'tasks', 'task_milestones',
-    'task_contacts', 'milestone_comments', 'project_comments', 'client_assets',
-    'time_entries', 'finances', 'quotes', 'support_tickets', 'ticket_notes',
-    'wiki_articles', 'wiki_attachments', 'wiki_client_shares', 'calendar_events',
-    'event_contacts', 'monitored_urls', 'logs',
+    'settings', 'users', 'totp_backup_codes', 'contacts', 'leads_inbox',
+    'tasks', 'task_milestones', 'task_contacts', 'milestone_comments',
+    'project_comments', 'client_assets', 'time_entries', 'finances', 'quotes',
+    'support_tickets', 'ticket_notes', 'wiki_articles', 'wiki_attachments',
+    'wiki_client_shares', 'calendar_events', 'event_contacts',
+    'monitored_urls', 'url_checks', 'logs', 'mail_log',
 ];
+
+// Die Liste oben wird von Hand gepflegt, und das ist die Schwachstelle:
+// eine vergessene Tabelle fehlt einfach in der Ausgabedatei - ohne
+// Fehler, ohne Warnung. Auffallen würde es erst in der Demo, an einer
+// leeren Seite. Also lieber hier abbrechen.
+$vergessen = [];
+foreach ($pdo->query("SELECT name FROM sqlite_master WHERE type = 'table'")
+              ->fetchAll(PDO::FETCH_COLUMN) as $t) {
+    if (strpos($t, 'sqlite_') === 0 || in_array($t, $reihenfolge, true)) {
+        continue;
+    }
+    if ((int) $pdo->query('SELECT COUNT(*) FROM ' . $t)->fetchColumn() > 0) {
+        $vergessen[] = $t;
+    }
+}
+if ($vergessen !== []) {
+    platzhalter_aufraeumen();
+    fwrite(STDERR,
+        "Der Seed füllt Tabellen, die der Export nicht kennt: "
+        . implode(', ', $vergessen) . "\n"
+        . "Sie gehören in \$reihenfolge in " . basename(__FILE__)
+        . " - sonst fehlen sie lautlos in der erzeugten Datei.\n");
+    exit(1);
+}
 
 $out = fopen(EXPORT_ZIEL, 'w');
 if (!$out) { fwrite(STDERR, "Zieldatei nicht beschreibbar: " . EXPORT_ZIEL . "\n"); exit(1); }

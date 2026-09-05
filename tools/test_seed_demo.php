@@ -80,7 +80,14 @@ require $wurzel . '/tools/seed_demo_lib.php';
 // Datei in uploads/, damit nie ein echter Kundenupload im Repository
 // landet. Deshalb wird gemerkt, was vorher da war, und der Rest am Ende
 // wieder entfernt.
-$upload_verzeichnisse = [$wurzel . '/uploads/client_assets', $wurzel . '/uploads/wiki'];
+$upload_verzeichnisse = [
+    $wurzel . '/uploads/client_assets',
+    $wurzel . '/uploads/wiki',
+    // Seit die Demo Belege zu Ausgaben führt, schreibt der Seed auch
+    // hierhin. Fehlte das Verzeichnis in dieser Liste, bliebe nach jedem
+    // Testlauf ein Stapel PDFs liegen.
+    $wurzel . '/uploads/receipts',
+];
 $vorher = [];
 foreach ($upload_verzeichnisse as $dir) {
     $vorher[$dir] = is_dir($dir) ? array_diff(scandir($dir), ['.', '..']) : null;
@@ -110,7 +117,8 @@ $erwartet_gefuellt = [
     'milestone_comments', 'project_comments', 'client_assets', 'time_entries',
     'finances', 'quotes', 'support_tickets', 'ticket_notes', 'wiki_articles',
     'wiki_attachments', 'wiki_client_shares', 'calendar_events', 'event_contacts',
-    'monitored_urls', 'logs',
+    'monitored_urls', 'url_checks', 'logs', 'users', 'mail_log',
+    'totp_backup_codes',
 ];
 $leer = [];
 foreach ($erwartet_gefuellt as $t) {
@@ -123,7 +131,10 @@ echo $leer === []
 
 echo "\n=== Pruefung 2: erwartete Mengen ===\n";
 $mengen = ['contacts' => 6, 'tasks' => 8, 'quotes' => 6, 'support_tickets' => 5,
-           'monitored_urls' => 4, 'users' => 1];
+           'monitored_urls' => 4, 'users' => 3,
+           // Vier Adressen, je 24 Stundenwerte - so viele, wie die
+           // Verlaufsanzeige zeichnet.
+           'url_checks' => 96];
 foreach ($mengen as $t => $soll) {
     $ist = $zaehle($t);
     pruefe("Anzahl in $t", $ist === $soll, "$ist statt $soll");
@@ -253,6 +264,9 @@ foreach ($pdo->query('SELECT file_name, file_path FROM client_assets') as $a) {
 }
 foreach ($pdo->query('SELECT file_name, file_path FROM wiki_attachments') as $a) {
     if (!is_file($wurzel . '/' . $a['file_path'])) $fehlende[] = $a['file_path'];
+}
+foreach ($pdo->query("SELECT receipt_path FROM finances WHERE receipt_path IS NOT NULL") as $a) {
+    if (!is_file($wurzel . '/' . $a['receipt_path'])) $fehlende[] = $a['receipt_path'];
 }
 pruefe('Jeder Dateiverweis zeigt auf eine vorhandene Datei', $fehlende === [],
        implode(', ', $fehlende));

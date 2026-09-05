@@ -44,3 +44,51 @@ function demo_token(string $schluessel): string
 {
     return hash('sha256', 'admin-dashboard-demo::' . $schluessel);
 }
+
+/**
+ * Ein winziges, gültiges PDF mit einer Textzeile.
+ *
+ * Die Belege der Demo müssen sich öffnen lassen. Ein Verweis auf eine
+ * nicht vorhandene Datei liefe beim Klick ins Leere, und eine Textdatei
+ * mit der Endung .pdf zeigt kein Betrachter an. Also das kleinstmögliche
+ * echte PDF - mit korrekter Querverweistabelle, sonst lehnen die
+ * strengeren Betrachter es ab.
+ *
+ * Umlaute werden umschrieben: Helvetica bringt hier keine Kodierungs-
+ * angabe mit, ein ü käme als Kästchen heraus.
+ */
+function demo_pdf(string $zeile): string
+{
+    $zeile = strtr($zeile, [
+        'ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue',
+        'Ä' => 'Ae', 'Ö' => 'Oe', 'Ü' => 'Ue', 'ß' => 'ss',
+    ]);
+    $text  = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $zeile);
+    $strom = 'BT /F1 13 Tf 60 780 Td (' . $text . ') Tj ET';
+
+    $objekte = [
+        '<</Type/Catalog/Pages 2 0 R>>',
+        '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+        '<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]'
+            . '/Resources<</Font<</F1 5 0 R>>>>/Contents 4 0 R>>',
+        '<</Length ' . strlen($strom) . ">>\nstream\n" . $strom . "\nendstream",
+        '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>',
+    ];
+
+    $pdf     = "%PDF-1.4\n";
+    $stellen = [];
+    foreach ($objekte as $i => $rumpf) {
+        $stellen[] = strlen($pdf);
+        $pdf .= ($i + 1) . " 0 obj\n" . $rumpf . "\nendobj\n";
+    }
+
+    $xref = strlen($pdf);
+    $pdf .= "xref\n0 " . (count($objekte) + 1) . "\n0000000000 65535 f \n";
+    foreach ($stellen as $stelle) {
+        $pdf .= sprintf("%010d 00000 n \n", $stelle);
+    }
+    $pdf .= "trailer\n<</Size " . (count($objekte) + 1) . "/Root 1 0 R>>\n"
+          . "startxref\n" . $xref . "\n%%EOF\n";
+
+    return $pdf;
+}

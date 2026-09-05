@@ -18,7 +18,8 @@ $leeren = [
     'wiki_articles', 'ticket_notes', 'support_tickets', 'quotes', 'finances',
     'time_entries', 'client_assets', 'project_comments', 'milestone_comments',
     'task_contacts', 'task_milestones', 'tasks', 'leads_inbox', 'contacts',
-    'monitored_urls', 'sso_tokens', 'logs', 'users',
+    'url_checks', 'monitored_urls', 'mail_log', 'sso_tokens',
+    'password_resets', 'totp_backup_codes', 'logs', 'users',
 ];
 $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 foreach ($leeren as $t) {
@@ -40,12 +41,16 @@ $einstellungen = [
     'company_street'  => 'Lindenallee 27',
     'company_zip'     => '04109',
     'company_city'    => 'Leipzig',
-    'company_country' => 'Deutschland',
-    'company_email'   => 'hallo@musterwerk.example',
-    'company_phone'   => '+49 341 5550110',
-    'company_website' => 'https://musterwerk.example',
-    'company_tax_id'  => 'DE000000000',
-    'bank_name'       => 'Musterbank Leipzig',
+    // Zwei Buchstaben, kein ausgeschriebenes Land: die XRechnung
+    // erwartet den ISO-Code, und das Feld in den Einstellungen nimmt
+    // ohnehin nur zwei Zeichen an.
+    'company_country' => 'DE',
+    // Ohne eine der beiden Nummern lässt sich keine XRechnung erzeugen.
+    // Beide sind bewusst nicht vergebbar - eine Demo darf keine echte
+    // Steuernummer tragen.
+    'company_vat_id'     => 'DE000000000',
+    'company_tax_number' => '231/000/00000',
+    'bank_holder'     => 'Musterwerk Digital',
     'bank_iban'       => 'DE02120300000000202051',
     'bank_bic'        => 'BYLADEM1001',
     'admin_email'     => 'hallo@musterwerk.example',
@@ -63,15 +68,57 @@ foreach ($einstellungen as $sk => $sv) {
 echo "  Einstellungen gesetzt\n";
 
 // ── Benutzer ────────────────────────────────────────────────────────
-// Im Demo-Modus wird nie ein Passwort geprüft; der Datensatz existiert
-// nur, damit auth_is_first_run() nicht den Einrichtungsdialog auslöst.
-// Der Hash gehört absichtlich zu keinem bekannten Passwort.
-ins('users', [
-    'email'         => 'demo@musterwerk.example',
-    'password_hash' => password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT),
-    'created_at'    => zeit(-420, '08:00'),
-]);
-echo "  Benutzer angelegt\n";
+// Im Demo-Modus wird nie ein Passwort geprüft; die Datensätze existieren,
+// damit auth_is_first_run() nicht den Einrichtungsdialog auslöst - und
+// damit die Benutzerverwaltung nicht mit einer einzigen Zeile dasteht.
+// Die Hashes gehören absichtlich zu keinem bekannten Passwort.
+//
+// Die Reihenfolge entscheidet: die Demo meldet sich als der erste
+// Benutzer an. Das muss die Verwaltung sein, sonst sperrt sich der
+// Besucher aus genau den Seiten aus, die er ansehen soll.
+$u = [];
+foreach ([
+    ['verwaltung',  'demo@musterwerk.example',       'Katrin Reuter', 'admin',      -420],
+    ['produktion',  'j.feldmann@musterwerk.example', 'Jens Feldmann', 'staff',      -300],
+    ['buchhaltung', 'r.ahrens@musterwerk.example',   'Ruth Ahrens',   'accounting', -180],
+] as [$schluessel, $mail, $name, $rolle, $tage]) {
+    $u[$schluessel] = ins('users', [
+        'email'         => $mail,
+        'password_hash' => password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT),
+        'name'          => $name,
+        'role'          => $rolle,
+        'is_active'     => 1,
+        'created_at'    => zeit($tage, '08:00'),
+    ]);
+}
+
+// Zwei Faktoren an einem Konto, damit die Sicherheitsseite den
+// eingeschalteten Zustand zeigt und nicht nur den Einrichtungsdialog.
+// Das Geheimnis ist wertlos: im Demo-Modus wird nie ein Code geprüft.
+$pdo->prepare('UPDATE users SET totp_secret = ?, totp_confirmed_at = ? WHERE id = ?')
+    ->execute(['JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP', zeit(-96, '09:20'), $u['verwaltung']]);
+
+// Acht Ersatzcodes, zwei davon eingelöst - sonst stünde dort dieselbe
+// Zahl wie die Gesamtzahl, und der Zähler sähe unbenutzt aus.
+// Die Codes entstehen hier von Hand: includes/totp.php bindet der Seed
+// nicht ein, und für acht Zufallsstrings lohnt die Abhängigkeit nicht.
+// Alphabet und Länge stimmen mit totp_ersatzcodes_erzeugen() überein.
+$ersatz_alphabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+for ($i = 0; $i < 8; $i++) {
+    $roh = '';
+    for ($j = 0; $j < 8; $j++) {
+        $roh .= $ersatz_alphabet[random_int(0, strlen($ersatz_alphabet) - 1)];
+    }
+    ins('totp_backup_codes', [
+        'user_id'    => $u['verwaltung'],
+        // Ohne Trennstrich gespeichert - genau so bereitet
+        // totp_ersatzcode_normalisieren() die Eingabe zum Vergleich auf.
+        'code_hash'  => password_hash($roh, PASSWORD_DEFAULT),
+        'used_at'    => $i < 2 ? zeit(-40 + $i * 9, '11:05') : null,
+        'created_at' => zeit(-96, '09:20'),
+    ]);
+}
+echo '  ' . count($u) . " Benutzer mit Rollen, 2FA an einem Konto\n";
 
 // ── Kontakte ────────────────────────────────────────────────────────
 // Alle Namen, Firmen und Domains sind erfunden. .example ist laut
@@ -161,6 +208,21 @@ foreach ($k_daten as $schluessel => $d) {
 }
 echo '  ' . count($k) . " Kontakte angelegt\n";
 
+// Umsatzsteuer-Identifikationsnummern der Firmenkunden. Aufbau echt,
+// Inhalt erfunden - die führenden Nullen sind nicht vergeben.
+$setz_ust = $pdo->prepare('UPDATE contacts SET vat_id = ? WHERE id = ?');
+foreach ([
+    'hofmann' => 'DE000000101',
+    'brandt'  => 'DE000000102',
+    'weiss'   => 'DE000000103',
+    'krueger' => 'DE000000104',
+    'demir'   => 'DE000000105',
+] as $kk => $ust) {
+    if (isset($k[$kk])) {
+        $setz_ust->execute([$ust, $k[$kk]]);
+    }
+}
+
 // ── Posteingang ─────────────────────────────────────────────────────
 $leads = [
     ['Nina Alt', 'n.alt@altbau-planung.example', '+49 30 5550901', 'Anfrage Relaunch',
@@ -185,6 +247,14 @@ echo '  ' . count($leads) . " Anfragen im Posteingang\n";
 // ── Projekte ────────────────────────────────────────────────────────
 // Acht Projekte über alle vier Zustände verteilt, damit Board, Filter
 // und Kennzahlen jeweils etwas zu zeigen haben.
+// Zuständigkeiten. Nicht alles liegt bei derselben Person, sonst zeigt
+// eine Ansicht "nur meine Projekte" entweder alles oder nichts.
+$p_zustaendig = [
+    'relaunch'  => 'produktion', 'shop'    => 'produktion', 'brandtweb' => 'verwaltung',
+    'kampagne'  => 'produktion', 'imagefilm' => 'verwaltung', 'wartung'  => 'produktion',
+    'print'     => 'verwaltung',
+];
+
 $p_daten = [
     'relaunch' => [
         'title' => 'Website-Relaunch Hofmann & Partner', 'category' => 'Webdesign',
@@ -231,14 +301,15 @@ $p_daten = [
 $p = [];
 foreach ($p_daten as $schluessel => $d) {
     $p[$schluessel] = ins('tasks', [
-        'title'       => $d['title'],
-        'category'    => $d['category'],
-        'description' => $d['description'],
-        'status'      => $d['status'],
-        'contact_id'  => $k[$d['kontakt']],
-        'start_date'  => tag($d['start']),
-        'deadline'    => tag($d['frist']),
-        'created_at'  => zeit($d['start'], '09:05'),
+        'title'            => $d['title'],
+        'category'         => $d['category'],
+        'description'      => $d['description'],
+        'status'           => $d['status'],
+        'contact_id'       => $k[$d['kontakt']],
+        'assigned_user_id' => $u[$p_zustaendig[$schluessel] ?? 'verwaltung'],
+        'start_date'       => tag($d['start']),
+        'deadline'         => tag($d['frist']),
+        'created_at'       => zeit($d['start'], '09:05'),
     ]);
 }
 
@@ -404,6 +475,13 @@ $zeit_notizen = [
     'Konzeption', 'Abstimmung mit dem Kunden', 'Umsetzung Layout', 'Texte eingepflegt',
     'Fehlerbehebung', 'Testdurchlauf', 'Besprechung', 'Vorbereitung Abnahme',
 ];
+// Reihum verteilt, nicht ausgelost: mt_rand() steuert unten schon Dauer
+// und Zeitpunkt. Ein weiterer Aufruf an dieser Stelle würde die ganze
+// Folge verschieben - und damit jede Kennzahl der Demo verändern.
+$zeit_leute = [
+    $u['produktion'], $u['produktion'], $u['verwaltung'],
+    $u['produktion'], $u['buchhaltung'],
+];
 $anz_zeit = 0;
 foreach (['relaunch' => 28, 'shop' => 22, 'brandtweb' => 18, 'kampagne' => 9,
           'imagefilm' => 11, 'wartung' => 6, 'print' => 3] as $pk => $anzahl) {
@@ -411,6 +489,7 @@ foreach (['relaunch' => 28, 'shop' => 22, 'brandtweb' => 18, 'kampagne' => 9,
     for ($i = 0; $i < $anzahl; $i++) {
         ins('time_entries', [
             'task_id'          => $p[$pk],
+            'user_id'          => $zeit_leute[$anz_zeit % count($zeit_leute)],
             'duration_minutes' => 30 * mt_rand(1, 8),
             'note'             => $zeit_notizen[mt_rand(0, count($zeit_notizen) - 1)],
             'created_at'       => zeit(-mt_rand(1, $spanne), sprintf('%02d:%02d', mt_rand(8, 17), mt_rand(0, 5) * 10)),
@@ -547,6 +626,104 @@ for ($m = 11; $m >= 0; $m--) {
 }
 echo "  $anz_fin Finanzeinträge über zwölf Monate\n";
 
+// ── Belege, Wiederholungen, Mahnstufen ──────────────────────────────
+// Vier Spalten, die sich erst füllen lassen, wenn die Finanzzeilen
+// stehen: welche Ausgabe einen Beleg hat, welche Zeile sich wiederholt,
+// wie oft gemahnt wurde und welche Rechnung an eine Behörde geht. Die
+// Auswahl - "die überfälligen", "alles außer den jüngsten" - lässt sich
+// vorher gar nicht treffen.
+
+// --- Belege zu Ausgaben ---------------------------------------------
+$beleg_dir = dirname(__DIR__) . '/uploads/receipts';
+if (!is_dir($beleg_dir)) {
+    mkdir($beleg_dir, 0755, true);
+}
+$setz_beleg = $pdo->prepare('UPDATE finances SET receipt_path = ? WHERE id = ?');
+$stichtag   = tag(-21);
+$anz_beleg  = 0;
+
+$ausgaben = $pdo->query(
+    "SELECT id, title, amount, record_date FROM finances
+      WHERE type = 'EXPENSE' AND record_date >= '" . date('Y') . "-01-01'
+      ORDER BY record_date ASC"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($ausgaben as $a) {
+    // Die jüngsten drei Wochen bleiben ohne Beleg. Die Belegseite soll
+    // auch zeigen, was noch fehlt - stünde überall dasselbe, wäre die
+    // Spalte und das Sortieren danach sinnlos.
+    if ($a['record_date'] > $stichtag) {
+        continue;
+    }
+    $name = $a['record_date'] . '_' . (int) $a['id'] . '_beleg.pdf';
+    file_put_contents($beleg_dir . '/' . $name, demo_pdf(
+        'Beleg: ' . $a['title'] . ' vom ' . date('d.m.Y', strtotime($a['record_date']))
+        . ' ueber ' . number_format((float) $a['amount'], 2, ',', '.') . ' EUR'
+    ));
+    $setz_beleg->execute(['uploads/receipts/' . $name, (int) $a['id']]);
+    $anz_beleg++;
+}
+
+// --- Wiederkehrende Zeilen ------------------------------------------
+// Der nächste Termin liegt bewusst in der Zukunft. Läge er in der
+// Vergangenheit, sähe die Demo aus, als hinge der nächtliche Lauf fest.
+$setz_wdh = $pdo->prepare('UPDATE finances SET recurrence = ?, next_run = ? WHERE id = ?');
+
+// Die Serverkosten sind die Vorlage, alle späteren Zeilen gleichen
+// Titels sind daraus entstanden - so, wie der Lauf sie erzeugt hätte.
+$server = $pdo->query(
+    "SELECT id FROM finances WHERE type = 'EXPENSE' AND title = 'Serverkosten'
+      ORDER BY record_date ASC"
+)->fetchAll(PDO::FETCH_COLUMN);
+
+if ($server) {
+    $vorlage = (int) array_shift($server);
+    $setz_wdh->execute(['monthly', tag(11), $vorlage]);
+
+    $setz_eltern = $pdo->prepare('UPDATE finances SET recurring_parent_id = ? WHERE id = ?');
+    foreach ($server as $kind) {
+        $setz_eltern->execute([$vorlage, (int) $kind]);
+    }
+}
+
+// Und eine Einnahme, damit die Wiederholung nicht nur an Ausgaben hängt.
+$abo = (int) $pdo->query(
+    "SELECT id FROM finances WHERE type = 'INCOME' ORDER BY record_date DESC LIMIT 1"
+)->fetchColumn();
+if ($abo) {
+    $setz_wdh->execute(['monthly', tag(6), $abo]);
+}
+
+// --- Mahnstufen -----------------------------------------------------
+// Die überfälligen Rechnungen haben schon eine Erinnerung gesehen, die
+// älteste zwei. Sonst steht die Stufe überall auf null.
+$ueberfaellig = $pdo->query(
+    "SELECT id FROM finances WHERE type = 'INCOME' AND status = 'Überfällig'
+      ORDER BY due_date ASC"
+)->fetchAll(PDO::FETCH_COLUMN);
+
+$setz_mahnung = $pdo->prepare(
+    'UPDATE finances SET reminder_count = ?, last_reminder_at = ? WHERE id = ?'
+);
+foreach ($ueberfaellig as $nr => $fid) {
+    $setz_mahnung->execute([$nr === 0 ? 2 : 1, zeit(-4 - $nr * 3, '06:10'), (int) $fid]);
+}
+
+// --- Leitweg-ID -----------------------------------------------------
+// Genau eine Rechnung trägt eine. Sie braucht nur, wer an eine Behörde
+// fakturiert - stünde sie überall, sähe sie nach Pflichtfeld aus.
+$behoerde = (int) $pdo->query(
+    "SELECT id FROM finances WHERE type = 'INCOME' AND status <> 'Bezahlt'
+      ORDER BY record_date DESC LIMIT 1"
+)->fetchColumn();
+if ($behoerde) {
+    $pdo->prepare('UPDATE finances SET buyer_reference = ? WHERE id = ?')
+        ->execute(['04011000-0000000000-06', $behoerde]);
+}
+
+echo "  $anz_beleg Belege, 2 Wiederholungen, "
+   . count($ueberfaellig) . " Rechnungen mit Mahnstufe\n";
+
 // ── Angebote ────────────────────────────────────────────────────────
 // Positionen als JSON: {desc, qty, price}, wie quotes.php sie liest.
 $angebote = [
@@ -628,6 +805,13 @@ foreach ($angebote as $a) {
     ]);
 }
 echo '  ' . count($angebote) . " Angebote in allen Zuständen\n";
+
+// Aus zwei angenommenen Angeboten ist ein Projekt geworden. Ohne diese
+// Verknüpfung zeigt die Angebotsseite bei jedem angenommenen Angebot
+// weiterhin "Projekt anlegen" an - auch dort, wo es längst eines gibt.
+$setz_projekt = $pdo->prepare('UPDATE quotes SET converted_task_id = ? WHERE quote_number = ?');
+$setz_projekt->execute([$p['relaunch'], 'ANG-' . date('Y') . '-001']);
+$setz_projekt->execute([$p['shop'],     'ANG-' . date('Y') . '-002']);
 
 // ── Supportanfragen ─────────────────────────────────────────────────
 $tickets = [
@@ -773,18 +957,62 @@ foreach ($termine as [$titel, $besch, $ort, $url, $tage, $von, $bis, $kat, $farb
 echo '  ' . count($termine) . " Termine mit $anz_einl Einladungen\n";
 
 // ── Überwachte Adressen ─────────────────────────────────────────────
-// Im Demo-Modus werden diese Adressen nie abgerufen; index.php liefert
-// dort einen abgeleiteten Zustand. Die Einträge existieren nur, damit
-// das Widget nicht leer bleibt.
+// Im Demo-Modus werden diese Adressen nie abgerufen - der nächtliche
+// Lauf, der sonst misst, ist dort gesperrt. Der Verlauf darunter wird
+// deshalb geschrieben statt gemessen.
+$u_ids = [];
 foreach ([
     ['Hofmann & Partner',   'https://hofmann-partner.example'],
     ['Brandt Elektro',      'https://brandt-elektro.example'],
     ['Weiß Naturkosmetik',  'https://weiss-naturkosmetik.example'],
     ['Musterwerk Digital',  'https://musterwerk.example'],
 ] as [$name, $adresse]) {
-    ins('monitored_urls', ['url_name' => $name, 'url_link' => $adresse, 'created_at' => zeit(-200, '08:00')]);
+    $u_ids[] = ins('monitored_urls', ['url_name' => $name, 'url_link' => $adresse, 'created_at' => zeit(-200, '08:00')]);
 }
-echo "  4 überwachte Adressen\n";
+
+// 24 Messungen je Adresse, eine je Stunde - genauso viele, wie die
+// Verlaufsanzeige zeichnet. Ohne sie zeigt die Startseite einen Punkt
+// und keine Quote.
+//
+// Eine Adresse ist drei Stunden ausgefallen, eine andere war zeitweise
+// langsam. Eine Demo, in der alles durchgehend grün ist, zeigt nicht,
+// wozu die Überwachung da ist.
+$u_muster = [
+    // [Grundlaufzeit ms, Streuung, Stunden offline, Stunden langsam]
+    [210,  70, [],        []],
+    [360, 110, [],        [14, 15]],
+    [420, 130, [7, 8, 9], [10]],
+    [150,  50, [],        []],
+];
+$anz_mess = 0;
+foreach ($u_ids as $nr => $url_id) {
+    [$basis, $streuung, $ausfall, $langsam] = $u_muster[$nr] ?? [300, 80, [], []];
+
+    // Rückwärts: Stunde 23 liegt am weitesten zurück, Stunde 0 ist eben
+    // gemessen worden. So ist der jüngste Wert immer frisch, egal wann
+    // die Demo befüllt wurde.
+    for ($h = 23; $h >= 0; $h--) {
+        $ist_aus  = in_array($h, $ausfall, true);
+        $ist_lahm = in_array($h, $langsam, true);
+
+        // http_code und response_ms sind NOT NULL DEFAULT 0 - ein
+        // Ausfall hat keine Antwortzeit, aber die Spalte will eine Zahl.
+        if ($ist_aus)        { $status = 'offline'; $ms = 0; }
+        elseif ($ist_lahm)   { $status = 'slow';    $ms = 2100 + $h * 37; }
+        else                 { $status = 'online';  $ms = $basis + (($nr * 17 + $h * 29) % $streuung); }
+
+        ins('url_checks', [
+            'url_id'      => $url_id,
+            'status'      => $status,
+            'http_code'   => $ist_aus ? 0 : 200,
+            'response_ms' => $ms,
+            'error'       => $ist_aus ? 'Zeitüberschreitung nach 5 Sekunden' : null,
+            'checked_at'  => date('Y-m-d H:00:00', strtotime('-' . $h . ' hours')),
+        ]);
+        $anz_mess++;
+    }
+}
+echo '  ' . count($u_ids) . " überwachte Adressen, $anz_mess Messungen\n";
 
 // ── Protokoll ───────────────────────────────────────────────────────
 // Eine plausible Vorgeschichte, damit die Systemprotokoll-Seite Filter,
@@ -813,6 +1041,7 @@ $log_vorlagen = [
     ['SETTINGS_COMPANY','Unternehmensangaben gespeichert.'],
 ];
 $log_ips = ['192.0.2.14', '192.0.2.77', '198.51.100.23', '198.51.100.9', '203.0.113.41'];
+$log_leute = [$u['verwaltung'], $u['produktion'], $u['buchhaltung'], $u['produktion']];
 mt_srand(4711);
 $anz_log = 0;
 for ($i = 0; $i < 140; $i++) {
@@ -820,6 +1049,9 @@ for ($i = 0; $i < 140; $i++) {
     ins('logs', [
         'action_type' => $typ,
         'description' => $text,
+        // Auch hier reihum statt ausgelost, damit die drei mt_rand()
+        // darunter dieselben Werte behalten wie bisher.
+        'user_id'     => $log_leute[$i % count($log_leute)],
         'ip'          => $log_ips[mt_rand(0, count($log_ips) - 1)],
         'created_at'  => zeit(-mt_rand(0, 45), sprintf('%02d:%02d', mt_rand(7, 20), mt_rand(0, 59))),
     ]);
@@ -837,6 +1069,84 @@ foreach ([-1, -2, -2, -5] as $tage) {
     $anz_log++;
 }
 echo "  $anz_log Protokolleinträge\n";
+
+// ── Mailprotokoll ───────────────────────────────────────────────────
+// Was der nächtliche Lauf verschickt hätte. Die Demo verschickt nichts,
+// aber die Seite soll zeigen, wonach man dort sucht: welche Erinnerung
+// rausging, an wen - und was gescheitert ist. Ein Protokoll ohne einen
+// einzigen Fehlschlag beantwortet die einzige Frage nicht, für die man
+// es aufschlägt.
+$anz_mail = 0;
+$mail_ein = $pdo->prepare(
+    'INSERT INTO mail_log (template, recipient, subject, status, error, context, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)'
+);
+
+// Die Erinnerungen hängen an den Rechnungen, die oben eine Mahnstufe
+// bekommen haben - Betreff und Bezug stimmen so mit den Zeilen überein,
+// die der Besucher in den Finanzen findet.
+$gemahnt = $pdo->query(
+    "SELECT f.invoice_number, f.due_date, c.email, c.name
+       FROM finances f
+       LEFT JOIN contacts c ON c.id = f.contact_id
+      WHERE f.type = 'INCOME' AND f.reminder_count > 0
+      ORDER BY f.due_date ASC"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($gemahnt as $nr => $r) {
+    $nummer = $r['invoice_number'] ?: 'ohne Nummer';
+    $mail_ein->execute([
+        'payment_reminder',
+        $r['email'] ?: 'unbekannt@musterwerk.example',
+        'Zahlungserinnerung zu Rechnung ' . $nummer,
+        'sent',
+        null,
+        'Rechnung ' . $nummer,
+        zeit(-4 - $nr * 3, '06:10'),
+    ]);
+    $anz_mail++;
+}
+
+// Ein Fehlschlag, an einer Adresse, die es nicht gibt. Genau so sieht
+// der Fall aus, für den die Fehlerspalte gebaut ist.
+$mail_ein->execute([
+    'payment_reminder',
+    'buchhaltung@sandmann-immo.example',
+    'Zahlungserinnerung zu Rechnung RE-' . date('Y') . '-0042',
+    'failed',
+    'SMTP: 550 5.1.1 Recipient address rejected: User unknown in virtual mailbox table',
+    'Rechnung RE-' . date('Y') . '-0042',
+    zeit(-9, '06:11'),
+]);
+$anz_mail++;
+
+// Die Störung aus dem Verlauf oben hat eine Meldung ausgelöst.
+foreach ([['Weiß Naturkosmetik', 'ist nicht erreichbar'], ['Weiß Naturkosmetik', 'ist wieder erreichbar']] as $i => [$adresse, $lage]) {
+    $mail_ein->execute([
+        'uptime_alert',
+        $einstellungen['admin_email'],
+        'Überwachung: ' . $adresse . ' ' . $lage,
+        'sent',
+        null,
+        $adresse,
+        date('Y-m-d H:05:00', strtotime('-' . ($i === 0 ? 9 : 6) . ' hours')),
+    ]);
+    $anz_mail++;
+}
+
+// Und eine Passwortzurücksetzung, damit alle drei Vorlagen vorkommen.
+$mail_ein->execute([
+    'password_reset',
+    'r.ahrens@musterwerk.example',
+    'Passwort zurücksetzen',
+    'sent',
+    null,
+    'Benutzer ' . $u['buchhaltung'],
+    zeit(-17, '15:48'),
+]);
+$anz_mail++;
+
+echo "  $anz_mail Einträge im Mailprotokoll\n";
 
 // ── Abschluss ───────────────────────────────────────────────────────
 $dauer = round(microtime(true) - $start, 1);
