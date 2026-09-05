@@ -1110,7 +1110,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <?php endif; ?>
       </p>
       <h1 class="text-white fw-bold mb-1" style="font-family:'Poppins',sans-serif;font-size:clamp(22px,5vw,36px);">
-        <?= $is_partner ? te('Guten Tag') : 'Willkommen' ?><?= $client['company'] ? ', '.htmlspecialchars($client['company']) : ', '.htmlspecialchars(explode(' ',$client['name'])[0]) ?>!
+        <?= $is_partner ? te('Guten Tag') : te('Willkommen') ?><?= $client['company'] ? ', '.htmlspecialchars($client['company']) : ', '.htmlspecialchars(explode(' ',$client['name'])[0]) ?>!
       </h1>
       <p class="text-white-50 mb-0 small"><?= $is_partner ? te('Ihr persönliches Partner-Portal') : te('Ihr persönliches Projektportal') ?></p>
     </div>
@@ -1132,7 +1132,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <?php endif; ?>
       <div class="portal-header-stat">
         <div class="stat-val" style="<?= $open_ticket_count > 0 ? 'color:var(--accent-danger);' : '' ?>"><?= $open_ticket_count ?></div>
-        <div class="stat-lbl"><?= $is_partner ? te('Offene Anfragen') : 'Support-Tickets' ?></div>
+        <div class="stat-lbl"><?= $is_partner ? te('Offene Anfragen') : te('Support-Tickets') ?></div>
       </div>
     </div><!-- /stats -->
   </div><!-- /container -->
@@ -1234,7 +1234,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                 <?php endif; ?>
               </div>
               <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                <span class="badge fw-semibold py-2 px-3 rounded-pill" style="background:color-mix(in srgb, <?= $s_color ?> 12%, transparent);color:<?= $s_color ?>;border:1px solid <?= $s_color ?>44;white-space:nowrap;"><?= htmlspecialchars($p['status']) ?></span>
+                <span class="badge fw-semibold py-2 px-3 rounded-pill" style="background:color-mix(in srgb, <?= $s_color ?> 12%, transparent);color:<?= $s_color ?>;border:1px solid <?= $s_color ?>44;white-space:nowrap;"><?= htmlspecialchars(datenwert($p['status'])) ?></span>
                 <i class="bi bi-chevron-down proj-chevron" style="<?= $p_idx !== 0 ? 'transform:rotate(-90deg);' : '' ?>"></i>
               </div>
             </div>
@@ -1247,7 +1247,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               <div class="project-progress-fill <?= $prog==100?'complete':'' ?>" style="width:<?= $prog ?>%;"></div>
             </div>
             <?php if($total > 0): ?>
-              <div class="text-muted mt-1" style="font-size:11px;"><?= $done ?> von <?= $total ?> <?= te('Schritten abgeschlossen') ?></div>
+              <div class="text-muted mt-1" style="font-size:11px;"><?= te('%d von %d Schritten abgeschlossen', $done, $total) ?></div>
             <?php endif; ?>
           </div>
 
@@ -1567,7 +1567,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                         style="<?= $ja   ? 'background:var(--state-success-bg);color:var(--state-success-fg);'
                                  : ($nein ? 'background:var(--state-danger-bg);color:var(--state-danger-fg);'
                                           : 'background:var(--state-warn-bg);color:var(--state-warn-fg);') ?>">
-                    <?= htmlspecialchars($q['status']) ?>
+                    <?= htmlspecialchars(datenwert($q['status'])) ?>
                   </span>
                 </div>
               </div>

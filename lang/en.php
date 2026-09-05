@@ -462,7 +462,7 @@ return [
     'Start egal'
         => 'Any start',
     'Startmonat egal'
-        => 'Any start month',
+        => 'Any month',
     'Deadline egal'
         => 'Any deadline',
     'Detaillierte Beschreibung…'
@@ -1682,8 +1682,8 @@ return [
         => 'Resources',
     'Wissen'
         => 'Knowledge',
-    'Schritten abgeschlossen'
-        => 'steps completed',
+    '%d von %d Schritten abgeschlossen'
+        => '%d of %d steps completed',
     'Unbekannt'
         => 'Unknown',
     'Hauptansprechpartner'
@@ -2095,6 +2095,12 @@ return [
         => "Tables",
     "in der Datenbank"
         => "in the database",
+    // ── Portal ──
+    "Willkommen"
+        => "Welcome",
+    "Support-Tickets"
+        => "Support tickets",
+
     // ── Vorlagen-Editor: Sprachfassungen ──
     "Sprache der Vorlage"
         => "Template language",

@@ -29,16 +29,25 @@ at a desktop width of 1440px and save as PNG into this directory:
 
 ## Which language
 
-Capture the **German** interface. The demo data is German — client names,
-project titles, ticket subjects — and the English interface is not
-finished: page-level action buttons, status badges, chart labels and month
-names still come through in German. An English shell around German content,
-with German buttons in it, looks worse in a screenshot than a German
-interface that is consistent with itself.
+Capture the **English** interface — the README around these images is in
+English, and the translation is complete: 1064 strings, `php
+tools/check_i18n.php` green.
 
-Switch it in Settings, or set `ui_language` in the `settings` table to `de`
-before capturing. When the English translation is complete, this section
-should say the opposite.
+The demo data stays German. Client names, project titles and ticket
+subjects are content, not interface, and they are what a German
+one-person shop would actually have in there. That mix is honest about
+what the panel is: an English shell over whatever you keep in it.
+
+Switch it in Settings, or start the capture instance with `--lang=en` as
+below.
+
+Capturing in English is also the best test of the translation there is. A
+string nobody wrapped shows up in a screenshot immediately, where it can
+hide for months in a page nobody reads in English. The last round found
+five: the portal greeting, the support-tickets counter, a progress line
+split around its own numbers, the chart legend on the finance page and
+the deadline badges on the board — each one a place where only one branch
+of a condition had been wrapped.
 
 ## A demo instance without a database server
 
@@ -48,7 +57,7 @@ it, and starts PHP's built-in server. No MySQL, no configuration, and the
 repository stays untouched.
 
 ```bash
-php tools/serve_demo.php --port=8099 --lang=de
+php tools/serve_demo.php --port=8099 --lang=en
 ```
 
 It skips the portal PIN (a POST, which a headless run cannot send) and
@@ -71,6 +80,12 @@ result every time. Edge and Chrome take the same flags:
   --screenshot="dashboard.png" \
   "http://localhost:8000/"
 ```
+
+Check that the port is really yours before you believe what you capture.
+A server left running from an earlier session holds the port, the new one
+fails to bind, and the shots come out of the old instance — the same
+pages, silently one branch out of date. `Get-CimInstance Win32_Process
+-Filter "Name='php.exe'"` shows the command line of each one.
 
 Two things worth doing before pressing the button:
 

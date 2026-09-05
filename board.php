@@ -88,9 +88,11 @@ unset($task);
 function deadline_badge(string $deadline): string {
     if (empty($deadline) || str_contains($deadline, '0000')) return '';
     $days = (int)round((strtotime($deadline) - strtotime('today')) / 86400);
-    if ($days < 0)  return '<span class="k-badge k-badge-overdue"><i class="bi bi-alarm-fill me-1"></i>Überfällig</span>';
-    if ($days === 0) return '<span class="k-badge k-badge-today"><i class="bi bi-alarm me-1"></i>Heute</span>';
-    if ($days <= 3)  return '<span class="k-badge k-badge-soon"><i class="bi bi-clock me-1"></i>in ' . $days . ' T.</span>';
+    // Dieselben drei Beschriftungen wie auf dem Dashboard, dieselben
+    // Schluessel - hier waren sie nur nie verpackt worden.
+    if ($days < 0)  return '<span class="k-badge k-badge-overdue"><i class="bi bi-alarm-fill me-1"></i>' . t('Überfällig') . '</span>';
+    if ($days === 0) return '<span class="k-badge k-badge-today"><i class="bi bi-alarm me-1"></i>' . t('Heute') . '</span>';
+    if ($days <= 3)  return '<span class="k-badge k-badge-soon"><i class="bi bi-clock me-1"></i>' . t('in %d T.', $days) . '</span>';
     return '<span class="k-badge" style="color:var(--text-muted);border-color:var(--border-base);"><i class="bi bi-calendar3 me-1"></i>' . date('d.m.', strtotime($deadline)) . '</span>';
 }
 

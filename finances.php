@@ -1778,8 +1778,8 @@ require 'includes/layout_start.php';
         data: {
             labels: <?= json_encode($chart_labels) ?>,
             datasets: [
-                { label: 'Einnahmen', data: <?= json_encode($chart_inc) ?>, backgroundColor: cssVar('--accent-success'), borderRadius: 4 },
-                { label: 'Ausgaben', data: <?= json_encode($chart_exp) ?>, backgroundColor: cssVar('--accent-danger'), borderRadius: 4 }
+                { label: <?= tjs('Einnahmen') ?>, data: <?= json_encode($chart_inc) ?>, backgroundColor: cssVar('--accent-success'), borderRadius: 4 },
+                { label: <?= tjs('Ausgaben') ?>, data: <?= json_encode($chart_exp) ?>, backgroundColor: cssVar('--accent-danger'), borderRadius: 4 }
             ]
         },
         options: { 
