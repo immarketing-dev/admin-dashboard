@@ -195,10 +195,45 @@ $dateien = array_merge(
 $geprueft = 0;
 $abfrage_fehler = [];
 
-foreach ($dateien as $datei) {
-    $kurz = str_replace($wurzel . '/', '', str_replace('\\', '/', $datei));
+/**
+ * Ist dieses Literal Teil einer Verkettung?
+ *
+ * Entscheidend fuer Pruefung 2: ein Stueck wie
+ *
+ *     'SELECT * FROM mail_log ORDER BY id DESC LIMIT ' . (int) $limit
+ *
+ * enthaelt selbst kein $ und sah damit aus wie eine vollstaendige
+ * Abfrage. Vorbereiten laesst sich so ein Bruchstueck nicht, und der
+ * erste Lauf meldete neun davon als Fehler, die keine waren. Steht
+ * links oder rechts ein Punkt, gehoert das Literal zu einem groesseren
+ * Ausdruck und wird uebersprungen.
+ */
+function ist_bruchstueck(array $token, int $i): bool
+{
+    for ($j = $i - 1; $j >= 0; $j--) {
+        $u = $token[$j];
+        if (is_array($u) && in_array($u[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+            continue;
+        }
+        if ($u === '.') return true;
+        break;
+    }
+    for ($j = $i + 1, $n = count($token); $j < $n; $j++) {
+        $u = $token[$j];
+        if (is_array($u) && in_array($u[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+            continue;
+        }
+        if ($u === '.') return true;
+        break;
+    }
+    return false;
+}
 
-    foreach (token_get_all((string) file_get_contents($datei)) as $t) {
+foreach ($dateien as $datei) {
+    $kurz  = str_replace($wurzel . '/', '', str_replace('\\', '/', $datei));
+    $token = token_get_all((string) file_get_contents($datei));
+
+    foreach ($token as $i => $t) {
         if (!is_array($t) || $t[0] !== T_CONSTANT_ENCAPSED_STRING) {
             continue;
         }
@@ -215,6 +250,9 @@ foreach ($dateien as $datei) {
         }
         // Zusammengesetzte Abfragen lassen sich so nicht pruefen - dort
         // fehlt der Teil, der zur Laufzeit dazukommt.
+        if (ist_bruchstueck($token, $i)) {
+            continue;
+        }
         if (strpos($sql, '$') !== false || substr_count($sql, '(') !== substr_count($sql, ')')) {
             continue;
         }
