@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 20;
+const SCHEMA_VERSION = 21;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -703,6 +703,17 @@ function migrations(): array
                 AND f.status = 'Bezahlt'
                 AND f.amount > 0
                 AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.finance_id = f.id)",
+        ],
+
+        // Das Budget eines Projekts. In Euro, weil ein Kunde einen Preis
+        // vereinbart und keine Stundenzahl; die Stunden ergeben sich
+        // daraus ueber den Satz.
+        //
+        // NULL heisst "kein Budget" und nicht "null Euro" - das eine ist
+        // eine fehlende Angabe, das andere die Aussage, dass das Projekt
+        // nichts kosten darf.
+        21 => [
+            'ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(10,2) DEFAULT NULL',
         ],
     ];
 }

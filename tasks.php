@@ -10,6 +10,7 @@ require_once __DIR__ . '/includes/uptime.php';
 require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
+require_once 'includes/task_budget.php';
 require_once 'includes/filter_state.php';
 require_once 'includes/task_members.php';
 require_once 'includes/upload_helper.php';
@@ -202,8 +203,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $title = trim($_POST['title']);
         $task_id = $_POST['task_id'];
         
-        $pdo->prepare("UPDATE tasks SET title=?, category=?, description=?, contact_id=?, start_date=?, deadline=? WHERE id=?")
-            ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, $task_id]);
+        $pdo->prepare("UPDATE tasks SET title=?, category=?, description=?, contact_id=?, start_date=?, deadline=?, budget_amount=? WHERE id=?")
+            ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, budget_eingabe($_POST['budget_amount'] ?? null), $task_id]);
             
         // Beteiligte abgleichen - dieselbe Funktion wie im Fenster
         // "Beteiligte am Projekt", damit beide Wege dasselbe tun.
@@ -241,8 +242,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     }
     elseif ($action === 'add_task') {
         $title = trim($_POST['title']);
-        $pdo->prepare("INSERT INTO tasks (title, category, description, status, contact_id, start_date, deadline) VALUES (?, ?, ?, 'In Bearbeitung', ?, ?, ?)")
-            ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null]);
+        $pdo->prepare("INSERT INTO tasks (title, category, description, status, contact_id, start_date, deadline, budget_amount) VALUES (?, ?, ?, 'In Bearbeitung', ?, ?, ?, ?)")
+            ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, budget_eingabe($_POST['budget_amount'] ?? null)]);
         log_event($pdo, 'TASK_ADDED', "Neues Projekt '". $title ."' wurde angelegt.");
     }
     elseif ($action === 'delete_task') { 
@@ -387,6 +388,10 @@ $sql .= ($sort_by === 'newest') ? " ORDER BY t.created_at DESC" : " ORDER BY CAS
 
 $stmt = $pdo->prepare($sql); $stmt->execute($params); $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $all_categories = $pdo->query("SELECT DISTINCT category FROM tasks WHERE deleted_at IS NULL AND category IS NOT NULL AND category != ''")->fetchAll(PDO::FETCH_COLUMN);
+// Wert der erfassten Zeit je Projekt - die Zahl, gegen die das Budget
+// steht. Eine Abfrage fuer die Seite, nicht eine je Karte.
+$budget_verbrauch = budget_verbrauch_je_projekt($pdo, (float) setting('default_hourly_rate', '60'));
+
 $all_contacts = $pdo->query("SELECT * FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Projekt-Diskussion je Projekt - in einer Abfrage.
@@ -887,6 +892,31 @@ require 'includes/layout_start.php';
                       <div class="progress-bar <?=$task['progress']==100?'bg-success':''?>" style="width:<?=$task['progress']?>%; <?=$task['progress']!=100?'background-color: var(--color-primary);':''?>"></div>
                   </div>
 
+                  <?php
+                    // Budget. Gemessen wird der Wert der erfassten Zeit gegen
+                    // den vereinbarten Preis - die Frage ist, ob die Arbeit
+                    // den Preis übersteigt, nicht ob schon abgerechnet wurde.
+                    $_b = budget_stand((float) ($task['budget_amount'] ?? 0),
+                                       $budget_verbrauch[$task['id']]['wert'] ?? 0.0);
+                  ?>
+                  <?php if($_b['gesetzt']): ?>
+                  <div class="d-flex justify-content-between align-items-end mb-1">
+                      <small class="text-muted fw-bold" style="font-size:10px;text-transform:uppercase;"><?= te('Budget') ?></small>
+                      <span class="small fw-bold <?= $_b['stufe'] === 'ueber' ? 'text-danger' : ($_b['stufe'] === 'warnung' ? 'text-warning' : '') ?>">
+                        <?= $_b['stufe'] === 'ueber'
+                            ? te('%s € über dem Budget', number_format(-$_b['rest'], 2, ',', '.'))
+                            : te('%s € von %s €',
+                                 number_format($budget_verbrauch[$task['id']]['wert'] ?? 0, 2, ',', '.'),
+                                 number_format((float) $task['budget_amount'], 2, ',', '.')) ?>
+                      </span>
+                  </div>
+                  <div class="progress mb-3" style="height:6px;"
+                       title="<?= te('%d %% des Budgets verbraucht', $_b['prozent']) ?>">
+                      <div class="progress-bar <?= budget_farbe($_b['stufe']) ?>"
+                           style="width:<?= min(100, $_b['prozent']) ?>%;"></div>
+                  </div>
+                  <?php endif; ?>
+
                   <div class="d-flex gap-2 mb-2">
                       <button class="btn btn-sm w-50 d-flex justify-content-center align-items-center gap-2 <?=$task['is_timer_running']?'btn-danger':'btn-light border'?>" data-bs-toggle="collapse" data-bs-target="#t_<?=$task['id']?>">
                         <span class="text-truncate"><?=$task['is_timer_running']?'<span class="pulse-dot"></span> Timer':te('Zeiterfassung')?></span>
@@ -1007,7 +1037,7 @@ require 'includes/layout_start.php';
       <?php endforeach; ?>
     </div>
 
-  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div></form></div></div></div>
+  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div><div class="col-md-6"><label class="form-label" for="a_budget"><?= te('Budget') ?></label><div class="input-group"><input type="text" inputmode="decimal" name="budget_amount" id="a_budget" class="form-control" placeholder="<?= te('leer = keins') ?>"><span class="input-group-text">€</span></div></div><div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div></form></div></div></div>
 
   <div class="modal fade" id="editTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -1051,6 +1081,14 @@ require 'includes/layout_start.php';
                     <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div>
                     <div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" id="e_start" class="form-control"></div>
                     <div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" id="e_deadline" class="form-control"></div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="e_budget"><?= te('Budget') ?></label>
+                      <div class="input-group">
+                        <input type="text" inputmode="decimal" name="budget_amount" id="e_budget" class="form-control" placeholder="<?= te('leer = keins') ?>">
+                        <span class="input-group-text">€</span>
+                      </div>
+                      <div class="form-text"><?= te('Der vereinbarte Preis. Verglichen wird er mit dem Wert der erfassten Zeit.') ?></div>
+                    </div>
                     <div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" id="e_desc" class="form-control" rows="4"></textarea></div>
                 </div>
             </form>
@@ -1298,6 +1336,10 @@ require 'includes/layout_start.php';
         let dd = task.deadline ? task.deadline.split(' ')[0] : '';
         document.getElementById('e_start').value = sd;
         document.getElementById('e_deadline').value = dd;
+        // Ohne Budget bleibt das Feld leer - eine 0 darin waere die
+        // Aussage, das Projekt duerfe nichts kosten.
+        document.getElementById('e_budget').value =
+            task.budget_amount ? String(task.budget_amount).replace('.', ',') : '';
         
         const feedbackEl = document.getElementById('e_feedback');
         if (task.client_feedback) {

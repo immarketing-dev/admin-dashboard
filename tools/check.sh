@@ -410,6 +410,13 @@ if command -v php >/dev/null 2>&1; then
   # Teilzahlung, sondern der Status, der nicht mehr dazu passt: die
   # Rechnung gilt als bezahlt, die Mahnung bleibt aus, und auffallen
   # wird es beim Jahresabschluss.
+  # Das Projektbudget: "kein Budget" und "null Euro" duerfen nicht
+  # dasselbe werden, und die Warnschwelle darf nicht durch Runden
+  # erreicht werden.
+  if ! out=$(php tools/test_task_budget.php 2>&1); then
+    echo "PROJEKTBUDGET: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_invoice_payments.php 2>&1); then
     echo "ZAHLUNGSJOURNAL: $out"
     fail=1

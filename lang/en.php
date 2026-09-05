@@ -2157,4 +2157,17 @@ return [
         => "Nothing recorded yet.",
     "Diese Zahlung entfernen"
         => "Remove this payment",
+    // ── Projektbudget ──
+    "Budget"
+        => "Budget",
+    "%s € über dem Budget"
+        => "%s € over budget",
+    "%s € von %s €"
+        => "%s € of %s €",
+    "%d %% des Budgets verbraucht"
+        => "%d %% of the budget used",
+    "leer = keins"
+        => "empty = none",
+    "Der vereinbarte Preis. Verglichen wird er mit dem Wert der erfassten Zeit."
+        => "The agreed price. It is measured against the value of the time tracked.",
 ];

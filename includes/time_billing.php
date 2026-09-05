@@ -86,6 +86,17 @@ function zeiten_minuten(array $eintraege): int
 }
 
 /**
+ * Minuten als Stundenangabe, wie sie auf einer Rechnung stünde.
+ *
+ * Zwei Nachkommastellen, damit Stundenzahl mal Satz den ausgewiesenen
+ * Betrag ergibt - dieselbe Rundung wie in zeiten_als_position().
+ */
+function stunden(int $minuten): float
+{
+    return round($minuten / 60, 2);
+}
+
+/**
  * Formt die Zeiten zu EINER Rechnungsposition.
  *
  * Bewusst eine und nicht eine je Eintrag: auf der Rechnung steht

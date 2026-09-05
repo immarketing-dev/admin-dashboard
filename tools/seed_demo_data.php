@@ -283,11 +283,13 @@ $p_daten = [
         'title' => 'Website-Relaunch Hofmann & Partner', 'category' => 'Webdesign',
         'description' => "Vollständiger Relaunch des Kanzleiauftritts: neue Struktur, eigenes Layout, Redaktionssystem für das Team.\n\nBesonderheit: die Mandantenbereiche müssen barrierefrei erreichbar bleiben.",
         'status' => 'In Bearbeitung', 'kontakt' => 'hofmann', 'start' => -120, 'frist' => 25,
+        'budget' => 4200.00,
     ],
     'shop' => [
         'title' => 'Onlineshop Weiß Naturkosmetik', 'category' => 'E-Commerce',
         'description' => "Aufbau des Shops mit 120 Artikeln, Staffelpreisen und einer Versandkostenlogik nach Gewicht.\n\nAnbindung an die vorhandene Warenwirtschaft über CSV-Import.",
         'status' => 'In Bearbeitung', 'kontakt' => 'weiss', 'start' => -75, 'frist' => 40,
+        'budget' => 9800.00,
     ],
     'brandtweb' => [
         'title' => 'Firmenauftritt Brandt Elektrotechnik', 'category' => 'Webdesign',
@@ -308,6 +310,7 @@ $p_daten = [
         'title' => 'Landingpage zum Imagefilm', 'category' => 'Webdesign',
         'description' => 'Begleitende Landingpage zum neuen Imagefilm, inklusive Videohosting ohne externe Tracker.',
         'status' => 'In Bearbeitung', 'kontakt' => 'demir', 'start' => -40, 'frist' => 12,
+        'budget' => 1200.00,
     ],
     'print' => [
         'title' => 'Broschüre & Printsatz', 'category' => 'Branding',
@@ -333,6 +336,7 @@ foreach ($p_daten as $schluessel => $d) {
         'start_date'       => tag($d['start']),
         'deadline'         => tag($d['frist']),
         'created_at'       => zeit($d['start'], '09:05'),
+        'budget_amount'    => $d['budget'] ?? null,
     ]);
 }
 

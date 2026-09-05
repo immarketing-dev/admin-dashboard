@@ -241,6 +241,11 @@ CREATE TABLE IF NOT EXISTS tasks (
   timer_start      DATETIME DEFAULT NULL,
   -- Stundensatz dieses Projekts. Hat Vorrang vor dem des Kunden.
   hourly_rate      DECIMAL(10,2) DEFAULT NULL,
+  -- The agreed price of the project. NULL means no budget was set,
+  -- which is not the same as 0.00 - that would say the project may not
+  -- cost anything. What it is measured against is the value of the time
+  -- tracked on it; see includes/task_budget.php.
+  budget_amount    DECIMAL(10,2) DEFAULT NULL,
   -- Wer ist zustaendig? tasks.contact_id ist der Kunde, das hier die
   -- eigene Person.
   assigned_user_id INT DEFAULT NULL,
@@ -630,7 +635,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '20')
+INSERT INTO settings (k, v) VALUES ('schema_version', '21')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

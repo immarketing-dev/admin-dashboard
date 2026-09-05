@@ -448,6 +448,37 @@ Four answers, on two tabs:
 - **A timesheet** — by week, month or year, grouped by day and by project,
   with a CSV export.
 
+### Project budgets
+
+A project had an hourly rate and tracked time, but no ceiling. That a
+project had stopped paying for itself surfaced when the invoice was
+written — which is after the work is done, when the only choices left are
+to give it away or have an awkward conversation.
+
+A project can now carry the price you agreed. The card shows a second bar
+under the progress one: what the tracked time is worth against that
+price, green until four fifths are used, amber after that, red once it is
+past. Leave the field empty and no bar appears — a budget is a statement,
+not a required field, and a project without one should not look
+unfinished.
+
+Two decisions worth naming, because both could reasonably have gone the
+other way:
+
+**The budget is in euros, not hours.** A client agrees a price; the hours
+follow from it via the rate. The other way round produces numbers nobody
+agreed to — 2,000 € at 75 €/h is 26.67 hours.
+
+**It is measured against tracked time, not against what has been
+invoiced.** The question a budget answers is whether the work exceeds the
+price, and that is true long before anyone writes the invoice.
+
+The rate used is the same one billing uses — project before client before
+the default — so the bar and the invoice cannot disagree. A rate of 0.00
+stays 0.00: it says "this project is not charged for", which is a
+statement, not a missing value. An empty budget is `NULL` for the same
+reason — 0.00 would mean the project may not cost anything.
+
 **What is deliberately absent:** the hourly rate actually achieved per
 project. That would require attributing an invoice amount to a project,
 and the data does not support it — `finances` knows a contact, not a

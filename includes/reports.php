@@ -125,17 +125,6 @@ function balken(float $wert, float $max): string
 }
 
 /**
- * Minuten als Stundenangabe, wie sie auf einer Rechnung stünde.
- *
- * Zwei Nachkommastellen, damit Stundenzahl mal Satz den ausgewiesenen
- * Betrag ergibt - dieselbe Rundung wie in zeiten_als_position().
- */
-function stunden(int $minuten): float
-{
-    return round($minuten / 60, 2);
-}
-
-/**
  * Minuten als "7:45" - für die Anzeige, nicht zum Rechnen.
  *
  * Auf einem Stundenzettel liest sich 7:45 besser als 7,75, und die
