@@ -192,7 +192,7 @@ function spalten(PDO $pdo, string $tabelle): array
 $reihenfolge = [
     'settings', 'users', 'totp_backup_codes', 'contacts', 'leads_inbox',
     'tasks', 'task_milestones', 'task_contacts', 'milestone_comments',
-    'project_comments', 'client_assets', 'time_entries', 'finances', 'quotes',
+    'project_comments', 'client_assets', 'time_entries', 'finances', 'payments', 'quotes',
     'support_tickets', 'ticket_notes', 'wiki_articles', 'wiki_attachments',
     'wiki_client_shares', 'calendar_events', 'event_contacts',
     'monitored_urls', 'url_checks', 'logs', 'mail_log',
