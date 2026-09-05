@@ -25,6 +25,7 @@
 
 require_once __DIR__ . '/dates.php';
 require_once __DIR__ . '/time_billing.php';
+require_once __DIR__ . '/invoice_payments.php';
 
 /**
  * Die Altersstufen für offene Posten, in Tagen nach Fälligkeit.
@@ -77,9 +78,14 @@ function op_stufen_namen(): array
 /**
  * Verteilt offene Rechnungen auf die Altersstufen.
  *
- * Erwartet Zeilen mit due_date und amount. Gibt je Stufe Betrag und
- * Anzahl zurück, in der Reihenfolge von op_stufen_namen() - der Eimer
- * für "nicht fällig" steht vorn.
+ * Erwartet Zeilen mit due_date und, seit es Teilzahlungen gibt, `offen`
+ * - der Rechnungsbetrag zählt hier nicht mehr, sondern das, was davon
+ * noch aussteht. Fehlt `offen`, gilt amount: eine Zeile, die ein
+ * Aufrufer selbst zusammengestellt hat, soll deswegen nicht auf null
+ * fallen.
+ *
+ * Gibt je Stufe Betrag und Anzahl zurück, in der Reihenfolge von
+ * op_stufen_namen() - der Eimer für "nicht fällig" steht vorn.
  *
  * @return array<int, array{name: string, betrag: float, anzahl: int}>
  */
@@ -96,7 +102,7 @@ function offene_posten_verteilen(array $zeilen, string $heute): array
         // -1 (nicht fällig) landet im ersten Eimer, die Stufen dahinter.
         $index = op_stufe($tage) + 1;
 
-        $eimer[$index]['betrag'] += (float) ($z['amount'] ?? 0);
+        $eimer[$index]['betrag'] += (float) ($z['offen'] ?? $z['amount'] ?? 0);
         $eimer[$index]['anzahl']++;
     }
 
@@ -225,8 +231,9 @@ function umsatz_je_kunde(PDO $pdo, int $jahr): array
     // Server muss das nicht. Ausgeschrieben läuft die Abfrage überall.
     $stmt = $pdo->prepare(
         "SELECT COALESCE(NULLIF(c.name, ''), NULLIF(f.custom_name, ''), '—') AS kunde,
-                SUM(CASE WHEN f.status = 'Bezahlt' THEN f.amount ELSE 0 END) AS bezahlt,
-                SUM(CASE WHEN f.status IN ('Offen', 'Überfällig') THEN f.amount ELSE 0 END) AS offen,
+                SUM(COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.finance_id = f.id), 0)) AS bezahlt,
+                SUM(CASE WHEN f.status IN ('Offen', 'Überfällig')
+                         THEN " . RECHNUNG_OFFEN_SQL . " ELSE 0 END) AS offen,
                 COUNT(*) AS anzahl
            FROM finances f
            LEFT JOIN contacts c ON c.id = f.contact_id AND c.deleted_at IS NULL
@@ -234,8 +241,9 @@ function umsatz_je_kunde(PDO $pdo, int $jahr): array
             AND f.type = 'INCOME'
             AND f.record_date >= ? AND f.record_date <= ?
           GROUP BY COALESCE(NULLIF(c.name, ''), NULLIF(f.custom_name, ''), '—')
-          ORDER BY SUM(CASE WHEN f.status = 'Bezahlt' THEN f.amount ELSE 0 END) DESC,
-                   SUM(CASE WHEN f.status IN ('Offen', 'Überfällig') THEN f.amount ELSE 0 END) DESC"
+          ORDER BY SUM(COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.finance_id = f.id), 0)) DESC,
+                   SUM(CASE WHEN f.status IN ('Offen', 'Überfällig')
+                            THEN " . RECHNUNG_OFFEN_SQL . " ELSE 0 END) DESC"
     );
     $stmt->execute([$jahr . '-01-01', $jahr . '-12-31']);
 
@@ -277,6 +285,7 @@ function offene_posten(PDO $pdo): array
 {
     return $pdo->query(
         "SELECT f.id, f.invoice_number, f.title, f.amount, f.due_date, f.status,
+                " . RECHNUNG_OFFEN_SQL . " AS offen,
                 f.reminder_count,
                 COALESCE(NULLIF(c.name, ''), NULLIF(f.custom_name, ''), '—') AS kunde
            FROM finances f

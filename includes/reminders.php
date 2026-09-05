@@ -22,6 +22,7 @@
  */
 
 require_once __DIR__ . '/dates.php';
+require_once __DIR__ . '/invoice_payments.php';
 require_once __DIR__ . '/mailer.php';
 require_once __DIR__ . '/mail_templates.php';
 require_once __DIR__ . '/logging.php';
@@ -158,7 +159,13 @@ function faellige_mahnungen(array $zeilen, array $stufen, string $jetzt): array
  */
 function mahnung_variablen(array $rechnung, string $firma): array
 {
-    $betrag = number_format((float) ($rechnung['amount'] ?? 0), 2, ',', '.');
+    // Der offene Rest, nicht der Rechnungsbetrag. Wer 400 von 1.240 €
+    // ueberwiesen hat und dann eine Erinnerung ueber 1.240 € bekommt,
+    // liest sie als Fehler - und ruft an. `offen` bringt jede Abfrage
+    // mit, die hierher fuehrt; der Rechnungsbetrag bleibt als Rueckfall
+    // fuer Aufrufer, die ihre Zeile selbst zusammenstellen.
+    $betrag = number_format(
+        (float) ($rechnung['offen'] ?? $rechnung['amount'] ?? 0), 2, ',', '.');
     $faellig = $rechnung['due_date'] ?? '';
     $faellig = $faellig ? date('d.m.Y', strtotime((string) $faellig)) : '';
 
@@ -191,6 +198,7 @@ function offene_rechnungen(PDO $pdo): array
 {
     $sql =
         "SELECT f.id, f.title, f.invoice_number, f.amount, f.due_date,
+                " . RECHNUNG_OFFEN_SQL . " AS offen,
                 f.reminder_count, f.last_reminder_at, f.invoice_pdf_path,
                 COALESCE(c.name, f.custom_name) AS kundenname,
                 c.email AS empfaenger,
@@ -213,6 +221,7 @@ function rechnung_fuer_mahnung(PDO $pdo, int $id): ?array
 {
     $stmt = $pdo->prepare(
         "SELECT f.id, f.title, f.invoice_number, f.amount, f.due_date, f.status,
+                " . RECHNUNG_OFFEN_SQL . " AS offen,
                 f.reminder_count, f.last_reminder_at, f.invoice_pdf_path,
                 COALESCE(c.name, f.custom_name) AS kundenname,
                 c.email AS empfaenger,

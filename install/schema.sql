@@ -419,6 +419,35 @@ CREATE TABLE IF NOT EXISTS finances (
   KEY idx_finances_deleted (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- The payment ledger of an outgoing invoice.
+--
+-- Before this table an invoice was either open or paid. A deposit, an
+-- instalment, an amount short by the bank's fee - none of them had a
+-- state, so either the nightly run kept dunning for the full sum or the
+-- invoice was flipped to "paid" and the remainder left the reports.
+--
+-- Rows here are events: money that arrived, with a date. What the
+-- invoice's status says is derived from them - see
+-- includes/invoice_payments.php. `source` records where a row came from;
+-- 'status' marks the one row the paid/open switch writes for itself, and
+-- it is the only one that switch may take back.
+--
+-- ON DELETE CASCADE, not soft delete: a payment has no life of its own.
+-- The invoice it belongs to is soft-deleted and can come back from the
+-- trash with its ledger intact; only emptying the trash removes both.
+CREATE TABLE IF NOT EXISTS payments (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  finance_id INT NOT NULL,
+  amount     DECIMAL(10,2) NOT NULL,
+  paid_at    DATE NOT NULL,
+  note       VARCHAR(255) DEFAULT NULL,
+  source     VARCHAR(20) NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_payments_finance (finance_id),
+  CONSTRAINT fk_payments_finance FOREIGN KEY (finance_id)
+    REFERENCES finances(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Taken verbatim from d:\Downloads\admin-dashboard\quotes.php:20
 -- (only IF NOT EXISTS and the engine clause were added).
 CREATE TABLE IF NOT EXISTS quotes (
@@ -601,7 +630,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '19')
+INSERT INTO settings (k, v) VALUES ('schema_version', '20')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/invoice_payments.php';
+
 /**
  * Zahlungseingänge einlesen und offenen Rechnungen zuordnen.
  *
@@ -380,8 +382,13 @@ function zahlung_name_flach(string $name): string
  */
 function offene_rechnungen_fuer_abgleich(PDO $pdo): array
 {
+    // `offen` und nicht `amount` ist die Zahl, gegen die verglichen
+    // wird: auf eine Rechnung über 1.240 €, auf die schon 400 €
+    // eingegangen sind, passt eine Überweisung über 840 € - gegen den
+    // Rechnungsbetrag gemessen passte sie auf nichts.
     $stmt = $pdo->query(
         "SELECT f.id, f.invoice_number, f.title, f.amount, f.record_date, f.due_date,
+                " . RECHNUNG_OFFEN_SQL . " AS offen,
                 COALESCE(NULLIF(c.company, ''), c.name, f.custom_name, '') AS kunde
            FROM finances f
            LEFT JOIN contacts c ON c.id = f.contact_id AND c.deleted_at IS NULL
@@ -391,6 +398,20 @@ function offene_rechnungen_fuer_abgleich(PDO $pdo): array
           ORDER BY f.record_date ASC"
     );
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+/**
+ * Der Betrag, gegen den eine Überweisung geprüft wird.
+ *
+ * Der offene Rest, wenn die Zeile ihn mitbringt, sonst der
+ * Rechnungsbetrag. Die zweite Möglichkeit steht hier für Aufrufer, die
+ * ihre Liste selbst zusammenstellen - der Test tut das.
+ */
+function rechnung_vergleichsbetrag(array $rechnung): float
+{
+    return isset($rechnung['offen'])
+        ? round((float) $rechnung['offen'], 2)
+        : round((float) ($rechnung['amount'] ?? 0), 2);
 }
 
 /**
@@ -412,7 +433,7 @@ function zahlung_vorschlag(array $zahlung, array $offene): array
     if ($nr !== null) {
         foreach ($offene as $r) {
             if ((string) $r['invoice_number'] === $nr) {
-                $passt = abs((float) $r['amount'] - $zahlung['betrag']) < 0.005;
+                $passt = abs(rechnung_vergleichsbetrag($r) - $zahlung['betrag']) < 0.005;
                 return [
                     'treffer'    => $r,
                     'sicherheit' => $passt ? ZAHLUNG_SICHER : ZAHLUNG_MOEGLICH,
@@ -428,7 +449,7 @@ function zahlung_vorschlag(array $zahlung, array $offene): array
     $zahler = zahlung_name_flach($zahlung['name']);
     $nach_betrag = [];
     foreach ($offene as $r) {
-        if (abs((float) $r['amount'] - $zahlung['betrag']) < 0.005) {
+        if (abs(rechnung_vergleichsbetrag($r) - $zahlung['betrag']) < 0.005) {
             $nach_betrag[] = $r;
         }
     }
@@ -511,29 +532,37 @@ function zahlungen_vorschlaege(array $zahlungen, array $offene): array
 /**
  * Bucht eine bestätigte Zuordnung.
  *
- * Nur von 'Offen' oder 'Überfällig' aus: eine bereits bezahlte Rechnung
- * noch einmal zu buchen wäre ein doppelter Zahlungseingang, und ein
- * zweiter Klick auf denselben Knopf darf das nicht auslösen.
+ * Seit es Teilzahlungen gibt, wird nicht mehr der Status gesetzt,
+ * sondern der überwiesene Betrag ins Journal geschrieben - der Status
+ * ergibt sich daraus. Das ist derselbe Weg, den auch die Erfassung von
+ * Hand nimmt, und der Grund, warum eine Überweisung über einen Teil der
+ * Summe hier nicht mehr verlorengeht.
+ *
+ * Nur solange die Rechnung offen ist: eine bereits beglichene noch
+ * einmal zu buchen wäre ein doppelter Zahlungseingang, und ein zweiter
+ * Klick auf denselben Knopf darf das nicht auslösen.
  *
  * @return bool true, wenn wirklich gebucht wurde
  */
-function zahlung_buchen(PDO $pdo, int $finanz_id, string $zweck, ?string $datum): bool
+function zahlung_buchen(PDO $pdo, int $finanz_id, string $zweck, ?string $datum, float $betrag = 0.0): bool
 {
     $stmt = $pdo->prepare(
-        "UPDATE finances
-            SET status = 'Bezahlt',
-                notes = TRIM(CONCAT(COALESCE(notes, ''), ?))
-          WHERE id = ?
-            AND deleted_at IS NULL
-            AND type = 'INCOME'
+        "SELECT amount FROM finances
+          WHERE id = ? AND deleted_at IS NULL AND type = 'INCOME'
             AND status IN ('Offen', 'Überfällig')"
     );
+    $stmt->execute([$finanz_id]);
+    $summe = $stmt->fetchColumn();
+    if ($summe === false) return false;
 
-    $vermerk = "\n" . 'Zahlungseingang'
-             . ($datum !== null ? ' am ' . date('d.m.Y', strtotime($datum)) : '')
-             . ' über den Kontoauszug zugeordnet.'
+    // Ohne Betrag der offene Rest - so verhält sich der Aufruf wie
+    // früher, als es nur "ganz oder gar nicht" gab.
+    $offen = rechnung_offen((float) $summe, zahlung_summe($pdo, $finanz_id));
+    $zu_buchen = $betrag > 0 ? round($betrag, 2) : $offen;
+    if ($zu_buchen < 0.01) return false;
+
+    $vermerk = 'Über den Kontoauszug zugeordnet.'
              . ($zweck !== '' ? ' Verwendungszweck: ' . mb_substr($zweck, 0, 140) : '');
 
-    $stmt->execute([$vermerk, $finanz_id]);
-    return $stmt->rowCount() > 0;
+    return zahlung_erfassen($pdo, $finanz_id, $zu_buchen, $datum, $vermerk, 'bank') > 0;
 }

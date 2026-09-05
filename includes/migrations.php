@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 19;
+const SCHEMA_VERSION = 20;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -666,6 +666,43 @@ function migrations(): array
         // das bisherige Verhalten.
         19 => [
             'ALTER TABLE contacts ADD COLUMN language VARCHAR(5) DEFAULT NULL',
+        ],
+
+        // Teilzahlungen. Eine Rechnung war bis hierher entweder offen
+        // oder bezahlt; fuer eine Anzahlung, eine Rate oder einen um die
+        // Bankgebuehr gekuerzten Betrag gab es keinen Zustand.
+        //
+        // Die letzte Anweisung ist der wichtige Teil: jede bereits
+        // bezahlte Rechnung bekommt eine Zeile ueber ihren vollen
+        // Betrag. Ohne sie stuende der Bestand nach dieser Migration mit
+        // "nichts eingegangen" da, und die Auswertung zeigte ueber Nacht
+        // andere Zahlen als am Vortag. Das Datum ist das der Rechnung -
+        // wann wirklich gezahlt wurde, weiss rueckwirkend niemand mehr,
+        // und ein erfundenes Datum waere schlimmer als ein
+        // nachvollziehbares.
+        20 => [
+            "CREATE TABLE IF NOT EXISTS payments (
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                finance_id INT NOT NULL,
+                amount     DECIMAL(10,2) NOT NULL,
+                paid_at    DATE NOT NULL,
+                note       VARCHAR(255) DEFAULT NULL,
+                source     VARCHAR(20) NOT NULL DEFAULT 'manual',
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY idx_payments_finance (finance_id),
+                CONSTRAINT fk_payments_finance FOREIGN KEY (finance_id)
+                    REFERENCES finances(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+            "INSERT INTO payments (finance_id, amount, paid_at, note, source)
+             SELECT f.id, f.amount,
+                    COALESCE(f.due_date, f.record_date, DATE(f.created_at)),
+                    'Bestand aus der Zeit vor den Teilzahlungen.', 'status'
+               FROM finances f
+              WHERE f.type = 'INCOME'
+                AND f.status = 'Bezahlt'
+                AND f.amount > 0
+                AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.finance_id = f.id)",
         ],
     ];
 }

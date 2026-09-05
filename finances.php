@@ -8,6 +8,7 @@ require_once 'includes/quote_to_project.php';
 require_once 'includes/reminders.php';
 require_once 'includes/receipts.php';
 require_once 'includes/payments.php';
+require_once 'includes/invoice_payments.php';
 require_once 'includes/recurring.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -341,17 +342,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     if ($action === 'abgleich_buchen') {
         $gebucht = 0;
         foreach ((array) ($_POST['buchen'] ?? []) as $roh) {
-            $teile = explode('|', (string) $roh, 3);
+            $teile = explode('|', (string) $roh, 4);
             $fid   = (int) ($teile[0] ?? 0);
             if ($fid <= 0) {
                 continue;
             }
-            $datum = ($teile[1] ?? '') !== '' ? $teile[1] : null;
-            if (zahlung_buchen($pdo, $fid, (string) ($teile[2] ?? ''), $datum)) {
+            $datum  = ($teile[1] ?? '') !== '' ? $teile[1] : null;
+            $betrag = (float) ($teile[2] ?? 0);
+            if (zahlung_buchen($pdo, $fid, (string) ($teile[3] ?? ''), $datum, $betrag)) {
                 $gebucht++;
             }
         }
-        log_event($pdo, 'PAYMENTS_BOOKED', $gebucht . ' Rechnung(en) über den Kontoauszug als bezahlt gebucht.');
+        log_event($pdo, 'PAYMENTS_BOOKED', $gebucht . ' Zahlungseingang/-eingänge über den Kontoauszug gebucht.');
         filter_redirect('finances', ['msg' => 'booked', 'n' => $gebucht]);
     }
 
@@ -445,11 +447,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $stmt->execute([$id]);
         $fin_title = $stmt->fetchColumn();
 
-        $pdo->prepare("UPDATE finances SET status = ? WHERE id = ?")->execute([$new_status, $id]);
+        // Nicht direkt am Status drehen: bei einer Ausgangsrechnung
+        // ergibt er sich aus dem Zahlungsjournal, und der Schalter legt
+        // dort den offenen Rest ab bzw. nimmt ihn wieder heraus. Sonst
+        // stuenden Journal und Status nebeneinander und widersprächen
+        // sich, sobald eine Teilzahlung im Spiel ist.
+        $gilt = rechnung_status_setzen($pdo, $id, $new_status);
         
-        log_event($pdo, 'FINANCE_UPDATED', "Status von '$fin_title' auf '$new_status' geändert.");
+        log_event($pdo, 'FINANCE_UPDATED', "Status von '$fin_title' auf '" . ($gilt ?: $new_status) . "' geändert.");
             
         echo "OK"; exit();
+    }
+
+    // Eine Zahlung, die wirklich eingegangen ist. Der Status ergibt sich
+    // daraus - erfasst wird das Geld, nicht der Zustand.
+    if ($action === 'add_payment') {
+        $id     = (int) ($_POST['record_id'] ?? 0);
+        $betrag = (float) str_replace(',', '.', trim((string) ($_POST['payment_amount'] ?? '')));
+        $datum  = trim((string) ($_POST['payment_date'] ?? ''));
+        $notiz  = trim((string) ($_POST['payment_note'] ?? ''));
+
+        $stmt = $pdo->prepare("SELECT title FROM finances WHERE deleted_at IS NULL AND id = ?");
+        $stmt->execute([$id]);
+        $fin_title = (string) $stmt->fetchColumn();
+
+        if (zahlung_erfassen($pdo, $id, $betrag, $datum ?: null, $notiz) > 0) {
+            log_event($pdo, 'PAYMENT_ADDED',
+                "Zahlungseingang über " . number_format($betrag, 2, ',', '.') . " € zu '$fin_title' erfasst.");
+        }
+        filter_redirect('finances');
+    }
+
+    if ($action === 'delete_payment') {
+        $zahlung_id = (int) ($_POST['payment_id'] ?? 0);
+
+        $stmt = $pdo->prepare(
+            "SELECT p.amount, f.title FROM payments p
+               JOIN finances f ON f.id = p.finance_id
+              WHERE p.id = ?"
+        );
+        $stmt->execute([$zahlung_id]);
+        $z = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($z && zahlung_entfernen($pdo, $zahlung_id) > 0) {
+            log_event($pdo, 'PAYMENT_DELETED',
+                "Zahlungseingang über " . number_format((float) $z['amount'], 2, ',', '.')
+                . " € zu '{$z['title']}' entfernt.");
+        }
+        filter_redirect('finances');
     }
 
     if ($action === 'delete_record') {
@@ -834,6 +879,28 @@ if (!empty($search_query)) {
 
 $sql .= " ORDER BY f.record_date DESC, f.id DESC";
 $stmt = $pdo->prepare($sql); $stmt->execute($params); $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Was auf die angezeigten Rechnungen schon eingegangen ist - eine
+// Abfrage fuer die ganze Seite statt einer je Zeile.
+$bezahlt_je_rechnung = zahlung_summen($pdo, array_column($records, 'id'));
+
+// Das Journal selbst - fuer das Fenster, in dem eine Zahlung erfasst
+// und eine falsche wieder herausgenommen wird. Auch das eine Abfrage
+// fuer die Seite: es ist dieselbe Tabelle, nur ungruppiert.
+$zahlungen_je_rechnung = [];
+if ($records) {
+    $_ids = array_column($records, 'id');
+    $_ph  = implode(',', array_fill(0, count($_ids), '?'));
+    $_st  = $pdo->prepare(
+        "SELECT id, finance_id, amount, paid_at, note, source
+           FROM payments WHERE finance_id IN ($_ph)
+          ORDER BY paid_at DESC, id DESC"
+    );
+    $_st->execute($_ids);
+    foreach ($_st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $_z) {
+        $zahlungen_je_rechnung[(int) $_z['finance_id']][] = $_z;
+    }
+}
+
 $all_contacts = $pdo->query("SELECT * FROM contacts WHERE deleted_at IS NULL ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 $available_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(record_date, '%Y-%m') as ym FROM finances WHERE deleted_at IS NULL ORDER BY ym DESC")->fetchAll(PDO::FETCH_COLUMN);
 
@@ -1233,8 +1300,12 @@ require 'includes/layout_start.php';
                     <?php if ($_t !== null): ?>
                       <input type="checkbox" class="form-check-input" name="buchen[]"
                              <?= $_v['sicherheit'] === ZAHLUNG_SICHER ? 'checked' : '' ?>
+                             <?php /* Der Verwendungszweck steht zuletzt: er darf
+                                      selbst Striche enthalten, und explode() mit
+                                      Grenze lässt sie ihm dann. */ ?>
                              value="<?= htmlspecialchars((int) $_t['id'] . '|'
                                      . (string) ($_v['zahlung']['datum'] ?? '') . '|'
+                                     . number_format((float) $_v['zahlung']['betrag'], 2, '.', '') . '|'
                                      . mb_substr((string) $_v['zahlung']['zweck'], 0, 140)) ?>">
                     <?php endif; ?>
                   </td>
@@ -1374,7 +1445,26 @@ require 'includes/layout_start.php';
                                   </ul>
                                 </div>
                             </td>
-                            <td class="text-end fw-bold <?=$is_income?'text-success':'text-danger'?>"><?=$is_income?'+':'-'?> <?=number_format($row['amount'],2,',','.')?> €</td>
+                            <?php
+                              // Was auf diese Rechnung eingegangen ist. Nur bei
+                              // Einnahmen: eine Ausgabe hat kein Journal.
+                              $_bezahlt = $is_income ? ($bezahlt_je_rechnung[(int)$row['id']] ?? 0.0) : 0.0;
+                              $_offen   = $is_income ? rechnung_offen((float)$row['amount'], $_bezahlt) : 0.0;
+                              // Angezeigt wird der Rest nur, solange er einer ist:
+                              // bei einer voll bezahlten Rechnung sagt der Status
+                              // schon alles, und eine zweite Zeile darunter wäre
+                              // Lärm in einer Liste, die ohnehin voll ist.
+                              $_teilweise = $is_income && $_bezahlt > 0 && $_offen > 0;
+                            ?>
+                            <td class="text-end fw-bold <?=$is_income?'text-success':'text-danger'?>">
+                                <?=$is_income?'+':'-'?> <?=number_format($row['amount'],2,',','.')?> €
+                                <?php if($_teilweise): ?>
+                                <span class="d-block fw-normal text-warning" style="font-size:var(--text-2xs);"
+                                      title="<?= te('%s € eingegangen', number_format($_bezahlt, 2, ',', '.')) ?>">
+                                    <?= te('noch %s € offen', number_format($_offen, 2, ',', '.')) ?>
+                                </span>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
                                     <?php if(!empty($row['invoice_pdf_path'])): ?>
@@ -1392,6 +1482,15 @@ require 'includes/layout_start.php';
                                       && in_array($row['status'], ['Offen', 'Überfällig'], true)
                                       && filter_var((string)($row['contact_email'] ?? ''), FILTER_VALIDATE_EMAIL);
                                 ?>
+                                <?php if($is_income && $row['status'] !== 'Storniert'): ?>
+                                    <?php /* Zahlungseingang erfassen. Auch bei einer
+                                             bereits bezahlten Rechnung erreichbar - dort
+                                             fuehrt der Weg zum Journal, in dem eine
+                                             falsch gebuchte Zahlung wieder herauskommt. */ ?>
+                                    <button class="btn-icon <?= $_bezahlt > 0 ? 'text-success' : 'text-muted' ?>"
+                                            title="<?= te('Zahlungseingang') ?>"
+                                            onclick='openPaymentModal(<?= (int)$row['id'] ?>, <?= json_encode($row['title'], JSON_HEX_TAG|JSON_HEX_APOS) ?>, <?= (float)$row['amount'] ?>, <?= $_offen ?>, <?= json_encode($zahlungen_je_rechnung[(int)$row['id']] ?? [], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'><i class="bi bi-cash-coin"></i></button>
+                                <?php endif; ?>
                                 <?php if($is_income && !empty($row['items'])): ?>
                                     <?php /* Nur mit Positionen: eine Rechnung von vor
                                              Schemaversion 8 hat ihre Aufstellung allein
@@ -1588,6 +1687,52 @@ require 'includes/layout_start.php';
       </div>
   </div>
 
+  <!-- Zahlungseingang -->
+  <div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-subtle">
+          <h6 class="modal-title"><i class="bi bi-cash-coin me-2"></i><?= te('Zahlungseingang') ?></h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="fw-bold text-strong-c mb-1" id="pay_title"></div>
+          <div class="text-muted small mb-3" id="pay_summe"></div>
+
+          <form method="POST" class="row g-2 align-items-end mb-3">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="add_payment">
+            <input type="hidden" name="record_id" id="pay_record_id">
+            <div class="col-5">
+              <label class="label-xs mb-1" for="pay_amount"><?= te('Betrag') ?></label>
+              <div class="input-group input-group-sm">
+                <input type="text" inputmode="decimal" class="form-control" id="pay_amount" name="payment_amount" required>
+                <span class="input-group-text">€</span>
+              </div>
+            </div>
+            <div class="col-4">
+              <label class="label-xs mb-1" for="pay_date"><?= te('Datum') ?></label>
+              <input type="date" class="form-control form-control-sm" id="pay_date" name="payment_date"
+                     value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="col-3">
+              <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold"><?= te('Buchen') ?></button>
+            </div>
+            <div class="col-12">
+              <input type="text" class="form-control form-control-sm" name="payment_note" maxlength="255"
+                     placeholder="<?= te('Vermerk, etwa erste Rate oder abzüglich Bankgebühr') ?>">
+            </div>
+          </form>
+
+          <div class="label-xs mb-1"><?= te('Bereits gebucht') ?></div>
+          <div id="pay_liste" class="small"></div>
+          <div class="form-text mt-2">
+            <?= te('Der Status der Rechnung ergibt sich aus diesen Zeilen: sobald ihre Summe den Rechnungsbetrag erreicht, gilt sie als bezahlt.') ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- E-Mail Modal -->
   <div class="modal fade" id="invoiceEmailModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -2079,5 +2224,85 @@ require 'includes/layout_start.php';
   </script>
 <?php ?>
 <script src="<?= asset('assets/js/mail-templates.js') ?>"></script>
-<?php
-require 'includes/layout_end.php'; ?>
+<script>
+// Zahlungseingang. Die gebuchten Zeilen kommen aus der Liste mit, statt
+// je Rechnung nachgeladen zu werden - es sind dieselben Daten, die die
+// Seite ohnehin schon geholt hat.
+function openPaymentModal(id, titel, betrag, offen, zahlungen) {
+    const eur = w => Number(w).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
+    const bezahlt = (zahlungen || []).reduce((s, z) => s + Number(z.amount), 0);
+
+    document.getElementById('pay_record_id').value = id;
+    document.getElementById('pay_title').textContent = titel;
+    document.getElementById('pay_amount').value = offen > 0 ? offen.toFixed(2).replace('.', ',') : '';
+    document.getElementById('pay_summe').textContent =
+        <?= tjs('Rechnungsbetrag') ?> + ' ' + eur(betrag) + ' · ' +
+        <?= tjs('eingegangen') ?> + ' ' + eur(bezahlt) + ' · ' +
+        <?= tjs('offen') ?> + ' ' + eur(offen);
+
+    const csrf  = document.querySelector('input[name="csrf_token"]').value;
+    const liste = document.getElementById('pay_liste');
+    liste.textContent = '';
+
+    if (!zahlungen || zahlungen.length === 0) {
+        const leer = document.createElement('div');
+        leer.className = 'text-muted';
+        leer.textContent = <?= tjs('Noch nichts gebucht.') ?>;
+        liste.appendChild(leer);
+        new bootstrap.Modal(document.getElementById('paymentModal')).show();
+        return;
+    }
+
+    zahlungen.forEach(z => {
+        const zeile = document.createElement('div');
+        zeile.className = 'd-flex justify-content-between align-items-center border-bottom py-1 gap-2';
+
+        const links = document.createElement('div');
+        links.className = 'text-truncate';
+
+        const summe = document.createElement('span');
+        summe.className = 'fw-semibold';
+        summe.textContent = eur(z.amount);
+        links.appendChild(summe);
+
+        const datum = document.createElement('span');
+        datum.className = 'text-muted ms-2';
+        datum.textContent = z.paid_at ? z.paid_at.split('-').reverse().join('.') : '';
+        links.appendChild(datum);
+
+        if (z.note) {
+            const notiz = document.createElement('span');
+            notiz.className = 'text-muted ms-2';
+            // textContent, nicht innerHTML: der Vermerk ist eine Eingabe.
+            notiz.textContent = z.note;
+            links.appendChild(notiz);
+        }
+
+        // Ein eigenes Formular je Zeile - ein Klick nimmt genau diese
+        // Zahlung heraus, nicht die zuletzt angesehene.
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.className = 'm-0';
+        [['csrf_token', csrf], ['action', 'delete_payment'], ['payment_id', z.id]].forEach(([n, w]) => {
+            const feld = document.createElement('input');
+            feld.type = 'hidden';
+            feld.name = n;
+            feld.value = w;
+            form.appendChild(feld);
+        });
+        const knopf = document.createElement('button');
+        knopf.className = 'btn-icon text-danger';
+        knopf.title = <?= tjs('Diese Zahlung entfernen') ?>;
+        knopf.innerHTML = '<i class="bi bi-x-lg"></i>';
+        form.appendChild(knopf);
+
+        zeile.appendChild(links);
+        zeile.appendChild(form);
+        liste.appendChild(zeile);
+    });
+
+    new bootstrap.Modal(document.getElementById('paymentModal')).show();
+}
+</script>
+
+<?phprequire 'includes/layout_end.php'; ?>

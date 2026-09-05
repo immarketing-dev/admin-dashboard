@@ -2132,4 +2132,29 @@ return [
         => "We will go through the draft together.",
     "Die Positionen sind wie besprochen aufgeteilt."
         => "The line items are split up as discussed.",
+    // ── Teilzahlungen ──
+    "%s € eingegangen"
+        => "%s € received",
+    "noch %s € offen"
+        => "%s € still outstanding",
+    "%s € eingegangen · noch %s € offen"
+        => "%s € received · %s € still outstanding",
+    "Buchen"
+        => "Record",
+    "Vermerk, etwa erste Rate oder abzüglich Bankgebühr"
+        => "Note, e.g. first instalment, or less bank charges",
+    "Bereits gebucht"
+        => "Already recorded",
+    "Der Status der Rechnung ergibt sich aus diesen Zeilen: sobald ihre Summe den Rechnungsbetrag erreicht, gilt sie als bezahlt."
+        => "The invoice status follows from these entries: once they add up to the invoice total, it counts as paid.",
+    "Rechnungsbetrag"
+        => "Invoice total",
+    "eingegangen"
+        => "received",
+    "offen"
+        => "outstanding",
+    "Noch nichts gebucht."
+        => "Nothing recorded yet.",
+    "Diese Zahlung entfernen"
+        => "Remove this payment",
 ];

@@ -168,9 +168,14 @@ $weg_id = (int) $pdo->lastInsertId();
 $checks['offene Rechnung wird gebucht'] = zahlung_buchen($pdo, $offen_id, 'RE-2026-001', '2026-01-15') === true;
 $status = $pdo->query("SELECT status FROM finances WHERE id = $offen_id")->fetchColumn();
 $checks['Status ist bezahlt']           = $status === 'Bezahlt';
+$journal = zahlungen_einer_rechnung($pdo, $offen_id);
+$checks['eine Zeile im Journal']        = count($journal) === 1;
+$checks['Vermerk steht an der Zahlung'] = strpos((string) ($journal[0]['note'] ?? ''), 'Kontoauszug') !== false;
+$checks['Datum steht an der Zahlung']   = ($journal[0]['paid_at'] ?? '') === '2026-01-15';
+$checks['Herkunft ist der Kontoauszug'] = ($journal[0]['source'] ?? '') === 'bank';
+// Die Notiz der Rechnung bleibt, was jemand hineingeschrieben hat.
 $notiz = (string) $pdo->query("SELECT notes FROM finances WHERE id = $offen_id")->fetchColumn();
-$checks['Vermerk steht in der Notiz']   = strpos($notiz, 'Zahlungseingang') !== false;
-$checks['Vermerk nennt das Datum']      = strpos($notiz, '15.01.2026') !== false;
+$checks['Notiz der Rechnung unberuehrt'] = strpos($notiz, 'Kontoauszug') === false;
 
 // Der zweite Klick darf nichts tun.
 $checks['zweiter Klick bucht nicht']    = zahlung_buchen($pdo, $offen_id, 'x', null) === false;
@@ -178,6 +183,34 @@ $checks['zweiter Klick bucht nicht']    = zahlung_buchen($pdo, $offen_id, 'x', n
 $checks['bezahlte bleibt unberuehrt']   = zahlung_buchen($pdo, $bezahlt_id, 'x', null) === false;
 $checks['geloeschte bleibt unberuehrt'] = zahlung_buchen($pdo, $weg_id, 'x', null) === false;
 $checks['nichts an fremder Kennung']    = zahlung_buchen($pdo, 99999, 'x', null) === false;
+
+// =====================================================================
+// Teilzahlung
+// =====================================================================
+// Vorher ging eine Überweisung über einen Teil der Summe entweder ganz
+// verloren oder setzte die Rechnung fälschlich auf "Bezahlt". Jetzt
+// wird gebucht, was überwiesen wurde, und der Rest bleibt offen.
+$pdo->exec("INSERT INTO finances (type, title, amount, status, record_date, due_date, invoice_number)
+            VALUES ('INCOME', 'In Raten', 1200, 'Offen', '2026-01-01', '2026-12-31', 'RE-2026-777')");
+$raten_id = (int) $pdo->lastInsertId();
+
+$checks['Teilbetrag wird gebucht'] = zahlung_buchen($pdo, $raten_id, 'RE-2026-777', '2026-02-01', 500.00) === true;
+$checks['Rechnung bleibt offen']
+    = $pdo->query("SELECT status FROM finances WHERE id = $raten_id")->fetchColumn() === 'Offen';
+$checks['Rest stimmt'] = abs(1200.0 - zahlung_summe($pdo, $raten_id) - 700.0) < 0.005;
+
+// Und der Abgleich misst danach gegen den Rest, nicht gegen die Summe.
+$offene = offene_rechnungen_fuer_abgleich($pdo);
+$rest_zeile = null;
+foreach ($offene as $z) {
+    if ((int) $z['id'] === $raten_id) $rest_zeile = $z;
+}
+$checks['der Abgleich sieht den Rest'] = $rest_zeile !== null
+    && abs(rechnung_vergleichsbetrag($rest_zeile) - 700.0) < 0.005;
+
+// Eine Überweisung über genau den Rest schliesst sie ab.
+$checks['Restzahlung schliesst ab'] = zahlung_buchen($pdo, $raten_id, 'RE-2026-777', '2026-03-01', 700.00) === true
+    && $pdo->query("SELECT status FROM finances WHERE id = $raten_id")->fetchColumn() === 'Bezahlt';
 
 // =====================================================================
 // Namensvergleich

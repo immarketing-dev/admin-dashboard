@@ -19,6 +19,7 @@
 
 require_once __DIR__ . '/lib_sqlite_mirror.php';
 require_once __DIR__ . '/../includes/reports.php';
+require_once __DIR__ . '/../includes/migrations.php';
 
 $wurzel = dirname(__DIR__);
 $pdo = new SqliteSpiegelPDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
@@ -139,6 +140,20 @@ $pdo->prepare(
      VALUES ('INCOME', 'RE-weg', ?, 777.00, 'Bezahlt', '2026-03-01', '2026-04-01')"
 )->execute([$anna]);
 
+// Seit Migration 20 haengt "bezahlt" am Zahlungsjournal und nicht mehr
+// am Status. Auf einer bestehenden Datenbank hat die Migration die
+// Zeilen dafuer nachgefuellt - hier tut es dieselbe Anweisung, damit die
+// Ausgangslage die eines echten Panels ist und nicht eine, die es so
+// nirgends gibt.
+$pdo->exec(migrations()[20][1]);
+
+// Eine Rechnung mit Anzahlung. Vorher zaehlte sie ganz zu "offen" oder
+// ganz zu "bezahlt" - beides war falsch.
+$ins->execute(['INCOME', 'RE-5', $bruno, null, 1000.00, 'Offen', '2026-07-01', '2026-07-15']);
+$teil_id = (int) $pdo->lastInsertId();
+$pdo->prepare("INSERT INTO payments (finance_id, amount, paid_at, source)
+               VALUES (?, 400.00, '2026-07-20', 'manual')")->execute([$teil_id]);
+
 $umsatz = umsatz_je_kunde($pdo, 2026);
 $nach_kunde = [];
 foreach ($umsatz as $u) {
@@ -148,7 +163,10 @@ foreach ($umsatz as $u) {
 $checks['Anna bezahlt: 1000']           = abs($nach_kunde['Anna']['bezahlt'] - 1000.00) < 0.001;
 $checks['Anna offen: 500']              = abs($nach_kunde['Anna']['offen'] - 500.00) < 0.001;
 $checks['Anna: zwei Rechnungen']        = $nach_kunde['Anna']['anzahl'] === 2;
-$checks['Bruno bezahlt: 200']           = abs($nach_kunde['Bruno']['bezahlt'] - 200.00) < 0.001;
+// 200 aus der beglichenen Rechnung, 400 als Anzahlung auf die
+// naechste - beides ist Geld, das eingegangen ist.
+$checks['Bruno bezahlt: 600']           = abs($nach_kunde['Bruno']['bezahlt'] - 600.00) < 0.001;
+$checks['Bruno offen: 600']             = abs($nach_kunde['Bruno']['offen'] - 600.00) < 0.001;
 // Eine Rechnung ohne Kontakt laeuft unter ihrem freien Namen mit - sie
 // ist Umsatz wie jeder andere.
 $checks['freier Name zaehlt mit']       = isset($nach_kunde['Barverkauf']);
@@ -161,7 +179,12 @@ $checks['nach Umsatz sortiert']         = $umsatz[0]['kunde'] === 'Anna';
 // Offene Posten aus der Datenbank
 // =====================================================================
 $posten = offene_posten($pdo);
-$checks['nur offene Rechnungen']    = count($posten) === 1 && $posten[0]['title'] === 'RE-2';
+// Zwei: die unbezahlte und die angezahlte. Eine Anzahlung nimmt eine
+// Rechnung nicht aus den offenen Posten heraus, sie verkleinert sie.
+$checks['nur offene Rechnungen']    = count($posten) === 2
+                                   && $posten[0]['title'] === 'RE-2';
+$checks['angezahlte mit Rest drin'] = $posten[1]['title'] === 'RE-5'
+                                   && abs((float) $posten[1]['offen'] - 600.00) < 0.001;
 $checks['der Kundenname kommt mit'] = $posten[0]['kunde'] === 'Anna';
 
 // =====================================================================

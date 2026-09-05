@@ -406,6 +406,14 @@ if command -v php >/dev/null 2>&1; then
   # Der Zahlungsabgleich. Der teure Fehler ist dort die falsch
   # zugeordnete Zahlung: die Rechnung steht auf bezahlt, die Mahnung
   # bleibt aus, und auffallen wuerde es zum Jahresabschluss.
+  # Das Zahlungsjournal. Der teure Fehler ist nicht die vergessene
+  # Teilzahlung, sondern der Status, der nicht mehr dazu passt: die
+  # Rechnung gilt als bezahlt, die Mahnung bleibt aus, und auffallen
+  # wird es beim Jahresabschluss.
+  if ! out=$(php tools/test_invoice_payments.php 2>&1); then
+    echo "ZAHLUNGSJOURNAL: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_payments.php 2>&1); then
     echo "ZAHLUNGEN: $out"
     fail=1

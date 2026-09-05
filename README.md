@@ -359,9 +359,46 @@ guess. One invoice is proposed at most once, and the numbered matches are
 allocated first, so a bare amount cannot take the invoice a reference
 clearly means.
 
-Booking only moves an invoice from open or overdue, so a second click on
-the same button books nothing twice, and it writes the payment date and
-reference into the notes.
+Booking writes the transferred amount into the invoice's payment ledger
+(below), with its date and reference. Only from open or overdue, so a
+second click on the same button books nothing twice — and an amount that
+covers part of the invoice is now recorded as part of it rather than
+being lost or rounded up to "paid".
+
+### Part payments
+
+An invoice used to be open or paid, and nothing in between. A deposit, an
+instalment, an amount short by the bank's fee — none of them had a state.
+Either the nightly run kept dunning for the full sum, or the invoice was
+flipped to "paid" and the remainder quietly left the reports. Both are
+wrong in the direction that costs money.
+
+Every invoice now has a ledger. The **money icon** on a row opens it:
+record what arrived, with a date and a note, and take a wrong entry back
+out. The invoice's status follows from those entries — once they add up
+to the total, it counts as paid; before that it stays open or overdue
+depending on the due date.
+
+That the status is *derived* is the point. Two places claiming to know
+whether an invoice is settled is how they end up disagreeing. So the
+paid/open switch in the list writes to the ledger as well: setting "paid"
+records the remainder as of today, setting it back removes that one entry
+again — and only that one. A part payment you entered, or one matched
+from a bank statement, is an event that happened; a switch does not undo
+it.
+
+The remainder is what the rest of the panel now works with. The reminder
+mail asks for what is still owed rather than the invoice total — someone
+who has paid 400 of 1,240 € and then receives a demand for 1,240 € reads
+it as a mistake and picks up the phone. The aging buckets count the
+remainder, revenue per client splits into what actually arrived and what
+is still out, and in the client portal both the amount shown and **the
+QR code** carry the open remainder, so scanning it after a deposit does
+not transfer the full sum a second time.
+
+Existing installations keep their numbers: migration 20 writes one ledger
+entry for every invoice already marked paid, dated from the invoice, so
+the reports read the same the morning after as the evening before.
 
 ### Recurring entries
 

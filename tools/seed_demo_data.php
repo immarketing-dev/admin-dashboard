@@ -717,6 +717,46 @@ if ($abo) {
     $setz_wdh->execute(['monthly', tag(6), $abo]);
 }
 
+// --- Zahlungseingänge -----------------------------------------------
+// Jede bezahlte Rechnung bekommt ihren Eingang - das ist der Zustand,
+// den Migration 20 auf einer bestehenden Datenbank herstellt, und ohne
+// ihn stünde die Demo mit lauter bezahlten Rechnungen da, auf die nie
+// Geld eingegangen ist.
+$bezahlte = $pdo->query(
+    "SELECT id, amount, due_date, record_date FROM finances
+      WHERE type = 'INCOME' AND status = 'Bezahlt'"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+$ins_zahlung = $pdo->prepare(
+    'INSERT INTO payments (finance_id, amount, paid_at, note, source) VALUES (?, ?, ?, ?, ?)'
+);
+foreach ($bezahlte as $b) {
+    $ins_zahlung->execute([
+        (int) $b['id'], $b['amount'],
+        $b['due_date'] ?: $b['record_date'],
+        null, 'bank',
+    ]);
+}
+
+// Und eine, auf die angezahlt wurde: die Hälfte ist da, der Rest steht
+// aus. Ohne so eine Zeile sieht man der Demo nicht an, dass es den Fall
+// überhaupt gibt - und er ist der Grund für die ganze Tabelle.
+$anzahlung = $pdo->query(
+    "SELECT id, amount FROM finances
+      WHERE type = 'INCOME' AND status IN ('Offen', 'Überfällig') AND amount > 500
+      ORDER BY amount DESC LIMIT 1"
+)->fetch(PDO::FETCH_ASSOC);
+
+if ($anzahlung) {
+    $ins_zahlung->execute([
+        (int) $anzahlung['id'],
+        round((float) $anzahlung['amount'] / 2, 2),
+        tag(-9),
+        'Anzahlung nach Auftragsbestätigung',
+        'bank',
+    ]);
+}
+
 // --- Mahnstufen -----------------------------------------------------
 // Die überfälligen Rechnungen haben schon eine Erinnerung gesehen, die
 // älteste zwei. Sonst steht die Stufe überall auf null.

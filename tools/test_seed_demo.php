@@ -55,7 +55,7 @@ foreach (nach_sqlite(file_get_contents($wurzel . '/install/schema.sql')) as $anw
                   . "\n    " . substr(preg_replace('/\s+/', ' ', $anweisung), 0, 160);
     }
 }
-pruefe('Alle 27 Tabellen angelegt', $angelegt === 27, "es wurden $angelegt angelegt");
+pruefe('Alle 28 Tabellen angelegt', $angelegt === 28, "es wurden $angelegt angelegt");
 
 if ($fehler !== []) {
     echo "FEHLGESCHLAGEN beim Aufbau des Schemas:\n";
@@ -254,6 +254,25 @@ pruefe("Keine Buchung liegt in der Zukunft", $kuenftige_buchungen === 0,
 $bezahlt_diesen_monat = $zaehle("finances",
     "type = 'INCOME' AND status = 'Bezahlt' AND record_date >= '" . date("Y-m-01") . "'");
 pruefe("Im laufenden Monat ist eine Rechnung bezahlt", $bezahlt_diesen_monat > 0);
+
+// Jede bezahlte Rechnung braucht ihren Eingang im Journal: der Status
+// wird daraus abgeleitet, und eine bezahlte ohne Zahlung waere ein
+// Zustand, den es auf einer echten Datenbank nach Migration 20 nicht
+// gibt.
+$bezahlt_ohne_zahlung = $zaehle("finances f",
+    "f.type = 'INCOME' AND f.status = 'Bezahlt'
+     AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.finance_id = f.id)");
+pruefe("Jede bezahlte Rechnung hat einen Zahlungseingang", $bezahlt_ohne_zahlung === 0,
+       "$bezahlt_ohne_zahlung ohne Eingang");
+
+// Und eine angezahlte muss dabei sein - sonst sieht man der Demo nicht
+// an, dass es Teilzahlungen gibt.
+$angezahlt = (int) $pdo->query(
+    "SELECT COUNT(*) FROM finances f
+      WHERE f.type = 'INCOME' AND f.status IN ('Offen', 'Überfällig')
+        AND (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.finance_id = f.id) > 0"
+)->fetchColumn();
+pruefe("Eine Rechnung ist angezahlt", $angezahlt > 0);
 echo "  OK: $vor_kurzem Protokolleintraege der letzten Woche, $kuenftig kuenftige und "
    . "$vergangen vergangene Termine, $offene_rechnungen offene Rechnungen.\n";
 

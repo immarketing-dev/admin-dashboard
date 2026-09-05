@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/upload_helper.php';
 require_once 'includes/session.php';
 require_once 'includes/csrf.php';
+require_once 'includes/invoice_payments.php';
 
 // PHPMailer: das Portal meldet dem Absender, wenn ein Angebot
 // angenommen wird oder eine Rueckfrage kommt.
@@ -672,6 +673,11 @@ $has_bank = $bank['iban'] !== '' && $bank['holder'] !== '';
 $invoices = $pdo->prepare("SELECT * FROM finances WHERE deleted_at IS NULL AND contact_id=? AND type='INCOME' ORDER BY record_date DESC");
 $invoices->execute([$client['id']]);
 $invoices = $invoices->fetchAll(PDO::FETCH_ASSOC);
+// Teilzahlungen. Sie entscheiden hier ueber mehr als eine Anzeige:
+// der QR-Code weiter unten traegt einen Betrag, und der muss der
+// noch offene sein. Sonst ueberweist jemand, der schon angezahlt
+// hat, beim Abscannen ein zweites Mal die volle Summe.
+$bezahlt_je_rechnung = zahlung_summen($pdo, array_column($invoices, 'id'));
 
 $tickets_stmt = $pdo->prepare("SELECT t.*,
     (SELECT COUNT(*) FROM ticket_notes tn WHERE tn.ticket_id=t.id AND tn.is_public=1) AS reply_count
@@ -1663,11 +1669,23 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             $is_paid     = $inv['status'] === 'Bezahlt';
             $is_overdue  = $inv['status'] === 'Überfällig';
             $badge_cls   = $is_paid ? 'bg-success' : ($is_overdue ? 'bg-danger' : 'bg-warning text-dark');
+            $inv_bezahlt = $bezahlt_je_rechnung[(int)$inv['id']] ?? 0.0;
+            $inv_offen   = rechnung_offen((float)$inv['amount'], $inv_bezahlt);
+            $inv_teils   = !$is_paid && $inv_bezahlt > 0 && $inv_offen > 0;
           ?>
           <div class="col-md-6 col-lg-4">
             <div class="invoice-card <?= $is_overdue ? 'invoice-overdue' : '' ?>">
               <div class="d-flex justify-content-between align-items-start mb-3">
-                <div class="invoice-amount"><?= number_format($inv['amount'],2,',','.') ?> €</div>
+                <div>
+                  <div class="invoice-amount"><?= number_format($inv['amount'],2,',','.') ?> €</div>
+                  <?php if($inv_teils): ?>
+                  <div class="text-muted" style="font-size:12px;">
+                    <?= te('%s € eingegangen · noch %s € offen',
+                            number_format($inv_bezahlt, 2, ',', '.'),
+                            number_format($inv_offen, 2, ',', '.')) ?>
+                  </div>
+                  <?php endif; ?>
+                </div>
                 <span class="badge <?= $badge_cls ?> rounded-pill px-3 py-2"><?= htmlspecialchars(datenwert($inv['status'])) ?></span>
               </div>
               <div class="fw-semibold text-dark mb-1"><?= htmlspecialchars($inv['title']) ?></div>
@@ -1686,7 +1704,8 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                    data-holder="<?= htmlspecialchars($bank['holder'], ENT_QUOTES) ?>"
                    data-iban="<?= htmlspecialchars($bank['iban'], ENT_QUOTES) ?>"
                    data-bic="<?= htmlspecialchars($bank['bic'], ENT_QUOTES) ?>"
-                   data-amount="<?= htmlspecialchars(number_format((float)$inv['amount'], 2, '.', ''), ENT_QUOTES) ?>"
+                   <?php /* Der offene Rest, nicht der Rechnungsbetrag - siehe oben. */ ?>
+                   data-amount="<?= htmlspecialchars(number_format($inv_offen, 2, '.', ''), ENT_QUOTES) ?>"
                    data-ref="<?= htmlspecialchars($vz, ENT_QUOTES) ?>">
                 <div class="section-label mb-2"><i class="bi bi-bank me-1"></i><?= te('Zahlung') ?></div>
                 <div class="d-flex gap-3 flex-wrap align-items-start">
@@ -1697,7 +1716,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                     <?php if($bank['bic'] !== ''): ?>
                       <div><span class="pay-key">BIC</span><span class="pay-val pay-mono"><?= htmlspecialchars($bank['bic']) ?></span></div>
                     <?php endif; ?>
-                    <div><span class="pay-key"><?= te('Betrag') ?></span><span class="pay-val fw-bold"><?= number_format((float)$inv['amount'], 2, ',', '.') ?> €</span></div>
+                    <div><span class="pay-key"><?= te('Betrag') ?></span><span class="pay-val fw-bold"><?= number_format($inv_offen, 2, ',', '.') ?> €</span></div>
                     <div><span class="pay-key"><?= te('Verwendungszweck') ?></span><span class="pay-val pay-mono"><?= htmlspecialchars($vz) ?></span></div>
                   </div>
                 </div>
