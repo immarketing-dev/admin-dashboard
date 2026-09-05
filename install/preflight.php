@@ -117,6 +117,67 @@ function pf_mask_secrets(string $text): string
     return $text;
 }
 
+/**
+ * Sitzt eine angemeldete Verwaltung davor?
+ *
+ * Der Riegel weiter unten verweigert einer eingerichteten Installation
+ * den Dienst. Das ist richtig gegen jeden, der die Adresse errät - und
+ * falsch gegen den Betreiber selbst, denn genau bei einer laufenden
+ * Installation braucht man diese Seite: wenn eine Seite mit HTTP 500
+ * abbricht und im Browser nichts steht, woran man sich halten könnte.
+ *
+ * Deshalb ein zweiter Weg hinein, der ohne neues Geheimnis auskommt: wer
+ * im Panel als Verwaltung angemeldet ist, darf sie sehen. Das ist
+ * dieselbe Vertrauensstufe wie die Einstellungsseite, die Schemastand,
+ * Tabellen und Sicherungen ohnehin zeigt.
+ */
+function pf_angemeldete_verwaltung(?PDO $pdo): bool
+{
+    if ($pdo === null) {
+        return false;
+    }
+
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            // Derselbe Sitzungsname wie im Panel - sonst wird hier eine
+            // neue, leere Sitzung geöffnet und die Anmeldung nie
+            // gefunden. Die Konstante kommt aus includes/session.php;
+            // app_session_start() waere der uebliche Weg, zieht aber
+            // demo.php und damit Konstanten aus config.php nach sich, die
+            // es hier bewusst nicht gibt.
+            $sessionDatei = dirname(__DIR__) . '/includes/session.php';
+            if (!is_readable($sessionDatei)) {
+                return false;
+            }
+            require_once $sessionDatei;
+            session_name(APP_SESSION_NAME);
+            session_start();
+        }
+
+        if (($_SESSION['admin_logged_in'] ?? null) !== true) {
+            return false;
+        }
+
+        $id = (int) ($_SESSION['admin_id'] ?? 0);
+        if ($id <= 0) {
+            return false;
+        }
+
+        // Die Rolle aus der Datenbank, nicht aus der Sitzung: eine
+        // Sitzung aus der Zeit vor den Rollen traegt keine, und geraten
+        // wird hier nichts.
+        $stmt = $pdo->prepare('SELECT role, is_active FROM users WHERE id = ?');
+        $stmt->execute([$id]);
+        $benutzer = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $benutzer !== false
+            && (int) $benutzer['is_active'] === 1
+            && (string) $benutzer['role'] === 'admin';
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Ergebnis-Sammlung
 // ─────────────────────────────────────────────────────────────────────
@@ -189,11 +250,22 @@ if ($pdo !== null) {
     }
 }
 
+$pf_diagnose = false;
 if ($envExists && $dbUsersCount !== null && $dbUsersCount > 0) {
-    http_response_code(403);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo "Installation bereits eingerichtet. Diese Datei bitte löschen.\n";
-    exit;
+    // Eingerichtet. Fuer jeden, der die Adresse errät, ist hier Schluss -
+    // fuer die angemeldete Verwaltung nicht, denn dann ist diese Seite
+    // das Werkzeug, mit dem man einer laufenden Installation ansieht, was
+    // ihr fehlt.
+    if (!pf_angemeldete_verwaltung($pdo)) {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Installation bereits eingerichtet. Diese Datei bitte löschen.\n"
+           . "\n"
+           . "Zur Fehlersuche an einer laufenden Installation: im Panel als\n"
+           . "Verwaltung anmelden und diese Adresse dann erneut aufrufen.\n";
+        exit;
+    }
+    $pf_diagnose = true;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -721,7 +793,19 @@ foreach ($results as $r) {
 }
 $ready = $failCount === 0;
 
-$sectionOrder = ['Server', 'Dateisystem', 'Datenbank'];
+// 'Dateien' steht vorn: eine unvollstaendig hochgeladene oder
+// fehlende Datei erklaert eine weisse Seite, bevor irgendetwas an
+// Server oder Datenbank dafuer in Frage kommt.
+$sectionOrder = ['Dateien', 'Server', 'Dateisystem', 'Datenbank'];
+
+// Ein Abschnitt ohne Eintrag in dieser Liste erscheint gar nicht -
+// die Pruefung liefe, waere aber unsichtbar. Genau das ist beim
+// Einbau von 'Dateien' passiert.
+foreach ($results as $r) {
+    if (!in_array($r['section'], $sectionOrder, true)) {
+        $sectionOrder[] = $r['section'];
+    }
+}
 $bySection    = [];
 foreach ($results as $r) {
     $bySection[$r['section']][] = $r;
@@ -800,6 +884,14 @@ header('Content-Type: text/html; charset=utf-8');
 
   <h1>Installations-Check</h1>
   <p class="subtitle">Geprüft am <?= pf_h(date('d.m.Y H:i:s')) ?> auf diesem Server.</p>
+
+  <?php if ($pf_diagnose): ?>
+  <p class="subtitle">
+    Diese Installation ist bereits eingerichtet. Die Prüfung läuft, weil Sie im
+    Panel als Verwaltung angemeldet sind — für alle anderen bleibt die Seite
+    gesperrt. Trotzdem: nach Gebrauch löschen.
+  </p>
+  <?php endif; ?>
 
   <?php foreach ($sectionOrder as $sectionName): ?>
     <?php if (empty($bySection[$sectionName])) continue; ?>

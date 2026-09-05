@@ -187,6 +187,22 @@ installation onto this codebase). Act on anything it reports as FAIL, then
 **delete the file** — it reads server and database internals and must not
 stay reachable after setup.
 
+It also answers the question a bare HTTP 500 does not. Two of its checks
+exist for that: **Syntax** parses every PHP file of the project without
+executing it — a half-transferred upload is a parse error, and a parse
+error happens before the panel's own error handling exists, so the browser
+shows nothing but its own empty page, and only for the one file affected.
+**Included files** reads every `require` in the code and reports any file
+that is not on the server; uploading over FTP overwrites what changed and
+silently skips what is new. **Schema state** compares the stored version
+against `SCHEMA_VERSION`, which is lower whenever a migration stopped
+halfway and the code is already using a column that does not exist.
+
+An installation that is already set up refuses the page — except to a
+signed-in administrator. Locking the operator out of the one tool that
+explains a white page would be the wrong side to err on, and what it
+shows is what the settings page shows anyway.
+
 Edit `.env` and fill in at least `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`.
 
 `vendor/` is committed, so `composer install` is **optional** — run it only
