@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 13;
+const SCHEMA_VERSION = 14;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -505,6 +505,25 @@ function migrations(): array
             . ' KEY idx_mail_created (created_at),'
             . ' KEY idx_mail_status (status, created_at)'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        ],
+
+        // Version 14: aus einem angenommenen Angebot wird ein Projekt.
+        //
+        // Es gab "Angebot zu Rechnung", aber nicht "Angebot zu Projekt" -
+        // wer den Auftrag bekam, tippte die Positionen ein zweites Mal
+        // ab, diesmal als Meilensteine.
+        //
+        // Die Spalte zeigt vom Angebot auf das entstandene Projekt und
+        // verhindert damit das versehentliche zweite: dann stuende
+        // dieselbe Arbeit doppelt in der Liste, und beide Haelften
+        // waeren halb gepflegt.
+        //
+        // ON DELETE SET NULL: wird das Projekt geloescht, bleibt das
+        // Angebot gueltig und laesst sich erneut umwandeln.
+        14 => [
+            'ALTER TABLE quotes ADD COLUMN converted_task_id INT DEFAULT NULL',
+            'ALTER TABLE quotes ADD CONSTRAINT fk_quotes_task'
+            . ' FOREIGN KEY (converted_task_id) REFERENCES tasks(id) ON DELETE SET NULL',
         ],
     ];
 }

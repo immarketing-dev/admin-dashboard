@@ -321,6 +321,12 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Angebot zu Projekt. Der Fall, an dem es still schiefginge, ist das
+  # ZWEITE Projekt aus demselben Angebot.
+  if ! out=$(php tools/test_quote_to_project.php 2>&1); then
+    echo "ANGEBOT->PROJEKT: $out"
+    fail=1
+  fi
   # Mailprotokoll: das Kappen ueberlanger Werte und die eigene, laengere
   # Aufbewahrung sind die Stellen, an denen es still falsch wuerde.
   if ! out=$(php tools/test_mail_log.php 2>&1); then

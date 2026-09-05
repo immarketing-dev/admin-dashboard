@@ -110,6 +110,10 @@ $ausnahmen = [
     // Teil einer einmaligen Adresse (?export=receipts&jahr=2026) -
     // es ueber die Seitenaufrufe mitzuschleppen waere falsch.
     'jahr',
+    // Die Kennung des hervorzuhebenden Projekts nach einer
+    // Umwandlung. Einmalig, kein Filter - sie ueber die
+    // Seitenaufrufe mitzuschleppen waere falsch.
+    'highlight',
 ];
 $fehlend = [];
 foreach (['tasks', 'contacts', 'finances', 'tickets', 'quotes', 'wiki'] as $seite) {

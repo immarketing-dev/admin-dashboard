@@ -1411,3 +1411,19 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 /* Die Jahresauswahl sitzt im Widget-Kopf und soll ihn nicht auseinander
    ziehen. */
 .report-jahr { width: auto; display: inline-block; }
+
+/* Ein gerade entstandenes Projekt - etwa aus einem angenommenen Angebot.
+   Kein Statusfarbton: die Karte ist nicht "gut" oder "dringend", sie ist
+   nur die, die man sucht. Deshalb der Markenton, und deshalb nur bis zum
+   naechsten Seitenaufruf. */
+.task-card-highlight {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    animation: task-highlight-fade 2.5s ease-out 1s forwards;
+}
+@keyframes task-highlight-fade {
+    to { outline-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .task-card-highlight { animation: none; }
+}

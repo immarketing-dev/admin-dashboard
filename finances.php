@@ -4,6 +4,7 @@ require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
+require_once 'includes/quote_to_project.php';
 require_once 'includes/reminders.php';
 require_once 'includes/receipts.php';
 require_once 'includes/recurring.php';
@@ -441,6 +442,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             filter_redirect('finances', ['tab' => 'quotes', 'error' => 'email_failed', 'detail' => $e->getMessage()]);
         }
     }
+    // Aus dem Angebot ein Projekt machen. Die Positionen werden zu
+    // Meilensteinen - genau die Arbeit, die man sonst ein zweites Mal
+    // abtippt.
+    //
+    // Der Status des Angebots bleibt unberuehrt: ein Angebot kann
+    // angenommen sein, ohne dass ein Projekt dazugehoert, und Arbeit
+    // faengt manchmal an, bevor die Zusage schriftlich vorliegt.
+    if ($action === 'convert_to_project') {
+        $qid = (int) ($_POST['quote_id'] ?? 0);
+
+        // Schon umgewandelt: nicht noch einmal. Der Knopf ist dann zwar
+        // ohnehin weg, aber eine zweite Sendung - Doppelklick,
+        // zurueckgeblaetterte Seite - darf kein zweites Projekt anlegen.
+        $vorhanden = angebot_projekt($pdo, $qid);
+        if ($vorhanden !== null) {
+            header('Location: tasks?highlight=' . $vorhanden); exit();
+        }
+
+        $task_id = projekt_aus_angebot($pdo, $qid);
+        if ($task_id === null) {
+            filter_redirect('finances', ['tab' => 'quotes', 'error' => 'not_found']);
+        }
+        header('Location: tasks?highlight=' . $task_id); exit();
+    }
+
     if ($action === 'convert_to_invoice') {
         $id   = (int)$_POST['quote_id'];
         $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
@@ -926,6 +952,18 @@ require 'includes/layout_start.php';
                   </button>
                   <button type="button" class="btn btn-sm btn-outline-secondary px-2" title="<?= te('Bearbeiten') ?>"
                           onclick='prepareEditQuote(<?= htmlspecialchars(json_encode($q_row, JSON_HEX_TAG|JSON_HEX_APOS), ENT_QUOTES) ?>)'><i class="bi bi-pencil-square"></i></button>
+                  <?php $_projekt = angebot_projekt($pdo, (int) $q_row['id']); ?>
+                  <?php if($_projekt !== null): ?>
+                    <a href="tasks?highlight=<?= (int) $_projekt ?>" class="btn btn-sm btn-outline-primary px-2"
+                       title="<?= te('Zum Projekt aus diesem Angebot') ?>"><i class="bi bi-check2-square"></i></a>
+                  <?php elseif($q_row['status'] !== 'Abgelehnt'): ?>
+                  <form method="POST" class="d-inline"
+                        onsubmit="return confirm('<?= te('Aus Angebot %s ein Projekt anlegen? Jede Position wird ein Meilenstein.', htmlspecialchars($q_row['quote_number'])) ?>')">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="convert_to_project">
+                    <input type="hidden" name="quote_id" value="<?= $q_row['id'] ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-primary px-2" title="<?= te('Zu Projekt machen') ?>"><i class="bi bi-kanban"></i></button>
+                  </form>
+                  <?php endif; ?>
                   <?php if($q_row['status'] !== 'Angenommen' && $q_row['status'] !== 'Abgelehnt'): ?>
                   <form method="POST" class="d-inline" onsubmit="return confirm('Angebot <?= htmlspecialchars($q_row['quote_number']) ?> in eine Rechnung umwandeln?')">
                     <?= csrf_field() ?><input type="hidden" name="action" value="convert_to_invoice">

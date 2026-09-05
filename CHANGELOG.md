@@ -9,6 +9,32 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **From quote to project.** There was "quote to invoice" but not "quote to
+  project": whoever won the work typed the line items they had just
+  written out a second time, now as milestones.
+
+  Schema version 14 adds `quotes.converted_task_id`. Client, subject and
+  line items carry over; every line item becomes a milestone, with the
+  quantity in the title where it is not one — "Schulung" and "Schulung
+  (3 Tage)" are different promises. The introductory text becomes the
+  project description, and the client is entered in `task_contacts`,
+  without which they would not see their own project in the portal.
+
+  Two restraints. The quote's **status is left alone**: a quote can be
+  accepted without a project, and work sometimes starts before the
+  acceptance is in writing. And it happens **once per quote** — while
+  `converted_task_id` points somewhere, the button links to that project
+  instead of offering another. A second one is nearly always a
+  double-click, and then the same work sits twice in the list with both
+  halves half maintained. `ON DELETE SET NULL` frees the quote again if
+  the project is deleted.
+
+  The project list now takes `?highlight=<id>`, outlines that card and
+  scrolls to it — a link that only lands on the list would leave you
+  hunting through thirty projects for the new one.
+
+  34 checks in `tools/test_quote_to_project.php`.
+
 - **A record of what was sent (`mail_log`).** The panel sends nine kinds of
   mail — quotes, invoices, portal invitations, milestone notices, ticket
   replies, calendar invitations, a notice when a client reacts to a quote

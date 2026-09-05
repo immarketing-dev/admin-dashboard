@@ -362,6 +362,31 @@ subdomain with its own database and a `SELECT`-only database user — never
 on a real installation. See [docs/DEMO.md](docs/DEMO.md) for the full
 setup.
 
+### From quote to project
+
+There was "quote to invoice" but not "quote to project": whoever won the
+work typed the line items they had just written out a second time, now as
+milestones.
+
+The button beside it does the same thing with a different target — client,
+subject and line items carry over, and **every line item becomes a
+milestone**. Quantities come along where they are not one: "Schulung" and
+"Schulung (3 Tage)" are different promises, and you want to know which one
+you are ticking off. The quote's introductory text becomes the project
+description — you wrote it for the client anyway.
+
+Two deliberate restraints:
+
+- **The quote's status is left alone.** A quote can be accepted without a
+  project (a single delivery, a flat fee), and work sometimes starts before
+  the acceptance is in writing. The two steps belong side by side, not
+  inside one another.
+- **Only once per quote.** `quotes.converted_task_id` points at what was
+  created, and while it does, the button links to that project instead of
+  offering to make another. A second one is nearly always a double-click,
+  and then the same work sits twice in the list with both halves half
+  maintained. Deleting the project frees the quote again.
+
 ### What was sent
 
 The panel sends nine kinds of mail — quotes, invoices, portal invitations,
@@ -503,6 +528,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_receipts.php` | archive naming, the CSV, and the path guard on deletion |
 | `test_auth_reset.php` | single use, expiry, hashed storage, per-IP rate limit |
 | `test_mail_log.php` | truncation of over-long values, and the longer retention |
+| `test_quote_to_project.php` | line-item conversion, and the guard against a second project |
 
 Run separately when you need them:
 

@@ -362,9 +362,17 @@ CREATE TABLE IF NOT EXISTS quotes (
   total_amount   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   valid_until    DATE NULL,
   quote_pdf_path VARCHAR(255),
+  -- Das Projekt, das aus diesem Angebot entstanden ist. Verhindert das
+  -- versehentliche zweite: sonst stuende dieselbe Arbeit doppelt in der
+  -- Liste, und beide Haelften waeren halb gepflegt. ON DELETE SET NULL,
+  -- damit sich das Angebot nach dem Loeschen des Projekts erneut
+  -- umwandeln laesst.
+  converted_task_id INT DEFAULT NULL,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   deleted_at     DATETIME DEFAULT NULL,
-  KEY idx_quotes_deleted (deleted_at)
+  KEY idx_quotes_deleted (deleted_at),
+  CONSTRAINT fk_quotes_task FOREIGN KEY (converted_task_id)
+    REFERENCES tasks(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -- Support -------------------------------------------------------------
@@ -493,7 +501,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '13')
+INSERT INTO settings (k, v) VALUES ('schema_version', '14')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

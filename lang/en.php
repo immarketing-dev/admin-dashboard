@@ -1668,4 +1668,11 @@ return [
         => "Template",
     "Bezug"
         => "Relates to",
+    // ── Angebot zu Projekt ───────────────────────────────────────────
+    "Zu Projekt machen"
+        => "Turn into a project",
+    "Zum Projekt aus diesem Angebot"
+        => "Go to the project from this quote",
+    "Aus Angebot %s ein Projekt anlegen? Jede Position wird ein Meilenstein."
+        => "Create a project from quote %s? Every line item becomes a milestone.",
 ];

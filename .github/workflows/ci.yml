@@ -71,3 +71,6 @@ jobs:
 
       - name: Mail log tests
         run: php tools/test_mail_log.php
+
+      - name: Quote-to-project tests
+        run: php tools/test_quote_to_project.php

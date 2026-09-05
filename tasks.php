@@ -652,13 +652,20 @@ require 'includes/layout_start.php';
               <p class="mt-2"><?= te('Keine Projekte gefunden, die diesen Kriterien entsprechen.') ?></p>
           </div>
       <?php endif; ?>
+      <?php
+        // Ein hervorzuhebendes Projekt, etwa nach der Umwandlung aus
+        // einem Angebot. Nur eine Zahl - was nicht in der Liste steht,
+        // hebt sich schlicht nicht hervor.
+        $_highlight = (int) ($_GET['highlight'] ?? 0);
+      ?>
       <?php foreach($tasks as $task):
           $h = floor($task['tracked_minutes'] / 60); $m = $task['tracked_minutes'] % 60;
           $completed_class = $task['status'] === 'Erledigt' ? 'task-card-completed' : '';
           $cancelled_style = $task['status'] === 'Storniert' ? ' style="background-color:var(--surface-subtle);border-top-color:var(--text-faint);opacity:0.75;"' : '';
+          $ist_neu = $_highlight > 0 && (int) $task['id'] === $_highlight;
       ?>
-          <div class="col-lg-6">
-            <div class="task-card <?= $completed_class ?>"<?= $cancelled_style ?>>
+          <div class="col-lg-6" id="task-<?= (int) $task['id'] ?>">
+            <div class="task-card <?= $completed_class ?><?= $ist_neu ? ' task-card-highlight' : '' ?>"<?= $cancelled_style ?>>
               
               <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap task-header-row">
                 <div style="flex: 1; min-width: 0;"> 
@@ -1689,4 +1696,17 @@ function toggleTalk(id) {
     }
 })();
 </script>
+<?php if ($_highlight > 0): ?>
+<script>
+  // Die hervorgehobene Karte in den sichtbaren Bereich holen. Kein
+  // Sprungziel in der Adresse (#task-42): das scrollt vor dem Rendern
+  // der Karten und landet daneben.
+  (function () {
+      var ziel = document.getElementById('task-<?= (int) $_highlight ?>');
+      if (!ziel) return;
+      ziel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  })();
+</script>
+<?php endif; ?>
+
 <?php require 'includes/layout_end.php'; ?>
