@@ -325,6 +325,14 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Die elektronische Rechnung: wohlgeformt, Betraege stimmig,
+  # Sonderzeichen maskiert. Ob ein konkreter Empfaenger die Datei
+  # annimmt, prueft das NICHT - das gehoert vor dem ersten echten
+  # Versand durch ein offizielles Werkzeug.
+  if ! out=$(php tools/test_xrechnung.php 2>&1); then
+    echo "XRECHNUNG: $out"
+    fail=1
+  fi
   # Der zweite Faktor. Die Rechnung wird gegen die Pruefvektoren aus
   # RFC 6238 geprueft - eine falsche Umsetzung, die zufaellig mit einer
   # App zusammenpasst, gaebe es sonst durchaus.

@@ -83,3 +83,6 @@ jobs:
 
       - name: TOTP tests (RFC 6238 vectors)
         run: php tools/test_totp.php
+
+      - name: XRechnung tests
+        run: php tools/test_xrechnung.php

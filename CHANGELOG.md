@@ -9,6 +9,33 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Invoices as XML (XRechnung, UBL 2.1).** Invoices have been stored in
+  structured form since schema version 8 — `finances.items` as JSON with
+  description, quantity, price and unit, plus `tax_type`, `net_amount`,
+  `tax_amount`. Exactly what an electronic invoice needs. The only output
+  was a PDF drawn by FPDF: a picture of an invoice that no software can
+  read.
+
+  Schema version 17 adds `contacts.vat_id` and `finances.buyer_reference`,
+  and the settings page finally gets fields for the company address and
+  tax number — `company_street` and `company_city` were already *read* by
+  the PDF generator, but there had never been a field to enter them in.
+
+  Built with `DOMDocument`, not string concatenation: a client name
+  containing an `&` turns glued-together XML into an unreadable file.
+
+  **It is not a validator, and says so.** Whether a file passes a
+  particular recipient's check depends on fields this panel cannot know.
+  What it does check before generating is that its own mandatory fields
+  are present, naming the missing ones rather than handing over a file
+  that gets rejected. ZUGFeRD is deliberately absent: PDF/A-3 with
+  embedded XML is beyond FPDF and would mean another dependency.
+
+  60 checks in `tools/test_xrechnung.php` — well-formedness, the totals
+  adding up across line items, `&` surviving in a client name, the §19
+  exemption reason that a zero-tax invoice must carry, and the placeholder
+  where a buyer reference is genuinely absent.
+
 - **Two-factor sign-in (TOTP).** The sign-in path was carefully built —
   lockout after five attempts over the `ip` column, bcrypt at a pinned
   cost, a dummy hash against timing differences — and gained a way back

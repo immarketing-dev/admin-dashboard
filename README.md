@@ -440,6 +440,41 @@ Two details worth knowing:
 One of the nine used to have an entirely empty `catch` block: a failed
 calendar invitation left no trace at all. It does now.
 
+### Electronic invoices (XRechnung)
+
+Invoices have been stored in structured form since schema version 8 —
+`finances.items` as JSON with description, quantity, price and unit, plus
+`tax_type`, `net_amount` and `tax_amount`. Exactly what an electronic
+invoice needs. Until now the only output was a PDF drawn by FPDF: a
+*picture* of an invoice that no software can read.
+
+The XML button beside each invoice produces UBL 2.1 in the shape
+XRechnung 3.0 expects. It appears only where line items exist — an invoice
+from before schema version 8 has its breakdown in the PDF alone.
+
+**This is not a validator.** Whether a file passes a particular
+recipient's check depends on fields this panel cannot know: a public
+authority's routing ID, agreed order numbers, sector-specific additions.
+Before the first real send, put a generated file through an official
+checker (the KoSIT validator, for instance). What the panel *does* check
+before generating is that its own mandatory fields are present, and it
+names the missing ones rather than handing you a file that gets rejected.
+
+Three fields were added for this, two of which were missing anyway:
+
+- **Your own address and tax number** (Settings → Company).
+  `company_street` and `company_city` were already *read* by the PDF
+  generator — but there had never been a field to enter them in.
+- **The client's VAT ID**, on the contact.
+- **A buyer reference** per invoice: the client's order number, or a
+  public authority's routing ID. Mandatory in XRechnung; where it is
+  genuinely absent the file says "nicht vorhanden" rather than inventing
+  one.
+
+**ZUGFeRD is deliberately not included.** It requires PDF/A-3 with
+embedded XML, and FPDF cannot produce PDF/A-3 — that would mean another
+dependency and is its own piece of work.
+
 ### Two-factor sign-in
 
 Optional, per user, under **Settings → System**. A one-time code from an
@@ -615,6 +650,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_uptime.php` | state transitions, availability figure, history trimming |
 | `test_api_leads.php` | key handling, validation, honeypot, per-IP rate limit |
 | `test_totp.php` | the RFC 6238 test vectors, plus single-use backup codes |
+| `test_xrechnung.php` | well-formedness, totals, escaping, the §19 exemption reason |
 
 Run separately when you need them:
 

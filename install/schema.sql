@@ -177,6 +177,9 @@ CREATE TABLE IF NOT EXISTS contacts (
   portal_pin_locked_until DATETIME     DEFAULT NULL,
   -- Stundensatz dieses Kunden. Ein Projekt darf ihn ueberschreiben.
   hourly_rate             DECIMAL(10,2) DEFAULT NULL,
+  -- Umsatzsteuer-Identifikationsnummer. Ein PDF braucht sie nicht, eine
+  -- elektronische Rechnung zwischen Unternehmen schon.
+  vat_id                  VARCHAR(30)  DEFAULT NULL,
   created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at     DATETIME DEFAULT NULL,
   UNIQUE KEY uq_contacts_portal_token (portal_token),
@@ -360,6 +363,11 @@ CREATE TABLE IF NOT EXISTS finances (
   -- einmal gibt. Vermengt wuerde ein Beleg beim Neuerzeugen eines
   -- Rechnungs-PDFs ueberschrieben.
   receipt_path     VARCHAR(255) DEFAULT NULL,
+  -- Die Kaeufer-Referenz. Bei oeffentlichen Auftraggebern die
+  -- Leitweg-ID, sonst die Bestellnummer des Kunden. Fuer das PDF
+  -- entbehrlich, fuer eine XRechnung nicht: ohne sie weist die Pruefung
+  -- die Datei ab.
+  buyer_reference  VARCHAR(80) DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_fin_contact (contact_id),
   KEY idx_fin_type_date (type, record_date),
@@ -555,7 +563,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '16')
+INSERT INTO settings (k, v) VALUES ('schema_version', '17')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

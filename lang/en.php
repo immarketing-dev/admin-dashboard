@@ -1746,4 +1746,23 @@ return [
         => "Phone not at hand? Enter one of your backup codes here instead.",
     "Die Anmeldung ist abgelaufen. Bitte erneut beginnen."
         => "The sign-in has expired. Please start again.",
+    // ── Elektronische Rechnung ───────────────────────────────────────
+    "Als XRechnung (XML) herunterladen"
+        => "Download as XRechnung (XML)",
+    "Käufer-Referenz"
+        => "Buyer reference",
+    "Bestellnummer des Kunden, bei Behörden die Leitweg-ID. Nur für die XRechnung nötig."
+        => "The client's order number, or the routing ID for public authorities. Needed only for the XRechnung.",
+    "Straße und Hausnummer"
+        => "Street and number",
+    "Steht auf Rechnungs-PDFs und ist für die XRechnung Pflicht."
+        => "Appears on invoice PDFs and is mandatory for the XRechnung.",
+    "Zwei Buchstaben"
+        => "Two letters",
+    "USt-IdNr."
+        => "VAT ID",
+    "Steuernummer"
+        => "Tax number",
+    "Eines von beiden genügt für die XRechnung."
+        => "Either one is enough for the XRechnung.",
 ];

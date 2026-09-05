@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 16;
+const SCHEMA_VERSION = 17;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -585,6 +585,29 @@ function migrations(): array
             . ' CONSTRAINT fk_backup_user FOREIGN KEY (user_id)'
             . '   REFERENCES users(id) ON DELETE CASCADE'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        ],
+
+        // Version 17: was eine elektronische Rechnung zusaetzlich braucht.
+        //
+        // Die Positionen liegen seit Version 8 strukturiert vor
+        // (finances.items als JSON, dazu tax_type, net_amount,
+        // tax_amount) - genau der Bestand, aus dem sich eine XRechnung
+        // erzeugen laesst. Was fehlte, waren drei Angaben, die ein PDF
+        // nicht braucht und eine maschinenlesbare Rechnung sehr wohl:
+        //
+        //  - Die Umsatzsteuer-Identifikationsnummer des Kunden. Bei
+        //    einer Rechnung zwischen Unternehmen gehoert sie hinein.
+        //  - Die Kaeufer-Referenz je Rechnung. Bei oeffentlichen
+        //    Auftraggebern ist das die Leitweg-ID, sonst die
+        //    Bestellnummer des Kunden - ohne sie weist eine
+        //    XRechnung-Pruefung die Datei ab.
+        //
+        // Die Anschrift des Ausstellers steht in settings und braucht
+        // keine Migration - wohl aber Eingabefelder: sie wurde von der
+        // PDF-Erzeugung gelesen, aber nirgends gespeichert.
+        17 => [
+            'ALTER TABLE contacts ADD COLUMN vat_id VARCHAR(30) DEFAULT NULL',
+            'ALTER TABLE finances ADD COLUMN buyer_reference VARCHAR(80) DEFAULT NULL',
         ],
     ];
 }

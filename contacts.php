@@ -107,14 +107,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $satz = trim($_POST['hourly_rate'] ?? '');
         $satz = ($satz === '') ? null : (float) str_replace(',', '.', $satz);
 
-        $params = [$name, trim($_POST['company']), trim($_POST['email']), trim($_POST['phone']), trim($_POST['website']), trim($_POST['street']), trim($_POST['zip']), trim($_POST['city']), trim($_POST['country']), $_POST['contact_type'], $_POST['source'], trim($_POST['notes']), $satz];
+        // Leer heisst hier wirklich leer, nicht null: die Spalte traegt
+        // eine Zeichenkette, und ein leerer Eintrag ist "keine Nummer
+        // hinterlegt" - dieselbe Aussage, ohne Sonderfall beim Lesen.
+        $vat_id = trim($_POST['vat_id'] ?? '');
+
+        $params = [$name, trim($_POST['company']), trim($_POST['email']), trim($_POST['phone']), trim($_POST['website']), trim($_POST['street']), trim($_POST['zip']), trim($_POST['city']), trim($_POST['country']), $_POST['contact_type'], $_POST['source'], trim($_POST['notes']), $satz, $vat_id];
 
         if ($action === 'edit_contact') {
-            $params[] = (int)$_POST['contact_id'];
-            $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=?, hourly_rate=? WHERE id=?")->execute($params);
+            // Die Kennung wandert ans Ende, VOR die WHERE-Bedingung.
+            $params_upd = $params;
+            $params_upd[] = (int) $_POST['contact_id'];
+            $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=?, hourly_rate=?, vat_id=? WHERE id=?")->execute($params_upd);
             log_event($pdo, 'CONTACT_EDITED', "Kontakt '".$name."' wurde aktualisiert.");
         } else {
-            $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes, hourly_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
+            $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes, hourly_rate, vat_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
             log_event($pdo, 'CONTACT_ADDED', "Neuer Kontakt '".$name."' wurde angelegt.");
         }
     }
@@ -331,6 +338,7 @@ require 'includes/layout_start.php';
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control form-control-sm" value="Deutschland"></div>
+                  <div class="col-md-6"><label class="form-label small fw-bold"><?= te('USt-IdNr.') ?></label><input type="text" name="vat_id" class="form-control form-control-sm" maxlength="30" placeholder="DE123456789"></div>
               </div>
               <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
                   <h6 class="fw-bold text-primary border-bottom pb-2"><?= te('Meta & CRM') ?></h6>
@@ -371,6 +379,7 @@ require 'includes/layout_start.php';
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" id="edit_zip" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" id="edit_city" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" id="edit_country" class="form-control form-control-sm"></div>
+                    <div class="col-md-6"><label class="form-label small fw-bold"><?= te('USt-IdNr.') ?></label><input type="text" name="vat_id" id="edit_vat_id" class="form-control form-control-sm" maxlength="30"></div>
                 </div>
                 
                 <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
@@ -450,6 +459,7 @@ require 'includes/layout_start.php';
         document.getElementById('edit_zip').value = c.zip || '';
         document.getElementById('edit_city').value = c.city || '';
         document.getElementById('edit_country').value = c.country || '';
+        document.getElementById('edit_vat_id').value = c.vat_id || '';
         document.getElementById('edit_contact_type').value = c.contact_type || 'Kunde';
         document.getElementById('edit_source').value = c.source || '';
         document.getElementById('edit_notes').value = c.notes || '';

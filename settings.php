@@ -57,7 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     if ($_POST['action'] === 'save_company') {
         $keys = ['company_name','company_short','base_url','main_website','admin_email','support_email',
-                 'bank_holder','bank_iban','bank_bic','payment_note','default_hourly_rate'];
+                 'bank_holder','bank_iban','bank_bic','payment_note','default_hourly_rate',
+                 // Anschrift und Steuerangaben. company_street und
+                 // company_city wurden von der PDF-Erzeugung schon gelesen,
+                 // aber nie gespeichert - es gab kein Feld dafuer.
+                 'company_street','company_zip','company_city','company_country',
+                 'company_vat_id','company_tax_number'];
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
@@ -509,6 +514,41 @@ require 'includes/layout_start.php';
           <div class="col-md-6">
             <label class="form-label"><?= te('Kurzname') ?></label>
             <input type="text" name="company_short" class="form-control" value="<?= htmlspecialchars($s_company_short) ?>">
+          </div>
+
+          <?php /* Diese Felder wurden von der PDF-Erzeugung schon gelesen
+                   (company_street, company_city), aber nirgends gespeichert -
+                   es gab kein Eingabefeld dafuer. Fuer eine elektronische
+                   Rechnung sind sie Pflicht. */ ?>
+          <div class="col-md-6">
+            <label class="form-label"><?= te('Straße und Hausnummer') ?></label>
+            <input type="text" name="company_street" class="form-control" value="<?= htmlspecialchars(setting('company_street', '')) ?>">
+            <div class="form-text"><?= te('Steht auf Rechnungs-PDFs und ist für die XRechnung Pflicht.') ?></div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"><?= te('PLZ') ?></label>
+            <input type="text" name="company_zip" class="form-control" maxlength="20" value="<?= htmlspecialchars(setting('company_zip', '')) ?>">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label"><?= te('Ort') ?></label>
+            <input type="text" name="company_city" class="form-control" value="<?= htmlspecialchars(setting('company_city', '')) ?>">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label"><?= te('Land') ?></label>
+            <input type="text" name="company_country" class="form-control" maxlength="2"
+                   value="<?= htmlspecialchars(setting('company_country', 'DE')) ?>" placeholder="DE">
+            <div class="form-text"><?= te('Zwei Buchstaben') ?></div>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label"><?= te('USt-IdNr.') ?></label>
+            <input type="text" name="company_vat_id" class="form-control" maxlength="30"
+                   value="<?= htmlspecialchars(setting('company_vat_id', '')) ?>" placeholder="DE123456789">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label"><?= te('Steuernummer') ?></label>
+            <input type="text" name="company_tax_number" class="form-control" maxlength="30"
+                   value="<?= htmlspecialchars(setting('company_tax_number', '')) ?>">
+            <div class="form-text"><?= te('Eines von beiden genügt für die XRechnung.') ?></div>
           </div>
 
           <div class="mb-3">

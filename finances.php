@@ -174,6 +174,60 @@ function build_invoice_pdf_from_quote(array $q, string $inv_num): string {
 }
 
 // ==========================================
+// RECHNUNG ALS XML (XRECHNUNG)
+// ==========================================
+// Die Positionen liegen seit Schemaversion 8 strukturiert vor - genau
+// der Bestand, aus dem sich eine elektronische Rechnung erzeugen laesst.
+// Reines Lesen, deshalb auf einem GET.
+if (isset($_GET['export']) && $_GET['export'] === 'xrechnung') {
+    require_once __DIR__ . '/includes/xrechnung.php';
+
+    $xr_id = (int) ($_GET['id'] ?? 0);
+    $xr_stmt = $pdo->prepare(
+        "SELECT f.*,
+                COALESCE(NULLIF(c.name, ''), NULLIF(f.custom_name, ''), '') AS kunde_name,
+                c.street AS kunde_street, c.zip AS kunde_zip, c.city AS kunde_city,
+                c.country AS kunde_country, c.vat_id AS kunde_vat_id
+           FROM finances f
+           LEFT JOIN contacts c ON c.id = f.contact_id AND c.deleted_at IS NULL
+          WHERE f.deleted_at IS NULL AND f.type = 'INCOME' AND f.id = ?"
+    );
+    $xr_stmt->execute([$xr_id]);
+    $xr_rechnung = $xr_stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$xr_rechnung) {
+        filter_redirect('finances', ['error' => 'not_found']);
+    }
+
+    $xr_firma = [
+        'name'        => setting('company_name', COMPANY_NAME),
+        'street'      => setting('company_street', ''),
+        'zip'         => setting('company_zip', ''),
+        'city'        => setting('company_city', ''),
+        'country'     => setting('company_country', 'DE') ?: 'DE',
+        'vat_id'      => setting('company_vat_id', ''),
+        'tax_number'  => setting('company_tax_number', ''),
+        'email'       => setting('admin_email', ADMIN_EMAIL),
+        'iban'        => setting('bank_iban', ''),
+        'bank_holder' => setting('bank_holder', ''),
+    ];
+
+    // Lieber vorher sagen, was fehlt, als eine Datei ausliefern, die
+    // beim Empfaenger abgewiesen wird.
+    $xr_fehlt = xr_fehlende_angaben($xr_rechnung, $xr_firma);
+    if ($xr_fehlt) {
+        filter_redirect('finances', ['error' => 'xr_incomplete', 'detail' => implode(' · ', $xr_fehlt)]);
+    }
+
+    log_event($pdo, 'XRECHNUNG_EXPORT', 'XRechnung erzeugt für ' . $xr_rechnung['invoice_number'] . '.');
+
+    header('Content-Type: application/xml; charset=utf-8');
+    header('Content-Disposition: attachment; filename=' . xr_dateiname((string) $xr_rechnung['invoice_number']));
+    echo xr_erzeugen($xr_rechnung, $xr_firma);
+    exit();
+}
+
+// ==========================================
 // JAHRESUEBERGABE: AUSGABEN MIT BELEGEN
 // ==========================================
 // Ein Archiv mit der Uebersicht als CSV und jedem hinterlegten Beleg.
@@ -253,6 +307,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $contact_id = !empty($_POST['contact_id']) ? $_POST['contact_id'] : null;
         $custom_name = trim($_POST['custom_name']);
         $notes = trim($_POST['notes']);
+        // Die Kaeufer-Referenz gehoert nur an eine Einnahme - eine
+        // Ausgabe ist keine Ausgangsrechnung.
+        $buyer_ref = $type === 'INCOME' ? (trim((string) ($_POST['buyer_reference'] ?? '')) ?: null) : null;
         // Die Wiederholung. is_recurring bleibt das Etikett ("Fixkosten"),
         // an dem Filter, Abzeichen und CSV haengen - es folgt jetzt der
         // Auswahl, statt getrennt davon gesetzt zu werden. Eine unbekannte
@@ -302,13 +359,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                     beleg_loeschen($alter_pfad, __DIR__);
                 }
             }
-            $pdo->prepare("UPDATE finances SET type=?, title=?, contact_id=?, custom_name=?, amount=?, status=?, record_date=?, due_date=?, notes=?, is_recurring=?, recurrence=?, next_run=? WHERE id=?")
-                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run, $id]);
+            $pdo->prepare("UPDATE finances SET type=?, title=?, contact_id=?, custom_name=?, amount=?, status=?, record_date=?, due_date=?, notes=?, is_recurring=?, recurrence=?, next_run=?, buyer_reference=? WHERE id=?")
+                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run, $buyer_ref, $id]);
             
             log_event($pdo, 'FINANCE_UPDATED', "Finanzeintrag '$title' (ID: $id) wurde bearbeitet.");
         } else {
-            $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, is_recurring, recurrence, next_run) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run]);
+            $pdo->prepare("INSERT INTO finances (type, title, contact_id, custom_name, amount, status, record_date, due_date, notes, is_recurring, recurrence, next_run, buyer_reference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                ->execute([$type, $title, $contact_id, $custom_name, $amount, $status, $record_date, $due_date, $notes, $is_recurring, $recurrence, $next_run, $buyer_ref]);
             
             if ($beleg_neu !== null) {
                 $pdo->prepare("UPDATE finances SET receipt_path = ? WHERE id = ?")
@@ -836,7 +893,7 @@ require 'includes/layout_start.php';
     <div class="toast show align-items-center text-bg-danger border-0 shadow-lg" role="alert" aria-atomic="true">
       <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>
         <?php
-          $errs = ['email_failed'=>'E-Mail konnte nicht gesendet werden.','no_phpmailer'=>'PHPMailer nicht installiert.','invalid_email'=>'Ungültige E-Mail-Adresse.','no_pdf'=>'Kein PDF vorhanden – bitte zuerst Rechnung generieren.','not_found'=>'Eintrag nicht gefunden.','upload_failed'=>'Der Beleg konnte nicht gespeichert werden.'];
+          $errs = ['email_failed'=>'E-Mail konnte nicht gesendet werden.','no_phpmailer'=>'PHPMailer nicht installiert.','invalid_email'=>'Ungültige E-Mail-Adresse.','no_pdf'=>'Kein PDF vorhanden – bitte zuerst Rechnung generieren.','not_found'=>'Eintrag nicht gefunden.','upload_failed'=>'Der Beleg konnte nicht gespeichert werden.','xr_incomplete'=>'Für eine XRechnung fehlen noch Angaben:'];
           $err_key = htmlspecialchars($_GET['error'], ENT_QUOTES);
           echo $errs[$err_key] ?? 'Fehler aufgetreten.';
           if(isset($_GET['detail'])) echo ' '.htmlspecialchars($_GET['detail']);
@@ -1137,6 +1194,14 @@ require 'includes/layout_start.php';
                                       && in_array($row['status'], ['Offen', 'Überfällig'], true)
                                       && filter_var((string)($row['contact_email'] ?? ''), FILTER_VALIDATE_EMAIL);
                                 ?>
+                                <?php if($is_income && !empty($row['items'])): ?>
+                                    <?php /* Nur mit Positionen: eine Rechnung von vor
+                                             Schemaversion 8 hat ihre Aufstellung allein
+                                             im PDF, und eine XRechnung ohne Positionen
+                                             gibt es nicht. */ ?>
+                                    <a href="?export=xrechnung&amp;id=<?=(int)$row['id']?>" class="btn-icon text-secondary"
+                                       title="<?= te('Als XRechnung (XML) herunterladen') ?>"><i class="bi bi-filetype-xml"></i></a>
+                                <?php endif; ?>
                                 <?php if($_mahnbar): ?>
                                     <button class="btn-icon text-warning" title="<?= te('Zahlungserinnerung senden') ?>" onclick='openReminderModal(<?= $safe_json ?>)'><i class="bi bi-bell"></i></button>
                                 <?php endif; ?>
@@ -1296,6 +1361,11 @@ require 'includes/layout_start.php';
                   </div>
                   <input type="file" name="receipt" id="fm_receipt" class="form-control">
                   <div class="form-text small"><?= te('PDF oder Bild, höchstens 20 MB. Ein neuer Beleg ersetzt den bisherigen.') ?></div>
+                </div>
+                <div class="col-md-6" id="div_buyer_ref" style="display:none;">
+                  <label class="form-label small fw-bold"><?= te('Käufer-Referenz') ?></label>
+                  <input type="text" name="buyer_reference" id="fm_buyer_ref" class="form-control" maxlength="80">
+                  <div class="form-text small"><?= te('Bestellnummer des Kunden, bei Behörden die Leitweg-ID. Nur für die XRechnung nötig.') ?></div>
                 </div>
                 <div class="col-12"><label class="form-label small fw-bold"><?= te('Notiz') ?></label><textarea name="notes" id="fm_notes" class="form-control" rows="2"></textarea></div>
             </div>
@@ -1661,6 +1731,8 @@ require 'includes/layout_start.php';
             document.getElementById('fm_date').value = new Date().toISOString().split('T')[0];
             document.getElementById('fm_next_run').value = '';
             belegFeldSetzen(dataOrType === 'EXPENSE', null, null);
+            document.getElementById('fm_buyer_ref').value = '';
+            document.getElementById('div_buyer_ref').style.display = (dataOrType == 'INCOME' ? 'block' : 'none');
         } else {
             document.getElementById('fm_id').value = dataOrType.id;
             document.getElementById('fm_type').value = dataOrType.type;
@@ -1674,6 +1746,8 @@ require 'includes/layout_start.php';
             document.getElementById('fm_rec').value = dataOrType.recurrence || '';
             document.getElementById('fm_next_run').value = dataOrType.next_run || '';
             belegFeldSetzen(dataOrType.type === 'EXPENSE', dataOrType.receipt_path, dataOrType.id);
+            document.getElementById('fm_buyer_ref').value = dataOrType.buyer_reference || '';
+            document.getElementById('div_buyer_ref').style.display = (dataOrType.type == 'INCOME' ? 'block' : 'none');
             document.getElementById('fm_notes').value = dataOrType.notes || '';
             document.getElementById('fm_modal_title').innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> Bearbeiten';
             document.getElementById('div_due_man').style.display = (dataOrType.type=='INCOME' ? 'block' : 'none');
