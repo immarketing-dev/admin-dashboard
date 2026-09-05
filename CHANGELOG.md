@@ -9,6 +9,47 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **An endpoint for enquiries (`api/leads.php`).** The README's instruction
+  for wiring up a contact form was an `INSERT INTO leads_inbox` — write
+  into the panel's database from your website. That requires both to live
+  on the same machine and spreads the database credentials across a second
+  project.
+
+  `POST /api/leads` with a key in the header does the same job over HTTP,
+  answering JSON with a meaningful status. The key is generated under
+  Settings → System; **without one the endpoint stays closed**, the same
+  principle as `CRON_TOKEN` — a fallback to "no check" would be an
+  unguarded write path on every installation that never configured
+  anything.
+
+  There is deliberately **no CORS**: the key grants write access, so it
+  belongs in the website's server-side handler, not in the page where it
+  would be public. The settings page says so where the key is shown.
+
+  Beyond writing the row: `name` and one way to reply are required (an
+  enquiry you cannot answer is worthless), over-long fields are truncated
+  rather than rejected (a long subject is no reason to discard a customer
+  enquiry), a hidden `website` field acts as a honeypot answering with the
+  same `201` a real request gets, and requests are rate-limited per IP
+  through the same `logs` table the sign-in lockout uses.
+
+  47 checks in `tools/test_api_leads.php`.
+
+  The four checkers that enumerate their directories by hand now include
+  `api/` — a directory nothing scans would be a blind spot exactly where a
+  file is reachable from outside and writes. Adding it immediately caught
+  the new endpoint as an unguarded POST path, which is what the check is
+  for; it is now a documented exception with its own guard verified in
+  check 1.
+
+### Fixed
+- **The credential scanner read a header name as a secret.**
+  `'HTTP_X_API_KEY' => 'abc123'` matched, because the header *name* ends in
+  `api_key` and the array pattern — unlike the variable pattern above it —
+  had no minimum length for the value. It now requires eight characters,
+  matching the existing rule for variables. Verified both ways: the test
+  values no longer match, a real `'api_key' => 'sk_live_…'` still does.
+
 - **Uptime with a history, and a notice when something goes down.** The
   monitor asked every URL on each dashboard view and threw the answer
   away. No history, no availability figure, no notice — a client's server

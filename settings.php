@@ -207,6 +207,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
     }
 
+    // Der Schluessel fuer die Anfrage-Schnittstelle (api/leads.php).
+    //
+    // Erzeugt und entzogen, nicht eingetippt: ein von Hand gewaehlter
+    // Schluessel ist im Zweifel "geheim123". Angezeigt wird er nur
+    // einmal nach dem Erzeugen - danach steht er in der Einstellung und
+    // laesst sich dort nachsehen, aber der Weg dahin ist bewusst der
+    // laengere.
+    if ($_POST['action'] === 'generate_api_key') {
+        require_once __DIR__ . '/includes/api_leads.php';
+
+        $key = api_leads_schluessel_erzeugen();
+        $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('api_key_leads',?) ON DUPLICATE KEY UPDATE v=?");
+        $s->execute([$key, $key]);
+
+        log_event($pdo, 'SETTINGS_API_KEY', 'Neuer API-Schlüssel für die Anfrage-Schnittstelle erzeugt.');
+        header("Location: settings?tab=system&saved=1&newkey=1"); exit();
+    }
+
+    if ($_POST['action'] === 'revoke_api_key') {
+        $pdo->prepare("DELETE FROM settings WHERE k = 'api_key_leads'")->execute();
+        log_event($pdo, 'SETTINGS_API_KEY', 'API-Schlüssel entzogen; die Schnittstelle ist wieder zu.');
+        header("Location: settings?tab=system&saved=1"); exit();
+    }
+
     // Zahlungserinnerungen. Die Stufen sind Tage nach Faelligkeit, als
     // Liste: "7, 21" heisst eine Erinnerung nach einer Woche und eine
     // zweite nach drei. Leer bedeutet: keine Automatik - das ist der
@@ -264,6 +288,9 @@ $s_log_limit      = setting('log_limit', '200');
 // Tage nach Faelligkeit, an denen automatisch erinnert wird. Leer =
 // keine Automatik; der Knopf in der Rechnungsliste geht trotzdem.
 $s_reminder_days  = setting('reminder_days', '');
+// Der Schluessel der Anfrage-Schnittstelle. Leer = die Schnittstelle
+// ist zu, nicht offen.
+$s_api_key        = setting('api_key_leads', '');
 $s_company_logo   = setting('company_logo', '');
 $s_favicon        = setting('favicon', '');
 
@@ -795,6 +822,68 @@ require 'includes/layout_start.php';
         <i class="bi bi-info-circle me-1"></i>
         <?= te('Automatische Erinnerungen werden nur verschickt, wenn cron.php regelmäßig läuft. Ohne eingerichteten Cron-Lauf passiert hier nichts.') ?>
       </div>
+
+      <div class="settings-section-title mt-2"><i class="bi bi-braces me-2"></i><?= te('Schnittstelle für Anfragen') ?></div>
+      <p class="text-muted small">
+        <?= te('Damit kann das Kontaktformular Ihrer Website Anfragen direkt an das Panel schicken, ohne Zugang zur Datenbank.') ?>
+      </p>
+
+      <?php if ($s_api_key === ''): ?>
+        <div class="alert alert-secondary py-2 small">
+          <i class="bi bi-lock me-1"></i>
+          <?= te('Kein Schlüssel eingerichtet – die Schnittstelle ist geschlossen.') ?>
+        </div>
+        <form method="POST" class="mb-4">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="generate_api_key">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-key me-1"></i> <?= te('Schlüssel erzeugen') ?></button>
+        </form>
+      <?php else: ?>
+        <?php if (isset($_GET['newkey'])): ?>
+          <div class="alert alert-success py-2 small">
+            <i class="bi bi-check-circle me-1"></i>
+            <?= te('Der Schlüssel wurde erzeugt. Tragen Sie ihn jetzt in Ihre Website ein.') ?>
+          </div>
+        <?php endif; ?>
+        <div class="row g-3 align-items-end mb-2">
+          <div class="col-md-8">
+            <label class="form-label fw-semibold"><?= te('Schlüssel') ?></label>
+            <div class="input-group">
+              <input type="text" class="form-control font-monospace" id="api_key_feld"
+                     value="<?= htmlspecialchars($s_api_key) ?>" readonly>
+              <button class="btn btn-outline-secondary" type="button" onclick="apiSchluesselKopieren()">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+            <div class="form-text"><?= te('Im Header mitschicken: X-Api-Key') ?></div>
+          </div>
+          <div class="col-md-4 d-flex gap-2">
+            <form method="POST" onsubmit="return confirm('<?= te('Einen neuen Schlüssel erzeugen? Der bisherige gilt danach nicht mehr.') ?>')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="generate_api_key">
+              <button type="submit" class="btn btn-outline-secondary btn-sm"><?= te('Neu erzeugen') ?></button>
+            </form>
+            <form method="POST" onsubmit="return confirm('<?= te('Den Schlüssel entziehen? Die Schnittstelle ist danach geschlossen.') ?>')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="revoke_api_key">
+              <button type="submit" class="btn btn-outline-danger btn-sm"><?= te('Entziehen') ?></button>
+            </form>
+          </div>
+        </div>
+        <div class="alert alert-warning py-2 small mb-4">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          <?= te('Der Schlüssel berechtigt zum Schreiben. Er gehört auf den Server Ihrer Website, niemals in ein Formular oder in JavaScript – dort wäre er öffentlich.') ?>
+        </div>
+        <script>
+          function apiSchluesselKopieren() {
+              var feld = document.getElementById('api_key_feld');
+              feld.select();
+              // Der moderne Weg braucht einen sicheren Kontext; das
+              // ausgewaehlte Feld bleibt als Rueckfall.
+              if (navigator.clipboard) { navigator.clipboard.writeText(feld.value); }
+          }
+        </script>
+      <?php endif; ?>
 
       <div class="settings-section-title mt-2"><i class="bi bi-info-circle me-2"></i><?= te('Systeminfo') ?></div>
       <table class="table table-borderless" style="max-width:400px;">

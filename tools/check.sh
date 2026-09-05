@@ -131,7 +131,11 @@ BARECOMP="$BARE|$COMPOUND"
 
 CREDS="define[[:space:]]*\([[:space:]]*['\"](DB_PASS|SMTP_PASS)['\"][[:space:]]*,[[:space:]]*['\"].+['\"]"
 CREDS="$CREDS|\\\$($BARECOMP)[[:space:]]*=[[:space:]]*['\"][^'\"]{6,}['\"]"
-CREDS="$CREDS|['\"]?($COMPOUND)['\"]?[[:space:]]*=>[[:space:]]*['\"][^'\"]+['\"]"
+# Mindestlaenge acht: ohne sie las der Scan 'HTTP_X_API_KEY' => 'abc123'
+# als hinterlegtes Geheimnis - der Header-NAME endet auf api_key. Was
+# kuerzer als acht Zeichen ist, ist ein Testwert oder ein Geheimnis, das
+# seinen Namen nicht verdient; ein echter Schluessel hat hier 48.
+CREDS="$CREDS|['\"]?($COMPOUND)['\"]?[[:space:]]*=>[[:space:]]*['\"][^'\"]{8,}['\"]"
 CREDS="$CREDS|^[[:space:]]*($COMPOUND)[[:space:]]*=[[:space:]]*['\"][^'\"]+['\"]"
 CREDS="$CREDS|^[[:space:]]*($COMPOUND)[[:space:]]*:[[:space:]]*[^[:space:]][^[:space:]]*"
 
@@ -319,6 +323,12 @@ if command -v php >/dev/null 2>&1; then
   # Lauf verdoppelt.
   if ! out=$(php tools/test_cron_billing.php 2>&1); then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
+    fail=1
+  fi
+  # Die Anfrage-Schnittstelle. Die heikelste Stelle ist das Zurueckweisen:
+  # ohne eingerichteten Schluessel muss sie ZU sein, nicht offen.
+  if ! out=$(php tools/test_api_leads.php 2>&1); then
+    echo "SCHNITTSTELLE: $out"
     fail=1
   fi
   # Erreichbarkeit: die heikelste Stelle ist die Meldung. Sie muss genau

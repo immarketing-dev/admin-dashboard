@@ -489,14 +489,43 @@ a bug:
 
 ### Lead inbox
 
-The dashboard reads pending enquiries from the `leads_inbox` table. Nothing
-in this project writes to it — point your website's contact form at it
-directly:
+The dashboard reads pending enquiries from `leads_inbox`. Your website's
+contact form fills it through the enquiry API:
 
-```sql
-INSERT INTO leads_inbox (name, email, phone, subject, message, source)
-VALUES (?, ?, ?, ?, ?, 'Contact form');
 ```
+POST /api/leads
+X-Api-Key: <the key from Settings → System>
+Content-Type: application/json
+
+{"name":"Anna Beispiel","email":"anna@example.com",
+ "subject":"Enquiry","message":"…","source":"Contact form"}
+```
+
+Answers with JSON and a meaningful status: `201` accepted, `400` missing
+fields, `401` no valid key, `429` too many requests, `503` no key set up
+at all.
+
+Generate the key under **Settings → System → Enquiry API**. Without one
+the endpoint stays **closed** — it is not a fallback to "no check", the
+same principle as `CRON_TOKEN`.
+
+**The key belongs on your website's server, never in the page.** It grants
+write access; in a form or in JavaScript it would be public. That is also
+why there is deliberately no CORS here — the call goes in your contact
+form's server-side handler.
+
+What the endpoint does beyond writing the row: `name` is required, and so
+is one way to reply (`email` or `phone`) — an enquiry you cannot answer is
+worthless. Over-long fields are truncated rather than rejected, because a
+long subject line is no reason to throw away a customer enquiry. A hidden
+`website` field acts as a honeypot: filled in, the request is dropped, but
+the answer is the same `201` a real one gets — telling a bot it was
+detected only teaches it to avoid detection. Requests are rate-limited per
+IP through the same `logs` table the sign-in lockout uses.
+
+Writing to the table directly still works if you prefer it — but then both
+projects need the database credentials, and both need to run on the same
+machine.
 
 ### Reserved paths
 
@@ -558,6 +587,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_mail_log.php` | truncation of over-long values, and the longer retention |
 | `test_quote_to_project.php` | line-item conversion, and the guard against a second project |
 | `test_uptime.php` | state transitions, availability figure, history trimming |
+| `test_api_leads.php` | key handling, validation, honeypot, per-IP rate limit |
 
 Run separately when you need them:
 

@@ -43,6 +43,11 @@ const AUSNAHMEN = [
 const OHNE_AUTH = [
     'login.php'  => 'Im Demo-Modus wird sofort weitergeleitet, das Formular erscheint nie.',
     'portal.php' => 'Eigene Tuer (PIN); ruft demo_guard() selbst auf.',
+    // Die Schnittstelle hat keine Sitzung und kann keine haben - sie
+    // wird vom Server einer Website aufgerufen, nicht von einem
+    // Browser. Ihre Tuer ist der Schluessel, und den Demo-Modus prueft
+    // sie als Erstes selbst; Pruefung 1 haelt beides nach.
+    'leads.php'  => 'Eigene Tuer (API-Schluessel); prueft demo_mode() vor allem anderen.',
 ];
 
 /**
@@ -66,6 +71,21 @@ function code_ohne_kommentare(string $pfad): string
     return $aus;
 }
 
+/**
+ * Alle von aussen erreichbaren Seiten des Projekts.
+ *
+ * Bis api/leads.php dazukam, war das genau das Wurzelverzeichnis. Die
+ * Schnittstelle liegt in einem Unterverzeichnis, ist aber ebenso
+ * erreichbar und schreibt ebenso - ein Verzeichnis, das kein
+ * Pruefwerkzeug durchsucht, waere hier der falsche blinde Fleck.
+ */
+function projekt_seiten(string $wurzel): array
+{
+    return array_merge(
+        glob($wurzel . '/*.php') ?: [],
+        glob($wurzel . '/api/*.php') ?: []
+    );
+}
 /**
  * Sucht Schreibzugriffe, die beim blossen Anzeigen der Seite ausgefuehrt
  * werden: auf oberster Ebene (also nicht in einer Funktion, die erst ein
@@ -174,6 +194,16 @@ if (strpos(code_ohne_kommentare($wurzel . '/cron.php'), 'demo_mode()') === false
 if (strpos(code_ohne_kommentare($wurzel . '/cron.php'), 'hash_equals') === false) {
     $fehlend[] = 'cron.php prueft den CRON_TOKEN nicht mit hash_equals';
 }
+// Dasselbe fuer die Anfrage-Schnittstelle: sie hat keine Sitzung, ihre
+// einzige Tuer ist der Schluessel - und im Demo-Modus soll sie gar
+// nicht erst antworten.
+$api = code_ohne_kommentare($wurzel . '/api/leads.php');
+if (strpos($api, 'demo_mode()') === false) {
+    $fehlend[] = 'api/leads.php prueft den Demo-Modus nicht';
+}
+if (strpos($api, 'hash_equals') === false) {
+    $fehlend[] = 'api/leads.php prueft den Schluessel nicht mit hash_equals';
+}
 // SSO darf in der Demo nicht von der .env abhaengen - sso.php schreibt,
 // bevor ein POST im Spiel ist.
 if (!preg_match('/define\(\s*[\'"]SSO_ENABLED[\'"].*!\s*DEMO_MODE/s',
@@ -193,7 +223,7 @@ echo "=== Pruefung 2: jede POST-Seite ist gedeckt ===\n";
 // ---------------------------------------------------------------------
 $ungedeckt = [];
 $geprueft  = 0;
-foreach (glob($wurzel . '/*.php') as $pfad) {
+foreach (projekt_seiten($wurzel) as $pfad) {
     $name = basename($pfad);
     $code = code_ohne_kommentare($pfad);
     if (!preg_match('/REQUEST_METHOD.{0,40}[\'"]POST[\'"]/', $code)) continue;
@@ -220,7 +250,7 @@ echo "\n";
 echo "=== Pruefung 3: kein Schreibzugriff beim blossen Anzeigen ===\n";
 // ---------------------------------------------------------------------
 $offen = [];
-foreach (glob($wurzel . '/*.php') as $pfad) {
+foreach (projekt_seiten($wurzel) as $pfad) {
     $name = basename($pfad);
     $treffer = schreibzugriffe_im_anzeigepfad($pfad);
     if ($treffer === []) continue;
@@ -261,7 +291,7 @@ echo "=== Pruefung 4: der Uptime-Abruf schweigt in der Demo ===\n";
 // ueberhaupt aufrufen: so faellt auch eine dritte Stelle auf, die
 // jemand spaeter ergaenzt.
 $curl_dateien = [];
-foreach (array_merge(glob($wurzel . '/*.php'), glob($wurzel . '/includes/*.php')) as $pfad) {
+foreach (array_merge(projekt_seiten($wurzel), glob($wurzel . '/includes/*.php')) as $pfad) {
     $code = code_ohne_kommentare($pfad);
     if (strpos($code, 'curl_init') === false) continue;
 

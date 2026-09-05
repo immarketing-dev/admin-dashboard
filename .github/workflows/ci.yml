@@ -77,3 +77,6 @@ jobs:
 
       - name: Uptime tests
         run: php tools/test_uptime.php
+
+      - name: Enquiry API tests
+        run: php tools/test_api_leads.php

@@ -31,7 +31,10 @@ $wurzel = dirname(__DIR__);
 function projektdateien(string $wurzel): array
 {
     $aus = [];
-    foreach (['', 'includes/'] as $unter) {
+    // api/ gehoert dazu: die Schnittstelle ist von aussen erreichbar,
+    // und eine dort aufgerufene, aber nicht geladene Funktion ist
+    // ebenso ein HTTP 500 wie auf jeder anderen Seite.
+    foreach (['', 'includes/', 'api/'] as $unter) {
         foreach (glob($wurzel . '/' . $unter . '*.php') as $pfad) {
             $aus[] = str_replace('\\', '/', substr($pfad, strlen($wurzel) + 1));
         }

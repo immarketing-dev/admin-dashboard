@@ -81,7 +81,10 @@ function klammer_inhalt(string $quelle, int $start): ?string
 $wurzel  = dirname(__DIR__);
 $dateien = array_merge(
     glob($wurzel . '/*.php'),
-    glob($wurzel . '/includes/*.php')
+    glob($wurzel . '/includes/*.php'),
+    // Die Schnittstelle schreibt in leads_inbox - genau die Sorte
+    // Abfrage, um die es hier geht.
+    glob($wurzel . '/api/*.php') ?: []
 );
 
 $funde    = [];

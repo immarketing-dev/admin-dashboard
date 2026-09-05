@@ -84,7 +84,13 @@ function platzhalter(string $text): array
 }
 
 // ── Einsammeln ──────────────────────────────────────────────────────
-$dateien = array_merge(glob($wurzel . '/*.php'), glob($wurzel . '/includes/*.php'));
+// api/ gehoert dazu: die Schnittstelle antwortet zwar in JSON, aber
+// eine Meldung darin kann trotzdem uebersetzt sein wollen.
+$dateien = array_merge(
+    glob($wurzel . '/*.php'),
+    glob($wurzel . '/includes/*.php'),
+    glob($wurzel . '/api/*.php') ?: []
+);
 $benutzt = [];
 foreach ($dateien as $pfad) {
     foreach (verpackte_texte($pfad) as $text => $stellen) {

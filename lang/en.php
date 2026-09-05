@@ -1678,4 +1678,29 @@ return [
     // ── Erreichbarkeit mit Verlauf ───────────────────────────────────
     "Verfügbarkeit der letzten 24 Stunden, %d Messungen"
         => "Availability over the last 24 hours, %d checks",
+    // ── Schnittstelle für Anfragen ───────────────────────────────────
+    "Schnittstelle für Anfragen"
+        => "Enquiry API",
+    "Damit kann das Kontaktformular Ihrer Website Anfragen direkt an das Panel schicken, ohne Zugang zur Datenbank."
+        => "This lets your website's contact form send enquiries straight to the panel, without database access.",
+    "Kein Schlüssel eingerichtet – die Schnittstelle ist geschlossen."
+        => "No key set up – the API is closed.",
+    "Schlüssel erzeugen"
+        => "Generate a key",
+    "Der Schlüssel wurde erzeugt. Tragen Sie ihn jetzt in Ihre Website ein."
+        => "The key has been generated. Enter it in your website now.",
+    "Schlüssel"
+        => "Key",
+    "Im Header mitschicken: X-Api-Key"
+        => "Send it in the header: X-Api-Key",
+    "Neu erzeugen"
+        => "Generate a new one",
+    "Entziehen"
+        => "Revoke",
+    "Einen neuen Schlüssel erzeugen? Der bisherige gilt danach nicht mehr."
+        => "Generate a new key? The current one stops working.",
+    "Den Schlüssel entziehen? Die Schnittstelle ist danach geschlossen."
+        => "Revoke the key? The API will be closed afterwards.",
+    "Der Schlüssel berechtigt zum Schreiben. Er gehört auf den Server Ihrer Website, niemals in ein Formular oder in JavaScript – dort wäre er öffentlich."
+        => "The key grants write access. It belongs on your website's server, never in a form or in JavaScript – there it would be public.",
 ];

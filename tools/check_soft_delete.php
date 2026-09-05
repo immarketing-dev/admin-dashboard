@@ -70,7 +70,11 @@ const AUSNAHMEN = [
 ];
 
 $wurzel  = dirname(__DIR__);
-$dateien = array_merge(glob($wurzel . '/*.php'), glob($wurzel . '/includes/*.php'));
+$dateien = array_merge(
+    glob($wurzel . '/*.php'),
+    glob($wurzel . '/includes/*.php'),
+    glob($wurzel . '/api/*.php') ?: []
+);
 
 $funde    = [];
 $geprueft = 0;
