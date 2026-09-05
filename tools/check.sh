@@ -413,6 +413,13 @@ if command -v php >/dev/null 2>&1; then
   # Das Projektbudget: "kein Budget" und "null Euro" duerfen nicht
   # dasselbe werden, und die Warnschwelle darf nicht durch Runden
   # erreicht werden.
+  # Angebot zu Rechnung. Eine zweite Rechnung ueber dieselbe Leistung,
+  # mit eigener Nummer, faellt erst auf, wenn der Kunde zweimal zahlen
+  # soll.
+  if ! out=$(php tools/test_quote_to_invoice.php 2>&1); then
+    echo "ANGEBOT ZU RECHNUNG: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_task_budget.php 2>&1); then
     echo "PROJEKTBUDGET: $out"
     fail=1

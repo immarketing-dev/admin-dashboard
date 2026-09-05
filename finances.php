@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/logging.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/numbering.php';
 require_once 'includes/quote_to_project.php';
+require_once 'includes/quote_to_invoice.php';
 require_once 'includes/reminders.php';
 require_once 'includes/receipts.php';
 require_once 'includes/payments.php';
@@ -629,25 +630,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     }
 
     if ($action === 'convert_to_invoice') {
-        $id   = (int)$_POST['quote_id'];
+        $id = (int)$_POST['quote_id'];
+
+        // Schon umgewandelt: nicht noch einmal. Der Knopf ist dann zwar
+        // weg, aber ein Doppelklick oder eine zurueckgeblaetterte Seite
+        // legte sonst eine zweite Rechnung mit eigener Nummer an - und
+        // die faellt erst auf, wenn der Kunde zweimal zahlen soll.
+        // Dieselbe Pruefung wie bei der Umwandlung in ein Projekt.
+        $vorhanden = angebot_rechnung_zeile($pdo, $id);
+        if ($vorhanden !== null) {
+            filter_redirect('finances', ['month' => 'all', 'search' => $vorhanden['invoice_number']]);
+        }
+
         $stmt2 = $pdo->prepare("SELECT q.*,c.name AS c_name,c.company AS c_company,c.street AS c_street,c.zip AS c_zip,c.city AS c_city,c.country AS c_country FROM quotes q LEFT JOIN contacts c ON q.contact_id=c.id WHERE q.deleted_at IS NULL AND q.id=?");
         $stmt2->execute([$id]); $q2 = $stmt2->fetch(PDO::FETCH_ASSOC);
         if (!$q2) { filter_redirect('finances', ['tab' => 'quotes']); }
-        $inv_num2 = next_invoice_number($pdo);
-        $inv_pdf2 = build_invoice_pdf_from_quote($q2, $inv_num2);
-        $client_name2 = $q2['custom_name'] ?: ($q2['c_name'] ?? 'Unbekannt');
-        // Die Positionen des Angebots wandern mit in die Rechnung. Bis
-        // Schemaversion 8 ging dabei nur der Gesamtbetrag ueber, und die
-        // Aufstellung blieb allein im erzeugten PDF stehen - die Rechnung
-        // liess sich danach nicht mehr aendern, ohne sie neu zu tippen.
-        require_once __DIR__ . '/includes/invoice_items.php';
-        $pos2    = positionen_aus_json($q2['items'] ?? null);
-        $summen2 = positionen_summen($pos2, $q2['tax_type'] ?? 'kleinunternehmer');
 
-        $pdo->prepare("INSERT INTO finances (type,title,invoice_number,contact_id,custom_name,amount,status,record_date,due_date,notes,invoice_pdf_path,is_recurring,items,tax_type,net_amount,tax_amount) VALUES ('INCOME',?,?,?,?,?,'Offen',CURDATE(),DATE_ADD(CURDATE(),INTERVAL 14 DAY),?,?,0,?,?,?,?)")
-            ->execute([$inv_num2,$inv_num2,$q2['contact_id'],$client_name2,$q2['total_amount'],$q2['notes'],$inv_pdf2,
-                       json_encode($pos2),$q2['tax_type'] ?? 'kleinunternehmer',$summen2['netto'],$summen2['steuer']]);
-        $pdo->prepare("UPDATE quotes SET status='Angenommen' WHERE id=?")->execute([$id]);
+        $inv_num2 = next_invoice_number($pdo);
+        // Das PDF entsteht hier, weil die Layoutfunktion hier steht;
+        // alles andere macht rechnung_aus_angebot() - dieselbe
+        // Aufteilung wie bei projekt_aus_angebot(), und dadurch pruefbar.
+        $inv_pdf2 = build_invoice_pdf_from_quote($q2, $inv_num2);
+        $rechnung_id = rechnung_aus_angebot($pdo, $id, $inv_num2, $inv_pdf2);
+
+        if ($rechnung_id === null) {
+            filter_redirect('finances', ['tab' => 'quotes']);
+        }
         log_event($pdo, 'QUOTE_CONVERTED', "Angebot {$q2['quote_number']} zu Rechnung $inv_num2 konvertiert.");
         filter_redirect('finances', ['msg' => 'invoice_created']);
     }
@@ -1160,8 +1168,20 @@ require 'includes/layout_start.php';
                     <button type="submit" class="btn btn-sm btn-outline-primary px-2" title="<?= te('Zu Projekt machen') ?>"><i class="bi bi-kanban"></i></button>
                   </form>
                   <?php endif; ?>
-                  <?php if($q_row['status'] !== 'Angenommen' && $q_row['status'] !== 'Abgelehnt'): ?>
-                  <form method="POST" class="d-inline" onsubmit="return confirm('Angebot <?= htmlspecialchars($q_row['quote_number']) ?> in eine Rechnung umwandeln?')">
+                  <?php
+                    // Nicht der Zustand des Angebots entscheidet, sondern ob
+                    // es die Rechnung schon gibt. Sagt der Kunde im Portal
+                    // zu, steht das Angebot auf "Angenommen" - und genau dann
+                    // will man die Rechnung dazu schreiben.
+                    $_rechnung = angebot_rechnung_zeile($pdo, (int) $q_row['id']);
+                  ?>
+                  <?php if($_rechnung !== null): ?>
+                    <a href="?month=all&amp;search=<?= urlencode($_rechnung['invoice_number']) ?>"
+                       class="btn btn-sm btn-outline-success px-2"
+                       title="<?= te('Zur Rechnung aus diesem Angebot') ?>"><i class="bi bi-receipt"></i></a>
+                  <?php elseif($q_row['status'] !== 'Abgelehnt'): ?>
+                  <form method="POST" class="d-inline"
+                        onsubmit="return confirm('<?= te('Aus Angebot %s eine Rechnung erstellen?', htmlspecialchars($q_row['quote_number'])) ?>')">
                     <?= csrf_field() ?><input type="hidden" name="action" value="convert_to_invoice">
                     <input type="hidden" name="quote_id" value="<?= $q_row['id'] ?>">
                     <button type="submit" class="btn btn-sm btn-outline-success px-2" title="<?= te('Zu Rechnung konvertieren') ?>"><i class="bi bi-arrow-right-circle"></i></button>

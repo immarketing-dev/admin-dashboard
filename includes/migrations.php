@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 21;
+const SCHEMA_VERSION = 22;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -714,6 +714,26 @@ function migrations(): array
         // nichts kosten darf.
         21 => [
             'ALTER TABLE tasks ADD COLUMN budget_amount DECIMAL(10,2) DEFAULT NULL',
+        ],
+
+        // Die Rechnung, die aus einem Angebot entstanden ist.
+        //
+        // Bisher gab es dafuer keinen Vermerk, und der Knopf zum
+        // Umwandeln richtete sich nach dem Zustand des Angebots: er zeigte
+        // sich nur, solange es NICHT angenommen war. Sagte der Kunde im
+        // Portal zu, verschwand damit der Knopf, mit dem man ihm die
+        // Rechnung schreibt - der uebliche Ablauf war der einzige, der
+        // nicht ging. Und ein zweites Absenden legte eine zweite Rechnung
+        // mit eigener Nummer an, weil serverseitig nichts dagegen stand.
+        //
+        // Bestehende Angebote bleiben auf NULL: welche davon schon
+        // abgerechnet sind, laesst sich nachtraeglich nicht zuverlaessig
+        // feststellen, und eine geratene Zuordnung waere schlimmer als
+        // keine.
+        22 => [
+            'ALTER TABLE quotes ADD COLUMN converted_invoice_id INT DEFAULT NULL',
+            'ALTER TABLE quotes ADD CONSTRAINT fk_quotes_invoice'
+                . ' FOREIGN KEY (converted_invoice_id) REFERENCES finances(id) ON DELETE SET NULL',
         ],
     ];
 }

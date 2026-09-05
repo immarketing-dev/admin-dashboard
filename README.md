@@ -592,6 +592,43 @@ an unauthenticated fetch of arbitrary addresses, because that path had no
 demo guard. It now goes through the same parallel measurement: one pass,
 six seconds at most for all of them, guard included.
 
+### From quote to invoice
+
+Turning an accepted quote into an invoice has been there for a long time.
+Two things were missing from it, and both only became visible once the
+same conversion into a *project* was built next to it and did them.
+
+**The button was in the way of the normal case.** It showed only while
+the quote was *not* accepted — and the conversion itself set the quote to
+accepted. So the moment a client said yes in the portal, the button for
+writing them the invoice disappeared. The most ordinary sequence there is
+was the one that did not work.
+
+**Nothing stopped a second submission.** Its sibling checks, before
+creating anything, whether a project already exists, on the grounds that
+a double click or a page brought back from history must not create a
+second one. The invoice conversion had no such check — only the button
+went away, and a button is not a condition. A second invoice for the same
+work, with its own number, is noticed when the client is asked to pay
+twice.
+
+What decides now is not the quote's status but whether the invoice
+exists: `quotes.converted_invoice_id`. Where it does, the row offers a
+link to it instead of a second conversion; where it does not, the button
+is there whatever the status says — except for a rejected quote.
+
+The line items, the tax type and the notes move across; net and tax are
+recalculated rather than copied, because the tax type may have changed
+since the quote was written and the copied split would no longer match
+it. The date arithmetic moved from SQL into PHP so the same code runs on
+MySQL and on the SQLite mirror the tests use.
+
+Quotes from before this change keep an empty `converted_invoice_id`:
+which of them were already invoiced cannot be established after the fact,
+and a guessed link would be worse than none. So an old accepted quote
+will offer the button again — the confirmation names the quote, and the
+decision is yours.
+
 ### From quote to project
 
 There was "quote to invoice" but not "quote to project": whoever won the

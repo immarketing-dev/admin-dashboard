@@ -2170,4 +2170,9 @@ return [
         => "empty = none",
     "Der vereinbarte Preis. Verglichen wird er mit dem Wert der erfassten Zeit."
         => "The agreed price. It is measured against the value of the time tracked.",
+    // ── Angebot zu Rechnung ──
+    "Zur Rechnung aus diesem Angebot"
+        => "Go to the invoice made from this quote",
+    "Aus Angebot %s eine Rechnung erstellen?"
+        => "Create an invoice from quote %s?",
 ];

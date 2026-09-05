@@ -880,6 +880,20 @@ $setz_projekt = $pdo->prepare('UPDATE quotes SET converted_task_id = ? WHERE quo
 $setz_projekt->execute([$p['relaunch'], 'ANG-' . date('Y') . '-001']);
 $setz_projekt->execute([$p['shop'],     'ANG-' . date('Y') . '-002']);
 
+// Und aus einem davon ist zusätzlich eine Rechnung geworden. Ohne den
+// Vermerk böte die Liste bei jedem angenommenen Angebot weiter
+// "Rechnung erstellen" an - auch dort, wo es die Rechnung schon gibt,
+// und eine zweite mit eigener Nummer merkt man erst, wenn der Kunde
+// zweimal zahlen soll.
+$erste_rechnung = (int) $pdo->query(
+    "SELECT id FROM finances WHERE type = 'INCOME' ORDER BY record_date ASC, id ASC LIMIT 1"
+)->fetchColumn();
+
+if ($erste_rechnung) {
+    $pdo->prepare('UPDATE quotes SET converted_invoice_id = ? WHERE quote_number = ?')
+        ->execute([$erste_rechnung, 'ANG-' . date('Y') . '-001']);
+}
+
 // ── Supportanfragen ─────────────────────────────────────────────────
 $tickets = [
     ['hofmann', 'Kontaktformular verschickt keine E-Mails',
