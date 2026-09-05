@@ -24,6 +24,7 @@ require_once __DIR__ . '/recurring.php';
 require_once __DIR__ . '/auth_reset.php';
 require_once __DIR__ . '/mail_log.php';
 require_once __DIR__ . '/uptime.php';
+require_once __DIR__ . '/trash_retention.php';
 
 /**
  * Markiert offene Rechnungen nach Fristablauf als überfällig.
@@ -158,6 +159,35 @@ function cron_protokoll_kuerzen(PDO $pdo): array
 }
 
 /**
+ * Leert den Papierkorb von allem, was die Frist ueberschritten hat.
+ *
+ * Bis hierher raeumte allein trash.php auf, und zwar beim Oeffnen der
+ * Seite. In einer Installation, in der niemand den Papierkorb
+ * aufschlaegt, blieb Geloeschtes damit fuer immer liegen - samt der
+ * Dateien, deren Name Kunde und Betrag verraet. Die Seite verspricht
+ * dreissig Tage; gehalten hat sie das nur bei Publikumsverkehr.
+ */
+function cron_papierkorb(PDO $pdo): array
+{
+    [$zeilen, $dateien] = papierkorb_verfallen($pdo);
+
+    if ($zeilen === 0) {
+        return ['titel' => 'Papierkorb', 'ok' => true, 'meldung' => 'Nichts ueberfaellig.'];
+    }
+
+    log_event($pdo, 'TRASH_PURGED', $zeilen . ' Eintrag/Einträge nach ' . AUFBEWAHRUNG_TAGE
+        . ' Tagen endgültig entfernt'
+        . ($dateien > 0 ? ', dazu ' . $dateien . ' Datei(en).' : '.'));
+
+    return [
+        'titel'   => 'Papierkorb',
+        'ok'      => true,
+        'meldung' => $zeilen . ' Eintrag/Einträge endgueltig entfernt'
+                   . ($dateien > 0 ? ', dazu ' . $dateien . ' Datei(en).' : '.'),
+    ];
+}
+
+/**
  * Räumt verbrauchte und abgelaufene Rücksetz-Token weg.
  *
  * Kein dringender Vorgang - ein abgelaufenes Token ist bereits wirkungslos,
@@ -230,6 +260,7 @@ function cron_ausfuehren(PDO $pdo, array $umgebung): array
         fn() => cron_wiederholungen($pdo, $heute),
         fn() => cron_mahnungen($pdo, $stufen, $firma, $wurzel, $jetzt),
         fn() => cron_protokoll_kuerzen($pdo),
+        fn() => cron_papierkorb($pdo),
         fn() => cron_reset_token($pdo),
         fn() => cron_uptime($pdo, (string) ($umgebung['admin_email'] ?? ''), $firma),
     ];

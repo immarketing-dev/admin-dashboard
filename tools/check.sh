@@ -350,6 +350,12 @@ if command -v php >/dev/null 2>&1; then
   # Mahnstufen und wiederkehrende Eintraege. Die gefaehrlichen Faelle
   # sind hier das doppelte Verschicken und die Reihe, die sich bei jedem
   # Lauf verdoppelt.
+  # Der Verfall im Papierkorb. Er entfernt Zeilen und Dateien - beides
+  # endgueltig, beides ohne Rueckfrage.
+  if ! out=$(php tools/test_trash_retention.php 2>&1); then
+    echo "PAPIERKORB: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_cron_billing.php 2>&1); then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
