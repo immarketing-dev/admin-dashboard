@@ -860,6 +860,14 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     padding-right: 1.6rem;
     background-position: right 0.4rem center;
 }
+
+/* Das "wartet auf"-Feld an einem Meilenstein.
+   .form-select ist von Haus aus width:100%, und das Feld steht in einer
+   Zeile mit Zeitknopf, Kommentaren und Loeschen - es schrumpft also mit,
+   bis die Beschriftung abschneidet. Im Deutschen passte "Kunde" gerade
+   noch, im Englischen wurde "Client" zu "Clien". Auffallen konnte das
+   erst, als die Screenshots auf Englisch entstanden. */
+.waiting-select { width: auto; min-width: 6rem; }
 /* Das Suchfeld gibt in dieser Leiste frueher nach als sonst: mit der
    allgemeinen Schwelle von 260px reichte der Platz auf einem
    1366er-Bildschirm nicht mehr fuer die Schaltflaeche, und sie fiel

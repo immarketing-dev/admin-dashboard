@@ -373,6 +373,9 @@ if ($filter_month !== 'all') {
     $params[] = $filter_month;
 }
 
+// 'created' heisst der Parameter, gefiltert wird aber nach dem
+// Startdatum - so steht es auch am Feld ("Start egal"). Der Name
+// bleibt, weil er in gespeicherten Filtern und Lesezeichen steht.
 if ($filter_created === '7') { $sql .= " AND t.start_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND t.start_date <= CURDATE()"; }
 if ($filter_created === '30') { $sql .= " AND t.start_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND t.start_date <= CURDATE()"; }
 
