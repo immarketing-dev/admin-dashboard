@@ -65,7 +65,7 @@ function rolle_gueltig(string $rolle): bool
  *
  * @return array<string, array<int, string>>
  */
-function seitenrechte(): array
+function seitenrechte_vorgabe(): array
 {
     return [
         // Für alle: der Einstieg und die Zeitplanung.
@@ -94,6 +94,105 @@ function seitenrechte(): array
         'systemlogs.php' => ['admin'],
         'trash.php'      => ['admin'],
     ];
+}
+
+/**
+ * Seiten, deren Zuordnung sich nicht ändern lässt.
+ *
+ * settings.php bleibt der Verwaltung vorbehalten, und zwar zwingend:
+ * wer die Einstellungen öffnen darf, darf auch diese Matrix ändern und
+ * sich damit jedes weitere Recht selbst geben. Eine Rechteverwaltung,
+ * die ihre eigene Freigabe zur Wahl stellt, verwaltet nichts.
+ */
+const SEITEN_FEST = ['settings.php'];
+
+/**
+ * Die geltende Zuordnung: Vorgabe, überlagert von der Einstellung.
+ *
+ * Gespeichert wird als JSON unter 'page_roles'. Überlagert wird nur,
+ * was dort steht und in der Vorgabe vorkommt - eine später
+ * hinzugekommene Seite behält damit ihre Vorgabe, statt durch eine
+ * veraltete gespeicherte Matrix auf 'niemand' zu fallen.
+ */
+function seitenrechte(): array
+{
+    static $zwischenspeicher = null;
+    if ($zwischenspeicher !== null) {
+        return $zwischenspeicher;
+    }
+
+    $rechte = seitenrechte_vorgabe();
+
+    // setting() gibt es nur, wenn config.php geladen ist. Die Tests
+    // binden users.php einzeln ein.
+    $roh = function_exists('setting') ? trim(setting('page_roles', '')) : '';
+    if ($roh === '') {
+        return $zwischenspeicher = $rechte;
+    }
+
+    $gespeichert = json_decode($roh, true);
+    if (!is_array($gespeichert)) {
+        error_log('page_roles ist kein gültiges JSON - Vorgabe bleibt in Kraft.');
+        return $zwischenspeicher = $rechte;
+    }
+
+    $zwischenspeicher = seitenrechte_zusammenfuehren($rechte, $gespeichert);
+    return $zwischenspeicher;
+}
+
+/**
+ * Legt eine gespeicherte Matrix über die Vorgabe.
+ *
+ * Getrennt von seitenrechte(), weil hier die Schranken sitzen und die
+ * sich ohne Datenbank prüfen lassen sollen.
+ */
+function seitenrechte_zusammenfuehren(array $vorgabe, array $gespeichert): array
+{
+    foreach ($gespeichert as $seite => $rollen) {
+        // Nur bekannte Seiten, und nichts Festgeschriebenes.
+        if (!isset($vorgabe[$seite]) || in_array($seite, SEITEN_FEST, true)) {
+            continue;
+        }
+        if (!is_array($rollen)) {
+            continue;
+        }
+
+        $gueltig = [];
+        foreach ($rollen as $r) {
+            if (is_string($r) && rolle_gueltig($r) && !in_array($r, $gueltig, true)) {
+                $gueltig[] = $r;
+            }
+        }
+
+        // Die Verwaltung steht immer drin. seite_erlaubt() lässt sie
+        // ohnehin überall durch; sie hier wegzulassen hieße, eine
+        // Zuordnung zu speichern, die etwas anderes behauptet als gilt.
+        if (!in_array('admin', $gueltig, true)) {
+            array_unshift($gueltig, 'admin');
+        }
+
+        $vorgabe[$seite] = $gueltig;
+    }
+
+    return $vorgabe;
+}
+
+/**
+ * Prüft eine Matrix aus dem Formular und macht daraus JSON.
+ *
+ * @return string JSON, oder '' wenn sie der Vorgabe entspricht - dann
+ *                zieht die Einstellung künftige Änderungen an der
+ *                Vorgabe automatisch mit.
+ */
+function seitenrechte_speicherform(array $eingabe): string
+{
+    $vorgabe = seitenrechte_vorgabe();
+    $neu     = seitenrechte_zusammenfuehren($vorgabe, $eingabe);
+
+    if ($neu === $vorgabe) {
+        return '';
+    }
+    return (string) json_encode($neu, JSON_UNESCAPED_SLASHES);
 }
 
 /**

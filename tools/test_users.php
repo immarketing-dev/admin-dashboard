@@ -218,6 +218,59 @@ $checks['mit Rolle und Zustand'] = isset($liste[0]['role'], $liste[0]['is_active
 $checks['ohne Passwort-Hash']    = !isset($liste[0]['password_hash']);
 
 // =====================================================================
+// Die Rechtematrix: Vorgabe, Ueberlagerung und die Schranken
+// =====================================================================
+// Die Vorgabe bleibt, solange nichts gespeichert ist.
+$vorgabe = seitenrechte_vorgabe();
+$checks['Vorgabe hat Seiten']        = count($vorgabe) > 10;
+$checks['ohne Einstellung: Vorgabe'] = seitenrechte() === $vorgabe;
+
+// Eine Ueberlagerung wirkt.
+$neu_matrix = seitenrechte_zusammenfuehren($vorgabe, ['finances.php' => ['staff']]);
+$checks['Ueberlagerung greift']   = in_array('staff', $neu_matrix['finances.php'], true);
+$checks['Verwaltung bleibt drin'] = in_array('admin', $neu_matrix['finances.php'], true);
+$checks['andere Seite unberuehrt'] = $neu_matrix['tasks.php'] === $vorgabe['tasks.php'];
+
+// settings.php ist festgeschrieben - sonst koennte sich jemand ueber die
+// Einstellungsseite jedes weitere Recht selbst geben.
+$angriff = seitenrechte_zusammenfuehren($vorgabe, ['settings.php' => ['staff', 'accounting']]);
+$checks['settings bleibt gesperrt'] = $angriff['settings.php'] === ['admin'];
+
+// Unbekannte Seiten und ungueltige Rollen werden verworfen, nicht
+// uebernommen: sonst legte eine veraltete gespeicherte Matrix Seiten
+// still, die es erst spaeter gab.
+$muell = seitenrechte_zusammenfuehren($vorgabe, [
+    'gibtesnicht.php' => ['staff'],
+    'tasks.php'       => ['staff', 'erfundene_rolle', 42, null],
+]);
+$checks['unbekannte Seite ignoriert'] = !isset($muell['gibtesnicht.php']);
+$checks['ungueltige Rolle raus']      = !in_array('erfundene_rolle', $muell['tasks.php'], true);
+$checks['Nicht-Text raus']            = $muell['tasks.php'] === ['admin', 'staff'];
+
+// Eine Seite ohne einen einzigen Haken faellt auf die Verwaltung zurueck
+// und nicht auf "niemand".
+$leer = seitenrechte_zusammenfuehren($vorgabe, ['wiki.php' => []]);
+$checks['leere Auswahl heisst admin'] = $leer['wiki.php'] === ['admin'];
+
+// Doppelte Angaben werden nicht doppelt gespeichert.
+$doppelt = seitenrechte_zusammenfuehren($vorgabe, ['wiki.php' => ['staff', 'staff', 'admin']]);
+$checks['keine Doppelten'] = count($doppelt['wiki.php']) === count(array_unique($doppelt['wiki.php']));
+
+// Speicherform: gleich der Vorgabe heisst leer, damit spaetere
+// Aenderungen an der Vorgabe wieder durchschlagen.
+$checks['Vorgabe wird nicht gespeichert'] = seitenrechte_speicherform($vorgabe) === '';
+$abweichend = seitenrechte_speicherform(['finances.php' => ['staff']]);
+$checks['Abweichung wird gespeichert']    = $abweichend !== '';
+$checks['und ist gueltiges JSON']         = is_array(json_decode($abweichend, true));
+
+// Und der Weg zurueck: gespeichert, wieder eingelesen, dasselbe Ergebnis.
+$zurueck = seitenrechte_zusammenfuehren($vorgabe, json_decode($abweichend, true));
+$checks['Rundlauf ergibt dasselbe'] = $zurueck === seitenrechte_zusammenfuehren($vorgabe, ['finances.php' => ['staff']]);
+
+// seite_erlaubt() arbeitet weiter auf der geltenden Matrix.
+$checks['admin darf weiterhin alles'] = seite_erlaubt('admin', 'settings.php') === true;
+$checks['unbekannte Seite gesperrt']  = seite_erlaubt('staff', 'gibtesnicht.php') === false;
+// =====================================================================
 // Ergebnis
 // =====================================================================
 $fehler = 0;

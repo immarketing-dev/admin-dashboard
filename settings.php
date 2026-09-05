@@ -351,6 +351,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=system&saved=1"); exit();
     }
 
+    if ($_POST['action'] === 'save_page_roles') {
+        require_once __DIR__ . '/includes/users.php';
+
+        // Aus dem Formular kommen nur die angehakten Felder. Eine Seite
+        // ohne einen einzigen Haken ist deshalb nicht "fehlt", sondern
+        // "nur die Verwaltung" - seitenrechte_zusammenfuehren() setzt
+        // admin von sich aus wieder ein.
+        $matrix = [];
+        foreach (array_keys(seitenrechte_vorgabe()) as $_seite) {
+            if (in_array($_seite, SEITEN_FEST, true)) {
+                continue;
+            }
+            $matrix[$_seite] = array_values(array_filter(
+                (array) ($_POST['rechte'][$_seite] ?? []),
+                'is_string'
+            ));
+        }
+
+        $wert = seitenrechte_speicherform($matrix);
+        $pdo->prepare("INSERT INTO settings (k,v) VALUES ('page_roles',?) ON DUPLICATE KEY UPDATE v=?")
+            ->execute([$wert, $wert]);
+        log_event($pdo, 'SETTINGS_ROLES', $wert === ''
+            ? 'Seitenrechte auf die Vorgabe zurückgesetzt.'
+            : 'Seitenrechte geändert.');
+        header('Location: settings?tab=users&saved=1'); exit();
+    }
+
     // Eigene Aktion, nicht save_system: dort wird log_limit aus dem
     // POST gelesen und faellt sonst auf den Standard zurueck.
     if ($_POST['action'] === 'save_backup') {
@@ -1074,6 +1101,61 @@ require 'includes/layout_start.php';
         <div class="col-md-2">
           <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i><?= te('Anlegen') ?></button>
         </div>
+      </form>
+
+      <div class="settings-section-title"><i class="bi bi-sliders me-2"></i><?= te('Wer welche Seite sieht') ?></div>
+
+      <p class="text-muted small mb-3">
+        <?= te('Die Vorgabe steht im Code und gilt, solange hier nichts geändert wird. Eine Seite ohne Haken bleibt der Verwaltung vorbehalten.') ?>
+      </p>
+
+      <form method="POST" class="mb-4">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="save_page_roles">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-3">
+            <thead>
+              <tr class="table-label">
+                <th><?= te('Seite') ?></th>
+                <?php foreach (rollen() as $_rk => $_rd): ?>
+                  <th class="text-center"><?= htmlspecialchars(datenwert($_rd['label'])) ?></th>
+                <?php endforeach; ?>
+              </tr>
+            </thead>
+            <tbody>
+            <?php foreach (seitenrechte() as $_seite => $_erlaubt): ?>
+              <?php $_fest = in_array($_seite, SEITEN_FEST, true); ?>
+              <tr>
+                <td class="font-monospace small">
+                  <?= htmlspecialchars(preg_replace('/\.php$/', '', $_seite)) ?>
+                  <?php if ($_fest): ?>
+                    <i class="bi bi-lock-fill text-muted ms-1"
+                       title="<?= te('Nicht änderbar: wer die Einstellungen öffnen darf, könnte sich hier jedes weitere Recht selbst geben.') ?>"></i>
+                  <?php endif; ?>
+                </td>
+                <?php foreach (array_keys(rollen()) as $_rk): ?>
+                  <td class="text-center">
+                    <?php if ($_rk === 'admin'): ?>
+                      <?php // Die Verwaltung kommt ohnehin ueberall durch. ?>
+                      <i class="bi bi-check2 text-muted" title="<?= te('Die Verwaltung sieht immer alles.') ?>"></i>
+                    <?php else: ?>
+                      <input type="checkbox" class="form-check-input"
+                             name="rechte[<?= htmlspecialchars($_seite) ?>][]"
+                             value="<?= htmlspecialchars($_rk) ?>"
+                             <?= in_array($_rk, $_erlaubt, true) ? 'checked' : '' ?>
+                             <?= $_fest ? 'disabled' : '' ?>>
+                    <?php endif; ?>
+                  </td>
+                <?php endforeach; ?>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
+        <span class="text-muted small ms-2">
+          <?= te('Entspricht die Auswahl wieder der Vorgabe, wird die Einstellung entfernt — spätere Änderungen an der Vorgabe wirken dann wieder mit.') ?>
+        </span>
       </form>
 
       <div class="settings-section-title"><i class="bi bi-info-circle me-2"></i><?= te('Was die Rollen dürfen') ?></div>

@@ -1018,6 +1018,19 @@ return [
         => 'Backups',
     'Datenauskunft'
         => 'Data export',
+    // ── Rechtematrix (settings.php, Reiter Benutzer) ─────────────────
+    'Wer welche Seite sieht'
+        => 'Who sees which page',
+    'Die Vorgabe steht im Code und gilt, solange hier nichts geändert wird. Eine Seite ohne Haken bleibt der Verwaltung vorbehalten.'
+        => 'The default lives in the code and applies until something is changed here. A page with no ticks stays with administration.',
+    'Seite'
+        => 'Page',
+    'Nicht änderbar: wer die Einstellungen öffnen darf, könnte sich hier jedes weitere Recht selbst geben.'
+        => 'Not changeable: whoever can open the settings could grant themselves every other right here.',
+    'Die Verwaltung sieht immer alles.'
+        => 'Administration always sees everything.',
+    'Entspricht die Auswahl wieder der Vorgabe, wird die Einstellung entfernt — spätere Änderungen an der Vorgabe wirken dann wieder mit.'
+        => 'Match the default again and the setting is removed, so later changes to the default take effect once more.',
     'Alle gespeicherten Daten dieser Person als JSON-Datei'
         => 'Everything stored about this person, as a JSON file',
     'Der nächtliche Lauf schreibt einen vollständigen Abzug der Datenbank und hebt die letzten Stände auf. Ohne eingerichteten Cron passiert nichts — siehe Cron-Einrichtung in der README.'

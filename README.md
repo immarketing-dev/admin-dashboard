@@ -647,6 +647,26 @@ New users are created **without a password** — they set their own through
 "Forgot your password?". One handed out by an administrator would have to
 travel over a channel that exposes it, and in practice never gets changed.
 
+### Who sees which page
+
+The three roles come with a sensible split, and that split lives in the
+code as the default. Settings → Users has a matrix on top of it: a row
+per page, a column per role. Give an accountant the project list, or
+take the wiki away from staff, without touching a file.
+
+Two rails, because a permission screen that can unlock itself is not one:
+
+- **`settings.php` cannot be changed.** Whoever can open the settings can
+  edit this matrix, and would be one click away from every other right.
+- **A page with no ticks falls back to administration**, not to nobody.
+  Locking everyone out of a page including yourself should not be
+  something a stray click can do.
+
+Only pages the default knows are accepted, and only roles that exist —
+so a stored matrix that has aged does not silently disable a page added
+later. Match the default again and the setting is dropped, which puts
+later changes to the default back in charge.
+
 ### Two-factor sign-in
 
 Optional, per user, under **Settings → System**. A one-time code from an
