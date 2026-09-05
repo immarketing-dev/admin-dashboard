@@ -21,6 +21,32 @@ const MIGRATION_BENIGN_ERRORS = [
     1091, // Kann nicht loeschen: Spalte/Schluessel existiert nicht
 ];
 
+/**
+ * Die Nachfuellanweisung aus Migration 20.
+ *
+ * Sie schreibt fuer jede bereits bezahlte Rechnung eine Zeile ins
+ * Zahlungsjournal. Ohne sie stuende der ganze Bestand nach der Migration
+ * als "nichts eingegangen" da, und die Auswertung saehe ueber Nacht
+ * anders aus als am Vortag.
+ *
+ * Als eigene Funktion, weil drei Tests dieselbe Anweisung ausfuehren,
+ * um den Zustand einer echten Datenbank nachzustellen. Sie holten sie
+ * vorher als migrations()[20][1] - und als der Fremdschluessel einen
+ * eigenen Schritt bekam, zeigte dieser Index auf etwas anderes.
+ */
+function migration_20_nachfuellen(): string
+{
+    return "INSERT INTO payments (finance_id, amount, paid_at, note, source)
+            SELECT f.id, f.amount,
+                   COALESCE(f.due_date, f.record_date, DATE(f.created_at)),
+                   'Bestand aus der Zeit vor den Teilzahlungen.', 'status'
+              FROM finances f
+             WHERE f.type = 'INCOME'
+               AND f.status = 'Bezahlt'
+               AND f.amount > 0
+               AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.finance_id = f.id)";
+}
+
 function run_migrations(PDO $pdo): void
 {
     // Der Normalfall zuerst: die Tabelle steht und die Version stimmt.
@@ -689,20 +715,23 @@ function migrations(): array
                 note       VARCHAR(255) DEFAULT NULL,
                 source     VARCHAR(20) NOT NULL DEFAULT 'manual',
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                KEY idx_payments_finance (finance_id),
-                CONSTRAINT fk_payments_finance FOREIGN KEY (finance_id)
-                    REFERENCES finances(id) ON DELETE CASCADE
+                KEY idx_payments_finance (finance_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
-            "INSERT INTO payments (finance_id, amount, paid_at, note, source)
-             SELECT f.id, f.amount,
-                    COALESCE(f.due_date, f.record_date, DATE(f.created_at)),
-                    'Bestand aus der Zeit vor den Teilzahlungen.', 'status'
-               FROM finances f
-              WHERE f.type = 'INCOME'
-                AND f.status = 'Bezahlt'
-                AND f.amount > 0
-                AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.finance_id = f.id)",
+            // Der Fremdschluessel in einem eigenen Schritt. Eine ueber
+            // Jahre gewachsene finances-Tabelle kann eine andere Engine,
+            // Kollation oder Vorzeichenbehandlung haben, als die
+            // Schemadatei vorsieht; dann lehnt MySQL den Verweis ab.
+            // Stuende er in der CREATE-Anweisung, faellt mit ihm die
+            // ganze Tabelle aus - und jede Seite, die das Zahlungsjournal
+            // liest, laeuft auf einen Fehler. Getrennt bleibt schlimmsten-
+            // falls eine Tabelle ohne Kaskade zurueck: beim endgueltigen
+            // Loeschen einer Rechnung raeumt dann trash.php nicht mit
+            // auf, alles andere laeuft.
+            'ALTER TABLE payments ADD CONSTRAINT fk_payments_finance'
+                . ' FOREIGN KEY (finance_id) REFERENCES finances(id) ON DELETE CASCADE',
+
+            migration_20_nachfuellen(),
         ],
 
         // Das Budget eines Projekts. In Euro, weil ein Kunde einen Preis
@@ -731,6 +760,9 @@ function migrations(): array
         // feststellen, und eine geratene Zuordnung waere schlimmer als
         // keine.
         22 => [
+            // Erst die Spalte, dann der Fremdschluessel. Scheitert der
+            // zweite Schritt, steht die Spalte trotzdem - und sie ist
+            // es, von der die Seiten abhaengen.
             'ALTER TABLE quotes ADD COLUMN converted_invoice_id INT DEFAULT NULL',
             'ALTER TABLE quotes ADD CONSTRAINT fk_quotes_invoice'
                 . ' FOREIGN KEY (converted_invoice_id) REFERENCES finances(id) ON DELETE SET NULL',

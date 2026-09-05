@@ -106,6 +106,18 @@ php tools/export_demo_sql.php ../demo_data.sql \
     --uploads=../admin-dashboard-demo/uploads
 ```
 
+The file brings its own structure: a `DROP TABLE` per table, then
+`install/schema.sql` verbatim, then the data. So import **this file
+alone** - `install/schema.sql` does not need to go first, and must not
+be relied on to update an existing demo database. `CREATE TABLE IF NOT
+EXISTS` adds no column to a table that already exists, and the
+migrations that would are never run in the demo: its database user has
+only SELECT. Every schema change used to leave the demo behind, and the
+next import then failed on a column the demo had never had.
+
+The flip side is that this file **destroys** what is in the database it
+is imported into. It belongs in the demo database and nowhere else.
+
 This runs the seed locally against SQLite and writes the result as MySQL
 `INSERT` statements, with every reference already resolved. It then reads
 its own output back and compares all ~450 rows against the original, so a

@@ -184,7 +184,7 @@ $storno   = rechnung($m, 400.00,  $frueher, 'Storniert');
 
 // Die zweite Anweisung von Migration 20 - der echte Text, nicht eine
 // Abschrift davon.
-$nachfuellen = migrations()[20][1];
+$nachfuellen = migration_20_nachfuellen();
 $m->exec($nachfuellen);
 
 $checks['Bestand nachgefuellt']

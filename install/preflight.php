@@ -360,6 +360,66 @@ pf_add(
 
 $existingTables = [];
 
+// -- Vollstaendigkeit der Dateien --------------------------------------
+// Wer per FTP hochlaedt, ueberschreibt geaenderte Dateien und uebersieht
+// dabei leicht eine neu hinzugekommene. Das Ergebnis ist ein
+// require_once auf eine Datei, die es nicht gibt: HTTP 500, weisse
+// Seite, und zwar nur auf den Seiten, die sie brauchen - was die Suche
+// in die falsche Richtung lenkt.
+//
+// Geprueft wird nicht gegen eine gepflegte Liste, sondern gegen das,
+// was der Code selbst verlangt: jedes require auf eine Projektdatei.
+$wurzel = dirname(__DIR__);
+$fehlend = [];
+$geprueft = 0;
+
+foreach (array_merge(glob($wurzel . '/*.php') ?: [], glob($wurzel . '/includes/*.php') ?: []) as $datei) {
+    $inhalt = (string) @file_get_contents($datei);
+    if ($inhalt === '') continue;
+
+    // require 'includes/x.php', require_once __DIR__ . '/includes/x.php'
+    if (!preg_match_all(
+        '/\brequire(?:_once)?\s*(?:\(\s*)?(?:__DIR__\s*\.\s*)?[\'"]([^\'"]+\.php)[\'"]/i',
+        $inhalt, $treffer)) {
+        continue;
+    }
+
+    foreach ($treffer[1] as $ziel) {
+        // vendor/ kommt aus dem Paketverwalter und wird anderswo geprueft.
+        if (strpos($ziel, 'vendor/') !== false) continue;
+
+        // Zwei Schreibweisen, zwei Aufloesungen: __DIR__ . '/x.php' zeigt
+        // neben die einbindende Datei, ein blosses 'x.php' loest PHP
+        // gegen das Arbeitsverzeichnis auf - und das ist das Verzeichnis
+        // der aufgerufenen Seite, also der Projektstamm. includes/auth.php
+        // bindet so config.php ein. Wird nur die erste Lesart geprueft,
+        // meldet die Pruefung eine Datei als fehlend, die es gibt.
+        $kandidaten = $ziel[0] === '/'
+            ? [dirname($datei) . $ziel]
+            : [dirname($datei) . '/' . $ziel, $wurzel . '/' . $ziel];
+
+        $geprueft++;
+        $da = false;
+        foreach ($kandidaten as $k) {
+            if (is_file($k)) { $da = true; break; }
+        }
+        if (!$da) {
+            $fehlend[basename($ziel) . ' (verlangt von ' . basename($datei) . ')'] = true;
+        }
+    }
+}
+
+if ($fehlend === []) {
+    pf_add('Dateien', 'Eingebundene Dateien', 'PASS',
+           $geprueft . ' Einbindung(en) geprueft, jede Datei ist vorhanden.');
+} else {
+    pf_add('Dateien', 'Eingebundene Dateien', 'FAIL',
+           'Es fehlen: ' . implode(', ', array_keys($fehlend))
+         . '. Jede Seite, die eine davon einbindet, endet mit HTTP 500. '
+         . 'Vermutlich beim Hochladen uebersehen - neue Dateien werden '
+         . 'nicht ueberschrieben, sondern muessen einzeln mit.');
+}
+
 if (!$envExists) {
     pf_add('Datenbank', 'Abschnitt uebersprungen', 'SKIP', 'Keine .env-Datei gefunden - Datenbankpruefung ist ohne Zugangsdaten nicht moeglich.');
 } elseif ($envLoaderMissing) {
@@ -458,6 +518,50 @@ if (!$envExists) {
     } catch (Throwable $e) {
         pf_add('Datenbank', 'Tabellen', 'FAIL', 'Tabellenliste konnte nicht gelesen werden: ' . pf_mask_secrets($e->getMessage()));
         $existingTables = [];
+    }
+
+    // -- Schemastand ------------------------------------------------------
+    // Die Migrationen laufen bei jedem Seitenaufruf und stempeln die
+    // Version erst, wenn ALLE Schritte durchgelaufen sind. Steht hier eine
+    // kleinere Zahl als erwartet, ist mindestens ein Schritt gescheitert -
+    // und dann fehlt irgendwo eine Spalte oder eine Tabelle, waehrend der
+    // Code sie schon benutzt. Genau das sieht man einer weissen Seite mit
+    // HTTP 500 nicht an.
+    $erwartete_version = null;
+    $migPath = dirname(__DIR__) . '/includes/migrations.php';
+    if (is_readable($migPath)
+        && preg_match('/const\s+SCHEMA_VERSION\s*=\s*(\d+)/', (string) file_get_contents($migPath), $m)) {
+        $erwartete_version = (int) $m[1];
+    }
+
+    try {
+        $gespeichert = null;
+        if (in_array('settings', $existingTables, true)) {
+            $st = $pdo->query("SELECT v FROM settings WHERE k = 'schema_version'");
+            $wert = $st->fetchColumn();
+            if ($wert !== false) $gespeichert = (int) $wert;
+        }
+
+        if ($erwartete_version === null) {
+            pf_add('Datenbank', 'Schemastand', 'SKIP',
+                   'includes/migrations.php nicht lesbar - erwartete Version unbekannt.');
+        } elseif ($gespeichert === null) {
+            pf_add('Datenbank', 'Schemastand', 'WARN',
+                   'Keine Version gespeichert. Bei einer frischen Datenbank normal - '
+                 . 'der erste Seitenaufruf setzt sie auf ' . $erwartete_version . '.');
+        } elseif ($gespeichert >= $erwartete_version) {
+            pf_add('Datenbank', 'Schemastand', 'PASS',
+                   'Version ' . $gespeichert . ', erwartet ' . $erwartete_version . '.');
+        } else {
+            pf_add('Datenbank', 'Schemastand', 'FAIL',
+                   'Version ' . $gespeichert . ', erwartet ' . $erwartete_version . '. '
+                 . 'Eine Migration ist nicht durchgelaufen; der Grund steht im '
+                 . 'PHP-Fehlerprotokoll als "Migration N FEHLGESCHLAGEN". '
+                 . 'Solange das so ist, benutzt der Code Spalten, die es noch nicht gibt.');
+        }
+    } catch (Throwable $e) {
+        pf_add('Datenbank', 'Schemastand', 'FAIL',
+               'Konnte nicht gelesen werden: ' . pf_mask_secrets($e->getMessage()));
     }
 
     // -- Zeilenzahlen: fuer den Vergleich vor/nach einer Migration --------

@@ -145,7 +145,7 @@ $pdo->prepare(
 // Zeilen dafuer nachgefuellt - hier tut es dieselbe Anweisung, damit die
 // Ausgangslage die eines echten Panels ist und nicht eine, die es so
 // nirgends gibt.
-$pdo->exec(migrations()[20][1]);
+$pdo->exec(migration_20_nachfuellen());
 
 // Eine Rechnung mit Anzahlung. Vorher zaehlte sie ganz zu "offen" oder
 // ganz zu "bezahlt" - beides war falsch.

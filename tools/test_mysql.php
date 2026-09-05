@@ -294,7 +294,7 @@ $pdo->exec("INSERT INTO finances (type, title, contact_id, amount, status, recor
 // dafuer nachgefuellt - hier tut es dieselbe Anweisung, und damit laeuft
 // sie einmal gegen die echte Datenbank statt nur gegen den Spiegel.
 require_once $wurzel . '/includes/migrations.php';
-$pdo->exec(migrations()[20][1]);
+$pdo->exec(migration_20_nachfuellen());
 
 // setting() braucht sonst config.php.
 if (!function_exists('setting')) {

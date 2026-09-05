@@ -229,8 +229,16 @@ $kopf = "-- --------------------------------------------------------------------
       . "-- Demodaten fuer das Admin-Dashboard\n"
       . "-- Erzeugt am " . date('d.m.Y H:i') . "\n"
       . "--\n"
-      . "-- Import NUR in die Demo-Datenbank, und erst NACH install/schema.sql.\n"
-      . "-- Die Datei leert die Tabellen, bevor sie sie fuellt.\n"
+      . "-- ACHTUNG: Diese Datei LOESCHT die Tabellen des Panels und legt sie\n"
+      . "-- neu an. Sie gehoert ausschliesslich in die DEMO-Datenbank. In einer\n"
+      . "-- Datenbank mit echten Daten vernichtet sie diese vollstaendig.\n"
+      . "--\n"
+      . "-- install/schema.sql muss NICHT vorher eingespielt werden - die\n"
+      . "-- Struktur steht weiter unten mit drin. Das ist der Unterschied zu\n"
+      . "-- frueher: ein blosses CREATE TABLE IF NOT EXISTS ergaenzt einer\n"
+      . "-- bestehenden Tabelle keine neue Spalte, und Migrationen laufen in\n"
+      . "-- der Demo nicht (ihr Datenbankbenutzer darf nur SELECT). Eine\n"
+      . "-- Schemaaenderung erreichte die Demo deshalb nie.\n"
       . "--\n"
       . "-- Alle Namen, Firmen und Adressen sind erfunden; die Domains liegen\n"
       . "-- im laut RFC 2606 reservierten Namensraum .example.\n"
@@ -243,15 +251,37 @@ $kopf = "-- --------------------------------------------------------------------
       . "SET FOREIGN_KEY_CHECKS = 0;\n\n";
 fwrite($out, $kopf);
 
-// Leeren. settings behaelt schema_version - ohne die Zeile liefe
-// run_migrations() beim naechsten Seitenaufruf von vorne los.
-fwrite($out, "-- Bestand entfernen\n");
-foreach (array_reverse($reihenfolge) as $t) {
-    fwrite($out, $t === 'settings'
-        ? "DELETE FROM `settings` WHERE `k` <> 'schema_version';\n"
-        : "DELETE FROM `$t`;\n");
+// ── Struktur ────────────────────────────────────────────────────────
+// Frueher stand hier ein DELETE je Tabelle, und install/schema.sql war
+// vorher von Hand einzuspielen. Das ging genau so lange gut, wie sich
+// das Schema nicht aenderte: CREATE TABLE IF NOT EXISTS ergaenzt einer
+// vorhandenen Tabelle keine Spalte, und die Migrationen, die es sonst
+// tun, laufen in der Demo nicht - deren Datenbankbenutzer darf nur
+// SELECT. Der Import scheiterte dann an einem INSERT mit einer Spalte,
+// die es in der Demo nie gegeben hatte.
+//
+// Deshalb bringt die Datei ihre Struktur jetzt selbst mit: ein DROP je
+// Tabelle, danach install/schema.sql woertlich. Fuer eine Demo ist das
+// der richtige Weg - ihre Daten sind ohnehin erzeugt und jederzeit
+// wieder erzeugbar.
+$schema = (string) file_get_contents($wurzel . '/install/schema.sql');
+
+// Die Tabellennamen aus der Schemadatei selbst, nicht aus $reihenfolge:
+// dort stehen nur die, die der Seed fuellt.
+preg_match_all('/CREATE TABLE IF NOT EXISTS\s+`?(\w+)`?/i', $schema, $treffer);
+$alle_tabellen = $treffer[1];
+
+fwrite($out, "-- ---------------------------------------------------------------------\n"
+           . "-- Struktur. Woertlich aus install/schema.sql, davor ein DROP je\n"
+           . "-- Tabelle - sonst blieben bestehende Tabellen unveraendert stehen\n"
+           . "-- und dieser Datei fehlten spaeter die Spalten.\n"
+           . "-- ---------------------------------------------------------------------\n");
+
+foreach (array_reverse($alle_tabellen) as $t) {
+    fwrite($out, "DROP TABLE IF EXISTS `$t`;\n");
 }
-fwrite($out, "\n");
+fwrite($out, "\n" . rtrim($schema) . "\n\n");
+fwrite($out, "-- === Ende der Struktur ===\n\n");
 
 $gesamt = 0;
 foreach ($reihenfolge as $tabelle) {
@@ -259,7 +289,8 @@ foreach ($reihenfolge as $tabelle) {
     $zeilen  = $pdo->query('SELECT * FROM ' . $tabelle)->fetchAll(PDO::FETCH_ASSOC);
     if ($zeilen === []) continue;
 
-    // settings: schema_version nicht mitschreiben, die steht schon.
+    // settings: schema_version nicht mitschreiben - die stempelt schon
+    // install/schema.sql am Ende des Strukturteils.
     if ($tabelle === 'settings') {
         $zeilen = array_values(array_filter($zeilen, fn($r) => $r['k'] !== 'schema_version'));
         if ($zeilen === []) continue;
@@ -301,9 +332,20 @@ foreach (nach_sqlite(file_get_contents($wurzel . '/install/schema.sql')) as $anw
 
 $puffer = '';
 $nr = 0;
+// Der Strukturteil wird uebersprungen: er ist install/schema.sql
+// woertlich, also MySQL-DDL, und die laesst sich nicht gegen SQLite
+// ausfuehren. Geprueft ist sie anderswo - check_schema.php liest sie,
+// und in der CI wird sie in eine echte MariaDB importiert. Hier geht es
+// um die Daten: falsch maskierte Anfuehrungszeichen, verlorene Umlaute,
+// abgeschnittene Zeilenumbrueche.
+$struktur_vorbei = false;
 foreach (preg_split('/\R/', file_get_contents(EXPORT_ZIEL)) as $zeile) {
     $nr++;
     $roh = trim($zeile);
+    if (!$struktur_vorbei) {
+        if (strpos($roh, '-- === Ende der Struktur ===') === 0) $struktur_vorbei = true;
+        continue;
+    }
     if ($roh === '' || strpos($roh, '--') === 0) continue;
     // SET NAMES kennt SQLite nicht; SET FOREIGN_KEY_CHECKS faengt der Aufsatz.
     if (stripos($roh, 'SET NAMES') === 0) continue;
