@@ -513,6 +513,14 @@ if command -v php >/dev/null 2>&1; then
     echo "AUSWERTUNG (Darstellung): $out"
     fail=1
   fi
+  # Die Einstellungen ebenso - und dort zusaetzlich das Speichern: eine
+  # Anpassung, die unter dem Schluessel der falschen Sprache landet,
+  # ueberschreibt den Text des Betreibers, und zu sehen waere das erst
+  # in der naechsten Mail.
+  if ! out=$(php tools/test_settings_render.php 2>&1); then
+    echo "EINSTELLUNGEN (Darstellung): $out"
+    fail=1
+  fi
 else
   echo "HINWEIS: php nicht gefunden - Demo-Pruefungen uebersprungen."
 fi

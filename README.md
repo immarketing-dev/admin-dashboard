@@ -916,11 +916,15 @@ language on the contact is the answer to that, and the portal now uses it
 as its starting point. A visitor switching language in the portal still
 wins for their own visit.
 
-Customised templates are stored per language, so editing the German
-wording does not overwrite the English one. German keeps the unsuffixed
-key it always had, which is why this needed no migration of existing
-templates. Where no version exists for a recipient's language, the
-translated default is used.
+Customised templates are stored per language, and the editor under
+**Settings → Mail** has a switch for which one you are editing —
+including a preview in that language, with sample data to match. Editing
+the German wording does not touch the English one. German keeps the
+unsuffixed key it always had, which is why this needed no migration of
+existing templates. Where no version exists for a recipient's language,
+the translated default is used rather than your wording in the other
+one, and resetting a template to the default only resets the language
+you are looking at.
 
 Translations live in `lang/en.php`, keyed by the German source text:
 `t('Speichern')` looks up `'Speichern'`. A missing entry falls back to the

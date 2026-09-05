@@ -347,6 +347,25 @@ function datenwert(string $wert): string
             'Bestätigt'        => t('Bestätigt'),
             'Abgeschlossen'    => t('Abgeschlossen'),
             'Abgesagt'         => t('Abgesagt'),
+            // Beispieldaten der Mail-Vorschau (mail_preview_vars()). Sie
+            // stehen dort als Werte im Platzhalter-Feld; die Vorschau
+            // einer englischen Vorlage soll nicht deutsch ausgefuellt
+            // sein, denn genau dafuer schaut man sie sich an.
+            'Max Mustermann'   => t('Max Mustermann'),
+            'Relaunch Landingpage' => t('Relaunch Landingpage'),
+            'Entwurf Startseite'   => t('Entwurf Startseite'),
+            'anbei Ihr persönlicher Zugang zum Projektportal.'
+                => t('anbei Ihr persönlicher Zugang zum Projektportal.'),
+            'Kontaktformular sendet nicht' => t('Kontaktformular sendet nicht'),
+            'Die Ursache lag am SMTP-Zertifikat. Es ist erneuert, das Formular läuft wieder.'
+                => t('Die Ursache lag am SMTP-Zertifikat. Es ist erneuert, das Formular läuft wieder.'),
+            'Abstimmung Startseite'    => t('Abstimmung Startseite'),
+            '12.09.2026, 10:00 Uhr'    => t('12.09.2026, 10:00 Uhr'),
+            'Online (Videokonferenz)'  => t('Online (Videokonferenz)'),
+            'Wir gehen den Entwurf gemeinsam durch.'
+                => t('Wir gehen den Entwurf gemeinsam durch.'),
+            'Die Positionen sind wie besprochen aufgeteilt.'
+                => t('Die Positionen sind wie besprochen aufgeteilt.'),
         ];
     }
 

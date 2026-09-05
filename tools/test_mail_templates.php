@@ -176,6 +176,44 @@ $checks['ohne englische Fassung der Standard']
     = mail_in_sprache('en', fn() => mail_render('portal_access', $vars))['subject']
       === 'Your access to the project portal | Beispiel';
 
+// =====================================================================
+// Der Editor in den Einstellungen
+// =====================================================================
+// Er bearbeitet immer genau eine Sprachfassung. "Wie das Panel" gibt es
+// hier nicht: beim Speichern muesste sonst jemand raten, welcher
+// Schluessel gemeint ist.
+sprache_setzen('de');
+$checks['Editor ohne Angabe: Panelsprache'] = mail_editor_sprache(null) === 'de';
+$checks['Editor nimmt eine bekannte Sprache'] = mail_editor_sprache('en') === 'en';
+$checks['Editor verwirft Unbekanntes']        = mail_editor_sprache('kl') === 'de';
+$checks['Editor verwirft Leeres']             = mail_editor_sprache('') === 'de';
+
+// Der Vergleich beim Speichern laeuft gegen den Standard der bearbeiteten
+// Sprache. Liefe er gegen den deutschen, landete der englische Standard
+// als vermeintliche Anpassung in der Datenbank - und bliebe dort stehen,
+// wenn der Standard sich spaeter aendert.
+$standard_en = mail_in_sprache('en', fn() => mail_templates())['portal_access']['subject'];
+$checks['englischer Standard ist englisch']
+    = strpos($standard_en, 'Your access to the project portal') !== false;
+$checks['deutscher Standard bleibt daneben deutsch']
+    = strpos(mail_templates()['portal_access']['subject'], 'Ihr Zugang zum Projekt-Portal') !== false;
+
+// Die Beispieldaten der Vorschau folgen der Sprache mit. Sonst zeigte die
+// Vorschau einer englischen Vorlage deutsche Beispieltexte - und genau
+// dafuer schaut man sie sich an.
+$vorschau_en = mail_in_sprache('en', fn() => mail_preview_vars());
+$checks['Beispieldaten englisch']
+    = $vorschau_en['betreff'] === 'Contact form does not send'
+   && $vorschau_en['ort']     === 'Online (video call)';
+$checks['Beispieldaten deutsch bleiben deutsch']
+    = mail_preview_vars()['betreff'] === 'Kontaktformular sendet nicht';
+
+// Und die fertige englische Vorschau enthaelt kein Deutsch mehr.
+$vorschau = mail_in_sprache('en', fn() => mail_render('ticket_reply', mail_preview_vars()));
+$checks['englische Vorschau ohne deutschen Rest']
+    = strpos($vorschau['text'], 'SMTP-Zertifikat') === false
+   && strpos($vorschau['text'], 'SMTP certificate') !== false;
+
 $fail = 0;
 foreach ($checks as $name => $ok) {
     echo ($ok ? 'PASS' : 'FAIL') . "  $name\n";

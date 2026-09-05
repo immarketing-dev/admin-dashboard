@@ -2095,4 +2095,35 @@ return [
         => "Tables",
     "in der Datenbank"
         => "in the database",
+    // ── Vorlagen-Editor: Sprachfassungen ──
+    "Sprache der Vorlage"
+        => "Template language",
+    "Jede Sprache hat ihre eigene Fassung. Ein Kontakt ohne eigene Sprache bekommt die des Panels."
+        => "Each language has its own version. A contact without a language of their own gets the panel's.",
+    "Diese Vorlage füllt nur das Versandfenster vor. Vor dem Absenden können Sie den Text dort noch ändern."
+        => "This template only prefills the send dialog. You can still edit the text there before sending.",
+
+    // ── Beispieldaten der Mail-Vorschau (mail_preview_vars()) ──
+    "Max Mustermann"
+        => "John Doe",
+    "Relaunch Landingpage"
+        => "Landing page relaunch",
+    "Entwurf Startseite"
+        => "Homepage draft",
+    "anbei Ihr persönlicher Zugang zum Projektportal."
+        => "please find your personal access to the project portal below.",
+    "Kontaktformular sendet nicht"
+        => "Contact form does not send",
+    "Die Ursache lag am SMTP-Zertifikat. Es ist erneuert, das Formular läuft wieder."
+        => "The cause was the SMTP certificate. It has been renewed and the form works again.",
+    "Abstimmung Startseite"
+        => "Homepage review",
+    "12.09.2026, 10:00 Uhr"
+        => "12 September 2026, 10:00",
+    "Online (Videokonferenz)"
+        => "Online (video call)",
+    "Wir gehen den Entwurf gemeinsam durch."
+        => "We will go through the draft together.",
+    "Die Positionen sind wie besprochen aufgeteilt."
+        => "The line items are split up as discussed.",
 ];

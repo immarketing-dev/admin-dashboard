@@ -190,6 +190,19 @@ function mail_sprache(?string $roh): ?string
 }
 
 /**
+ * Die Sprache, die der Vorlagen-Editor gerade bearbeitet.
+ *
+ * Anders als mail_sprache() gibt es hier kein "wie das Panel": eine
+ * gespeicherte Fassung gehoert immer zu genau einer Sprache, sonst
+ * wuesste beim Speichern niemand, welcher Schluessel gemeint ist.
+ * Ohne Angabe ist es die Sprache, in der der Betreiber selbst arbeitet.
+ */
+function mail_editor_sprache(?string $roh): string
+{
+    return in_array($roh, SPRACHEN, true) ? $roh : lang();
+}
+
+/**
  * Ersetzt {{platzhalter}} durch Werte.
  *
  * $escape steuert die Maskierung: im HTML-Teil müssen die Werte maskiert
@@ -323,25 +336,28 @@ function mail_render(string $key, array $vars = [], string $buttonUrl = '', stri
 /** Beispielwerte für die Vorschau im Einstellungsbereich. */
 function mail_preview_vars(): array
 {
+    // Die Beispieltexte laufen durch datenwert(): sonst zeigte die
+    // Vorschau einer englischen Vorlage deutsche Beispieldaten - und
+    // gerade die Vorschau soll ja zeigen, was ankommt.
     return [
-        'kunde'        => 'Max Mustermann',
-        'projekt'      => 'Relaunch Landingpage',
-        'meilenstein'  => 'Entwurf Startseite',
+        'kunde'        => datenwert('Max Mustermann'),
+        'projekt'      => datenwert('Relaunch Landingpage'),
+        'meilenstein'  => datenwert('Entwurf Startseite'),
         'firma'        => setting('company_short', COMPANY_SHORT),
-        'nachricht'    => 'anbei Ihr persönlicher Zugang zum Projektportal.',
-        'betreff'      => 'Kontaktformular sendet nicht',
-        'antwort'      => 'Die Ursache lag am SMTP-Zertifikat. Es ist erneuert, das Formular läuft wieder.',
-        'titel'        => 'Abstimmung Startseite',
-        'datum'        => '12.09.2026, 10:00 Uhr',
-        'ort'          => 'Online (Videokonferenz)',
-        'beschreibung' => 'Wir gehen den Entwurf gemeinsam durch.',
+        'nachricht'    => datenwert('anbei Ihr persönlicher Zugang zum Projektportal.'),
+        'betreff'      => datenwert('Kontaktformular sendet nicht'),
+        'antwort'      => datenwert('Die Ursache lag am SMTP-Zertifikat. Es ist erneuert, das Formular läuft wieder.'),
+        'titel'        => datenwert('Abstimmung Startseite'),
+        'datum'        => datenwert('12.09.2026, 10:00 Uhr'),
+        'ort'          => datenwert('Online (Videokonferenz)'),
+        'beschreibung' => datenwert('Wir gehen den Entwurf gemeinsam durch.'),
         // Fuer die Vorschau der Vorlage 'password_reset'.
         'link'         => 'https://admin.example.com/login?reset=…',
         'minuten'      => '60',
         'nummer'       => 'RE-2026-014',
         'betrag'       => '1.240,00',
         'faellig'      => '20.09.2026',
-        'anmerkungen'  => 'Die Positionen sind wie besprochen aufgeteilt.',
+        'anmerkungen'  => datenwert('Die Positionen sind wie besprochen aufgeteilt.'),
     ];
 }
 

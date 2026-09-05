@@ -181,8 +181,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     // wird der Eintrag gelöscht statt gespeichert - dann zieht die Vorlage
     // künftige Änderungen am Standard automatisch mit.
     if ($_POST['action'] === 'save_mail_template') {
-        $key  = $_POST['tpl_key'] ?? '';
-        $alle = mail_templates();
+        $key = $_POST['tpl_key'] ?? '';
+        // Eine gespeicherte Fassung gehoert zu genau einer Sprache.
+        $tpl_lang = mail_editor_sprache($_POST['tpl_lang'] ?? null);
+        // Die Standardtexte in der bearbeiteten Sprache. Der Vergleich
+        // weiter unten muss gegen sie laufen: sonst landete der
+        // englische Standard als vermeintliche Anpassung in der
+        // Datenbank und liefe kuenftigen Aenderungen daran davon.
+        $alle = mail_in_sprache($tpl_lang, fn() => mail_templates());
         if (isset($alle[$key])) {
             $subject = trim($_POST['tpl_subject'] ?? '');
             $body    = trim($_POST['tpl_body'] ?? '');
@@ -190,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $set = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
 
             foreach ([['subject', $subject], ['body', $body]] as [$feld, $wert]) {
-                $sk = 'mailtpl_' . $key . '_' . $feld;
+                $sk = mail_template_key($key, $feld, $tpl_lang);
                 if ($wert === '' || $wert === trim($alle[$key][$feld])) {
                     $del->execute([$sk]);
                 } else {
@@ -198,19 +204,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
         }
-        log_event($pdo, 'SETTINGS_MAIL_TPL', "E-Mail-Vorlage '$key' geändert.");
-        header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
+        log_event($pdo, 'SETTINGS_MAIL_TPL', "E-Mail-Vorlage '$key' ($tpl_lang) geändert.");
+        header("Location: settings?tab=mail&tpl=" . urlencode($key)
+             . "&tpllang=" . urlencode($tpl_lang) . "&saved=1"); exit();
     }
 
     // Zurück auf den Standard: die gespeicherte Fassung wird entfernt.
     if ($_POST['action'] === 'reset_mail_template') {
         $key = $_POST['tpl_key'] ?? '';
+        // Nur die bearbeitete Sprache. Wer den deutschen Text verwirft,
+        // will nicht auch seine englische Fassung los sein.
+        $tpl_lang = mail_editor_sprache($_POST['tpl_lang'] ?? null);
         if (isset(mail_templates()[$key])) {
             $pdo->prepare("DELETE FROM settings WHERE k IN (?, ?)")
-                ->execute(['mailtpl_' . $key . '_subject', 'mailtpl_' . $key . '_body']);
+                ->execute([
+                    mail_template_key($key, 'subject', $tpl_lang),
+                    mail_template_key($key, 'body', $tpl_lang),
+                ]);
         }
-        log_event($pdo, 'SETTINGS_MAIL_TPL', "E-Mail-Vorlage '$key' auf Standard zurückgesetzt.");
-        header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
+        log_event($pdo, 'SETTINGS_MAIL_TPL', "E-Mail-Vorlage '$key' ($tpl_lang) auf Standard zurückgesetzt.");
+        header("Location: settings?tab=mail&tpl=" . urlencode($key)
+             . "&tpllang=" . urlencode($tpl_lang) . "&saved=1"); exit();
     }
 
     // ── Benutzer ─────────────────────────────────────────────────────
@@ -859,10 +873,22 @@ require 'includes/layout_start.php';
       $tpl_key = $_GET['tpl'] ?? array_key_first($tpls);
       if (!isset($tpls[$tpl_key])) $tpl_key = array_key_first($tpls);
       $tpl     = $tpls[$tpl_key];
-      // Ist die Vorlage angepasst oder läuft sie noch auf dem Standard?
-      $ist_angepasst = setting('mailtpl_' . $tpl_key . '_subject', '') !== ''
-                    || setting('mailtpl_' . $tpl_key . '_body', '') !== '';
-      $vorschau = mail_render($tpl_key, mail_preview_vars(), 'https://example.com/portal');
+
+      // Welche Sprachfassung bearbeitet wird. Die Beschriftungen ringsum
+      // bleiben in der Sprache des Panels - sie gehören der Bedienung,
+      // nicht der Mail.
+      $tpl_lang = mail_editor_sprache($_GET['tpllang'] ?? null);
+
+      // Alles, was der Empfänger zu sehen bekommt, in einem Zug in seiner
+      // Sprache: der Text im Feld, der Standard dahinter und die Vorschau.
+      [$tpl_subject, $tpl_body, $vorschau, $ist_angepasst]
+          = mail_in_sprache($tpl_lang, fn() => [
+                mail_template_subject($tpl_key),
+                mail_template_body($tpl_key),
+                mail_render($tpl_key, mail_preview_vars(), 'https://example.com/portal'),
+                setting(mail_template_key($tpl_key, 'subject'), '') !== ''
+                || setting(mail_template_key($tpl_key, 'body'), '') !== '',
+            ]);
     ?>
     <div class="settings-card" style="border-radius:0 10px 10px 10px;">
 
@@ -900,10 +926,10 @@ require 'includes/layout_start.php';
         <div class="col-lg-4">
           <div class="list-group">
             <?php foreach($tpls as $k => $t):
-              $angepasst = setting('mailtpl_' . $k . '_subject', '') !== ''
-                        || setting('mailtpl_' . $k . '_body', '') !== '';
+              $angepasst = setting(mail_template_key($k, 'subject', $tpl_lang), '') !== ''
+                        || setting(mail_template_key($k, 'body', $tpl_lang), '') !== '';
             ?>
-            <a href="?tab=mail&tpl=<?= urlencode($k) ?>"
+            <a href="?tab=mail&amp;tpl=<?= urlencode($k) ?>&amp;tpllang=<?= urlencode($tpl_lang) ?>"
                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2<?= $k === $tpl_key ? ' active' : '' ?>">
               <span class="text-truncate">
                 <span class="d-block fw-semibold"><?= htmlspecialchars(datenwert($t['label'])) ?></span>
@@ -925,6 +951,7 @@ require 'includes/layout_start.php';
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="save_mail_template">
             <input type="hidden" name="tpl_key" value="<?= htmlspecialchars($tpl_key, ENT_QUOTES) ?>">
+            <input type="hidden" name="tpl_lang" value="<?= htmlspecialchars($tpl_lang, ENT_QUOTES) ?>">
 
             <div class="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
               <div>
@@ -939,16 +966,31 @@ require 'includes/layout_start.php';
               <?php endif; ?>
             </div>
 
+            <?php if (count(SPRACHEN) > 1): ?>
+            <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+              <div class="btn-group btn-group-sm" role="group" aria-label="<?= te('Sprache der Vorlage') ?>">
+                <?php foreach (SPRACHEN as $l): ?>
+                <a href="?tab=mail&amp;tpl=<?= urlencode($tpl_key) ?>&amp;tpllang=<?= urlencode($l) ?>"
+                   class="btn <?= $l === $tpl_lang ? 'btn-primary' : 'btn-outline-secondary' ?>"
+                   <?= $l === $tpl_lang ? 'aria-current="true"' : '' ?>><?= htmlspecialchars(sprachname($l)) ?></a>
+                <?php endforeach; ?>
+              </div>
+              <div class="text-muted small">
+                <?= te('Jede Sprache hat ihre eigene Fassung. Ein Kontakt ohne eigene Sprache bekommt die des Panels.') ?>
+              </div>
+            </div>
+            <?php endif; ?>
+
             <div class="mb-3">
               <label class="fw-bold small mb-1" for="tpl_subject"><?= te('Betreff') ?></label>
               <input type="text" class="form-control" id="tpl_subject" name="tpl_subject"
-                     value="<?= htmlspecialchars(mail_template_subject($tpl_key)) ?>">
+                     value="<?= htmlspecialchars($tpl_subject) ?>">
             </div>
 
             <div class="mb-2">
               <label class="fw-bold small mb-1" for="tpl_body"><?= te('Nachricht') ?></label>
               <textarea class="form-control" id="tpl_body" name="tpl_body" rows="11"
-                        style="font-family:var(--font-mono);font-size:13px;line-height:1.6;"><?= htmlspecialchars(mail_template_body($tpl_key)) ?></textarea>
+                        style="font-family:var(--font-mono);font-size:13px;line-height:1.6;"><?= htmlspecialchars($tpl_body) ?></textarea>
               <div class="form-text">
                 <?= te('Eine Leerzeile trennt Absätze. Enthält eine Zeile nur einen Platzhalter, der leer bleibt, entfällt sie ganz.') ?>
               </div>
@@ -972,6 +1014,7 @@ require 'includes/layout_start.php';
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="reset_mail_template">
             <input type="hidden" name="tpl_key" value="<?= htmlspecialchars($tpl_key, ENT_QUOTES) ?>">
+            <input type="hidden" name="tpl_lang" value="<?= htmlspecialchars($tpl_lang, ENT_QUOTES) ?>">
           </form>
 
           <!-- Vorschau -->
@@ -988,8 +1031,7 @@ require 'includes/layout_start.php';
             <pre class="bg-subtle border border-subtle-c rounded-3 p-3 mb-0"
                  style="white-space:pre-wrap;font-size:13px;"><?= htmlspecialchars($vorschau['text']) ?></pre>
             <div class="form-text">
-              Diese Vorlage füllt nur das Versandfenster vor. Vor dem Absenden können Sie
-              den Text dort noch ändern.
+              <?= te('Diese Vorlage füllt nur das Versandfenster vor. Vor dem Absenden können Sie den Text dort noch ändern.') ?>
             </div>
           <?php endif; ?>
         </div>

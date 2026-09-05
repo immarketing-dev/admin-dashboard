@@ -214,6 +214,7 @@ class SqliteSpiegelPDO extends PDO
     public function __construct(string $dsn, ?string $user = null, ?string $pass = null, ?array $options = null)
     {
         parent::__construct($dsn, $user, $pass, $options ?? []);
+        $this->setAttribute(PDO::ATTR_STATEMENT_CLASS, [SqliteSpiegelStatement::class, []]);
 
         $substring_index = static function ($text, $trenner, $anzahl) {
             if ($text === null) return null;
@@ -259,13 +260,60 @@ class SqliteSpiegelPDO extends PDO
         $query = self::zeitfunktionen($query);
 
         if (stripos($query, 'ON DUPLICATE KEY UPDATE') !== false) {
+            // Die Werte hinter UPDATE fallen mit der Klausel weg - und
+            // mit ihnen ihre Platzhalter. Der Aufrufer uebergibt sie
+            // trotzdem, denn gegen MySQL braucht er sie:
+            //
+            //   INSERT INTO settings (k,v) VALUES (?,?)
+            //   ON DUPLICATE KEY UPDATE v=?          -> drei Parameter
+            //
+            // SQLite bekommt daraus ein INSERT OR REPLACE mit zwei
+            // Platzhaltern und meldete beim dritten "column index out of
+            // range". Wie viele ueberzaehlig sind, wird hier gezaehlt
+            // und in execute() abgeschnitten.
+            //
+            // Nur Fragezeichen: benannte Platzhalter liessen sich nicht
+            // der Reihe nach abschneiden. Im Projekt gibt es keine.
+            $klausel = '';
+            if (preg_match('/\s*ON DUPLICATE KEY UPDATE.*$/is', $query, $m)) $klausel = $m[0];
+
             $query = preg_replace('/\s*ON DUPLICATE KEY UPDATE.*$/is', '', $query);
             $query = preg_replace('/^\s*INSERT INTO/i', 'INSERT OR REPLACE INTO', $query);
+
+            $weg = substr_count($klausel, '?');
+            if ($weg > 0) SqliteSpiegelStatement::$ueberzaehlig[$query] = $weg;
         }
         // MySQL schreibt INSERT IGNORE, SQLite INSERT OR IGNORE - beide
         // ueberspringen eine Zeile, die einen eindeutigen Schluessel
         // verletzen wuerde.
         $query = preg_replace('/^\s*INSERT\s+IGNORE\s+INTO/i', 'INSERT OR IGNORE INTO', $query);
         return parent::prepare($query, $options);
+    }
+}
+
+/**
+ * Schneidet die Parameter ab, die zur weggefallenen
+ * ON-DUPLICATE-KEY-Klausel gehoerten.
+ *
+ * Die Zuordnung laeuft ueber den umgeschriebenen Abfragetext: gleiche
+ * Abfrage, gleiche Anzahl. Ein Zaehler je Statement ginge nicht, weil
+ * PDO die Instanz selbst erzeugt und der Konstruktor geschuetzt ist.
+ */
+class SqliteSpiegelStatement extends PDOStatement
+{
+    /** @var array<string,int> Abfragetext => Anzahl ueberzaehliger Parameter */
+    public static array $ueberzaehlig = [];
+
+    // PDO erzeugt die Instanz selbst und will dabei einen Konstruktor
+    // sehen, auch wenn er nichts tut.
+    protected function __construct() {}
+
+    public function execute(?array $params = null): bool
+    {
+        $weg = self::$ueberzaehlig[$this->queryString] ?? 0;
+        if ($weg > 0 && is_array($params) && count($params) > $weg) {
+            $params = array_slice($params, 0, count($params) - $weg);
+        }
+        return parent::execute($params);
     }
 }
