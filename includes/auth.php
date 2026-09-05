@@ -25,6 +25,45 @@ if (demo_mode()) {
 require_once __DIR__ . '/csrf.php';
 csrf_token(); // Token bei jeder authentifizierten Anfrage initialisieren
 
+// ── Rolle: bei jedem Aufruf frisch, nicht aus der Sitzung geglaubt ──
+//
+// Die Sitzung haelt die Rolle fuer die Anzeige, aber entscheiden darf
+// sie nicht allein: wem gerade die Rechte entzogen oder das Konto
+// abgeschaltet wurde, behielte sie sonst bis zum naechsten Anmelden -
+// und das kann Tage dauern.
+//
+// Im Demo-Modus entfaellt das: dort gibt es keinen Benutzer, und der
+// Besucher soll alles ansehen koennen.
+require_once __DIR__ . '/users.php';
+
+if (!demo_mode()) {
+    $_auth_stmt = $pdo->prepare('SELECT role, is_active, name FROM users WHERE id = ?');
+    $_auth_stmt->execute([(int) ($_SESSION['admin_id'] ?? 0)]);
+    $_auth_user = $_auth_stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$_auth_user || (int) $_auth_user['is_active'] !== 1) {
+        // Konto weg oder abgeschaltet: Sitzung beenden statt sie
+        // weiterlaufen zu lassen.
+        $_SESSION = [];
+        session_destroy();
+        header('Location: login');
+        exit();
+    }
+
+    $_SESSION['admin_role'] = rolle_gueltig((string) $_auth_user['role']) ? $_auth_user['role'] : 'admin';
+    $_SESSION['admin_name'] = (string) $_auth_user['name'];
+
+    $_auth_seite = basename($_SERVER['PHP_SELF'] ?? '');
+    if (!seite_erlaubt($_SESSION['admin_role'], $_auth_seite)) {
+        // 403 und keine Weiterleitung: eine Weiterleitung auf das
+        // Dashboard sieht aus wie ein Fehler, und der Benutzer probiert
+        // es noch dreimal.
+        http_response_code(403);
+        require __DIR__ . '/kein_zugriff.php';
+        exit();
+    }
+}
+
 // Einmal taeglich das Protokoll kuerzen. Nicht in der Demo: dort darf
 // nichts geschrieben werden, und der Datenbankbenutzer darf es auch nicht.
 if (!demo_mode()) {

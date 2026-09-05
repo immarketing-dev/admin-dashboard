@@ -35,11 +35,31 @@ function log_client_ip(): ?string
 function log_event(PDO $pdo, string $type, string $description): void
 {
     try {
-        $pdo->prepare('INSERT INTO logs (action_type, description, ip) VALUES (?, ?, ?)')
-            ->execute([substr($type, 0, 50), $description, log_client_ip()]);
+        $pdo->prepare('INSERT INTO logs (action_type, description, ip, user_id) VALUES (?, ?, ?, ?)')
+            ->execute([substr($type, 0, 50), $description, log_client_ip(), log_user_id()]);
     } catch (Throwable $e) {
         error_log('Protokolleintrag fehlgeschlagen (' . $type . '): ' . $e->getMessage());
     }
+}
+
+/**
+ * Der angemeldete Benutzer, oder null.
+ *
+ * Aus der Sitzung und nicht als Parameter: sonst muesste jeder der
+ * achtzig Aufrufer ihn durchreichen, und der erste, der es vergisst,
+ * schreibt still einen Eintrag ohne Urheber.
+ *
+ * null steht fuer "kein angemeldeter Benutzer" - der Cron-Lauf, die
+ * Schnittstellen, das Kundenportal und die Anmeldung selbst.
+ */
+function log_user_id(): ?int
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        return null;
+    }
+    $id = (int) ($_SESSION['admin_id'] ?? 0);
+
+    return $id > 0 ? $id : null;
 }
 
 /**

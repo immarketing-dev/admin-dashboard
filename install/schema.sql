@@ -66,6 +66,20 @@ CREATE TABLE IF NOT EXISTS users (
   -- sperrte ein Fehler beim Abscannen den Benutzer aus.
   totp_secret       VARCHAR(64) DEFAULT NULL,
   totp_confirmed_at DATETIME DEFAULT NULL,
+  -- Name, Rolle und Zustand. 'admin' als Standard, damit eine Zeile aus
+  -- der Zeit vor Version 18 nicht ohne Rolle dasteht: eine Installation,
+  -- die bis dahin mit einem Konto lief, hatte genau diese.
+  --
+  -- Drei Rollen und keine frei zusammenstellbare Rechtematrix: die waere
+  -- fuer ein Werkzeug dieser Groesse zu viel Apparat, und in der Praxis
+  -- stellt sie niemand um. Was sie duerfen, steht in
+  -- includes/users.php - eine Seite, die dort fehlt, ist gesperrt statt
+  -- versehentlich offen.
+  name          VARCHAR(255) NOT NULL DEFAULT '',
+  role          VARCHAR(20)  NOT NULL DEFAULT 'admin',
+  -- Abschalten statt loeschen: an einem Benutzer haengen Protokoll-
+  -- eintraege und erfasste Zeiten.
+  is_active     TINYINT(1)   NOT NULL DEFAULT 1,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -94,11 +108,17 @@ CREATE TABLE IF NOT EXISTS logs (
   description TEXT NOT NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ip          VARCHAR(45) DEFAULT NULL,
+  -- Wer war es? Bis Version 18 liess sich die Frage nicht stellen.
+  -- ON DELETE SET NULL: ein geloeschter Benutzer nimmt seine Spuren
+  -- nicht mit.
+  user_id     INT DEFAULT NULL,
   KEY idx_logs_type_created (action_type, created_at),
   -- Fuer auth_is_locked()/auth_note_lockout(): exakter Spaltenvergleich
   -- auf ip statt LIKE auf description, das sich mit einer praeparierten
   -- E-Mail-Adresse im Login-Formular vergiften liesse.
-  KEY idx_logs_lockout (action_type, ip, created_at)
+  KEY idx_logs_lockout (action_type, ip, created_at),
+  CONSTRAINT fk_logs_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Taken verbatim from d:\Downloads\admin-dashboard\sso.php:7
@@ -215,11 +235,16 @@ CREATE TABLE IF NOT EXISTS tasks (
   timer_start      DATETIME DEFAULT NULL,
   -- Stundensatz dieses Projekts. Hat Vorrang vor dem des Kunden.
   hourly_rate      DECIMAL(10,2) DEFAULT NULL,
+  -- Wer ist zustaendig? tasks.contact_id ist der Kunde, das hier die
+  -- eigene Person.
+  assigned_user_id INT DEFAULT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_tasks_contact (contact_id),
   KEY idx_tasks_status  (status),
   CONSTRAINT fk_tasks_contact FOREIGN KEY (contact_id)
     REFERENCES contacts(id) ON DELETE SET NULL,
+  CONSTRAINT fk_tasks_user FOREIGN KEY (assigned_user_id)
+    REFERENCES users(id) ON DELETE SET NULL,
   deleted_at     DATETIME DEFAULT NULL,
   feedback_by_contact_id INT DEFAULT NULL,
   feedback_by_name VARCHAR(255) NOT NULL DEFAULT '',
@@ -310,12 +335,19 @@ CREATE TABLE IF NOT EXISTS time_entries (
   -- Kennzeichen liesse sich dieselbe Stunde zweimal abrechnen.
   billed_at        DATETIME DEFAULT NULL,
   invoice_id       INT DEFAULT NULL,
+  -- Erfasste Zeit gehoert jemandem. Ohne das ist der Stundenzettel eine
+  -- Summe ohne Urheber, und aus "erfasste Zeit" wird nie eine
+  -- Auslastung.
+  user_id          INT DEFAULT NULL,
   KEY idx_time_task (task_id),
+  KEY idx_time_user (user_id, created_at),
   KEY idx_time_unbilled (task_id, billed_at),
   CONSTRAINT fk_time_invoice FOREIGN KEY (invoice_id)
     REFERENCES finances(id) ON DELETE SET NULL,
   CONSTRAINT fk_time_task FOREIGN KEY (task_id)
-    REFERENCES tasks(id) ON DELETE CASCADE
+    REFERENCES tasks(id) ON DELETE CASCADE,
+  CONSTRAINT fk_time_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -- Finance ---------------------------------------------------------------
@@ -563,7 +595,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '17')
+INSERT INTO settings (k, v) VALUES ('schema_version', '18')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

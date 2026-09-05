@@ -9,6 +9,41 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Multiple users, with roles.** `users` had four columns: id, email,
+  password_hash, created_at. No name, no role, no state — and no
+  interface for creating a second one. `logs` recorded *that* something
+  happened, never by whom. The panel was for exactly one person, while
+  the README promised one "for freelancers **and small agencies**".
+
+  Schema version 18 adds `name`, `role` and `is_active` to `users`,
+  `logs.user_id`, `time_entries.user_id` and `tasks.assigned_user_id`.
+  The existing user becomes administration — for an installation that ran
+  on one account until now, that is the right role, and it is the column
+  default so a row that misses the migration is not left without one.
+
+  Three roles rather than a composable permission matrix: that would be
+  too much apparatus for a tool this size, and in practice nobody adjusts
+  it. Administration sees everything; staff work on projects and see no
+  finances; accounting sees finances and reports and no projects.
+
+  Four things it does deliberately. **A page missing from the permission
+  list is closed**, not open — a forgotten page nobody can reach is
+  noticed at once, one everyone can see may never be. **The role is
+  re-read from the database on every request** rather than trusted from
+  the session, so withdrawing rights takes effect immediately instead of
+  at the next sign-in. **The last administrator cannot demote or disable
+  themselves**, because otherwise the installation is left with nobody
+  who can create users. And **users are disabled, not deleted**: log
+  entries and tracked hours hang off them.
+
+  `log_event()` now records the user — which is exactly what the comment
+  at the top of `includes/logging.php` had anticipated when it argued for
+  putting the insert in one function rather than eighty.
+
+  74 checks in `tools/test_users.php`, including one that walks every
+  page running through `includes/auth.php` and fails if it is missing
+  from the permission list.
+
 - **Incoming e-mail becomes a ticket (`api/tickets.php`).** A ticket
   appeared only when you created one or a client logged into the portal.
   Clients write e-mails, and the `support@` address in `.env` was only

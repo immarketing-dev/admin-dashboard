@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/logging.php';
 require_once __DIR__ . '/totp.php';
+require_once __DIR__ . '/users.php';
 
 /**
  * Login-Logik. Ersetzt die früheren login_process.php-Varianten und die
@@ -36,7 +37,9 @@ function auth_is_first_run(PDO $pdo): bool
 
 function auth_create_first_user(PDO $pdo, string $email, string $password): int
 {
-    $pdo->prepare('INSERT INTO users (email, password_hash) VALUES (?, ?)')
+    // Der erste Benutzer ist Verwaltung - sonst gaebe es niemanden, der
+    // weitere anlegen koennte.
+    $pdo->prepare("INSERT INTO users (email, password_hash, role, is_active) VALUES (?, ?, 'admin', 1)")
         ->execute([$email, password_hash($password, AUTH_HASH_ALGO, AUTH_HASH_OPTIONS)]);
 
     $id = (int) $pdo->lastInsertId();
@@ -94,7 +97,11 @@ function auth_note_lockout(PDO $pdo, string $ip): void
 
 function auth_attempt(PDO $pdo, string $email, string $password, string $ip): bool
 {
-    $stmt = $pdo->prepare('SELECT id, email, password_hash FROM users WHERE email = ?');
+    // is_active mitlesen: ein abgeschalteter Benutzer soll sich nicht
+    // anmelden koennen, aber die Pruefung darf erst NACH der
+    // Passwortpruefung greifen - sonst verriete die Antwortzeit, welche
+    // Adressen es gibt.
+    $stmt = $pdo->prepare('SELECT id, email, password_hash, name, role, is_active FROM users WHERE email = ?');
     $stmt->execute([$email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -125,6 +132,18 @@ function auth_attempt(PDO $pdo, string $email, string $password, string $ip): bo
         $log->execute([
             'LOGIN_FAILED',
             'Fehlgeschlagener Login-Versuch für E-Mail: ' . $emailForLog,
+            $ip,
+        ]);
+        return false;
+    }
+
+    // Abgeschaltet: dieselbe unspezifische Antwort wie bei einem
+    // falschen Passwort. Wer geht, soll nicht erfahren, dass sein Konto
+    // noch existiert.
+    if ((int) ($user['is_active'] ?? 1) !== 1) {
+        $log->execute([
+            'LOGIN_DISABLED',
+            'Anmeldung eines abgeschalteten Kontos: ' . $emailForLog,
             $ip,
         ]);
         return false;
@@ -180,6 +199,12 @@ function auth_anmelden(array $user): void
     $_SESSION['admin_logged_in'] = true;
     $_SESSION['admin_id']        = (int) $user['id'];
     $_SESSION['admin_email']     = $user['email'];
+    // Die Rolle steht in der Sitzung und wird bei jedem Seitenaufruf
+    // gegen die Datenbank geprueft (includes/auth.php): sonst behielte
+    // jemand, dem gerade die Rechte entzogen wurden, sie bis zum
+    // naechsten Anmelden.
+    $_SESSION['admin_role']      = rolle_gueltig((string) ($user['role'] ?? '')) ? $user['role'] : 'admin';
+    $_SESSION['admin_name']      = (string) ($user['name'] ?? '');
 
     unset($_SESSION['totp_pending_user'], $_SESSION['totp_pending_email'], $_SESSION['totp_pending_since']);
 }
@@ -221,7 +246,7 @@ function auth_totp_wartet(): ?array
  */
 function auth_totp_pruefen(PDO $pdo, int $user_id, string $eingabe, string $ip): bool
 {
-    $stmt = $pdo->prepare('SELECT id, email, totp_secret FROM users WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT id, email, name, role, is_active, totp_secret FROM users WHERE id = ?');
     $stmt->execute([$user_id]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 

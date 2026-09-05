@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 17;
+const SCHEMA_VERSION = 18;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -608,6 +608,49 @@ function migrations(): array
         17 => [
             'ALTER TABLE contacts ADD COLUMN vat_id VARCHAR(30) DEFAULT NULL',
             'ALTER TABLE finances ADD COLUMN buyer_reference VARCHAR(80) DEFAULT NULL',
+        ],
+
+        // Version 18: mehrere Benutzer, mit Rollen.
+        //
+        // Die README versprach ein Panel "for freelancers and small
+        // agencies". users hatte vier Spalten: id, email,
+        // password_hash, created_at. Kein Name, keine Rolle, kein
+        // Zustand - und eine Oberflaeche zum Anlegen eines zweiten
+        // Benutzers gab es nicht. logs hielt fest, DASS etwas geschah,
+        // nie durch wen.
+        //
+        // Der bestehende Benutzer wird Verwaltung: bei einer
+        // Installation, die bis hierher mit einem Konto lief, ist genau
+        // das die richtige Rolle. Sie steht als Standard in der Spalte,
+        // damit auch eine Zeile, die diese Migration verpasst, nicht
+        // ohne Rolle dasteht.
+        18 => [
+            'ALTER TABLE users'
+            . " ADD COLUMN name VARCHAR(255) NOT NULL DEFAULT '',"
+            . " ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'admin',"
+            . ' ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1',
+
+            // Wer war es? Die Frage liess sich bisher nicht stellen.
+            // ON DELETE SET NULL: ein geloeschter Benutzer soll seine
+            // Spuren nicht mitnehmen - dann fehlte die halbe
+            // Nachvollziehbarkeit.
+            'ALTER TABLE logs ADD COLUMN user_id INT DEFAULT NULL',
+            'ALTER TABLE logs ADD CONSTRAINT fk_logs_user'
+            . ' FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL',
+
+            // Erfasste Zeit gehoert jemandem. Ohne das ist der
+            // Stundenzettel eine Summe ohne Urheber, und aus "erfasste
+            // Zeit" wird nie eine Auslastung.
+            'ALTER TABLE time_entries ADD COLUMN user_id INT DEFAULT NULL',
+            'ALTER TABLE time_entries ADD CONSTRAINT fk_time_user'
+            . ' FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL',
+
+            // Wer ist fuer dieses Projekt zustaendig?
+            'ALTER TABLE tasks ADD COLUMN assigned_user_id INT DEFAULT NULL',
+            'ALTER TABLE tasks ADD CONSTRAINT fk_tasks_user'
+            . ' FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL',
+
+            'CREATE INDEX idx_time_user ON time_entries (user_id, created_at)',
         ],
     ];
 }

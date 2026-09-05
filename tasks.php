@@ -73,7 +73,8 @@ if (isset($_POST['ajax_action'])) {
         if ($start) {
             $minutes = round(abs(time() - strtotime($start)) / 60);
             if ($minutes > 0) {
-                $pdo->prepare("INSERT INTO time_entries (task_id, duration_minutes, note) VALUES (?, ?, 'Timer')")->execute([$task_id, $minutes]);
+                $pdo->prepare("INSERT INTO time_entries (task_id, duration_minutes, note, user_id) VALUES (?, ?, 'Timer', ?)")
+                    ->execute([$task_id, $minutes, log_user_id()]);
             }
             $pdo->prepare("UPDATE tasks SET is_timer_running = 0, timer_start = NULL WHERE id = ?")->execute([$task_id]);
         }
@@ -193,7 +194,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $t_id = $_POST['task_id'];
         if($mins > 0 && !empty($t_id)) {
             log_event($pdo, 'TIME_MANUAL', "Zeit manuell erfasst: $mins Minuten für Projekt $t_id.");
-            $pdo->prepare("INSERT INTO time_entries (task_id, duration_minutes, note) VALUES (?, ?, 'Manuell nachgetragen')")->execute([$t_id, $mins]);
+            $pdo->prepare("INSERT INTO time_entries (task_id, duration_minutes, note, user_id) VALUES (?, ?, 'Manuell nachgetragen', ?)")
+                ->execute([$t_id, $mins, log_user_id()]);
         }
     }
     elseif ($action === 'edit_task') {

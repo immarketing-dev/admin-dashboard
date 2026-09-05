@@ -212,6 +212,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
     }
 
+    // ── Benutzer ─────────────────────────────────────────────────────
+    // Nur die Verwaltung. Der Riegel in includes/auth.php sperrt die
+    // ganze Seite fuer andere Rollen; die Pruefung hier ist die zweite
+    // Tuer - falls jemand die Seitenrechte spaeter lockert, bleibt
+    // wenigstens die Benutzerverwaltung zu.
+    if (in_array($_POST['action'], ['user_add', 'user_edit', 'user_toggle'], true)) {
+        require_once __DIR__ . '/includes/users.php';
+
+        if (!ist_verwaltung()) {
+            http_response_code(403);
+            exit('Nicht berechtigt.');
+        }
+
+        if ($_POST['action'] === 'user_add') {
+            $e = benutzer_anlegen(
+                $pdo,
+                (string) ($_POST['email'] ?? ''),
+                (string) ($_POST['name'] ?? ''),
+                (string) ($_POST['role'] ?? 'staff')
+            );
+            header('Location: settings?tab=users&' . ($e['ok'] ? 'saved=1&newuser=' . $e['id'] : 'uerr=' . urlencode($e['fehler'])));
+            exit();
+        }
+
+        if ($_POST['action'] === 'user_edit') {
+            $e = benutzer_aendern(
+                $pdo,
+                (int) ($_POST['user_id'] ?? 0),
+                (string) ($_POST['name'] ?? ''),
+                (string) ($_POST['role'] ?? 'staff')
+            );
+            header('Location: settings?tab=users&' . ($e['ok'] ? 'saved=1' : 'uerr=' . urlencode($e['fehler'])));
+            exit();
+        }
+
+        $e = benutzer_umschalten(
+            $pdo,
+            (int) ($_POST['user_id'] ?? 0),
+            ($_POST['aktiv'] ?? '0') === '1'
+        );
+        header('Location: settings?tab=users&' . ($e['ok'] ? 'saved=1' : 'uerr=' . urlencode($e['fehler'])));
+        exit();
+    }
+
     // ── Zweiter Faktor ───────────────────────────────────────────────
     // Drei Schritte, absichtlich getrennt: erzeugen, bestaetigen,
     // abschalten. Zwischen den ersten beiden liegt das Abscannen - und
@@ -345,6 +389,9 @@ $s_api_keys       = ['leads' => setting('api_key_leads', ''), 'tickets' => setti
 // Zweiter Faktor. Im Demo-Modus gibt es keinen angemeldeten Benutzer,
 // dessen Faktor man einrichten koennte - dort bleibt der Abschnitt weg.
 require_once __DIR__ . '/includes/totp.php';
+require_once __DIR__ . '/includes/users.php';
+// Die Benutzerliste nur, wenn der Reiter sie zeigt.
+$s_benutzer = $active_tab === 'users' ? benutzer_liste($pdo) : [];
 $s_user_id     = (int) ($_SESSION['admin_id'] ?? 0);
 $s_totp_aktiv  = $s_user_id > 0 && totp_aktiv($pdo, $s_user_id);
 $s_totp_offen  = $s_totp_aktiv ? totp_ersatzcodes_offen($pdo, $s_user_id) : 0;
@@ -411,6 +458,17 @@ require 'includes/layout_start.php';
           <i class="bi bi-envelope-paper me-1"></i> <?= te('E-Mail-Vorlagen') ?>
         </a>
       </li>
+      <?php /* Der Reiter nur fuer die Verwaltung: der Riegel in
+               includes/auth.php sperrt die Seite ohnehin, aber ein
+               Reiter, der zur Sperrseite fuehrt, sieht aus wie ein
+               Fehler. */ ?>
+      <?php if (ist_verwaltung() || demo_mode()): ?>
+      <li class="nav-item">
+        <a class="nav-link <?= $active_tab==='users' ? 'active' : '' ?>" href="?tab=users">
+          <i class="bi bi-people me-1"></i> <?= te('Benutzer') ?>
+        </a>
+      </li>
+      <?php endif; ?>
       <li class="nav-item">
         <a class="nav-link <?= $active_tab==='system' ? 'active' : '' ?>" href="?tab=system">
           <i class="bi bi-gear me-1"></i> <?= te('System') ?>
@@ -880,6 +938,119 @@ require 'includes/layout_start.php';
           <?php endif; ?>
         </div>
       </div>
+    </div>
+
+    <?php elseif($active_tab === 'users'): ?>
+    <div class="settings-card" style="border-radius:0 10px 10px 10px;">
+
+      <div class="settings-section-title"><i class="bi bi-people me-2"></i><?= te('Benutzer') ?></div>
+
+      <?php if (isset($_GET['uerr'])): ?>
+        <div class="alert alert-danger py-2 small">
+          <i class="bi bi-exclamation-triangle me-1"></i><?= htmlspecialchars($_GET['uerr']) ?>
+        </div>
+      <?php endif; ?>
+      <?php if (isset($_GET['newuser'])): ?>
+        <div class="alert alert-success py-2 small">
+          <i class="bi bi-check-circle me-1"></i>
+          <?= te('Der Benutzer wurde angelegt. Er vergibt sein Passwort selbst über „Passwort vergessen“ im Anmeldebild.') ?>
+        </div>
+      <?php endif; ?>
+
+      <div class="table-responsive mb-4">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr class="section-label">
+              <th><?= te('Name') ?></th>
+              <th><?= te('E-Mail-Adresse') ?></th>
+              <th><?= te('Rolle') ?></th>
+              <th class="text-center"><?= te('Zwei Faktoren') ?></th>
+              <th class="text-center"><?= te('Zustand') ?></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php foreach ($s_benutzer as $_u): ?>
+            <tr<?= (int) $_u['is_active'] !== 1 ? ' class="text-muted"' : '' ?>>
+              <td class="fw-semibold text-strong-c"><?= htmlspecialchars(benutzer_anzeige($_u)) ?></td>
+              <td class="small"><?= htmlspecialchars($_u['email']) ?></td>
+              <td>
+                <form method="POST" class="d-flex gap-1 align-items-center">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="action" value="user_edit">
+                  <input type="hidden" name="user_id" value="<?= (int) $_u['id'] ?>">
+                  <input type="hidden" name="name" value="<?= htmlspecialchars($_u['name'], ENT_QUOTES) ?>">
+                  <select name="role" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+                    <?php foreach (rollen() as $_key => $_r): ?>
+                      <option value="<?= $_key ?>" <?= $_u['role'] === $_key ? 'selected' : '' ?>><?= htmlspecialchars(datenwert($_r['label'])) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </form>
+              </td>
+              <td class="text-center">
+                <?= $_u['totp']
+                    ? '<i class="bi bi-shield-check text-success" title="' . te('Aktiv') . '"></i>'
+                    : '<span class="text-muted">–</span>' ?>
+              </td>
+              <td class="text-center">
+                <?= (int) $_u['is_active'] === 1
+                    ? '<span class="badge bg-success">' . te('Aktiv') . '</span>'
+                    : '<span class="badge bg-secondary">' . te('Abgeschaltet') . '</span>' ?>
+              </td>
+              <td class="text-end">
+                <form method="POST" class="d-inline">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="action" value="user_toggle">
+                  <input type="hidden" name="user_id" value="<?= (int) $_u['id'] ?>">
+                  <input type="hidden" name="aktiv" value="<?= (int) $_u['is_active'] === 1 ? '0' : '1' ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-<?= (int) $_u['is_active'] === 1 ? 'danger' : 'success' ?>">
+                    <?= (int) $_u['is_active'] === 1 ? te('Abschalten') : te('Freischalten') ?>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="settings-section-title"><i class="bi bi-person-plus me-2"></i><?= te('Benutzer hinzufügen') ?></div>
+      <p class="text-muted small">
+        <?= te('Kein Passwort nötig: der neue Benutzer vergibt es selbst über „Passwort vergessen“. Ein vom Verwalter vergebenes müsste über einen Kanal übermittelt werden, der es preisgibt – und würde erfahrungsgemäß nie geändert.') ?>
+      </p>
+      <form method="POST" class="row g-3 align-items-end mb-4">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="user_add">
+        <div class="col-md-4">
+          <label class="form-label"><?= te('Name') ?></label>
+          <input type="text" name="name" class="form-control" maxlength="255">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label"><?= te('E-Mail-Adresse') ?></label>
+          <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label"><?= te('Rolle') ?></label>
+          <select name="role" class="form-select">
+            <?php foreach (rollen() as $_key => $_r): ?>
+              <option value="<?= $_key ?>" <?= $_key === 'staff' ? 'selected' : '' ?>><?= htmlspecialchars(datenwert($_r['label'])) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i><?= te('Anlegen') ?></button>
+        </div>
+      </form>
+
+      <div class="settings-section-title"><i class="bi bi-info-circle me-2"></i><?= te('Was die Rollen dürfen') ?></div>
+      <dl class="row small mb-0">
+        <?php foreach (rollen() as $_r): ?>
+          <?php // datenwert(): beides kommt aus rollen() und ist hier eine Variable. ?>
+          <dt class="col-sm-3"><?= htmlspecialchars(datenwert($_r['label'])) ?></dt>
+          <dd class="col-sm-9 text-muted"><?= htmlspecialchars(datenwert($_r['hint'])) ?></dd>
+        <?php endforeach; ?>
+      </dl>
+
     </div>
 
     <?php elseif($active_tab === 'system'): ?>

@@ -1770,4 +1770,49 @@ return [
         => "A mail service (Cloudflare Email Routing, Postmark or Mailgun, for instance) forwards incoming messages here. They become support tickets; a reply carrying [#number] in the subject lands on the right one.",
     "Kein Schlüssel eingerichtet – geschlossen."
         => "No key set up – closed.",
+    // ── Benutzer und Rollen ──────────────────────────────────────────
+    "Benutzer"
+        => "Users",
+    "Benutzer hinzufügen"
+        => "Add a user",
+    "Rolle"
+        => "Role",
+    "Zustand"
+        => "State",
+    "Zwei Faktoren"
+        => "Two factors",
+    "Abgeschaltet"
+        => "Disabled",
+    "Freischalten"
+        => "Enable",
+    "Anlegen"
+        => "Create",
+    "Was die Rollen dürfen"
+        => "What the roles may do",
+    "Der Benutzer wurde angelegt. Er vergibt sein Passwort selbst über „Passwort vergessen“ im Anmeldebild."
+        => "The user has been created. They set their own password via \"Forgot your password?\" on the sign-in screen.",
+    "Kein Passwort nötig: der neue Benutzer vergibt es selbst über „Passwort vergessen“. Ein vom Verwalter vergebenes müsste über einen Kanal übermittelt werden, der es preisgibt – und würde erfahrungsgemäß nie geändert."
+        => "No password needed: the new user sets their own via \"Forgot your password?\". One handed out by an administrator would have to travel over a channel that exposes it — and in practice never gets changed.",
+    "Dieser Bereich ist für Ihre Rolle gesperrt."
+        => "This area is closed to your role.",
+    "Ihre Rolle: %s. Wenn Sie hier arbeiten müssen, kann die Verwaltung sie ändern."
+        => "Your role: %s. If you need to work here, an administrator can change it.",
+    "Zur Übersicht"
+        => "Back to the dashboard",
+
+    // Die Rollennamen und ihre Erklaerungen stehen als Werte in
+    // rollen() (includes/users.php) und kommen an der Anzeigestelle als
+    // Variable an - check_i18n.php sieht dort kein Literal.
+    "Verwaltung"
+        => "Administration",
+    "Mitarbeit"
+        => "Staff",
+    "Buchhaltung"
+        => "Accounting",
+    "Sieht und ändert alles, einschließlich Einstellungen und Benutzern."
+        => "Sees and changes everything, including settings and users.",
+    "Projekte, Aufgaben, Kontakte, Tickets, Wiki und Kalender. Keine Finanzen, keine Einstellungen."
+        => "Projects, tasks, contacts, tickets, wiki and calendar. No finances, no settings.",
+    "Finanzen, Angebote, Auswertungen und Kontakte. Keine Projekte, keine Einstellungen."
+        => "Finances, quotes, reports and contacts. No projects, no settings.",
 ];

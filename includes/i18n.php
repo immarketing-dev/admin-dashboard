@@ -208,6 +208,18 @@ function datenwert(string $wert): string
             '31–60 Tage'       => t('31–60 Tage'),
             '61–90 Tage'       => t('61–90 Tage'),
             'über 90 Tage'     => t('über 90 Tage'),
+            // Rollen und ihre Erklaerungen (includes/users.php). Sie
+            // kommen aus rollen() und stehen an der Anzeigestelle als
+            // Variable - dasselbe wie bei den Intervallen darunter.
+            'Verwaltung'       => t('Verwaltung'),
+            'Mitarbeit'        => t('Mitarbeit'),
+            'Buchhaltung'      => t('Buchhaltung'),
+            'Sieht und ändert alles, einschließlich Einstellungen und Benutzern.'
+                => t('Sieht und ändert alles, einschließlich Einstellungen und Benutzern.'),
+            'Projekte, Aufgaben, Kontakte, Tickets, Wiki und Kalender. Keine Finanzen, keine Einstellungen.'
+                => t('Projekte, Aufgaben, Kontakte, Tickets, Wiki und Kalender. Keine Finanzen, keine Einstellungen.'),
+            'Finanzen, Angebote, Auswertungen und Kontakte. Keine Projekte, keine Einstellungen.'
+                => t('Finanzen, Angebote, Auswertungen und Kontakte. Keine Projekte, keine Einstellungen.'),
             // Wiederholungsintervalle (includes/recurring.php)
             'Monatlich'        => t('Monatlich'),
             'Vierteljährlich'  => t('Vierteljährlich'),

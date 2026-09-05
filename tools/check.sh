@@ -325,6 +325,14 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Benutzer und Rollen. Zwei Stellen entscheiden ueber mehr als
+  # Bequemlichkeit: eine Seite, die in der Rechteliste FEHLT, muss
+  # gesperrt sein statt offen - und der letzte Verwalter darf sich nicht
+  # selbst entfernen.
+  if ! out=$(php tools/test_users.php 2>&1); then
+    echo "BENUTZER/ROLLEN: $out"
+    fail=1
+  fi
   # Eingehende Mails. Die gefaehrlichste Stelle ist die Zuordnung: die
   # Kennung im Betreff kann jeder schreiben.
   if ! out=$(php tools/test_api_tickets.php 2>&1); then

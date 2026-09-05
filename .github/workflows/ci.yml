@@ -89,3 +89,6 @@ jobs:
 
       - name: Incoming mail tests
         run: php tools/test_api_tickets.php
+
+      - name: User and role tests
+        run: php tools/test_users.php

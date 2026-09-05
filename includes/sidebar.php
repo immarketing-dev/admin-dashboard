@@ -11,6 +11,18 @@ try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM milestone_comments W
 try { $_sb_portal += (int)$pdo->query("SELECT COUNT(*) FROM project_comments WHERE author_contact_id IS NOT NULL AND admin_seen=0")->fetchColumn(); } catch (PDOException $e) {}
 $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at IS NULL AND type='INCOME' AND status IN ('Offen','Überfällig')")->fetchColumn();
 ?>
+<?php
+  // Ein Eintrag, der zu einer Sperrseite fuehrt, ist schlimmer als kein
+  // Eintrag - er sieht aus, als waere etwas kaputt.
+  //
+  // Ohne Rolle in der Sitzung gilt die Verwaltungssicht: das ist der
+  // Demo-Modus, wo alles zu sehen sein soll. Ein Riegel ist das hier
+  // ohnehin nicht - der steht in includes/auth.php und liest die Rolle
+  // bei jedem Aufruf frisch aus der Datenbank.
+  require_once __DIR__ . '/users.php';
+  $_rolle = aktuelle_rolle() ?: 'admin';
+  $darf = static fn(string $seite): bool => seite_erlaubt($_rolle, $seite);
+?>
 <script>if(window.ansichtSpeicher.getItem('sidebarCollapsed')==='1')document.body.classList.add('sidebar-collapsed');</script>
 <button id="sidebarCollapseBtn" aria-label="<?= te('Seitenleiste einklappen') ?>" title="<?= te('Seitenleiste einklappen') ?>"><i class="bi bi-chevron-left ci"></i></button>
 <div class="sidebar" id="sidebar">
@@ -33,20 +45,20 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'calendar.php') ? 'active' : '' ?>" href="calendar"><i class="bi bi-calendar3"></i> <span class="nav-text"><?= te('Kalender') ?></span></a></li>
 
     <li class="nav-group"><?= te('Arbeit') ?></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'tasks.php') ? 'active' : '' ?>" href="tasks"><i class="bi bi-check2-square"></i> <span class="nav-text"><?= te('Projekte & Aufgaben') ?></span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'board.php') ? 'active' : '' ?>" href="board"><i class="bi bi-kanban"></i> <span class="nav-text"><?= te('Kanban Board') ?></span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'wiki.php') ? 'active' : '' ?>" href="wiki"><i class="bi bi-book-half"></i> <span class="nav-text"><?= te('Wiki / Wissen') ?></span></a></li>
+    <?php if($darf('tasks.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'tasks.php') ? 'active' : '' ?>" href="tasks"><i class="bi bi-check2-square"></i> <span class="nav-text"><?= te('Projekte & Aufgaben') ?></span></a></li><?php endif; ?>
+    <?php if($darf('board.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'board.php') ? 'active' : '' ?>" href="board"><i class="bi bi-kanban"></i> <span class="nav-text"><?= te('Kanban Board') ?></span></a></li><?php endif; ?>
+    <?php if($darf('wiki.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'wiki.php') ? 'active' : '' ?>" href="wiki"><i class="bi bi-book-half"></i> <span class="nav-text"><?= te('Wiki / Wissen') ?></span></a></li><?php endif; ?>
 
     <li class="nav-group"><?= te('Geschäft') ?></li>
     <li class="nav-item"><a class="nav-link <?= ($current_page == 'contacts.php') ? 'active' : '' ?>" href="contacts"><i class="bi bi-people-fill"></i> <span class="nav-text"><?= te('Kontakte') ?></span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'quotes.php') ? 'active' : '' ?>" href="quotes"><i class="bi bi-file-earmark-text"></i> <span class="nav-text"><?= te('Angebote') ?></span></a></li>
+    <?php if($darf('quotes.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'quotes.php') ? 'active' : '' ?>" href="quotes"><i class="bi bi-file-earmark-text"></i> <span class="nav-text"><?= te('Angebote') ?></span></a></li><?php endif; ?>
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'finances.php') ? 'active' : '' ?>" href="finances">
         <i class="bi bi-currency-euro"></i> <span class="nav-text"><?= te('Finanzen') ?></span>
         <?php if($_sb_open_inv > 0): ?><span class="sidebar-badge sidebar-badge-warning"><?= $_sb_open_inv ?></span><?php endif; ?>
       </a>
     </li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'reports.php') ? 'active' : '' ?>" href="reports"><i class="bi bi-graph-up-arrow"></i> <span class="nav-text"><?= te('Auswertungen') ?></span></a></li>
+    <?php if($darf('reports.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'reports.php') ? 'active' : '' ?>" href="reports"><i class="bi bi-graph-up-arrow"></i> <span class="nav-text"><?= te('Auswertungen') ?></span></a></li><?php endif; ?>
     <li class="nav-item">
       <a class="nav-link <?= ($current_page == 'tickets.php') ? 'active' : '' ?>" href="tickets">
         <i class="bi bi-life-preserver"></i> <span class="nav-text"><?= te('Support-Tickets') ?></span>
@@ -55,9 +67,9 @@ $_sb_open_inv = (int)$pdo->query("SELECT COUNT(*) FROM finances WHERE deleted_at
     </li>
 
     <li class="nav-group"><?= te('System') ?></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text"><?= te('System-Logs') ?></span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'trash.php') ? 'active' : '' ?>" href="trash"><i class="bi bi-trash3"></i> <span class="nav-text"><?= te('Papierkorb') ?></span></a></li>
-    <li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text"><?= te('Einstellungen') ?></span></a></li>
+    <?php if($darf('systemlogs.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'systemlogs.php') ? 'active' : '' ?>" href="systemlogs"><i class="bi bi-journal-text"></i> <span class="nav-text"><?= te('System-Logs') ?></span></a></li><?php endif; ?>
+    <?php if($darf('trash.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'trash.php') ? 'active' : '' ?>" href="trash"><i class="bi bi-trash3"></i> <span class="nav-text"><?= te('Papierkorb') ?></span></a></li><?php endif; ?>
+    <?php if($darf('settings.php')): ?><li class="nav-item"><a class="nav-link <?= ($current_page == 'settings.php') ? 'active' : '' ?>" href="settings"><i class="bi bi-gear"></i> <span class="nav-text"><?= te('Einstellungen') ?></span></a></li><?php endif; ?>
     <li class="nav-item mt-4"><a class="nav-link text-danger" href="logout"><i class="bi bi-box-arrow-right"></i> <span class="nav-text"><?= te('Logout') ?></span></a></li>
 </ul>
 </div>

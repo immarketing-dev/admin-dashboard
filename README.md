@@ -45,6 +45,8 @@ mode works, and how to run one yourself, is in [docs/DEMO.md](docs/DEMO.md).
 - **Wiki** — articles with attachments, selectively shareable with clients
 - **Client portal** — projects, milestone approval, file upload, tickets,
   invoices and shared wiki articles, reached with a token and a PIN
+- **Multiple users with roles** — administration, staff, accounting; every
+  log entry and every tracked hour now carries who it was
 - **German or English**, switchable in the settings; the client portal
   follows each contact's own language
 - **Dark mode**, responsive down to phone width
@@ -508,6 +510,46 @@ Three fields were added for this, two of which were missing anyway:
 embedded XML, and FPDF cannot produce PDF/A-3 — that would mean another
 dependency and is its own piece of work.
 
+### Users and roles
+
+`users` used to have four columns: id, email, password_hash, created_at.
+No name, no role, no state — and no interface for creating a second one.
+`logs` recorded *that* something happened, never by whom. The panel was
+for exactly one person, while the README promised one "for freelancers
+**and small agencies**".
+
+Three roles, set under **Settings → Users**:
+
+| Role | Sees |
+|---|---|
+| **Administration** | Everything, including settings and users |
+| **Staff** | Projects, tasks, contacts, tickets, wiki, calendar — no finances |
+| **Accounting** | Finances, quotes, reports, contacts — no projects |
+
+A freely composable permission matrix would be too much apparatus for a
+tool this size: it costs an interface of its own, and in practice nobody
+ever adjusts it. What each role may open lives in a list in
+`includes/users.php`.
+
+Four details worth knowing:
+
+- **A page missing from that list is closed**, not open — for everyone
+  except administration. A forgotten page nobody can reach is noticed on
+  the first attempt; a forgotten page everyone can see may never be.
+- **The role is re-read from the database on every request**, not trusted
+  from the session. Someone whose rights were just withdrawn would
+  otherwise keep them until their next sign-in, which can be days.
+- **The last administrator cannot demote or disable themselves.**
+  Otherwise the installation is left with nobody who can create users,
+  and the way back leads only through the database.
+- **Users are disabled, not deleted.** Log entries and tracked hours hang
+  off them; whoever leaves should not be able to sign in, but their trail
+  stays readable.
+
+New users are created **without a password** — they set their own through
+"Forgot your password?". One handed out by an administrator would have to
+travel over a channel that exposes it, and in practice never gets changed.
+
 ### Two-factor sign-in
 
 Optional, per user, under **Settings → System**. A one-time code from an
@@ -685,6 +727,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_totp.php` | the RFC 6238 test vectors, plus single-use backup codes |
 | `test_xrechnung.php` | well-formedness, totals, escaping, the §19 exemption reason |
 | `test_api_tickets.php` | subject parsing, quote stripping, and the ownership check |
+| `test_users.php` | role permissions, the closed-by-default rule, the last administrator |
 
 Run separately when you need them:
 
