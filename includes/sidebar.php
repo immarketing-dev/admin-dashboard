@@ -1,5 +1,5 @@
 <?php
-// $current_page muss vor dem Einbinden gesetzt sein (basename($_SERVER['PHP_SELF']))
+// $current_page muss vor dem Einbinden gesetzt sein (basename($_SERVER['SCRIPT_NAME']))
 
 // Notification-Counts für Badges
 $_sb_leads   = (int)$pdo->query("SELECT COUNT(*) FROM leads_inbox")->fetchColumn();

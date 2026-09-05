@@ -406,7 +406,7 @@ $count_ms_comments = count($portal_ms_comments);
 
 $page_title   = 'Dashboard';
 $page_heading = 'Übersicht';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 // Menue zum Ein- und Ausblenden der Widgets.
 //
 // Hier gebaut und nicht im JavaScript: die Haekchen stimmen damit schon im

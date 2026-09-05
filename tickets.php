@@ -94,10 +94,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $contact_name   = $contact_row['name']           ?? '';
         $ticket_subject = $contact_row['ticket_subject'] ?? $subject;
         $portal_token   = $contact_row['portal_token']   ?? '';
-        $proto       = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $portal_url  = $proto . '://' . $_SERVER['HTTP_HOST']
-                     . rtrim(dirname($_SERVER['PHP_SELF']), '/\\')
-                     . '/portal?token=' . urlencode($portal_token) . '#support';
+        // BASE_URL zuerst - wie in contacts.php und calendar.php. Dieser
+        // Link geht per Mail an den Kunden und traegt dessen Portal-Token.
+        // Ihn aus HTTP_HOST zu bauen macht die Zieladresse von einem
+        // Kopfzeilenfeld der Anfrage abhaengig; der Nachbau bleibt nur als
+        // Rueckfall fuer eine .env ohne BASE_URL.
+        if (BASE_URL !== '') {
+            $basis = BASE_URL;
+        } else {
+            $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $basis = $proto . '://' . ($_SERVER['HTTP_HOST'] ?? '')
+                   . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
+        }
+        $portal_url  = $basis . '/portal?token=' . urlencode($portal_token) . '#support';
         $company     = setting('company_short', COMPANY_SHORT);
         $site        = setting('main_website',  MAIN_WEBSITE);
 
@@ -210,7 +219,7 @@ function prio_badge(string $p): string {
 }
 $page_title   = 'Support-Tickets';
 $page_heading = 'Support Zentrale';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
       <button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#newTicketModal">
         <i class="bi bi-plus-lg"></i> Neues Ticket
@@ -336,7 +345,7 @@ require 'includes/layout_start.php';
               </td>
               <td>
                 <div class="dropdown">
-                  <span class="status-badge <?= $s_class ?> dropdown-toggle" role="button" data-bs-toggle="dropdown"><?= $t['status'] ?></span>
+                  <span class="status-badge <?= $s_class ?> dropdown-toggle" role="button" data-bs-toggle="dropdown"><?= htmlspecialchars(datenwert($t['status'])) ?></span>
                   <ul class="dropdown-menu shadow-sm">
                     <li><a class="dropdown-item py-1 small" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'Offen'); return false;"><?= te('Offen') ?></a></li>
                     <li><a class="dropdown-item py-1 small text-primary fw-bold" href="#" onclick="quickStatus(<?= $t['id'] ?>, 'In Bearbeitung'); return false;"><?= te('In Bearbeitung') ?></a></li>

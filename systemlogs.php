@@ -185,7 +185,7 @@ $mails       = $log_view === 'mail' ? mail_protokoll($pdo, $mail_filter, (int) s
 
 $page_title   = 'System-Logs';
 $page_heading = 'System-Logs';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 // Exportieren und Leeren betreffen das Ereignisprotokoll. In der
 // Mailansicht bleiben sie weg - ein Knopf, der etwas anderes leert als
 // das, was man gerade ansieht, ist eine Falle.

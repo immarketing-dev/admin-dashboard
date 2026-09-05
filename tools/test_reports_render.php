@@ -81,7 +81,7 @@ function seite_rendern(PDO $pdo, array $get): string
     $quelle = str_replace("require 'includes/", "require '" . $wurzel . "/includes/", $quelle);
 
     $_GET = $get;
-    $_SERVER['PHP_SELF'] = '/reports.php';
+    $_SERVER['SCRIPT_NAME'] = '/reports.php';
     $_SERVER['REQUEST_URI'] = '/reports';
     $_SERVER['QUERY_STRING'] = http_build_query($get);
 

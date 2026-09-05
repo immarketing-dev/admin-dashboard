@@ -550,7 +550,7 @@ $german_months = ['01'=>'Januar','02'=>'Februar','03'=>'März','04'=>'April','05
 
 $page_title   = 'Aufgaben & Projekte';
 $page_heading = 'Projekte & Aufgaben';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
       <div class="d-flex gap-2">
           <a href="board" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-kanban"></i> <span class="btn-label">Boardansicht</span></a>
@@ -724,7 +724,7 @@ require 'includes/layout_start.php';
                             <span role="button" data-bs-toggle="modal" data-bs-target="#membersModal"
                                   onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'
                                   title="<?= te('Beteiligte verwalten') ?>">
-                              <i class="bi bi-person"></i> <?=$task['contact_name']?><?php
+                              <i class="bi bi-person"></i> <?=htmlspecialchars((string) $task['contact_name'])?><?php
                                 if ($weitere > 0) echo ' <span class="badge rounded-pill bg-subtle text-strong-c" style="font-size:var(--text-2xs);">+' . $weitere . '</span>';
                               ?>
                             </span>
@@ -996,7 +996,7 @@ require 'includes/layout_start.php';
       <?php endforeach; ?>
     </div>
 
-  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div></form></div></div></div>
+  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div></form></div></div></div>
 
   <div class="modal fade" id="editTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -1033,7 +1033,7 @@ require 'includes/layout_start.php';
                         Portal-Zugang. Der Kunde oben ist immer dabei.
                       </div>
                     </div>
-                    <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
+                    <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div>
                     <div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" id="e_start" class="form-control"></div>
                     <div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" id="e_deadline" class="form-control"></div>
                     <div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" id="e_desc" class="form-control" rows="4"></textarea></div>
@@ -1163,7 +1163,7 @@ require 'includes/layout_start.php';
                   <select class="form-select form-select-sm mb-2" onchange="autoFillInv(this)">
                       <option value=""><?= te('-- Kunde aus CRM laden --') ?></option>
                       <?php foreach($all_contacts as $c): ?>
-                          <option value="<?=$c['id']?>" data-name="<?=$c['company']?:$c['name']?>" data-street="<?=$c['street']?>" data-city="<?=$c['zip'].' '.$c['city']?>"><?=$c['name']?></option>
+                          <option value="<?=$c['id']?>" data-name="<?=htmlspecialchars($c['company'] ?: $c['name'])?>" data-street="<?=htmlspecialchars((string) $c['street'])?>" data-city="<?=htmlspecialchars(trim($c['zip'] . ' ' . $c['city']))?>"><?=htmlspecialchars($c['name'])?></option>
                       <?php endforeach; ?>
                   </select>
 

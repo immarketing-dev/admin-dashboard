@@ -798,7 +798,7 @@ $kpi_q = $pdo->query("SELECT COUNT(*) AS total, SUM(CASE WHEN status='Entwurf' T
 
 $page_title   = $active_tab === 'quotes' ? 'Angebote' : 'Finanzen';
 $page_heading = $active_tab === 'quotes' ? 'Angebote' : 'Finanz-Zentrale';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 // Vier Buttons im Header (CSV/Rechnung/Ausgabe/Einnahme) brauchen Zeilenumbruch
 // auf schmalen Screens - im Original war das die Klasse "top-header flex-wrap".
 
@@ -1168,7 +1168,7 @@ require 'includes/layout_start.php';
                             <td><span class="small"><?=$display_name?></span></td>
                             <td>
                                 <div class="dropdown">
-                                  <span class="status-badge <?= $status_class ?> dropdown-toggle" role="button" data-bs-toggle="dropdown"><?= $row['status'] ?></span>
+                                  <span class="status-badge <?= $status_class ?> dropdown-toggle" role="button" data-bs-toggle="dropdown"><?= htmlspecialchars(datenwert($row['status'])) ?></span>
                                   <ul class="dropdown-menu shadow-sm">
                                     <li><a class="dropdown-item py-1 small" href="#" onclick="quickStatus(<?=$row['id']?>, 'Offen'); return false;"><?= te('Offen') ?></a></li>
                                     <li><a class="dropdown-item py-1 small text-success" href="#" onclick="quickStatus(<?=$row['id']?>, 'Bezahlt'); return false;"><?= te('Bezahlt') ?></a></li>
@@ -1258,7 +1258,7 @@ require 'includes/layout_start.php';
                   <select class="form-select form-select-sm mb-2" onchange="autoFillInv(this)">
                       <option value=""><?= te('-- Kunde aus CRM laden --') ?></option>
                       <?php foreach($all_contacts as $c): ?>
-                          <option value="<?=$c['id']?>" data-name="<?=$c['company']?:$c['name']?>" data-street="<?=$c['street']?>" data-city="<?=$c['zip'].' '.$c['city']?>"><?=$c['name']?></option>
+                          <option value="<?=$c['id']?>" data-name="<?=htmlspecialchars($c['company'] ?: $c['name'])?>" data-street="<?=htmlspecialchars((string) $c['street'])?>" data-city="<?=htmlspecialchars(trim($c['zip'] . ' ' . $c['city']))?>"><?=htmlspecialchars($c['name'])?></option>
                       <?php endforeach; ?>
                   </select>
 
@@ -1329,7 +1329,7 @@ require 'includes/layout_start.php';
             <div class="row g-3">
                 <div class="col-md-8"><label class="form-label small fw-bold" id="label_title"><?= te('Bezeichnung *') ?></label><input type="text" name="title" id="fm_label" class="form-control" required></div>
                 <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Betrag (€) *') ?></label><input type="text" name="amount" id="fm_amt" class="form-control fw-bold" required></div>
-                <div class="col-md-6"><label class="form-label small fw-bold" id="label_contact_man"><?= te('Kunde (CRM)') ?></label><select name="contact_id" id="fm_contact" class="form-select"><option value=""><?= te('-- Ohne Zuordnung --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=$c['name']?></option><?php endforeach; ?></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold" id="label_contact_man"><?= te('Kunde (CRM)') ?></label><select name="contact_id" id="fm_contact" class="form-select"><option value=""><?= te('-- Ohne Zuordnung --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div>
                 <div class="col-md-6"><label class="form-label small fw-bold"><?= te('Manueller Name') ?></label><input type="text" name="custom_name" id="fm_custom" class="form-control"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Datum *') ?></label><input type="date" name="record_date" id="fm_date" class="form-control" required></div>
                 <div class="col-md-4" id="div_due_man"><label class="form-label small fw-bold"><?= te('Fällig am') ?></label><input type="date" name="due_date" id="fm_due" class="form-control"></div>

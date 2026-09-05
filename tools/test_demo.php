@@ -38,7 +38,7 @@ if ($fall !== null) {
     require_once $wurzel . '/includes/demo.php';
 
     $_SERVER['REQUEST_METHOD'] = 'POST';
-    $_SERVER['PHP_SELF']       = '/contacts.php';
+    $_SERVER['SCRIPT_NAME']    = '/contacts.php';
     $_SERVER['QUERY_STRING']   = '';
 
     if ($fall === 'ajax') {
@@ -115,7 +115,9 @@ if (is_array($json)) {
 echo "OK: Formular bekommt eine Weiterleitung, AJAX bekommt JSON.\n\n";
 
 echo "=== Pruefung 3: die Rueckleitung fuehrt nie nach draussen ===\n";
-// demo_reject() baut das Ziel aus PHP_SELF und QUERY_STRING neu auf.
+// demo_reject() baut das Ziel aus SCRIPT_NAME und QUERY_STRING neu auf.
+// SCRIPT_NAME, nicht PHP_SELF: PHP_SELF traegt die PATH_INFO mit, und
+// die stammt aus der Anfrage.
 // Beides steht unter fremdem Einfluss, deshalb hier die Grenzfaelle.
 $faelle = [
     ['/contacts.php', '',                              'contacts?demo=blocked'],
@@ -125,13 +127,13 @@ $faelle = [
     ['/tasks.php',    'demo=blocked',                  'tasks?demo=blocked'],
 ];
 foreach ($faelle as [$self, $qs, $erwartet]) {
-    $_SERVER['PHP_SELF']     = $self;
+    $_SERVER['SCRIPT_NAME']  = $self;
     $_SERVER['QUERY_STRING'] = $qs;
     $ist = demo_ruecksprung();
     pruefe("Rueckleitung fuer $self?$qs", $ist === $erwartet, "ergab '$ist', erwartet '$erwartet'");
 }
 
-// Fremde Ziele: weder ueber PHP_SELF noch ueber die Abfrage.
+// Fremde Ziele: weder ueber SCRIPT_NAME noch ueber die Abfrage.
 $angriffe = [
     ['//evil.example/x.php',            'a=1'],
     ['/../../etc/passwd',               'a=1'],
@@ -139,10 +141,10 @@ $angriffe = [
     ['/contacts.php',                   'a=1&b=' . str_repeat('x', 900)],
 ];
 foreach ($angriffe as [$self, $qs]) {
-    $_SERVER['PHP_SELF']     = $self;
+    $_SERVER['SCRIPT_NAME']  = $self;
     $_SERVER['QUERY_STRING'] = $qs;
     $ziel = demo_ruecksprung();
-    pruefe("Kein fremdes Ziel aus PHP_SELF='$self'",
+    pruefe("Kein fremdes Ziel aus SCRIPT_NAME='$self'",
            !preg_match('#^(https?:)?//#i', $ziel) && strpos($ziel, '..') === false,
            "ergab '$ziel'");
     pruefe('Rueckleitung bleibt kurz', strlen($ziel) <= 560, 'Laenge ' . strlen($ziel));

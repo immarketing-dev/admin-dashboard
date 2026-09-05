@@ -96,7 +96,7 @@ function deadline_badge(string $deadline): string {
 
 $page_title   = 'Kanban Board';
 $page_heading = 'Projekt Board';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '
       <div class="d-flex gap-2 align-items-center flex-wrap" style="max-width: 560px;">
           <div class="input-group input-group-sm search-box" style="flex-grow: 1;">

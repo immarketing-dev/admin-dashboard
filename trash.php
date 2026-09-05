@@ -182,7 +182,7 @@ foreach (PAPIERKORB as $tabelle => $def) {
 
 $page_title   = 'Papierkorb';
 $page_heading = 'Papierkorb';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 
 require 'includes/head.php';
 require 'includes/layout_start.php';

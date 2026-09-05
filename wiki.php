@@ -199,7 +199,7 @@ foreach($articles as $art) {
 
 $page_title   = 'Wiki & Snippets';
 $page_heading = 'Wiki & Snippets';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '<button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#wikiFormModal" onclick="prepareAdd()"><i class="bi bi-journal-plus"></i> Neuer Eintrag</button>';
 // Prism-Theme (Code-Highlighting) wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<link href="' . asset('assets/vendor/prism/prism-tomorrow.min.css') . '" rel="stylesheet" />';
@@ -290,7 +290,7 @@ require 'includes/layout_start.php';
                                       <?php endforeach; endif; ?>
                                   </div>
                                   <div class="wiki-preview-text">
-                                      <?= mb_strimwidth(strip_tags($article['content']), 0, 150, "..."); ?>
+                                      <?= htmlspecialchars(mb_strimwidth(strip_tags($article['content']), 0, 150, "...")) ?>
                                   </div>
                               </div>
 

@@ -93,7 +93,7 @@ function demo_ist_ajax(): bool
 function demo_ruecksprung(): string
 {
     // Die .htaccess liefert die Seiten ohne Endung aus.
-    $ziel = preg_replace('/\.php$/', '', basename($_SERVER['PHP_SELF'] ?? 'index.php'));
+    $ziel = preg_replace('/\.php$/', '', basename($_SERVER['SCRIPT_NAME'] ?? 'index.php'));
 
     parse_str($_SERVER['QUERY_STRING'] ?? '', $params);
     $params['demo'] = 'blocked';

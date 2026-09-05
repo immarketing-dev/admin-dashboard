@@ -1658,7 +1658,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <div class="invoice-card <?= $is_overdue ? 'invoice-overdue' : '' ?>">
               <div class="d-flex justify-content-between align-items-start mb-3">
                 <div class="invoice-amount"><?= number_format($inv['amount'],2,',','.') ?> €</div>
-                <span class="badge <?= $badge_cls ?> rounded-pill px-3 py-2"><?= $inv['status'] ?></span>
+                <span class="badge <?= $badge_cls ?> rounded-pill px-3 py-2"><?= htmlspecialchars(datenwert($inv['status'])) ?></span>
               </div>
               <div class="fw-semibold text-dark mb-1"><?= htmlspecialchars($inv['title']) ?></div>
               <div class="text-muted small mb-3">
@@ -1778,7 +1778,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                   </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                  <span class="badge <?= $t_badge ?> rounded-pill px-3 py-1 small"><?= $t['status'] ?></span>
+                  <span class="badge <?= $t_badge ?> rounded-pill px-3 py-1 small"><?= htmlspecialchars(datenwert($t['status'])) ?></span>
                   <i class="bi bi-chevron-down ticket-chevron"></i>
                 </div>
               </div>

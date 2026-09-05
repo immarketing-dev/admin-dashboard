@@ -17,7 +17,7 @@
  * dreizeilig. Deshalb wird .header-actions jetzt immer ausgegeben, auch
  * wenn eine Seite gar keine eigenen Schaltflächen mitbringt.
  */
-$current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
+$current_page = $current_page ?? basename($_SERVER['SCRIPT_NAME']);
 ?>
 <body>
 <div class="sidebar-overlay" id="sidebar-overlay"></div>

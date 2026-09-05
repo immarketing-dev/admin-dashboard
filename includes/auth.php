@@ -53,7 +53,13 @@ if (!demo_mode()) {
     $_SESSION['admin_role'] = rolle_gueltig((string) $_auth_user['role']) ? $_auth_user['role'] : 'admin';
     $_SESSION['admin_name'] = (string) $_auth_user['name'];
 
-    $_auth_seite = basename($_SERVER['PHP_SELF'] ?? '');
+    // SCRIPT_NAME, nicht PHP_SELF: PHP_SELF haengt die PATH_INFO an,
+    // und basename() liefert dann deren letzten Teil. Eine Anfrage
+    // auf /settings.php/index.php haette hier 'index.php' geprueft -
+    // fuer die Rolle 'staff' erlaubt - waehrend der Server
+    // settings.php ausfuehrt. SCRIPT_NAME ist das aufgeloeste
+    // Skript und traegt die PATH_INFO nicht.
+    $_auth_seite = basename($_SERVER['SCRIPT_NAME'] ?? '');
     if (!seite_erlaubt($_SESSION['admin_role'], $_auth_seite)) {
         // 403 und keine Weiterleitung: eine Weiterleitung auf das
         // Dashboard sieht aus wie ein Fehler, und der Benutzer probiert

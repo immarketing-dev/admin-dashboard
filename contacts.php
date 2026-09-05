@@ -182,7 +182,7 @@ $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $page_title   = 'Kontakte';
 $page_heading = 'CRM & Kontakte';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 $header_actions = '<button class="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addContactModal" onclick="prepareAdd()"><i class="bi bi-person-plus-fill"></i> Neu anlegen</button>';
 // QR-Code-Bibliothek wird nur hier gebraucht, daher hier statt in head.php.
 $extra_head = '<script src="' . asset('assets/vendor/qrcode/qrcode.min.js') . '"
@@ -254,7 +254,7 @@ require 'includes/layout_start.php';
               </div>
 
               <div class="d-flex align-items-center mb-3">
-                  <div class="contact-avatar"><?=strtoupper(substr($c['name'],0,1))?></div>
+                  <div class="contact-avatar"><?=htmlspecialchars(strtoupper(substr($c['name'], 0, 1)))?></div>
                   <div>
                       <h3 style="font-size:18px; font-weight:700; margin:0; word-break: break-word;"><?=htmlspecialchars($c['name'])?></h3>
                       <?php if(!empty($c['company'])): ?>
@@ -265,15 +265,15 @@ require 'includes/layout_start.php';
               
               <div class="small mb-3">
                   <?php if(!empty($c['email'])): ?>
-                    <p class="mb-1 text-muted text-truncate"><i class="bi bi-envelope text-primary me-2" style="color: var(--color-primary) !important;"></i> <a href="mailto:<?=$c['email']?>" class="text-decoration-none text-muted"><?=$c['email']?></a></p>
+                    <p class="mb-1 text-muted text-truncate"><i class="bi bi-envelope text-primary me-2" style="color: var(--color-primary) !important;"></i> <a href="mailto:<?=htmlspecialchars($c['email'])?>" class="text-decoration-none text-muted"><?=htmlspecialchars($c['email'])?></a></p>
                   <?php endif; ?>
                   
                   <?php if(!empty($c['phone'])): ?>
-                      <p class="mb-1 text-muted"><i class="bi bi-telephone text-primary me-2" style="color: var(--color-primary) !important;"></i> <a href="tel:<?=$c['phone']?>" class="text-decoration-none text-muted"><?=$c['phone']?></a></p>
+                      <p class="mb-1 text-muted"><i class="bi bi-telephone text-primary me-2" style="color: var(--color-primary) !important;"></i> <a href="tel:<?=htmlspecialchars($c['phone'])?>" class="text-decoration-none text-muted"><?=htmlspecialchars($c['phone'])?></a></p>
                   <?php endif; ?>
                   
                   <?php if(!empty($c['website'])): ?>
-                      <p class="mb-1 text-muted text-truncate"><i class="bi bi-globe text-primary me-2" style="color: var(--color-primary) !important;"></i> <a href="<?=strpos($c['website'], 'http') === 0 ? $c['website'] : 'https://'.$c['website']?>" target="_blank" class="text-decoration-none"><?=$c['website']?></a></p>
+                      <p class="mb-1 text-muted text-truncate"><i class="bi bi-globe text-primary me-2" style="color: var(--color-primary) !important;"></i> <a href="<?=htmlspecialchars(strpos($c['website'], 'http') === 0 ? $c['website'] : 'https://' . $c['website'])?>" target="_blank" class="text-decoration-none"><?=htmlspecialchars($c['website'])?></a></p>
                   <?php endif; ?>
                   
                   <?php if(!empty($c['street']) || !empty($c['city'])): ?>

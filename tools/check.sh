@@ -175,6 +175,21 @@ if [ -n "$cdn" ]; then
   fail=1
 fi
 
+# --- 3b. PHP_SELF -------------------------------------------------------
+# PHP_SELF haengt die PATH_INFO an. includes/auth.php entschied damit,
+# welche Seite die Rollenpruefung sieht: eine Anfrage auf
+# /settings.php/index.php prueft 'index.php' - fuer 'staff' erlaubt -
+# waehrend der Server settings.php ausfuehrt. SCRIPT_NAME ist das
+# aufgeloeste Skript und traegt die PATH_INFO nicht.
+self=$(grep -rn "PHP_SELF" . \
+          --include='*.php' "${SCAN_EXCLUDES[@]}" 2>/dev/null \
+       | grep -v '^\./vendor/' | grep -v 'SCRIPT_NAME')
+if [ -n "$self" ]; then
+  echo "PHP_SELF: PATH_INFO-anfaellig, SCRIPT_NAME verwenden:"
+  echo "$self"
+  fail=1
+fi
+
 # --- 4. Dateien aus uploads/ --------------------------------------------
 stray=$(find uploads -type f ! -name '.gitkeep' ! -name '.htaccess' 2>/dev/null)
 if [ -n "$stray" ]; then
@@ -294,6 +309,13 @@ if command -v php >/dev/null 2>&1; then
   # erst zur Laufzeit auf, mitten im Speichern.
   if ! out=$(php tools/check_placeholders.php 2>&1); then
     echo "PLATZHALTER: $out"
+    fail=1
+  fi
+  # Ausgabe ohne Filter. Weder php -l noch die uebrigen Pruefungen
+  # sehen ein htmlspecialchars(), das fehlt - contacts.php gab
+  # E-Mail, Telefon und Website roh aus, und zwar in einem href.
+  if ! out=$(php tools/check_output_escaping.php 2>&1); then
+    echo "AUSGABE: $out"
     fail=1
   fi
   if ! out=$(php tools/test_errors.php 2>&1); then

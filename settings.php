@@ -409,7 +409,7 @@ $php_version = PHP_VERSION;
 try { $db_version = $pdo->query("SELECT VERSION()")->fetchColumn(); } catch(Exception $e) { $db_version = 'n/a'; }
 $page_title   = 'Einstellungen';
 $page_heading = 'Einstellungen';
-$current_page = basename($_SERVER['PHP_SELF']);
+$current_page = basename($_SERVER['SCRIPT_NAME']);
 $extra_head = <<<'CSS'
   <style>
     .settings-card { background: var(--surface-card); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--elev-rest); border-top: 3px solid var(--color-primary); }
