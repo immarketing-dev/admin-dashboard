@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 15;
+const SCHEMA_VERSION = 16;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -551,6 +551,39 @@ function migrations(): array
             . ' KEY idx_checks_time (checked_at),'
             . ' CONSTRAINT fk_checks_url FOREIGN KEY (url_id)'
             . '   REFERENCES monitored_urls(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        ],
+
+        // Version 16: ein zweiter Faktor.
+        //
+        // Die Anmeldung war sorgfaeltig gebaut - Sperre nach fuenf
+        // Versuchen, bcrypt mit festgenagelten Kosten, ein Dummy-Hash
+        // gegen Zeitunterschiede - und hat seit Version 12 einen Weg
+        // zurueck. Der zweite Faktor fehlte.
+        //
+        // totp_confirmed_at getrennt vom Geheimnis: eingerichtet ist
+        // nicht dasselbe wie bestaetigt. Erst ein eingetippter Code
+        // beweist, dass die App das Geheimnis wirklich hat - griffe die
+        // Einrichtung sofort, sperrte ein Fehler beim Abscannen den
+        // Benutzer aus.
+        16 => [
+            'ALTER TABLE users'
+            . ' ADD COLUMN totp_secret VARCHAR(64) DEFAULT NULL,'
+            . ' ADD COLUMN totp_confirmed_at DATETIME DEFAULT NULL',
+
+            // Ersatzcodes sind kein Beiwerk: ein zweiter Faktor, der
+            // beim Verlust des Telefons aussperrt, tauscht ein
+            // Aussperrungsproblem gegen ein anderes. Gehasht wie
+            // Passwoerter, weil sie welche sind.
+            'CREATE TABLE IF NOT EXISTS totp_backup_codes ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' user_id INT NOT NULL,'
+            . ' code_hash VARCHAR(255) NOT NULL,'
+            . ' used_at DATETIME DEFAULT NULL,'
+            . ' created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' KEY idx_backup_user (user_id, used_at),'
+            . ' CONSTRAINT fk_backup_user FOREIGN KEY (user_id)'
+            . '   REFERENCES users(id) ON DELETE CASCADE'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
         ],
     ];

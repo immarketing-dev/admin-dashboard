@@ -440,6 +440,32 @@ Two details worth knowing:
 One of the nine used to have an entirely empty `catch` block: a failed
 calendar invitation left no trace at all. It does now.
 
+### Two-factor sign-in
+
+Optional, per user, under **Settings → System**. A one-time code from an
+authenticator app (TOTP, RFC 6238) on top of the password.
+
+No dependency was added: TOTP is HMAC-SHA1 over a counter, and PHP brings
+both. `tools/test_totp.php` checks the arithmetic against the **test
+vectors from RFC 6238 Appendix B** — an implementation that happens to
+agree with one particular app but is wrong would otherwise go unnoticed.
+
+Three details that matter more than they look:
+
+- **Set up is not the same as active.** The secret is stored unconfirmed;
+  only a code you type in proves the app really has it. If setting up took
+  effect immediately, a mistake while scanning would lock you out.
+- **Eight backup codes**, each usable once, hashed like passwords —
+  because they are passwords. A second factor that locks you out when the
+  phone is gone just trades one lock-out problem for another. They are
+  shown once, at confirmation.
+- **Wrong codes count towards the same lockout as wrong passwords.** Six
+  digits are quicker to guess than a password, not slower.
+
+The sign-in form takes a backup code in the same field as a one-time code:
+whoever does not have their phone should not first have to work out which
+of two boxes to type into.
+
 ### Forgotten password
 
 There was no way back in. No "forgot password", nothing on the sign-in
@@ -588,6 +614,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_quote_to_project.php` | line-item conversion, and the guard against a second project |
 | `test_uptime.php` | state transitions, availability figure, history trimming |
 | `test_api_leads.php` | key handling, validation, honeypot, per-IP rate limit |
+| `test_totp.php` | the RFC 6238 test vectors, plus single-use backup codes |
 
 Run separately when you need them:
 

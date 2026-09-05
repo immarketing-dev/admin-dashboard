@@ -325,6 +325,13 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Der zweite Faktor. Die Rechnung wird gegen die Pruefvektoren aus
+  # RFC 6238 geprueft - eine falsche Umsetzung, die zufaellig mit einer
+  # App zusammenpasst, gaebe es sonst durchaus.
+  if ! out=$(php tools/test_totp.php 2>&1); then
+    echo "ZWEITER FAKTOR: $out"
+    fail=1
+  fi
   # Die Anfrage-Schnittstelle. Die heikelste Stelle ist das Zurueckweisen:
   # ohne eingerichteten Schluessel muss sie ZU sein, nicht offen.
   if ! out=$(php tools/test_api_leads.php 2>&1); then

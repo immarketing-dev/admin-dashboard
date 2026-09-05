@@ -33,7 +33,13 @@ $ansicht      = 'login';
 $reset_token  = (string) ($_GET['reset'] ?? $_POST['reset_token'] ?? '');
 $reset_gueltig = null;
 
-if ($reset_token !== '' && !$first_run) {
+// Wartet ein zweiter Faktor? Dann ist das die einzige Ansicht, die
+// zaehlt - der Zwischenzustand darf nicht durch einen Klick auf
+// "Passwort vergessen" umgangen werden.
+$totp_wartet = auth_totp_wartet();
+if ($totp_wartet !== null) {
+    $ansicht = 'totp';
+} elseif ($reset_token !== '' && !$first_run) {
     $reset_gueltig = reset_token_einloesen($pdo, $reset_token);
     $ansicht = $reset_gueltig ? 'reset' : 'reset_ungueltig';
 } elseif (isset($_GET['forgot']) && !$first_run) {
@@ -64,6 +70,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: index');
             exit();
         }
+    } elseif (!$first_run && $action === 'totp') {
+        if ($totp_wartet === null) {
+            // Die Frist ist abgelaufen oder es gab nie einen
+            // Zwischenzustand - zurueck an den Anfang.
+            $ansicht = 'login';
+            $error   = t('Die Anmeldung ist abgelaufen. Bitte erneut beginnen.');
+        } elseif (auth_is_locked($pdo, $ip)) {
+            auth_note_lockout($pdo, $ip);
+            $ansicht = 'totp';
+            $error   = t('Zu viele Fehlversuche. Bitte in %d Minuten erneut versuchen.', AUTH_LOCKOUT_MIN);
+        } elseif (auth_totp_pruefen($pdo, $totp_wartet['id'], (string) ($_POST['code'] ?? ''), $ip)) {
+            header('Location: index');
+            exit();
+        } else {
+            $ansicht = 'totp';
+            // Bewusst unspezifisch: kein Rueckschluss darauf, ob es am
+            // Einmalkennwort oder am Ersatzcode lag.
+            $error = t('Der Code stimmt nicht.');
+        }
+    } elseif (!$first_run && $action === 'totp_abbrechen') {
+        unset($_SESSION['totp_pending_user'], $_SESSION['totp_pending_email'], $_SESSION['totp_pending_since']);
+        header('Location: login');
+        exit();
     } elseif (!$first_run && $action === 'request_reset') {
         $ergebnis = reset_anfordern(
             $pdo,
@@ -174,6 +203,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <i class="bi bi-shield-lock me-1"></i> <?= te('Passwort setzen & einloggen') ?>
       </button>
     </form>
+    <?php elseif ($ansicht === 'totp'): ?>
+    <p class="text-muted small mb-3">
+      <?= te('Geben Sie den sechsstelligen Code aus Ihrer Authenticator-App ein.') ?>
+    </p>
+    <form method="POST">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="totp">
+      <div class="mb-3">
+        <label class="form-label fw-semibold small"><?= te('Code') ?></label>
+        <?php /* inputmode und autocomplete: auf dem Telefon erscheint der
+                 Ziffernblock, und die App-Vorschlaege der Tastatur greifen. */ ?>
+        <input type="text" name="code" class="form-control form-control-lg text-center font-monospace"
+               required autofocus autocomplete="one-time-code" inputmode="numeric"
+               placeholder="000000">
+      </div>
+      <button type="submit" class="btn btn-primary w-100 fw-bold">
+        <i class="bi bi-shield-check me-1"></i> <?= te('Bestätigen') ?>
+      </button>
+    </form>
+    <p class="text-muted small mt-3 mb-0">
+      <i class="bi bi-info-circle me-1"></i>
+      <?= te('Telefon nicht zur Hand? Geben Sie hier stattdessen einen Ihrer Ersatzcodes ein.') ?>
+    </p>
+    <form method="POST" class="mt-2">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="totp_abbrechen">
+      <button type="submit" class="btn btn-link w-100 small"><?= te('Abbrechen') ?></button>
+    </form>
+
     <?php elseif ($ansicht === 'forgot'): ?>
     <p class="text-muted small mb-3">
       <?= te('Geben Sie die E-Mail-Adresse Ihres Zugangs an. Wir schicken einen Link, mit dem sich ein neues Passwort festlegen lässt.') ?>

@@ -402,7 +402,7 @@ if (!$envExists) {
         pf_add('Datenbank', 'Server-Version', 'FAIL', 'Konnte nicht ermittelt werden: ' . pf_mask_secrets($e->getMessage()));
     }
 
-    // -- Tabellen: welche der 26 erwarteten existieren --------------------
+    // -- Tabellen: welche der 27 erwarteten existieren --------------------
     // task_contacts und project_comments standen hier lange nicht drin,
     // obwohl install/schema.sql sie anlegt: sie kamen ueber die
     // Migrationen 5 und 6 dazu, und diese Liste wurde nicht mitgezogen.
@@ -410,6 +410,7 @@ if (!$envExists) {
     // die Vorabpruefung trotzdem "vollstaendig".
     $expectedTables = [
         'settings', 'users', 'logs', 'sso_tokens', 'password_resets', 'mail_log',
+        'totp_backup_codes',
         'contacts', 'leads_inbox',
         'tasks', 'task_milestones', 'task_contacts', 'milestone_comments',
         'project_comments', 'client_assets',

@@ -1703,4 +1703,47 @@ return [
         => "Revoke the key? The API will be closed afterwards.",
     "Der Schlüssel berechtigt zum Schreiben. Er gehört auf den Server Ihrer Website, niemals in ein Formular oder in JavaScript – dort wäre er öffentlich."
         => "The key grants write access. It belongs on your website's server, never in a form or in JavaScript – there it would be public.",
+    // ── Zwei-Faktor-Anmeldung ────────────────────────────────────────
+    "Zwei-Faktor-Anmeldung"
+        => "Two-factor sign-in",
+    "Zusätzlich zum Passwort ein Einmalkennwort aus einer Authenticator-App. Wer Ihr Passwort kennt, kommt damit trotzdem nicht hinein."
+        => "A one-time code from an authenticator app on top of the password. Knowing your password is then not enough to get in.",
+    "Einrichten"
+        => "Set up",
+    "Neu einrichten"
+        => "Set up again",
+    "Neu einrichten? Der bisherige Eintrag in Ihrer App und alle Ersatzcodes gelten danach nicht mehr."
+        => "Set up again? The existing entry in your app and all backup codes stop working.",
+    "Abschalten"
+        => "Turn off",
+    "Den zweiten Faktor abschalten? Die Anmeldung braucht danach nur noch das Passwort."
+        => "Turn off the second factor? Signing in will then need only the password.",
+    "Aktiv"
+        => "Active",
+    "%d Ersatzcode(s) noch offen"
+        => "%d backup code(s) left",
+    "Alle Ersatzcodes sind verbraucht. Richten Sie den zweiten Faktor neu ein, um neue zu erhalten."
+        => "All backup codes are used up. Set the second factor up again to get new ones.",
+    "Scannen Sie den Code mit Ihrer Authenticator-App und geben Sie danach das angezeigte Einmalkennwort ein."
+        => "Scan the code with your authenticator app, then enter the one-time code it shows.",
+    "Lässt sich nicht scannen? Dieses Geheimnis von Hand eintragen:"
+        => "Cannot scan it? Enter this secret by hand:",
+    "Bestätigen"
+        => "Confirm",
+    "Der Code stimmt nicht. Bitte noch einmal."
+        => "That code is not right. Please try again.",
+    "Der Code stimmt nicht."
+        => "That code is not right.",
+    "Der zweite Faktor ist aktiv."
+        => "The second factor is active.",
+    "Bewahren Sie diese Ersatzcodes auf – ausgedruckt oder in einem Passwortspeicher. Jeder gilt einmal und hilft, wenn Ihr Telefon nicht zur Hand ist. Sie werden nur dieses eine Mal angezeigt."
+        => "Keep these backup codes – printed out or in a password manager. Each works once and helps when your phone is not at hand. They are shown this one time only.",
+    "Geben Sie den sechsstelligen Code aus Ihrer Authenticator-App ein."
+        => "Enter the six-digit code from your authenticator app.",
+    "Code"
+        => "Code",
+    "Telefon nicht zur Hand? Geben Sie hier stattdessen einen Ihrer Ersatzcodes ein."
+        => "Phone not at hand? Enter one of your backup codes here instead.",
+    "Die Anmeldung ist abgelaufen. Bitte erneut beginnen."
+        => "The sign-in has expired. Please start again.",
 ];

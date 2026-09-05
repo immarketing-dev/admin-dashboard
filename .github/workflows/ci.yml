@@ -80,3 +80,6 @@ jobs:
 
       - name: Enquiry API tests
         run: php tools/test_api_leads.php
+
+      - name: TOTP tests (RFC 6238 vectors)
+        run: php tools/test_totp.php

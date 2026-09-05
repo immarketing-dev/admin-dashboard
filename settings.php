@@ -207,6 +207,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: settings?tab=mail&tpl=" . urlencode($key) . "&saved=1"); exit();
     }
 
+    // ── Zweiter Faktor ───────────────────────────────────────────────
+    // Drei Schritte, absichtlich getrennt: erzeugen, bestaetigen,
+    // abschalten. Zwischen den ersten beiden liegt das Abscannen - und
+    // solange es nicht bestaetigt ist, aendert sich an der Anmeldung
+    // nichts. Ein Fehler beim Abscannen sperrt so niemanden aus.
+    if ($_POST['action'] === 'totp_start') {
+        require_once __DIR__ . '/includes/totp.php';
+        totp_einrichten($pdo, (int) ($_SESSION['admin_id'] ?? 0));
+        header("Location: settings?tab=system&totp=setup"); exit();
+    }
+
+    if ($_POST['action'] === 'totp_confirm') {
+        require_once __DIR__ . '/includes/totp.php';
+
+        $codes = totp_bestaetigen(
+            $pdo,
+            (int) ($_SESSION['admin_id'] ?? 0),
+            (string) ($_POST['code'] ?? ''),
+            time()
+        );
+
+        if ($codes === null) {
+            header("Location: settings?tab=system&totp=setup&err=code"); exit();
+        }
+
+        // Die Ersatzcodes existieren nur in diesem Augenblick im
+        // Klartext. Sie wandern durch die Sitzung zur naechsten Seite -
+        // nicht in die Adresse, wo sie im Verlauf und in Protokollen
+        // stuenden.
+        $_SESSION['totp_neue_codes'] = $codes;
+        header("Location: settings?tab=system&totp=done"); exit();
+    }
+
+    if ($_POST['action'] === 'totp_off') {
+        require_once __DIR__ . '/includes/totp.php';
+        totp_abschalten($pdo, (int) ($_SESSION['admin_id'] ?? 0));
+        header("Location: settings?tab=system&saved=1"); exit();
+    }
+
     // Der Schluessel fuer die Anfrage-Schnittstelle (api/leads.php).
     //
     // Erzeugt und entzogen, nicht eingetippt: ein von Hand gewaehlter
@@ -291,6 +330,19 @@ $s_reminder_days  = setting('reminder_days', '');
 // Der Schluessel der Anfrage-Schnittstelle. Leer = die Schnittstelle
 // ist zu, nicht offen.
 $s_api_key        = setting('api_key_leads', '');
+
+// Zweiter Faktor. Im Demo-Modus gibt es keinen angemeldeten Benutzer,
+// dessen Faktor man einrichten koennte - dort bleibt der Abschnitt weg.
+require_once __DIR__ . '/includes/totp.php';
+$s_user_id     = (int) ($_SESSION['admin_id'] ?? 0);
+$s_totp_aktiv  = $s_user_id > 0 && totp_aktiv($pdo, $s_user_id);
+$s_totp_offen  = $s_totp_aktiv ? totp_ersatzcodes_offen($pdo, $s_user_id) : 0;
+$s_totp_setup  = ($_GET['totp'] ?? '') === 'setup' && $s_user_id > 0;
+$s_totp_gehei  = $s_totp_setup ? totp_geheimnis($pdo, $s_user_id) : null;
+// Einmal anzeigen, dann aus der Sitzung nehmen: ein Neuladen der Seite
+// soll die Codes nicht noch einmal hervorholen.
+$s_totp_codes  = $_SESSION['totp_neue_codes'] ?? null;
+unset($_SESSION['totp_neue_codes']);
 $s_company_logo   = setting('company_logo', '');
 $s_favicon        = setting('favicon', '');
 
@@ -822,6 +874,92 @@ require 'includes/layout_start.php';
         <i class="bi bi-info-circle me-1"></i>
         <?= te('Automatische Erinnerungen werden nur verschickt, wenn cron.php regelmäßig läuft. Ohne eingerichteten Cron-Lauf passiert hier nichts.') ?>
       </div>
+
+      <?php if ($s_user_id > 0): ?>
+      <div class="settings-section-title mt-2"><i class="bi bi-shield-lock me-2"></i><?= te('Zwei-Faktor-Anmeldung') ?></div>
+
+      <?php if ($s_totp_codes !== null): ?>
+        <div class="alert alert-success py-3">
+          <p class="fw-bold mb-2"><i class="bi bi-check-circle me-1"></i><?= te('Der zweite Faktor ist aktiv.') ?></p>
+          <p class="small mb-2"><?= te('Bewahren Sie diese Ersatzcodes auf – ausgedruckt oder in einem Passwortspeicher. Jeder gilt einmal und hilft, wenn Ihr Telefon nicht zur Hand ist. Sie werden nur dieses eine Mal angezeigt.') ?></p>
+          <div class="font-monospace" style="columns:2;">
+            <?php foreach ($s_totp_codes as $_c): ?>
+              <div><?= htmlspecialchars($_c) ?></div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($s_totp_setup && $s_totp_gehei !== null): ?>
+        <?php $_uri = totp_uri($s_totp_gehei, (string) ($_SESSION['admin_email'] ?? 'admin'), setting('company_short', COMPANY_SHORT)); ?>
+        <?php if (($_GET['err'] ?? '') === 'code'): ?>
+          <div class="alert alert-danger py-2 small"><i class="bi bi-exclamation-triangle me-1"></i><?= te('Der Code stimmt nicht. Bitte noch einmal.') ?></div>
+        <?php endif; ?>
+        <div class="row g-4 align-items-start mb-4">
+          <div class="col-md-auto">
+            <div id="totp_qr" class="p-2 bg-white d-inline-block rounded"></div>
+          </div>
+          <div class="col-md">
+            <p class="small mb-2"><?= te('Scannen Sie den Code mit Ihrer Authenticator-App und geben Sie danach das angezeigte Einmalkennwort ein.') ?></p>
+            <p class="small text-muted mb-3">
+              <?= te('Lässt sich nicht scannen? Dieses Geheimnis von Hand eintragen:') ?><br>
+              <code class="user-select-all"><?= htmlspecialchars($s_totp_gehei) ?></code>
+            </p>
+            <form method="POST" class="d-flex gap-2 align-items-start">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="totp_confirm">
+              <input type="text" name="code" class="form-control font-monospace" style="max-width:160px;"
+                     required autocomplete="one-time-code" inputmode="numeric" placeholder="000000">
+              <button type="submit" class="btn btn-primary"><?= te('Bestätigen') ?></button>
+            </form>
+          </div>
+        </div>
+        <script src="<?= asset('assets/vendor/qrcode/qrcode.min.js') ?>"></script>
+        <script>
+          // Der QR-Code entsteht im Browser. Ein Bilddienst bekaeme sonst
+          // das Geheimnis zu sehen - dieselbe Abwaegung wie beim
+          // Girocode in den Kontakten.
+          new QRCode(document.getElementById('totp_qr'), {
+              text: <?= json_encode($_uri, JSON_HEX_TAG | JSON_HEX_APOS) ?>,
+              width: 168, height: 168, correctLevel: QRCode.CorrectLevel.M
+          });
+        </script>
+
+      <?php elseif ($s_totp_aktiv): ?>
+        <p class="small mb-2">
+          <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i><?= te('Aktiv') ?></span>
+          <span class="text-muted ms-2"><?= te('%d Ersatzcode(s) noch offen', $s_totp_offen) ?></span>
+        </p>
+        <?php if ($s_totp_offen === 0): ?>
+          <div class="alert alert-warning py-2 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <?= te('Alle Ersatzcodes sind verbraucht. Richten Sie den zweiten Faktor neu ein, um neue zu erhalten.') ?>
+          </div>
+        <?php endif; ?>
+        <div class="d-flex gap-2 mb-4">
+          <form method="POST" onsubmit="return confirm('<?= te('Neu einrichten? Der bisherige Eintrag in Ihrer App und alle Ersatzcodes gelten danach nicht mehr.') ?>')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="totp_start">
+            <button type="submit" class="btn btn-outline-secondary btn-sm"><?= te('Neu einrichten') ?></button>
+          </form>
+          <form method="POST" onsubmit="return confirm('<?= te('Den zweiten Faktor abschalten? Die Anmeldung braucht danach nur noch das Passwort.') ?>')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="totp_off">
+            <button type="submit" class="btn btn-outline-danger btn-sm"><?= te('Abschalten') ?></button>
+          </form>
+        </div>
+
+      <?php else: ?>
+        <p class="text-muted small">
+          <?= te('Zusätzlich zum Passwort ein Einmalkennwort aus einer Authenticator-App. Wer Ihr Passwort kennt, kommt damit trotzdem nicht hinein.') ?>
+        </p>
+        <form method="POST" class="mb-4">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="totp_start">
+          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-shield-lock me-1"></i> <?= te('Einrichten') ?></button>
+        </form>
+      <?php endif; ?>
+      <?php endif; ?>
 
       <div class="settings-section-title mt-2"><i class="bi bi-braces me-2"></i><?= te('Schnittstelle für Anfragen') ?></div>
       <p class="text-muted small">

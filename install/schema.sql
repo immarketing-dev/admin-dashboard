@@ -57,8 +57,35 @@ CREATE TABLE IF NOT EXISTS users (
   id            INT AUTO_INCREMENT PRIMARY KEY,
   email         VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
+  -- Der zweite Faktor (TOTP, RFC 6238). Das Geheimnis steht als Base32
+  -- da, weil Authenticator-Apps es so erwarten.
+  --
+  -- totp_confirmed_at ist bewusst getrennt: eingerichtet ist nicht
+  -- dasselbe wie bestaetigt. Erst ein eingetippter Code beweist, dass
+  -- die App das Geheimnis wirklich hat - griffe die Einrichtung sofort,
+  -- sperrte ein Fehler beim Abscannen den Benutzer aus.
+  totp_secret       VARCHAR(64) DEFAULT NULL,
+  totp_confirmed_at DATETIME DEFAULT NULL,
   created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_users_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Ersatzcodes fuer den zweiten Faktor. Kein Beiwerk: ein zweiter
+-- Faktor, der beim Verlust des Telefons aussperrt, tauscht ein
+-- Aussperrungsproblem gegen ein anderes.
+--
+-- Gehasht wie Passwoerter, weil sie welche sind - acht Zeichen aus
+-- einem 31er-Alphabet liessen sich gegen einen schnellen Hash
+-- durchprobieren.
+CREATE TABLE IF NOT EXISTS totp_backup_codes (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT NOT NULL,
+  code_hash  VARCHAR(255) NOT NULL,
+  used_at    DATETIME DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_backup_user (user_id, used_at),
+  CONSTRAINT fk_backup_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS logs (
@@ -528,7 +555,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '15')
+INSERT INTO settings (k, v) VALUES ('schema_version', '16')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

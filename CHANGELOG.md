@@ -9,6 +9,34 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Two-factor sign-in (TOTP).** The sign-in path was carefully built —
+  lockout after five attempts over the `ip` column, bcrypt at a pinned
+  cost, a dummy hash against timing differences — and gained a way back
+  in with schema version 12. A second factor was missing.
+
+  Schema version 16 adds `users.totp_secret`, `users.totp_confirmed_at`
+  and `totp_backup_codes`. No dependency: TOTP is HMAC-SHA1 over a
+  counter, and PHP brings both; the rest is Base32 and the truncation
+  from RFC 4226.
+
+  `tools/test_totp.php` checks the arithmetic against the **test vectors
+  from RFC 6238 Appendix B**. That is the difference between "my app
+  accepted it" and demonstrably correct — an implementation that happens
+  to agree with one app while being wrong is entirely possible.
+
+  Three deliberate details. **Set up is not active**: the secret is stored
+  unconfirmed, and only a typed code proves the app has it — otherwise a
+  mistake while scanning locks the user out. **Eight backup codes**,
+  single-use, hashed like passwords because that is what they are; a
+  second factor that locks you out when the phone is gone trades one
+  lock-out problem for another. And **wrong codes count towards the same
+  lockout as wrong passwords**, since six digits are quicker to guess than
+  a password.
+
+  The state between password and second factor expires after ten minutes,
+  and it carries no `admin_logged_in` — otherwise the second factor would
+  be an ornament you could skip by navigating away. 79 checks.
+
 - **An endpoint for enquiries (`api/leads.php`).** The README's instruction
   for wiring up a contact form was an `INSERT INTO leads_inbox` — write
   into the panel's database from your website. That requires both to live
