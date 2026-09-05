@@ -420,6 +420,47 @@ if ($fehlend === []) {
          . 'nicht ueberschrieben, sondern muessen einzeln mit.');
 }
 
+// -- Lesbarkeit der PHP-Dateien ---------------------------------------
+// Ein halb hochgeladener oder in ASCII uebertragener Quelltext ergibt
+// einen Parse-Fehler. Der passiert, bevor irgendetwas laeuft - also auch
+// bevor die Fehlerbehandlung des Panels steht -, und der Browser zeigt
+// nur seine eigene leere 500-Seite. Betroffen ist genau die eine Datei,
+// was die Suche zusaetzlich in die Irre fuehrt: alle anderen Seiten
+// laufen weiter.
+//
+// token_get_all() mit TOKEN_PARSE prueft die Syntax, ohne die Datei
+// auszufuehren - genau das, was `php -l` auf der Kommandozeile tut, hier
+// aber ohne Kommandozeile.
+$kaputt = [];
+$gelesen = 0;
+foreach (array_merge(
+    glob(dirname(__DIR__) . '/*.php') ?: [],
+    glob(dirname(__DIR__) . '/includes/*.php') ?: [],
+    glob(dirname(__DIR__) . '/api/*.php') ?: []
+) as $datei) {
+    $quelle = @file_get_contents($datei);
+    if ($quelle === false) {
+        $kaputt[] = basename($datei) . ' (nicht lesbar)';
+        continue;
+    }
+    $gelesen++;
+    try {
+        token_get_all($quelle, TOKEN_PARSE);
+    } catch (Throwable $e) {
+        $kaputt[] = basename($datei) . ': ' . $e->getMessage();
+    }
+}
+
+if ($kaputt === []) {
+    pf_add('Dateien', 'Syntax', 'PASS',
+           $gelesen . ' PHP-Datei(en) geprueft, alle vollstaendig und lesbar.');
+} else {
+    pf_add('Dateien', 'Syntax', 'FAIL',
+           implode(' | ', $kaputt)
+         . ' - eine unvollstaendig uebertragene Datei sieht so aus. '
+         . 'Erneut hochladen, im Binaermodus.');
+}
+
 if (!$envExists) {
     pf_add('Datenbank', 'Abschnitt uebersprungen', 'SKIP', 'Keine .env-Datei gefunden - Datenbankpruefung ist ohne Zugangsdaten nicht moeglich.');
 } elseif ($envLoaderMissing) {
