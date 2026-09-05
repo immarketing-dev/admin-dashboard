@@ -40,7 +40,25 @@ Switch it in Settings, or set `ui_language` in the `settings` table to `de`
 before capturing. When the English translation is complete, this section
 should say the opposite.
 
+## A demo instance without a database server
+
+`php tools/serve_demo.php` copies the project into a throwaway directory,
+points its `config.php` at the SQLite mirror the tests already use, seeds
+it, and starts PHP's built-in server. No MySQL, no configuration, and the
+repository stays untouched.
+
+```bash
+php tools/serve_demo.php --port=8099 --lang=de
+```
+
+It skips the portal PIN (a POST, which a headless run cannot send) and
+hides the notification toasts, so the pages below are reachable straight
+away. It is a tool for looking at things, not a second supported way to
+run the panel: the mirror covers what the pages ask for, not what MySQL
+can do. If something misbehaves there, suspect the mirror before the page.
+
 ## How to capture
+
 
 A headless browser does it without a window manager and gives the same
 result every time. Edge and Chrome take the same flags:
