@@ -538,11 +538,10 @@ require 'includes/layout_start.php';
       <!-- Projekte KPI -->
       <?php dash_widget_open('kpi_projects'); ?>
         <a href="tasks" class="text-decoration-none d-flex h-100">
-          <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
-            <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-briefcase"></i></div>
-            <div class="kpi-number mb-1" id="kpi_open_tasks"><?=$open_tasks?></div>
-            <div class="kpi-label"><?= te('Projekte') ?></div>
-            <div class="small text-muted d-none d-md-block"><?= te('offene Aufgaben') ?></div>
+          <div class="widget-box widget-accent-left w-100 h-100 kpi-mini-card">
+            <div class="icon-tile icon-tile-primary kpi-icon"><i class="bi bi-briefcase"></i></div>
+            <div class="kpi-number" id="kpi_open_tasks"><?=$open_tasks?></div>
+            <div class="kpi-label"><?= te('offene Aufgaben') ?></div>
           </div>
         </a>
       <?php dash_widget_close(); ?>
@@ -550,11 +549,11 @@ require 'includes/layout_start.php';
       <!-- CRM KPI -->
       <?php dash_widget_open('kpi_contacts'); ?>
         <a href="contacts" class="text-decoration-none d-flex h-100">
-          <div class="widget-box widget-accent-left w-100 h-100 d-flex flex-column align-items-center justify-content-center text-center kpi-mini-card">
-            <div class="icon-tile icon-tile-primary kpi-icon mb-2"><i class="bi bi-people"></i></div>
-            <div class="kpi-number mb-1" id="kpi_total_contacts"><?=$total_contacts?></div>
+          <div class="widget-box widget-accent-left w-100 h-100 kpi-mini-card">
+            <div class="icon-tile icon-tile-primary kpi-icon"><i class="bi bi-people"></i></div>
+            <div class="kpi-number" id="kpi_total_contacts"><?=$total_contacts?></div>
+            <?php // Hier stand zweimal "Kontakte" untereinander. ?>
             <div class="kpi-label"><?= te('Kontakte') ?></div>
-            <div class="small text-muted d-none d-md-block"><?= te('Kontakte') ?></div>
           </div>
         </a>
       <?php dash_widget_close(); ?>
@@ -572,9 +571,9 @@ require 'includes/layout_start.php';
                <div class="list-group scroll-container">
                  <?php foreach($leads as $lead): ?>
                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 lead-item" onclick='openLeadModal(<?=json_encode($lead, JSON_HEX_TAG|JSON_HEX_APOS)?>)'>
-                     <div class="flex-grow-1 pe-3">
+                     <div class="flex-grow-1 pe-3 list-row-main">
                        <h6 class="mb-1 fw-bold fs-6 text-strong-c"><?php echo htmlspecialchars($lead['name']); ?></h6>
-                       <p class="mb-0 text-muted small text-truncate" style="font-size:11px; max-width: 200px;"><?php echo htmlspecialchars($lead['subject']); ?></p>
+                       <p class="mb-0 text-muted small text-truncate" style="font-size:11px;"><?php echo htmlspecialchars($lead['subject']); ?></p>
                      </div>
                      <div class="d-flex gap-2">
                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); triggerDeleteLead(<?php echo $lead['id']; ?>)"><i class="bi bi-trash" style="pointer-events:none;"></i></button>
@@ -607,11 +606,11 @@ require 'includes/layout_start.php';
                <div class="list-group scroll-container">
                  <?php foreach($tickets as $tick): ?>
                    <a href="tickets" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 border-0 border-bottom">
-                     <div class="flex-grow-1 pe-3">
+                     <div class="flex-grow-1 pe-3 list-row-main">
                        <h6 class="mb-1 fw-bold fs-6 text-strong-c"><?php echo htmlspecialchars($tick['contact_name']); ?></h6>
-                       <p class="mb-0 text-muted small text-truncate" style="font-size:11px; max-width: 200px;"><?php echo htmlspecialchars($tick['subject']); ?></p>
+                       <p class="mb-0 text-muted small text-truncate" style="font-size:11px;"><?php echo htmlspecialchars($tick['subject']); ?></p>
                      </div>
-                     <div>
+                     <div class="list-row-side">
                          <span class="badge <?= $tick['status'] == 'Offen' ? 'bg-warning text-dark' : 'bg-primary' ?>" style="font-size:10px;"><?= htmlspecialchars(datenwert($tick['status'])) ?></span>
                      </div>
                    </a>
@@ -1313,12 +1312,12 @@ require 'includes/layout_start.php';
                 const statusLbl = ticketStatusLabels[t.status] || t.status;
                 const pc = prioColors[t.priority] || 'var(--text-faint)';
                 return `<a href="tickets" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 border-0 border-bottom">
-                    <div class="flex-grow-1 pe-3 d-flex align-items-center gap-2">
+                    <div class="flex-grow-1 pe-3 list-row-main d-flex align-items-center gap-2">
                         <span style="width:8px;height:8px;border-radius:50%;background:${pc};display:inline-block;flex-shrink:0;" title="${t.priority || ''}"></span>
                         <div><h6 class="mb-1 fw-bold fs-6 text-strong-c">${name}</h6>
-                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px;max-width:200px;">${subject}</p></div>
+                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px;">${subject}</p></div>
                     </div>
-                    <span class="badge ${badgeCls}" style="font-size:10px;">${statusLbl}</span>
+                    <span class="badge ${badgeCls} list-row-side" style="font-size:10px;">${statusLbl}</span>
                 </a>`;
             }).join('');
             el.innerHTML = `<div class="list-group scroll-container">${rows}</div>`;
@@ -1337,9 +1336,9 @@ require 'includes/layout_start.php';
                 const name    = (lead.name    || '').replace(/</g,'&lt;');
                 const subject = (lead.subject || '').replace(/</g,'&lt;');
                 return `<div class="list-group-item d-flex justify-content-between align-items-center py-2 lead-item" onclick="openLeadByIdx(${i})" style="cursor:pointer;">
-                    <div class="flex-grow-1 pe-3">
+                    <div class="flex-grow-1 pe-3 list-row-main">
                         <h6 class="mb-1 fw-bold fs-6 text-strong-c">${name}</h6>
-                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px;max-width:200px;">${subject}</p>
+                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px;">${subject}</p>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();triggerDeleteLead(${lead.id})"><i class="bi bi-trash" style="pointer-events:none;"></i></button>

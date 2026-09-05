@@ -101,8 +101,13 @@ $checks['x wird an den rechten Rand gezogen']
 // --- Werte, die keine Zahlen sind -------------------------------------
 $checks['Text statt Zahl: Standard']
     = pruef('{"items":{"leads":{"x":"links","y":0,"w":4,"h":4}}}', 'leads')['x'] === $standard['leads']['x'];
+// Geprueft wird x - dort steht das null. Vorher stand hier ['w'],
+// und die Zusicherung ging nur auf, weil der Standardwert von w
+// zufaellig dieselbe Zahl war wie die im JSON. Der Test trug damit
+// seinen Namen zu Unrecht und fiel erst auf, als sich die
+// Standardbreite aenderte.
 $checks['null statt Zahl: Standard']
-    = pruef('{"items":{"leads":{"x":null,"y":0,"w":4,"h":4}}}', 'leads')['w'] === $standard['leads']['w'];
+    = pruef('{"items":{"leads":{"x":null,"y":0,"w":4,"h":4}}}', 'leads')['x'] === $standard['leads']['x'];
 $checks['Array statt Zahl: Standard']
     = pruef('{"items":{"leads":{"x":[1,2],"y":0,"w":4,"h":4}}}', 'leads')['x'] === $standard['leads']['x'];
 $checks['Kommazahl wird ganzzahlig']

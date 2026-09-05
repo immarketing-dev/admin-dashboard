@@ -48,10 +48,22 @@ function dashboard_widgets(): array
 
     $w = [
         // Reihe 1
-        'kpi_projects'    => ['x' => 0, 'y' => 0,  'w' => 2, 'h' => 4, 'min_w' => 2, 'min_h' => 3, 'handle' => 'bar',   'title' => te('Projekte (Kennzahl)')],
-        'kpi_contacts'    => ['x' => 2, 'y' => 0,  'w' => 2, 'h' => 4, 'min_w' => 2, 'min_h' => 3, 'handle' => 'bar',   'title' => te('Kontakte (Kennzahl)')],
-        'leads'           => ['x' => 4, 'y' => 0,  'w' => 4, 'h' => 4, 'min_w' => 3, 'min_h' => 3, 'handle' => 'title', 'title' => te('Neue Website-Anfragen')],
-        'tickets'         => ['x' => 8, 'y' => 0,  'w' => 4, 'h' => 4, 'min_w' => 3, 'min_h' => 3, 'handle' => 'title', 'title' => te('Offene Support-Tickets')],
+        //
+        // Die beiden Kennzahlkarten stehen übereinander in einer
+        // schmalen Spalte, nicht nebeneinander. Vorher waren sie so
+        // hoch wie die inhaltsreichen Kacheln daneben - bei
+        // cellHeight 76 sind vier Reihen 340 Pixel, und darin stand
+        // eine einzige Zahl. Die Anfragen daneben wurden dafür mitten
+        // im Eintrag abgeschnitten.
+        //
+        // Zwei Reihen je Karte reichen für Symbol, Zahl und
+        // Beschriftung; zusammen füllen sie dieselben vier Reihen, die
+        // Zeile bleibt also gerade. Die frei gewordenen zwei Spalten
+        // gehen an leads und tickets, die sie brauchen.
+        'kpi_projects'    => ['x' => 0, 'y' => 0,  'w' => 2, 'h' => 2, 'min_w' => 2, 'min_h' => 2, 'handle' => 'bar',   'title' => te('Projekte (Kennzahl)')],
+        'kpi_contacts'    => ['x' => 0, 'y' => 2,  'w' => 2, 'h' => 2, 'min_w' => 2, 'min_h' => 2, 'handle' => 'bar',   'title' => te('Kontakte (Kennzahl)')],
+        'leads'           => ['x' => 2, 'y' => 0,  'w' => 5, 'h' => 4, 'min_w' => 3, 'min_h' => 3, 'handle' => 'title', 'title' => te('Neue Website-Anfragen')],
+        'tickets'         => ['x' => 7, 'y' => 0,  'w' => 5, 'h' => 4, 'min_w' => 3, 'min_h' => 3, 'handle' => 'title', 'title' => te('Offene Support-Tickets')],
         // Reihe 2
         'portal_activity' => ['x' => 0, 'y' => 4,  'w' => 8, 'h' => 4, 'min_w' => 4, 'min_h' => 3, 'handle' => 'title', 'title' => te('Portal Aktivitäten')],
         'monitor'         => ['x' => 8, 'y' => 4,  'w' => 4, 'h' => 4, 'min_w' => 3, 'min_h' => 3, 'handle' => 'title', 'title' => te('System-Monitor')],

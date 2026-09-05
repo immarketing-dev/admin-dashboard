@@ -541,17 +541,55 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 
 .portal-item-hover:hover { transform: translateY(-2px); box-shadow: var(--elev-rest); }
 
-/* KPI-Kacheln (Projekte / CRM) */
-.kpi-mini-card { padding: var(--space-4) var(--space-2); }
-.kpi-mini-card .kpi-icon { width: 36px; height: 36px; font-size: var(--text-md); margin-right: 0; }
+/* KPI-Kacheln (Projekte / CRM)
+
+   Untereinander und mittig - so wie vorher, aber in einer Kachel von
+   zwei statt vier Rasterreihen. Vier Reihen sind bei cellHeight 76
+   rund 340 Pixel, und darin stand eine einzige Zahl; der Rest war
+   Luft, waehrend die Kacheln daneben ihren Inhalt abschnitten.
+
+   Waagerecht (Symbol links, Text rechts) war der erste Versuch und
+   traegt nicht: bei zwei von zwoelf Spalten bleiben neben dem Symbol
+   auf einem 1100 Pixel breiten Fenster keine vierzig Pixel fuer den
+   Text. Senkrecht bekommt die Beschriftung die volle Kachelbreite
+   und darf umbrechen. */
+.kpi-mini-card {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    gap: 2px;
+    padding: var(--space-3) var(--space-2);
+}
+.kpi-mini-card .kpi-icon {
+    width: 34px; height: 34px; font-size: var(--text-sm);
+    margin-right: 0; flex-shrink: 0;
+}
 .kpi-number {
     font-family: 'Poppins', sans-serif; font-weight: 700;
-    font-size: 1.75rem; line-height: 1; color: var(--text-strong);
+    font-size: 1.6rem; line-height: 1.1; color: var(--text-strong);
 }
+/* Umbrechen statt abschneiden: "OFFENE AUFGABEN" passt in einer
+   schmalen Kachel nicht in eine Zeile, und abgeschnitten ist die
+   Beschriftung nutzlos. */
 .kpi-label {
-    font-size: var(--text-xs); font-weight: 600; letter-spacing: .5px;
+    font-size: var(--text-2xs); font-weight: 600; letter-spacing: .4px;
     text-transform: uppercase; color: var(--text-muted);
+    line-height: 1.2; overflow-wrap: anywhere;
 }
+
+/* Zeilen in den Listen-Widgets (Anfragen, Tickets)
+
+   min-width: 0 ist hier kein Feinschliff, sondern der Unterschied
+   zwischen "passt" und "passt nicht": ein Flex-Kind kann ohne diese
+   Angabe nicht schmaler werden als sein Inhalt. Ein langer
+   Kontaktname hat deshalb das Statusbadge aus der Kachel gedrueckt,
+   sichtbar als abgeschnittenes "In B..." am rechten Rand.
+
+   Die feste max-width von 200px am Betreff kam aus derselben Ecke:
+   sie half auf breiten Fenstern und half auf schmalen nicht. Die
+   Begrenzung uebernimmt jetzt die Zelle. */
+.list-row-main { min-width: 0; }
+.list-row-main h6 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-row-side { flex-shrink: 0; }
 
 /* Uptime-Monitor */
 .uptime-header { display: flex; align-items: center; font-weight: 600; font-size: var(--text-sm-plus); color: var(--text-strong); min-width: 0; }
