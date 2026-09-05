@@ -46,11 +46,22 @@ if (!$client) { die(t('Zugang abgelaufen oder ungültig.')); }
 $_sess_key  = 'portal_auth_' . $client['id'];
 $_pin_error = '';
 
-/* Sprachwahl im Portal.
-   Bewusst ueber die Adresszeile und die Sitzung, nicht ueber die
-   Datenbank: so funktioniert der Umschalter auch in der Demo, wo jeder
-   Schreibzugriff abgewiesen wird. Und der Kunde entscheidet selbst,
-   ohne dass jemand im Panel etwas fuer ihn einstellen muss. */
+/* Sprachwahl im Portal - in drei Stufen.
+
+   1. Die am Kontakt hinterlegte Sprache. Sie ist die Vorgabe und
+      zugleich die einzige, die beim Mailversand zur Verfuegung
+      steht - dort gibt es keine Sitzung.
+   2. Was der Kunde in seiner Sitzung gewaehlt hat.
+   3. Was er gerade ueber die Adresszeile waehlt.
+
+   Die Wahl des Kunden gewinnt, und sie bleibt in der Sitzung: so
+   funktioniert der Umschalter auch in der Demo, wo jeder
+   Schreibzugriff abgewiesen wird, und niemand muss im Panel etwas
+   fuer ihn einstellen. Die hinterlegte Sprache aendert das nicht -
+   sie sagt nur, womit er anfaengt. */
+if (!empty($client['language']) && in_array($client['language'], SPRACHEN, true)) {
+    sprache_setzen($client['language']);
+}
 if (isset($_GET['lang']) && in_array($_GET['lang'], SPRACHEN, true)) {
     $_SESSION['portal_lang_' . $client['id']] = $_GET['lang'];
 }

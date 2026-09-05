@@ -65,6 +65,18 @@ function lang(): string
  * waehrend das Panel bei der eingestellten bleibt. Vor der ersten Ausgabe
  * aufrufen.
  */
+/**
+ * Der Name einer Sprache, in ihrer eigenen Sprache.
+ *
+ * In ihrer eigenen, nicht in der gerade eingestellten: wer in einem
+ * englischen Panel die Sprache eines Kontakts waehlt, sucht
+ * "Deutsch" und nicht "German".
+ */
+function sprachname(string $sprache): string
+{
+    return ['de' => 'Deutsch', 'en' => 'English'][$sprache] ?? $sprache;
+}
+
 function sprache_setzen(string $sprache): void
 {
     if (in_array($sprache, SPRACHEN, true)) {

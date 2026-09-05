@@ -1004,6 +1004,54 @@ return [
         => 'Backups',
     'Datenauskunft'
         => 'Data export',
+    // ── Mailvorlagen ─────────────────────────────────────────────────
+    // Betreff, Text und Schaltflaeche. Die Schluessel tragen echte
+    // Umbrueche, weil t() sie zur Laufzeit genauso bekommt.
+    "Projektfortschritt: {{meilenstein}} | {{firma}}"
+        => "Progress: {{meilenstein}} | {{firma}}",
+    "Hallo {{kunde}},\n\nim Projekt „{{projekt}}“ ist ein weiterer Schritt geschafft:\n{{meilenstein}}\n\nDen aktuellen Stand können Sie jederzeit im Portal einsehen."
+        => "Hello {{kunde}},\n\nanother step is done in the „{{projekt}}“ project:\n{{meilenstein}}\n\nYou can look at the current state in the portal at any time.",
+    "Zum Projektportal"
+        => "Go to the project portal",
+    "Ihr Zugang zum Projekt-Portal | {{firma}}"
+        => "Your access to the project portal | {{firma}}",
+    "Hallo {{kunde}},\n\n{{nachricht}}"
+        => "Hello {{kunde}},\n\n{{nachricht}}",
+    "Portal öffnen"
+        => "Open the portal",
+    "{{firma}}: Neue Antwort auf Ihre Support-Anfrage"
+        => "{{firma}}: a reply to your support request",
+    "Hallo {{kunde}},\n\nzu Ihrer Anfrage „{{betreff}}“ gibt es eine Antwort:\n\n{{antwort}}"
+        => "Hello {{kunde}},\n\nthere is a reply to your request „{{betreff}}“:\n\n{{antwort}}",
+    "Anfrage im Portal ansehen"
+        => "View the request in the portal",
+    "Einladung: {{titel}} am {{datum}}"
+        => "Invitation: {{titel}} on {{datum}}",
+    "Hallo {{kunde}},\n\nSie sind zu folgendem Termin eingeladen:\n\n{{titel}}\n{{datum}}\n{{ort}}\n\n{{beschreibung}}"
+        => "Hello {{kunde}},\n\nyou are invited to the following appointment:\n\n{{titel}}\n{{datum}}\n{{ort}}\n\n{{beschreibung}}",
+    "Termin im Kalender speichern"
+        => "Save to your calendar",
+    "Passwort zurücksetzen | {{firma}}"
+        => "Reset your password | {{firma}}",
+    "Sie haben angefordert, das Passwort für Ihr Admin-Panel zurückzusetzen.\n\nDer Link gilt {{minuten}} Minuten und lässt sich nur einmal verwenden:\n{{link}}\n\nHaben Sie das nicht angefordert, können Sie diese Nachricht ignorieren. Ihr bisheriges Passwort bleibt gültig, solange der Link nicht benutzt wird."
+        => "You asked to reset the password for your admin panel.\n\nThe link is valid for {{minuten}} minutes and works once:\n{{link}}\n\nIf this was not you, ignore this message. Your current password stays valid as long as the link goes unused.",
+    "Neues Passwort festlegen"
+        => "Set a new password",
+    "Angebot {{nummer}} für {{kunde}}"
+        => "Quote {{nummer}} for {{kunde}}",
+    "Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unser Angebot {{nummer}} über {{betrag}} €.\n\n{{anmerkungen}}\n\nBei Fragen stehe ich Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\n{{firma}}"
+        => "Dear Sir or Madam,\n\nplease find attached our quote {{nummer}} for {{betrag}} €.\n\n{{anmerkungen}}\n\nI am happy to answer any questions.\n\nKind regards\n{{firma}}",
+    "Rechnung {{nummer}}"
+        => "Invoice {{nummer}}",
+    "Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung {{nummer}} über {{betrag}} €, zahlbar bis {{faellig}}.\n\nMit freundlichen Grüßen\n{{firma}}"
+        => "Dear Sir or Madam,\n\nplease find attached our invoice {{nummer}} for {{betrag}} €, payable by {{faellig}}.\n\nKind regards\n{{firma}}",
+    "Zahlungserinnerung zu Rechnung {{nummer}}"
+        => "Payment reminder for invoice {{nummer}}",
+    "Sehr geehrte Damen und Herren,\n\nunsere Rechnung {{nummer}} über {{betrag}} € war am {{faellig}} fällig und ist bislang nicht ausgeglichen.\n\nSollten Sie die Zahlung bereits veranlasst haben, betrachten Sie diese Nachricht bitte als gegenstandslos.\n\nMit freundlichen Grüßen\n{{firma}}"
+        => "Dear Sir or Madam,\n\nour invoice {{nummer}} for {{betrag}} € fell due on {{faellig}} and is still outstanding.\n\nIf you have already sent the payment, please disregard this message.\n\nKind regards\n{{firma}}",
+
+    'wie das Panel'
+        => 'same as the panel',
     'Nichts Offenes aus dem Portal.'
         => 'Nothing open from the portal.',
     // ── Zahlungsabgleich (finances.php) ──────────────────────────────

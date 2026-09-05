@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($do_email && !$to) { echo json_encode(['ok' => false, 'err' => 'Keine E-Mail-Adresse angegeben']); exit(); }
 
         // Kontakt + Ticket-Betreff für die E-Mail
-        $row_contact = $pdo->prepare("SELECT c.name, c.portal_token, st.subject AS ticket_subject
+        $row_contact = $pdo->prepare("SELECT c.name, c.portal_token, c.language, st.subject AS ticket_subject
             FROM support_tickets st LEFT JOIN contacts c ON st.contact_id = c.id WHERE st.id = ?");
         $row_contact->execute([$id]);
         $contact_row    = $row_contact->fetch(PDO::FETCH_ASSOC);
@@ -120,12 +120,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $first     = htmlspecialchars(explode(' ', $contact_name)[0] ?: 'Kunde', ENT_QUOTES);
                 // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
                 // Vorher stand hier ein fest verdrahtetes Tabellen-Layout.
-                $_m = mail_render('ticket_reply', [
+                // In der Sprache des Kontakts, nicht in der des Panels:
+                // die Mail liest der Kunde, nicht der Absender.
+                $_sprache = mail_sprache($contact_row['language'] ?? null);
+                $_m = mail_in_sprache($_sprache, fn() => mail_render('ticket_reply', [
                     'kunde'   => explode(' ', $contact_name)[0] ?: 'Kunde',
                     'betreff' => $ticket_subject,
                     'antwort' => $body,
                     'firma'   => $company,
-                ], $portal_url);
+                ], $portal_url));
                 // ────────────────────────────────────────────────────
                 $mail = new PHPMailer\PHPMailer\PHPMailer(true);
                 $mail->isSMTP();

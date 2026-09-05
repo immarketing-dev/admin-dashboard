@@ -182,6 +182,10 @@ $k_daten = [
         'tage' => -320,
     ],
     'demir' => [
+        // Der eine Kontakt mit hinterlegter Sprache: sein Portal und
+        // alles, was an ihn hinausgeht, ist englisch - unabhaengig
+        // davon, worauf das Panel steht.
+        'language' => 'en',
         'name' => 'Aylin Demir', 'company' => "Studio Demir & O'Neill",
         'email' => 'a.demir@studio-demir.example', 'phone' => '+49 89 5550478',
         'website' => 'https://studio-demir.example',
@@ -219,6 +223,7 @@ foreach ($k_daten as $schluessel => $d) {
         'contact_type' => $d['contact_type'],
         'source'       => $d['source'],
         'notes'        => $d['notes'],
+        'language'     => $d['language'] ?? null,
         'portal_token' => $mit_portal ? demo_token($schluessel) : null,
         'portal_pin'   => $mit_portal ? $pin_hash : null,
         'created_at'   => zeit($d['tage'], '10:15'),

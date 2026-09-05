@@ -899,8 +899,28 @@ php tools/deploy.php <dir>        # build an upload folder, keeping .env
 ## Language
 
 The interface runs in **German or English**, chosen on the settings page.
-The client portal follows each contact's own language, so you can work in
-German while an English-speaking client sees their portal in English.
+
+A contact carries a language of their own. It decides two things: which
+language their portal opens in, and — the part that needs it most — which
+language everything sent to them is written in. A milestone notice, a
+portal invitation, a reply to a support request, an appointment invitation
+and the payment reminders from the nightly run all follow the recipient,
+not the panel. Leave the field empty and the contact gets whatever the
+panel is set to.
+
+That distinction matters because a mail has no session. The portal could
+always ask the visitor which language they wanted and remember it for the
+visit; an outgoing mail has nobody to ask, so it went out in German
+regardless — including to a client reading their portal in English. The
+language on the contact is the answer to that, and the portal now uses it
+as its starting point. A visitor switching language in the portal still
+wins for their own visit.
+
+Customised templates are stored per language, so editing the German
+wording does not overwrite the English one. German keeps the unsuffixed
+key it always had, which is why this needed no migration of existing
+templates. Where no version exists for a recipient's language, the
+translated default is used.
 
 Translations live in `lang/en.php`, keyed by the German source text:
 `t('Speichern')` looks up `'Speichern'`. A missing entry falls back to the
@@ -908,8 +928,14 @@ German original, so the interface is never empty and never shows a raw key.
 `includes/i18n.php` explains why database values — `'Offen'`, `'Bezahlt'` —
 are translated for display only and never on write.
 
-Translation is being done in stages; anything not yet covered stays German.
-`php tools/check_i18n.php` reports what is still missing.
+The interface is fully translated - 1049 strings, checked by
+`php tools/check_i18n.php`, which reports both a wrapped string without
+a translation and an entry whose German source no longer exists.
+
+What deliberately stays German is the *content* of the mail templates as
+shipped, in the sense that editing them is the operator's business: the
+defaults exist in both languages, but a customised wording is text you
+wrote and nobody translates it for you.
 
 Code comments are German. Documentation, commit messages and pull request
 descriptions are English.

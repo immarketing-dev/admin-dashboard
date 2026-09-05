@@ -104,6 +104,78 @@ $GLOBALS['test_settings']['mailtpl_milestone_subject'] = 'Eigener Betreff: {{mei
 $checks['gespeicherte Fassung schlägt den Standard']
     = mail_render('milestone', $vars)['subject'] === 'Eigener Betreff: Entwurf Startseite';
 
+// =====================================================================
+// Sprache des Empfaengers
+// =====================================================================
+// Bis hierher ging jede Mail auf Deutsch hinaus - auch an einen
+// Empfaenger, der sein Portal auf Englisch liest. Beim Versand gibt es
+// keine Sitzung, aus der sich seine Sprache ergaebe; sie steht deshalb
+// am Kontakt.
+
+// --- Der Schluessel der gespeicherten Fassung ---
+// Deutsch behaelt den Schluessel ohne Kuerzel. Genau das erspart eine
+// Migration: was ein Betreiber bisher angepasst hat, gilt weiter.
+$checks['deutscher Schluessel ohne Kuerzel']
+    = mail_template_key('milestone', 'subject', 'de') === 'mailtpl_milestone_subject';
+$checks['englischer Schluessel mit Kuerzel']
+    = mail_template_key('milestone', 'subject', 'en') === 'mailtpl_milestone_en_subject';
+
+// --- mail_sprache() nimmt nur, was es gibt ---
+$checks['bekannte Sprache wird genommen'] = mail_sprache('en') === 'en';
+$checks['leere Angabe ergibt null']       = mail_sprache('') === null;
+$checks['null bleibt null']               = mail_sprache(null) === null;
+$checks['Unbekanntes ergibt null']        = mail_sprache('kl') === null;
+
+// --- mail_in_sprache() stellt die Sprache wieder her ---
+sprache_setzen('de');
+$innen = mail_in_sprache('en', fn() => lang());
+$checks['innen gilt die Empfaengersprache'] = $innen === 'en';
+$checks['danach wieder die alte']           = lang() === 'de';
+
+// Auch wenn es darin knallt: eine Ausnahme darf die Seite nicht in der
+// Sprache des Empfaengers weiterlaufen lassen.
+try {
+    mail_in_sprache('en', function () { throw new RuntimeException('Absicht'); });
+} catch (RuntimeException $e) {
+    // erwartet
+}
+$checks['nach einer Ausnahme wiederhergestellt'] = lang() === 'de';
+
+// --- Die Mail selbst ---
+$de = mail_render('portal_access', $vars, 'https://example.com/portal');
+$en = mail_in_sprache('en', fn() => mail_render('portal_access', $vars, 'https://example.com/portal'));
+
+$checks['deutscher Betreff bleibt deutsch']
+    = strpos($de['subject'], 'Ihr Zugang zum Projekt-Portal') !== false;
+$checks['englischer Betreff ist englisch']
+    = strpos($en['subject'], 'Your access to the project portal') !== false;
+$checks['englischer Text ist englisch']
+    = strpos($en['text'], 'Hello ') !== false && strpos($en['text'], 'Hallo ') === false;
+
+// Der Rahmen traegt die Sprache, nicht ein festes "de".
+$checks['Rahmen deutsch']  = strpos($de['html'], '<html lang="de">') !== false;
+$checks['Rahmen englisch'] = strpos($en['html'], '<html lang="en">') !== false;
+
+// Und nach alldem steht die Sprache wieder auf Deutsch.
+$checks['Sprache am Ende unveraendert'] = lang() === 'de';
+
+// --- Eine angepasste Fassung gilt nur fuer ihre Sprache ---
+// Wer den deutschen Text aendert, soll damit nicht den englischen
+// ueberschreiben - und umgekehrt.
+$GLOBALS['test_settings']['mailtpl_portal_access_subject']    = 'Deutsch angepasst';
+$GLOBALS['test_settings']['mailtpl_portal_access_en_subject'] = 'English customised';
+
+$checks['angepasst: deutsch'] = mail_render('portal_access', $vars)['subject'] === 'Deutsch angepasst';
+$checks['angepasst: englisch']
+    = mail_in_sprache('en', fn() => mail_render('portal_access', $vars))['subject'] === 'English customised';
+
+// Ohne englische Anpassung gilt der uebersetzte Standard, nicht der
+// angepasste deutsche Text.
+unset($GLOBALS['test_settings']['mailtpl_portal_access_en_subject']);
+$checks['ohne englische Fassung der Standard']
+    = mail_in_sprache('en', fn() => mail_render('portal_access', $vars))['subject']
+      === 'Your access to the project portal | Beispiel';
+
 $fail = 0;
 foreach ($checks as $name => $ok) {
     echo ($ok ? 'PASS' : 'FAIL') . "  $name\n";

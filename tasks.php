@@ -274,7 +274,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $ms_id = (int)$_POST['milestone_id'];
 
         // Aktuellen Zustand lesen, bevor wir toggeln
-        $ms_row = $pdo->prepare("SELECT m.is_completed, m.title, m.task_id, t.title AS task_title, c.email AS c_email, c.name AS c_name, c.portal_token
+        $ms_row = $pdo->prepare("SELECT m.is_completed, m.title, m.task_id, t.title AS task_title, c.email AS c_email, c.name AS c_name, c.portal_token, c.language AS c_language
             FROM task_milestones m
             JOIN tasks t ON m.task_id = t.id
             LEFT JOIN contacts c ON t.contact_id = c.id
@@ -308,12 +308,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $_portal_url = $ms['portal_token']
                     ? rtrim(setting('main_website', MAIN_WEBSITE), '/') . '/portal?token=' . urlencode($ms['portal_token'])
                     : '';
-                $_m = mail_render('milestone', [
+                // In der Sprache des Kunden - er liest die Mail, nicht wir.
+                $_sprache = mail_sprache($ms['c_language'] ?? null);
+                $_m = mail_in_sprache($_sprache, fn() => mail_render('milestone', [
                     'kunde'       => $ms['c_name'],
                     'projekt'     => $ms['task_title'],
                     'meilenstein' => $ms['title'],
                     'firma'       => setting('company_short', COMPANY_SHORT),
-                ], $_portal_url);
+                ], $_portal_url));
                 $mail->Subject = $_m['subject'];
                 $mail->Body    = $_m['html'];
                 $mail->AltBody = $_m['text'];

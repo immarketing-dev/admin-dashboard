@@ -129,7 +129,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $primary = htmlspecialchars(setting('color_primary', COLOR_PRIMARY));
 
             foreach ($cids as $cid) {
-                $ec_s = $pdo->prepare("SELECT ec.invite_token, c.name, c.email FROM event_contacts ec JOIN contacts c ON ec.contact_id=c.id WHERE ec.event_id=? AND ec.contact_id=?");
+                $ec_s = $pdo->prepare("SELECT ec.invite_token, c.name, c.email, c.language FROM event_contacts ec JOIN contacts c ON ec.contact_id=c.id WHERE ec.event_id=? AND ec.contact_id=?");
                 $ec_s->execute([$event_id, $cid]);
                 $ec = $ec_s->fetch(PDO::FETCH_ASSOC);
                 if (!$ec || empty($ec['email'])) continue;
@@ -141,14 +141,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_ort = trim(($ev['location'] ?? '') . (
                     !empty($ev['meeting_url']) ? ' · ' . $ev['meeting_url'] : ''
                 ));
-                $_m = mail_render('event_invite', [
+                // In der Sprache des Eingeladenen.
+                $_sprache = mail_sprache($ec['language'] ?? null);
+                $_m = mail_in_sprache($_sprache, fn() => mail_render('event_invite', [
                     'kunde'        => $ec['name'],
                     'titel'        => $ev['title'],
                     'datum'        => $date_fmt . ($time_str ? ', ' . $time_str : ''),
                     'ort'          => $_ort,
                     'beschreibung' => $ev['description'] ?? '',
                     'firma'        => setting('company_short', COMPANY_SHORT),
-                ], $ics_link);
+                ], $ics_link));
                 $html_body = $_m['html'];
                 $alt_body = "Termineinladung: {$ev['title']}\nDatum: {$date_fmt}" . ($time_str ? " | $time_str" : '') . (!empty($ev['location']) ? "\nOrt: {$ev['location']}" : '') . (!empty($ev['meeting_url']) ? "\nMeeting: {$ev['meeting_url']}" : '') . "\n\nTermin herunterladen: $ics_link";
 

@@ -188,6 +188,12 @@ CREATE TABLE IF NOT EXISTS contacts (
   zip                     VARCHAR(20)  DEFAULT NULL,
   city                    VARCHAR(120) DEFAULT NULL,
   country                 VARCHAR(120) DEFAULT NULL,
+  -- Sprache dieses Kontakts fuer alles, was an ihn hinausgeht.
+  -- NULL heisst "wie das Panel". Das Portal laesst den Kunden
+  -- daneben in seiner Sitzung umschalten; diese Angabe ist die
+  -- Vorgabe und die einzige, die beim Mailversand zur Verfuegung
+  -- steht - dort gibt es keine Sitzung.
+  language                VARCHAR(5)   DEFAULT NULL,
   contact_type            VARCHAR(50)  NOT NULL DEFAULT 'Kunde',
   source                  VARCHAR(100) DEFAULT NULL,
   notes                   TEXT,
@@ -595,7 +601,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '18')
+INSERT INTO settings (k, v) VALUES ('schema_version', '19')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

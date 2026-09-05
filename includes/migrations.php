@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 18;
+const SCHEMA_VERSION = 19;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -651,6 +651,21 @@ function migrations(): array
             . ' FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL',
 
             'CREATE INDEX idx_time_user ON time_entries (user_id, created_at)',
+        ],
+
+        // Version 19: die Sprache eines Kontakts.
+        //
+        // Das Portal liess den Kunden seine Sprache schon waehlen -
+        // aber in seiner Sitzung, nicht als Angabe am Kontakt. Fuer
+        // eine Seite reicht das; fuer eine Mail nicht. Beim Versand
+        // gibt es keine Sitzung, und so ging jede Rechnung und jede
+        // Erinnerung auf Deutsch hinaus, auch an einen Empfaenger, der
+        // sein Portal auf Englisch liest.
+        //
+        // NULL heisst "wie das Panel": wer nichts einstellt, bekommt
+        // das bisherige Verhalten.
+        19 => [
+            'ALTER TABLE contacts ADD COLUMN language VARCHAR(5) DEFAULT NULL',
         ],
     ];
 }

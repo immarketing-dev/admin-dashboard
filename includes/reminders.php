@@ -193,7 +193,8 @@ function offene_rechnungen(PDO $pdo): array
         "SELECT f.id, f.title, f.invoice_number, f.amount, f.due_date,
                 f.reminder_count, f.last_reminder_at, f.invoice_pdf_path,
                 COALESCE(c.name, f.custom_name) AS kundenname,
-                c.email AS empfaenger
+                c.email AS empfaenger,
+                c.language AS sprache
            FROM finances f
            LEFT JOIN contacts c ON c.id = f.contact_id AND c.deleted_at IS NULL
           WHERE f.deleted_at IS NULL
@@ -214,7 +215,8 @@ function rechnung_fuer_mahnung(PDO $pdo, int $id): ?array
         "SELECT f.id, f.title, f.invoice_number, f.amount, f.due_date, f.status,
                 f.reminder_count, f.last_reminder_at, f.invoice_pdf_path,
                 COALESCE(c.name, f.custom_name) AS kundenname,
-                c.email AS empfaenger
+                c.email AS empfaenger,
+                c.language AS sprache
            FROM finances f
            LEFT JOIN contacts c ON c.id = f.contact_id AND c.deleted_at IS NULL
           WHERE f.deleted_at IS NULL AND f.type = 'INCOME' AND f.id = ?"
@@ -275,7 +277,12 @@ function mahnung_senden(
     string $text = ''
 ): array {
     $vars = mahnung_variablen($rechnung, $firma);
-    $mail = mail_render('payment_reminder', $vars);
+
+    // In der Sprache des Empfaengers, nicht in der des Panels. Beim
+    // naechtlichen Lauf gibt es keine Sitzung, aus der sie sich
+    // ergaebe - deshalb steht sie am Kontakt.
+    $sprache = mail_sprache($rechnung['sprache'] ?? null);
+    $mail = mail_in_sprache($sprache, fn() => mail_render('payment_reminder', $vars));
 
     if (trim($betreff) !== '') {
         $mail['subject'] = $betreff;

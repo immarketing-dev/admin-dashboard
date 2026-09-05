@@ -107,11 +107,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                      . 'width="150" height="150" style="display:block;border:0;">';
 
                 // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
-                $_m = mail_render('portal_access', [
+                // In der Sprache des Kontakts. $c kommt aus einem
+                // SELECT * - das Feld steht also schon bereit.
+                $_sprache = mail_sprache($c['language'] ?? null);
+                $_m = mail_in_sprache($_sprache, fn() => mail_render('portal_access', [
                     'kunde'     => $c['name'],
                     'nachricht' => $_POST['mail_text'] ?? '',
                     'firma'     => setting('company_short', COMPANY_SHORT),
-                ], $portal_link, $_qr);
+                ], $portal_link, $_qr));
 
                 $mail->Subject = $_m['subject'];
                 $mail->Body    = $_m['html'];
@@ -143,16 +146,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // hinterlegt" - dieselbe Aussage, ohne Sonderfall beim Lesen.
         $vat_id = trim($_POST['vat_id'] ?? '');
 
-        $params = [$name, trim($_POST['company']), trim($_POST['email']), trim($_POST['phone']), trim($_POST['website']), trim($_POST['street']), trim($_POST['zip']), trim($_POST['city']), trim($_POST['country']), $_POST['contact_type'], $_POST['source'], trim($_POST['notes']), $satz, $vat_id];
+        // Sprache des Kontakts. Leer heisst hier NULL und nicht '':
+        // "keine Angabe" ist eine eigene Aussage - dann gilt die
+        // Sprache des Panels, und zwar auch dann noch, wenn sie sich
+        // spaeter aendert.
+        $sprache = $_POST['language'] ?? '';
+        $sprache = in_array($sprache, SPRACHEN, true) ? $sprache : null;
+
+        $params = [$name, trim($_POST['company']), trim($_POST['email']), trim($_POST['phone']), trim($_POST['website']), trim($_POST['street']), trim($_POST['zip']), trim($_POST['city']), trim($_POST['country']), $_POST['contact_type'], $_POST['source'], trim($_POST['notes']), $satz, $vat_id, $sprache];
 
         if ($action === 'edit_contact') {
             // Die Kennung wandert ans Ende, VOR die WHERE-Bedingung.
             $params_upd = $params;
             $params_upd[] = (int) $_POST['contact_id'];
-            $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=?, hourly_rate=?, vat_id=? WHERE id=?")->execute($params_upd);
+            $pdo->prepare("UPDATE contacts SET name=?, company=?, email=?, phone=?, website=?, street=?, zip=?, city=?, country=?, contact_type=?, source=?, notes=?, hourly_rate=?, vat_id=?, language=? WHERE id=?")->execute($params_upd);
             log_event($pdo, 'CONTACT_EDITED', "Kontakt '".$name."' wurde aktualisiert.");
         } else {
-            $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes, hourly_rate, vat_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
+            $pdo->prepare("INSERT INTO contacts (name, company, email, phone, website, street, zip, city, country, contact_type, source, notes, hourly_rate, vat_id, language) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")->execute($params);
             log_event($pdo, 'CONTACT_ADDED', "Neuer Kontakt '".$name."' wurde angelegt.");
         }
     }
@@ -384,6 +394,18 @@ require 'includes/layout_start.php';
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" class="form-control form-control-sm"></div>
                   <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control form-control-sm" value="Deutschland"></div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-bold"><?= te('Sprache') ?></label>
+                    <select name="language" class="form-select form-select-sm">
+                      <?php // Leer = wie das Panel. Der Kunde kann im Portal
+                            // trotzdem umschalten; diese Angabe entscheidet, was
+                            // ihm geschickt wird. ?>
+                      <option value=""><?= te('wie das Panel') ?></option>
+                      <?php foreach (SPRACHEN as $_sp): ?>
+                        <option value="<?= htmlspecialchars($_sp) ?>"><?= htmlspecialchars(sprachname($_sp)) ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
                   <div class="col-md-6"><label class="form-label small fw-bold"><?= te('USt-IdNr.') ?></label><input type="text" name="vat_id" class="form-control form-control-sm" maxlength="30" placeholder="DE123456789"></div>
               </div>
               <div class="row g-3 bg-surface p-3 rounded shadow-sm border">
@@ -425,6 +447,18 @@ require 'includes/layout_start.php';
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" id="edit_zip" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" id="edit_city" class="form-control form-control-sm"></div>
                     <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" id="edit_country" class="form-control form-control-sm"></div>
+                  <div class="col-md-4">
+                    <label class="form-label small fw-bold"><?= te('Sprache') ?></label>
+                    <select name="language" id="edit_language" class="form-select form-select-sm">
+                      <?php // Leer = wie das Panel. Der Kunde kann im Portal
+                            // trotzdem umschalten; diese Angabe entscheidet, was
+                            // ihm geschickt wird. ?>
+                      <option value=""><?= te('wie das Panel') ?></option>
+                      <?php foreach (SPRACHEN as $_sp): ?>
+                        <option value="<?= htmlspecialchars($_sp) ?>"><?= htmlspecialchars(sprachname($_sp)) ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
                     <div class="col-md-6"><label class="form-label small fw-bold"><?= te('USt-IdNr.') ?></label><input type="text" name="vat_id" id="edit_vat_id" class="form-control form-control-sm" maxlength="30"></div>
                 </div>
                 
@@ -506,6 +540,9 @@ require 'includes/layout_start.php';
         document.getElementById('edit_city').value = c.city || '';
         document.getElementById('edit_country').value = c.country || '';
         document.getElementById('edit_vat_id').value = c.vat_id || '';
+        // Leerer Wert = "wie das Panel"; die Auswahl hat genau dafuer
+        // einen Eintrag mit leerem value.
+        document.getElementById('edit_language').value = c.language || '';
         document.getElementById('edit_contact_type').value = c.contact_type || 'Kunde';
         document.getElementById('edit_source').value = c.source || '';
         document.getElementById('edit_notes').value = c.notes || '';

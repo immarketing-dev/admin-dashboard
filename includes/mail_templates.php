@@ -25,6 +25,12 @@
  * 'vars' ist die Liste der Platzhalter, die der Editor als Hilfe anzeigt.
  * 'button' beschreibt die optionale Schaltfläche im Rahmen.
  */
+// Wegen t(): die Vorgabetexte der Vorlagen gehen seit der
+// Zweisprachigkeit durch die Uebersetzung. i18n.php prueft selbst mit
+// function_exists(), ob setting() und demo_einstellung() da sind, und
+// kommt auch ohne sie zurecht.
+require_once __DIR__ . '/i18n.php';
+
 function mail_templates(): array
 {
     return [
@@ -32,57 +38,45 @@ function mail_templates(): array
             'label'   => 'Meilenstein abgeschlossen',
             'hint'    => 'Geht an den Projektkontakt, sobald ein Meilenstein abgehakt wird.',
             'vars'    => ['kunde', 'projekt', 'meilenstein', 'firma'],
-            'subject' => 'Projektfortschritt: {{meilenstein}} | {{firma}}',
-            'body'    => "Hallo {{kunde}},\n\n"
-                       . "im Projekt „{{projekt}}“ ist ein weiterer Schritt geschafft:\n"
-                       . "{{meilenstein}}\n\n"
-                       . "Den aktuellen Stand können Sie jederzeit im Portal einsehen.",
-            'button'  => 'Zum Projektportal',
+            'subject' => t('Projektfortschritt: {{meilenstein}} | {{firma}}'),
+            'body'    => t("Hallo {{kunde}},\n\nim Projekt „{{projekt}}“ ist ein weiterer Schritt geschafft:\n{{meilenstein}}\n\nDen aktuellen Stand können Sie jederzeit im Portal einsehen."),
+            'button'  => t('Zum Projektportal'),
         ],
 
         'portal_access' => [
             'label'   => 'Portal-Zugang',
             'hint'    => 'Die Einladung mit Zugangslink und QR-Code, versendet aus den Kontakten.',
             'vars'    => ['kunde', 'nachricht', 'firma'],
-            'subject' => 'Ihr Zugang zum Projekt-Portal | {{firma}}',
-            'body'    => "Hallo {{kunde}},\n\n{{nachricht}}",
-            'button'  => 'Portal öffnen',
+            'subject' => t('Ihr Zugang zum Projekt-Portal | {{firma}}'),
+            'body'    => t("Hallo {{kunde}},\n\n{{nachricht}}"),
+            'button'  => t('Portal öffnen'),
         ],
 
         'ticket_reply' => [
             'label'   => 'Antwort auf eine Support-Anfrage',
             'hint'    => 'Geht an den Kunden, wenn Sie eine Anfrage öffentlich beantworten.',
             'vars'    => ['kunde', 'betreff', 'antwort', 'firma'],
-            'subject' => '{{firma}}: Neue Antwort auf Ihre Support-Anfrage',
-            'body'    => "Hallo {{kunde}},\n\n"
-                       . "zu Ihrer Anfrage „{{betreff}}“ gibt es eine Antwort:\n\n"
-                       . "{{antwort}}",
-            'button'  => 'Anfrage im Portal ansehen',
+            'subject' => t('{{firma}}: Neue Antwort auf Ihre Support-Anfrage'),
+            'body'    => t("Hallo {{kunde}},\n\nzu Ihrer Anfrage „{{betreff}}“ gibt es eine Antwort:\n\n{{antwort}}"),
+            'button'  => t('Anfrage im Portal ansehen'),
         ],
 
         'event_invite' => [
             'label'   => 'Termineinladung',
             'hint'    => 'Die Einladung aus dem Kalender, mit Kalenderdatei im Anhang.',
             'vars'    => ['kunde', 'titel', 'datum', 'ort', 'beschreibung', 'firma'],
-            'subject' => 'Einladung: {{titel}} am {{datum}}',
-            'body'    => "Hallo {{kunde}},\n\n"
-                       . "Sie sind zu folgendem Termin eingeladen:\n\n"
-                       . "{{titel}}\n{{datum}}\n{{ort}}\n\n"
-                       . "{{beschreibung}}",
-            'button'  => 'Termin im Kalender speichern',
+            'subject' => t('Einladung: {{titel}} am {{datum}}'),
+            'body'    => t("Hallo {{kunde}},\n\nSie sind zu folgendem Termin eingeladen:\n\n{{titel}}\n{{datum}}\n{{ort}}\n\n{{beschreibung}}"),
+            'button'  => t('Termin im Kalender speichern'),
         ],
 
         'password_reset' => [
             'label'   => 'Passwort zurücksetzen',
             'hint'    => 'Geht an Sie selbst, wenn Sie im Anmeldebild "Passwort vergessen" benutzen.',
             'vars'    => ['link', 'minuten', 'firma'],
-            'subject' => 'Passwort zurücksetzen | {{firma}}',
-            'body'    => "Sie haben angefordert, das Passwort für Ihr Admin-Panel zurückzusetzen.\n\n"
-                       . "Der Link gilt {{minuten}} Minuten und lässt sich nur einmal verwenden:\n"
-                       . "{{link}}\n\n"
-                       . "Haben Sie das nicht angefordert, können Sie diese Nachricht ignorieren. "
-                       . "Ihr bisheriges Passwort bleibt gültig, solange der Link nicht benutzt wird.",
-            'button'  => 'Neues Passwort festlegen',
+            'subject' => t('Passwort zurücksetzen | {{firma}}'),
+            'body'    => t("Sie haben angefordert, das Passwort für Ihr Admin-Panel zurückzusetzen.\n\nDer Link gilt {{minuten}} Minuten und lässt sich nur einmal verwenden:\n{{link}}\n\nHaben Sie das nicht angefordert, können Sie diese Nachricht ignorieren. Ihr bisheriges Passwort bleibt gültig, solange der Link nicht benutzt wird."),
+            'button'  => t('Neues Passwort festlegen'),
         ],
 
         // Die folgenden drei füllen ein Formular vor, das Sie vor dem
@@ -92,12 +86,8 @@ function mail_templates(): array
             'label'     => 'Angebot versenden (Vorbelegung)',
             'hint'      => 'Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.',
             'vars'      => ['kunde', 'nummer', 'betrag', 'anmerkungen', 'firma'],
-            'subject'   => 'Angebot {{nummer}} für {{kunde}}',
-            'body'      => "Sehr geehrte Damen und Herren,\n\n"
-                         . "anbei erhalten Sie unser Angebot {{nummer}} über {{betrag}} €.\n\n"
-                         . "{{anmerkungen}}\n\n"
-                         . "Bei Fragen stehe ich Ihnen gerne zur Verfügung.\n\n"
-                         . "Mit freundlichen Grüßen\n{{firma}}",
+            'subject'   => t('Angebot {{nummer}} für {{kunde}}'),
+            'body'      => t("Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unser Angebot {{nummer}} über {{betrag}} €.\n\n{{anmerkungen}}\n\nBei Fragen stehe ich Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\n{{firma}}"),
             'plaintext' => true,
         ],
 
@@ -105,11 +95,8 @@ function mail_templates(): array
             'label'     => 'Rechnung versenden (Vorbelegung)',
             'hint'      => 'Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.',
             'vars'      => ['kunde', 'nummer', 'betrag', 'faellig', 'firma'],
-            'subject'   => 'Rechnung {{nummer}}',
-            'body'      => "Sehr geehrte Damen und Herren,\n\n"
-                         . "anbei erhalten Sie unsere Rechnung {{nummer}} über {{betrag}} €, "
-                         . "zahlbar bis {{faellig}}.\n\n"
-                         . "Mit freundlichen Grüßen\n{{firma}}",
+            'subject'   => t('Rechnung {{nummer}}'),
+            'body'      => t("Sehr geehrte Damen und Herren,\n\nanbei erhalten Sie unsere Rechnung {{nummer}} über {{betrag}} €, zahlbar bis {{faellig}}.\n\nMit freundlichen Grüßen\n{{firma}}"),
             'plaintext' => true,
         ],
 
@@ -117,24 +104,39 @@ function mail_templates(): array
             'label'     => 'Zahlungserinnerung (Vorbelegung)',
             'hint'      => 'Füllt Betreff und Text im Versandfenster vor. Reiner Text, kein Rahmen.',
             'vars'      => ['kunde', 'nummer', 'betrag', 'faellig', 'firma'],
-            'subject'   => 'Zahlungserinnerung zu Rechnung {{nummer}}',
-            'body'      => "Sehr geehrte Damen und Herren,\n\n"
-                         . "unsere Rechnung {{nummer}} über {{betrag}} € war am {{faellig}} fällig "
-                         . "und ist bislang nicht ausgeglichen.\n\n"
-                         . "Sollten Sie die Zahlung bereits veranlasst haben, betrachten Sie "
-                         . "diese Nachricht bitte als gegenstandslos.\n\n"
-                         . "Mit freundlichen Grüßen\n{{firma}}",
+            'subject'   => t('Zahlungserinnerung zu Rechnung {{nummer}}'),
+            'body'      => t("Sehr geehrte Damen und Herren,\n\nunsere Rechnung {{nummer}} über {{betrag}} € war am {{faellig}} fällig und ist bislang nicht ausgeglichen.\n\nSollten Sie die Zahlung bereits veranlasst haben, betrachten Sie diese Nachricht bitte als gegenstandslos.\n\nMit freundlichen Grüßen\n{{firma}}"),
             'plaintext' => true,
         ],
     ];
 }
 
-/** Betreff einer Vorlage: gespeicherte Fassung, sonst Standard. */
+/**
+ * Der Einstellungsschluessel einer gespeicherten Vorlage.
+ *
+ * Deutsch behaelt den Schluessel ohne Sprachkuerzel. Das ist kein
+ * Schoenheitsfehler, sondern der Grund, warum diese Aenderung ohne
+ * Migration auskommt: was ein Betreiber bisher angepasst hat, steht
+ * dort und gilt weiter.
+ */
+function mail_template_key(string $key, string $feld, ?string $sprache = null): string
+{
+    $sprache = $sprache ?? lang();
+    return 'mailtpl_' . $key . ($sprache === 'de' ? '' : '_' . $sprache) . '_' . $feld;
+}
+
+/**
+ * Betreff einer Vorlage: gespeicherte Fassung, sonst Standard.
+ *
+ * Der Standard ist bereits uebersetzt - er geht in mail_templates()
+ * durch t(). Wer nichts anpasst, bekommt seine Mail also in der
+ * Sprache des Empfaengers, ohne etwas dafuer zu tun.
+ */
 function mail_template_subject(string $key): string
 {
     $tpl = mail_templates()[$key] ?? null;
     if ($tpl === null) return '';
-    return setting('mailtpl_' . $key . '_subject', $tpl['subject']);
+    return setting(mail_template_key($key, 'subject'), $tpl['subject']);
 }
 
 /** Nachrichtentext einer Vorlage: gespeicherte Fassung, sonst Standard. */
@@ -142,7 +144,49 @@ function mail_template_body(string $key): string
 {
     $tpl = mail_templates()[$key] ?? null;
     if ($tpl === null) return '';
-    return setting('mailtpl_' . $key . '_body', $tpl['body']);
+    return setting(mail_template_key($key, 'body'), $tpl['body']);
+}
+
+/**
+ * Fuehrt etwas in einer bestimmten Sprache aus.
+ *
+ * Fuer den Mailversand: dort gibt es keine Sitzung, aus der sich die
+ * Sprache des Empfaengers ergaebe, und die Sprache des Panels ist die
+ * des Absenders - nicht die des Lesers.
+ *
+ * Die vorige Sprache wird in jedem Fall wiederhergestellt, auch wenn
+ * der Aufruf mit einer Ausnahme endet: sonst liefe die restliche
+ * Seite in der Sprache des Empfaengers weiter.
+ *
+ * @template T
+ * @param callable():T $tun
+ * @return T
+ */
+function mail_in_sprache(?string $sprache, callable $tun)
+{
+    if ($sprache === null || $sprache === '' || $sprache === lang()) {
+        return $tun();
+    }
+
+    $vorher = lang();
+    sprache_setzen($sprache);
+    try {
+        return $tun();
+    } finally {
+        sprache_setzen($vorher);
+    }
+}
+
+/**
+ * Die Sprache eines Kontakts, oder null fuer "wie das Panel".
+ *
+ * Getrennt von der Abfrage der Kontaktdaten, weil die Aufrufer den
+ * Kontakt meist ohnehin schon geladen haben - dann genuegt das Feld.
+ */
+function mail_sprache(?string $roh): ?string
+{
+    $roh = trim((string) $roh);
+    return in_array($roh, SPRACHEN, true) ? $roh : null;
 }
 
 /**
@@ -231,7 +275,10 @@ function mail_frame(string $innerHtml, string $buttonLabel = '', string $buttonU
                   . nl2br($e($signatur)) . '</p>';
     }
 
-    return '<!DOCTYPE html><html lang="de"><body style="margin:0;padding:0;background:#f4f6f9;'
+    // lang aus der gerade gesetzten Sprache, nicht fest "de": ein
+    // Vorleseprogramm liest den Text sonst mit deutscher Aussprache
+    // vor, auch wenn Englisch darin steht.
+    return '<!DOCTYPE html><html lang="' . $e(lang()) . '"><body style="margin:0;padding:0;background:#f4f6f9;'
          . 'font-family:Arial,Helvetica,sans-serif;">'
          . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
          . 'style="background:#f4f6f9;padding:32px 16px;"><tr><td align="center">'
