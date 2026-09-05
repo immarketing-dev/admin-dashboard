@@ -384,6 +384,13 @@ if command -v php >/dev/null 2>&1; then
   # Mahnstufen und wiederkehrende Eintraege. Die gefaehrlichen Faelle
   # sind hier das doppelte Verschicken und die Reihe, die sich bei jedem
   # Lauf verdoppelt.
+  # Der Zahlungsabgleich. Der teure Fehler ist dort die falsch
+  # zugeordnete Zahlung: die Rechnung steht auf bezahlt, die Mahnung
+  # bleibt aus, und auffallen wuerde es zum Jahresabschluss.
+  if ! out=$(php tools/test_payments.php 2>&1); then
+    echo "ZAHLUNGEN: $out"
+    fail=1
+  fi
   # Die Datenauskunft. Eine, in der ein Bereich fehlt, sieht
   # vollstaendig aus - und eine mit fremden Daten ist selbst eine
   # Panne.

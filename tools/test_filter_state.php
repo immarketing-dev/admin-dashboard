@@ -114,6 +114,10 @@ $ausnahmen = [
     // Umwandlung. Einmalig, kein Filter - sie ueber die
     // Seitenaufrufe mitzuschleppen waere falsch.
     'highlight',
+    // Die Zahl gebuchter Rechnungen nach einem Kontoauszug-Abgleich.
+    // Sie gehoert zur Meldung und hat mit dem naechsten Aufruf
+    // nichts mehr zu tun.
+    'n',
 ];
 $fehlend = [];
 foreach (['tasks', 'contacts', 'finances', 'tickets', 'quotes', 'wiki'] as $seite) {

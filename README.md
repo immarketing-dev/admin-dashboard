@@ -328,6 +328,41 @@ After the last configured stage the panel stops. It does not escalate, and
 it adds no late fees or interest — those are decisions with legal
 consequences, not features.
 
+### Matching incoming payments
+
+The chain was almost closed: open items, reminder stages, automatic
+sending — only ticking off the money that arrived stayed manual. With
+twenty open invoices that means comparing a bank statement against a list
+twenty times, and eventually missing one.
+
+Finances → **Bank statement** takes a CAMT.053 file (the SEPA standard,
+which every bank offers) or your bank's CSV export. CSV columns are found
+by their headings rather than their position — Sparkasse, Volksbank and
+N26 all order them differently, and a fixed order would hold until the
+next bank.
+
+**Nothing is booked on its own.** The panel proposes, you tick. Putting an
+invoice on "paid" by mistake costs more than any minute saved: the
+reminder never goes out, and it surfaces at the annual accounts if at all.
+
+Three levels of confidence, and the reason is shown next to each row:
+
+- **certain** — the invoice number appears in the reference and the
+  amount matches. Only these are pre-ticked.
+- **possible** — the number is there but the amount differs (a part
+  payment), or amount and payer name line up.
+- **unclear** — only the amount matches, and only where it is unique.
+
+Where two open invoices carry the same amount and nothing else
+distinguishes them, **no proposal is made at all** — any choice would be a
+guess. One invoice is proposed at most once, and the numbered matches are
+allocated first, so a bare amount cannot take the invoice a reference
+clearly means.
+
+Booking only moves an invoice from open or overdue, so a second click on
+the same button books nothing twice, and it writes the payment date and
+reference into the notes.
+
 ### Recurring entries
 
 `is_recurring` used to be a label and nothing more: the switch said

@@ -7,6 +7,7 @@ require_once 'includes/numbering.php';
 require_once 'includes/quote_to_project.php';
 require_once 'includes/reminders.php';
 require_once 'includes/receipts.php';
+require_once 'includes/payments.php';
 require_once 'includes/recurring.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
@@ -292,9 +293,67 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 // ==========================================
 // AKTIONEN (MIT LOGGING)
 // ==========================================
+// Ergebnis des Kontoauszug-Abgleichs. Bleibt leer, solange keiner
+// hochgeladen wurde; die Seite zeigt den Block dann nicht.
+$abgleich = null;
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     csrf_check();
     $action = $_POST['action'];
+
+    // Kontoauszug einlesen. Bewusst OHNE Weiterleitung: die
+    // Vorschlagsliste ist das Ergebnis und wird unten mitgerendert.
+    // Sie irgendwo zwischenzuspeichern, nur um danach umzuleiten,
+    // hiesse einen Zustand zu führen, den niemand braucht.
+    if ($action === 'abgleich_lesen') {
+        $datei = $_FILES['auszug'] ?? null;
+
+        if (!$datei || ($datei['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $abgleich = ['fehler' => t('Es wurde keine Datei übertragen.')];
+        } elseif ((int) $datei['size'] > 8 * 1024 * 1024) {
+            $abgleich = ['fehler' => t('Die Datei ist größer als 8 MB. Kontoauszüge sind das nie.')];
+        } else {
+            $inhalt = (string) @file_get_contents($datei['tmp_name']);
+            $gelesen = zahlungen_lesen($inhalt, (string) $datei['name']);
+
+            if ($gelesen['fehler'] !== null) {
+                $abgleich = ['fehler' => $gelesen['fehler']];
+            } else {
+                $offene = offene_rechnungen_fuer_abgleich($pdo);
+                $abgleich = [
+                    'fehler'      => null,
+                    'format'      => $gelesen['format'],
+                    'gelesen'     => count($gelesen['zahlungen']),
+                    'offen'       => count($offene),
+                    'vorschlaege' => zahlungen_vorschlaege($gelesen['zahlungen'], $offene),
+                ];
+                log_event($pdo, 'PAYMENTS_MATCHED', count($gelesen['zahlungen'])
+                    . ' Zahlungseingänge aus einem Kontoauszug gelesen ('
+                    . $gelesen['format'] . ').');
+            }
+        }
+    }
+
+    // Die bestätigten Zuordnungen buchen. Nur die angehakten, und
+    // jede nur, solange sie noch offen ist - zahlung_buchen() prüft
+    // das in der Bedingung des UPDATE, damit ein zweiter Klick auf
+    // denselben Knopf nichts doppelt bucht.
+    if ($action === 'abgleich_buchen') {
+        $gebucht = 0;
+        foreach ((array) ($_POST['buchen'] ?? []) as $roh) {
+            $teile = explode('|', (string) $roh, 3);
+            $fid   = (int) ($teile[0] ?? 0);
+            if ($fid <= 0) {
+                continue;
+            }
+            $datum = ($teile[1] ?? '') !== '' ? $teile[1] : null;
+            if (zahlung_buchen($pdo, $fid, (string) ($teile[2] ?? ''), $datum)) {
+                $gebucht++;
+            }
+        }
+        log_event($pdo, 'PAYMENTS_BOOKED', $gebucht . ' Rechnung(en) über den Kontoauszug als bezahlt gebucht.');
+        filter_redirect('finances', ['msg' => 'booked', 'n' => $gebucht]);
+    }
 
     if ($action === 'save_record') {
         $id = !empty($_POST['record_id']) ? (int)$_POST['record_id'] : null;
@@ -853,6 +912,7 @@ if ($active_tab === 'quotes') {
     $header_actions = '
       <div class="d-flex gap-2">
           <a href="?export=csv" class="btn btn-outline-secondary btn-sm fw-bold px-3"><i class="bi bi-filetype-csv"></i> <span class="btn-label">CSV</span></a>
+          <button class="btn btn-outline-secondary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#abgleichModal"><i class="bi bi-bank"></i> <span class="btn-label">' . te('Kontoauszug') . '</span></button>
           ' . $beleg_export_html . '
           <button class="btn btn-primary btn-sm fw-bold px-3" data-bs-toggle="modal" data-bs-target="#invoiceModal"><i class="bi bi-file-earmark-plus"></i> ' . t('Rechnung <span class="btn-label-xs">erstellen</span>') . '</button>
           <button class="btn btn-outline-danger btn-sm" onclick="openFinanceModal(\'EXPENSE\')"><i class="bi bi-dash-circle"></i> <span class="btn-label">' . te('Ausgabe') . '</span></button>
@@ -885,6 +945,15 @@ require 'includes/layout_start.php';
       <div class="d-flex"><div class="toast-body fw-bold"><i class="bi bi-envelope-check-fill me-2"></i><?= te('Rechnung erfolgreich per E-Mail gesendet!') ?></div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
     </div>
+    <?php endif; ?>
+    <?php if(isset($_GET['msg']) && $_GET['msg'] === 'booked'): ?>
+      <?php $_n = (int) ($_GET['n'] ?? 0); ?>
+      <div class="alert <?= $_n > 0 ? 'alert-success' : 'alert-warning' ?> py-2 px-3 small">
+        <i class="bi <?= $_n > 0 ? 'bi-check-circle-fill' : 'bi-info-circle' ?> me-1"></i>
+        <?= $_n > 0
+            ? te('%d Rechnung(en) als bezahlt gebucht.', $_n)
+            : te('Es wurde nichts gebucht — die ausgewählten Rechnungen waren bereits bezahlt.') ?>
+      </div>
     <?php endif; ?>
     <?php if(isset($_GET['msg']) && $_GET['msg'] === 'reminder_sent'): ?>
     <div class="toast show align-items-center text-bg-success border-0 shadow-lg" role="alert" aria-atomic="true">
@@ -1085,6 +1154,132 @@ require 'includes/layout_start.php';
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="abgleichModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="POST" enctype="multipart/form-data">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="abgleich_lesen">
+            <div class="modal-header">
+              <h5 class="modal-title"><?= te('Kontoauszug abgleichen') ?></h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted small">
+                <?= te('Laden Sie den Kontoauszug als CAMT.053 (XML) oder als CSV-Export Ihrer Bank hoch. Das Panel schlägt vor, welcher Eingang zu welcher offenen Rechnung gehört — gebucht wird erst, was Sie danach ankreuzen.') ?>
+              </p>
+              <p class="text-muted small">
+                <?= te('Die Datei wird nur gelesen und nicht gespeichert.') ?>
+              </p>
+              <input type="file" name="auszug" class="form-control" accept=".xml,.csv,.txt" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
+              <button type="submit" class="btn btn-primary"><?= te('Einlesen') ?></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <?php if ($abgleich !== null): ?>
+    <div class="bg-surface rounded shadow-sm p-4 mb-4">
+      <h6 class="fw-bold mb-3 text-muted small text-uppercase">
+        <i class="bi bi-bank me-1"></i><?= te('Zahlungseingänge abgleichen') ?>
+      </h6>
+
+      <?php if (!empty($abgleich['fehler'])): ?>
+        <div class="alert alert-danger py-2 px-3 small mb-0">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          <?= htmlspecialchars($abgleich['fehler']) ?>
+        </div>
+      <?php else: ?>
+        <p class="text-muted small">
+          <?= te('%1$d Zahlungseingänge aus der Datei (%2$s), %3$d offene Rechnungen.',
+                 $abgleich['gelesen'], $abgleich['format'], $abgleich['offen']) ?>
+          <strong><?= te('Gebucht wird nur, was Sie ankreuzen.') ?></strong>
+        </p>
+
+        <form method="POST">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="abgleich_buchen">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr class="table-label">
+                  <th style="width:34px;"></th>
+                  <th><?= te('Zahlungseingang') ?></th>
+                  <th class="text-end"><?= te('Betrag') ?></th>
+                  <th><?= te('Vorschlag') ?></th>
+                </tr>
+              </thead>
+              <tbody>
+              <?php foreach ($abgleich['vorschlaege'] as $_i => $_v): ?>
+                <?php
+                  $_t = $_v['treffer'];
+                  // Die Stufe entscheidet ueber Farbe und Vorauswahl. Nur
+                  // ein sicherer Treffer ist vorangehakt - alles andere
+                  // soll bewusst angeklickt werden.
+                  $_farbe = match ($_v['sicherheit']) {
+                      ZAHLUNG_SICHER   => 'text-success',
+                      ZAHLUNG_MOEGLICH => 'text-warning',
+                      ZAHLUNG_UNKLAR   => 'text-danger',
+                      default          => 'text-muted',
+                  };
+                ?>
+                <tr>
+                  <td>
+                    <?php if ($_t !== null): ?>
+                      <input type="checkbox" class="form-check-input" name="buchen[]"
+                             <?= $_v['sicherheit'] === ZAHLUNG_SICHER ? 'checked' : '' ?>
+                             value="<?= htmlspecialchars((int) $_t['id'] . '|'
+                                     . (string) ($_v['zahlung']['datum'] ?? '') . '|'
+                                     . mb_substr((string) $_v['zahlung']['zweck'], 0, 140)) ?>">
+                    <?php endif; ?>
+                  </td>
+                  <td class="small">
+                    <div class="fw-semibold text-strong-c">
+                      <?= htmlspecialchars($_v['zahlung']['name'] !== '' ? $_v['zahlung']['name'] : t('Ohne Namen')) ?>
+                    </div>
+                    <div class="text-muted">
+                      <?php if (!empty($_v['zahlung']['datum'])): ?>
+                        <?= htmlspecialchars(date('d.m.Y', strtotime($_v['zahlung']['datum']))) ?> ·
+                      <?php endif; ?>
+                      <?= htmlspecialchars(mb_strimwidth((string) $_v['zahlung']['zweck'], 0, 70, '…')) ?>
+                    </div>
+                  </td>
+                  <td class="text-end fw-semibold report-num">
+                    <?= number_format((float) $_v['zahlung']['betrag'], 2, ',', '.') ?> €
+                  </td>
+                  <td class="small">
+                    <?php if ($_t !== null): ?>
+                      <div class="fw-semibold text-strong-c">
+                        <?= htmlspecialchars((string) ($_t['invoice_number'] ?: $_t['title'])) ?>
+                        <span class="text-muted">· <?= htmlspecialchars((string) $_t['kunde']) ?></span>
+                      </div>
+                    <?php endif; ?>
+                    <div class="<?= $_farbe ?>"><?= htmlspecialchars($_v['grund']) ?></div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+              <?php if ($abgleich['vorschlaege'] === []): ?>
+                <tr><td colspan="4" class="text-muted small">
+                  <?= te('In der Datei stand kein Zahlungseingang.') ?>
+                </td></tr>
+              <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+          <?php if ($abgleich['vorschlaege'] !== []): ?>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check2 me-1"></i><?= te('Angekreuzte als bezahlt buchen') ?>
+            </button>
+          <?php endif; ?>
+        </form>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
 
     <div class="bg-surface rounded shadow-sm p-4 mb-4">
         <h6 class="fw-bold mb-3 text-muted small text-uppercase"><?= te('Einnahmen vs. Ausgaben —') ?> <?= htmlspecialchars($chart_title) ?></h6>

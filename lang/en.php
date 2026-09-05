@@ -1018,6 +1018,41 @@ return [
         => 'Backups',
     'Datenauskunft'
         => 'Data export',
+    // ── Zahlungsabgleich (finances.php) ──────────────────────────────
+    'Kontoauszug'
+        => 'Bank statement',
+    'Kontoauszug abgleichen'
+        => 'Match a bank statement',
+    'Zahlungseingänge abgleichen'
+        => 'Matching incoming payments',
+    'Laden Sie den Kontoauszug als CAMT.053 (XML) oder als CSV-Export Ihrer Bank hoch. Das Panel schlägt vor, welcher Eingang zu welcher offenen Rechnung gehört — gebucht wird erst, was Sie danach ankreuzen.'
+        => 'Upload the statement as CAMT.053 (XML) or as your bank\'s CSV export. The panel proposes which payment belongs to which open invoice - nothing is booked until you tick it.',
+    'Die Datei wird nur gelesen und nicht gespeichert.'
+        => 'The file is only read, never stored.',
+    'Einlesen'
+        => 'Read it',
+    'Es wurde keine Datei übertragen.'
+        => 'No file was uploaded.',
+    'Die Datei ist größer als 8 MB. Kontoauszüge sind das nie.'
+        => 'The file is larger than 8 MB. Bank statements never are.',
+    '%1$d Zahlungseingänge aus der Datei (%2$s), %3$d offene Rechnungen.'
+        => '%1$d incoming payments in the file (%2$s), %3$d open invoices.',
+    'Gebucht wird nur, was Sie ankreuzen.'
+        => 'Only what you tick gets booked.',
+    'Zahlungseingang'
+        => 'Payment',
+    'Vorschlag'
+        => 'Proposal',
+    'Ohne Namen'
+        => 'No name given',
+    'In der Datei stand kein Zahlungseingang.'
+        => 'The file held no incoming payment.',
+    'Angekreuzte als bezahlt buchen'
+        => 'Book the ticked ones as paid',
+    '%d Rechnung(en) als bezahlt gebucht.'
+        => '%d invoice(s) booked as paid.',
+    'Es wurde nichts gebucht — die ausgewählten Rechnungen waren bereits bezahlt.'
+        => 'Nothing was booked - the selected invoices were already paid.',
     // ── Beschriftungen, die als roher Text in einer Zeichenkette
     //    standen und deshalb nie uebersetzt wurden ────────────────
     'Board durchsuchen...'
