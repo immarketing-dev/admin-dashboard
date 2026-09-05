@@ -402,7 +402,7 @@ if (!$envExists) {
         pf_add('Datenbank', 'Server-Version', 'FAIL', 'Konnte nicht ermittelt werden: ' . pf_mask_secrets($e->getMessage()));
     }
 
-    // -- Tabellen: welche der 25 erwarteten existieren --------------------
+    // -- Tabellen: welche der 26 erwarteten existieren --------------------
     // task_contacts und project_comments standen hier lange nicht drin,
     // obwohl install/schema.sql sie anlegt: sie kamen ueber die
     // Migrationen 5 und 6 dazu, und diese Liste wurde nicht mitgezogen.
@@ -415,7 +415,7 @@ if (!$envExists) {
         'project_comments', 'client_assets',
         'time_entries', 'finances', 'quotes', 'support_tickets', 'ticket_notes',
         'wiki_articles', 'wiki_attachments', 'wiki_client_shares',
-        'calendar_events', 'event_contacts', 'monitored_urls',
+        'calendar_events', 'event_contacts', 'monitored_urls', 'url_checks',
     ];
     try {
         foreach ($pdo->query('SHOW TABLES') as $row) {

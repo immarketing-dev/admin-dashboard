@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 14;
+const SCHEMA_VERSION = 15;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -524,6 +524,34 @@ function migrations(): array
             'ALTER TABLE quotes ADD COLUMN converted_task_id INT DEFAULT NULL',
             'ALTER TABLE quotes ADD CONSTRAINT fk_quotes_task'
             . ' FOREIGN KEY (converted_task_id) REFERENCES tasks(id) ON DELETE SET NULL',
+        ],
+
+        // Version 15: der Monitor bekommt ein Gedaechtnis.
+        //
+        // index.php fragte bei jedem Dashboardaufruf alle URLs
+        // gleichzeitig ab und warf das Ergebnis danach weg. Kein
+        // Verlauf, keine Quote, keine Nachricht bei Ausfall - ein
+        // Kundenserver konnte drei Tage weg sein, und wer in der Zeit
+        // nicht hinsah, erfuhr es nicht.
+        //
+        // Mit dem Verlauf wird zweierlei moeglich: eine Quote, und der
+        // Vergleich mit der vorigen Messung. Erst der macht einen
+        // Ausfall ueberhaupt meldbar - ohne ihn kaeme entweder bei jeder
+        // Messung eine Mail oder gar keine.
+        15 => [
+            'CREATE TABLE IF NOT EXISTS url_checks ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' url_id INT NOT NULL,'
+            . " status VARCHAR(10) NOT NULL DEFAULT 'online',"
+            . ' http_code INT NOT NULL DEFAULT 0,'
+            . ' response_ms INT NOT NULL DEFAULT 0,'
+            . ' error VARCHAR(255) DEFAULT NULL,'
+            . ' checked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' KEY idx_checks_url (url_id, id),'
+            . ' KEY idx_checks_time (checked_at),'
+            . ' CONSTRAINT fk_checks_url FOREIGN KEY (url_id)'
+            . '   REFERENCES monitored_urls(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
         ],
     ];
 }

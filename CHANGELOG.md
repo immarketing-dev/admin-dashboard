@@ -9,6 +9,44 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Uptime with a history, and a notice when something goes down.** The
+  monitor asked every URL on each dashboard view and threw the answer
+  away. No history, no availability figure, no notice — a client's server
+  could be gone for three days and nobody found out.
+
+  Schema version 15 adds `url_checks`. Measuring moves into the cron run,
+  which makes two things possible that a snapshot cannot: an availability
+  figure, and a comparison with the previous measurement. The comparison
+  is what makes an outage reportable at all — without it either every
+  measurement mails or none does.
+
+  A mail goes out on a **state change only**, down and up again. "Slow"
+  stays silent: a page that takes four seconds once is not an incident,
+  and a notice that arrives too often stops being read. The first
+  measurement never sends — there is no previous state to change from,
+  and otherwise setting the monitor up would mail once per address that
+  happens to be quiet.
+
+  The widget shows availability over 24 hours and one bar per
+  measurement. Without a cron run it still measures on the page: a panel
+  that showed nothing would be worse than the wait.
+
+  47 checks in `tools/test_uptime.php`.
+
+### Fixed
+- **`tasks.php` checked every client website one at a time, on every page
+  load.** Five-second timeout, sequentially, for a coloured dot beside the
+  project title — with twenty projects that is up to a hundred seconds.
+  And it had **no demo guard**, so in demo mode the server would fetch
+  arbitrary addresses without anyone being logged in; check 4 of
+  `tools/check_demo.php` only ever looked at `index.php`, so it never saw
+  this one.
+
+  Both are fixed: the check runs through the same parallel measurement as
+  the monitor (one pass, six seconds at most, guard included), and check 4
+  now walks every file that calls `curl_init()` rather than one named
+  file — so a third such place would be caught too.
+
 - **From quote to project.** There was "quote to invoice" but not "quote to
   project": whoever won the work typed the line items they had just
   written out a second time, now as milestones.

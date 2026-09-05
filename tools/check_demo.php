@@ -255,14 +255,33 @@ echo "=== Pruefung 4: der Uptime-Abruf schweigt in der Demo ===\n";
 // Der einzige Zugriff nach aussen, der ohne POST zustande kommt. Ohne
 // Sperre liesse sich der Server ueber die Ueberwachungsliste auf
 // beliebige Adressen ansetzen.
-$index = file_get_contents($wurzel . '/index.php');
-$pos_demo = strpos($index, 'demo_mode()');
-$pos_curl = strpos($index, 'curl_init');
-if ($pos_demo !== false && $pos_curl !== false && $pos_demo < $pos_curl) {
-    echo "OK: index.php prueft den Demo-Modus vor dem ersten curl_init().\n";
-} else {
-    echo "FEHLER: in index.php steht die Demo-Pruefung nicht vor curl_init().\n";
+// Der Abruf ist mit Schemaversion 15 nach includes/uptime.php gezogen -
+// der Cron-Lauf braucht ihn ebenso wie die Startseite. Die Pruefung
+// folgt ihm dorthin, und zwar ueber alle Dateien, die curl_init()
+// ueberhaupt aufrufen: so faellt auch eine dritte Stelle auf, die
+// jemand spaeter ergaenzt.
+$curl_dateien = [];
+foreach (array_merge(glob($wurzel . '/*.php'), glob($wurzel . '/includes/*.php')) as $pfad) {
+    $code = code_ohne_kommentare($pfad);
+    if (strpos($code, 'curl_init') === false) continue;
+
+    $pos_demo = strpos($code, 'demo_mode()');
+    $pos_curl = strpos($code, 'curl_init');
+    $curl_dateien[] = basename($pfad);
+
+    if ($pos_demo === false || $pos_demo > $pos_curl) {
+        echo 'FEHLER: in ' . basename($pfad) . " steht die Demo-Pruefung nicht vor curl_init().\n";
+        $fail = 1;
+    }
+}
+if ($curl_dateien === []) {
+    echo "FEHLER: keine Datei ruft curl_init() auf - die Pruefung greift ins Leere.\n";
     $fail = 1;
+} elseif ($fail === 0) {
+    echo 'OK: ' . implode(', ', $curl_dateien)
+        . (count($curl_dateien) === 1 ? ' prueft' : ' pruefen')
+        . " den Demo-Modus vor curl_init().
+";
 }
 echo "\n";
 

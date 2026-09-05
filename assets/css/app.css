@@ -1427,3 +1427,26 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 @media (prefers-reduced-motion: reduce) {
     .task-card-highlight { animation: none; }
 }
+
+/* Der Verlauf des Monitors als Balkenreihe. Bewusst kein Diagramm: eine
+   Bibliothek fuer vierundzwanzig Striche waere unverhaeltnismaessig, und
+   auf einer Leinwand liessen sich die Tokenwerte nicht aufloesen (siehe
+   die Anmerkung zu den Balken der Auswertungsseite). */
+.uptime-spark {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 14px;
+    margin-top: 6px;
+}
+.uptime-tick {
+    flex: 1 1 auto;
+    min-width: 2px;
+    border-radius: 1px;
+    background: var(--accent-success);
+    height: 100%;
+}
+/* Langsam heisst: geantwortet, aber zu spaet - halbe Hoehe, damit die
+   Reihe auf einen Blick zeigt, wo es hakte. */
+.uptime-tick-slow    { background: var(--accent-warning); height: 60%; }
+.uptime-tick-offline { background: var(--accent-danger);  height: 100%; }

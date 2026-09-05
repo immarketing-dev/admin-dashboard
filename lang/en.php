@@ -1675,4 +1675,7 @@ return [
         => "Go to the project from this quote",
     "Aus Angebot %s ein Projekt anlegen? Jede Position wird ein Meilenstein."
         => "Create a project from quote %s? Every line item becomes a milestone.",
+    // ── Erreichbarkeit mit Verlauf ───────────────────────────────────
+    "Verfügbarkeit der letzten 24 Stunden, %d Messungen"
+        => "Availability over the last 24 hours, %d checks",
 ];

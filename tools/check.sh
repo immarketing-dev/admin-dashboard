@@ -321,6 +321,13 @@ if command -v php >/dev/null 2>&1; then
     echo "MAHNUNG/WIEDERHOLUNG: $out"
     fail=1
   fi
+  # Erreichbarkeit: die heikelste Stelle ist die Meldung. Sie muss genau
+  # beim Zustandswechsel kommen - nicht bei jeder Messung, und nicht bei
+  # der ersten, wo es keinen Vorzustand gibt.
+  if ! out=$(php tools/test_uptime.php 2>&1); then
+    echo "ERREICHBARKEIT: $out"
+    fail=1
+  fi
   # Angebot zu Projekt. Der Fall, an dem es still schiefginge, ist das
   # ZWEITE Projekt aus demselben Angebot.
   if ! out=$(php tools/test_quote_to_project.php 2>&1); then

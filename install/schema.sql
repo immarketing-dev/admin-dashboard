@@ -446,6 +446,33 @@ CREATE TABLE IF NOT EXISTS wiki_client_shares (
   UNIQUE KEY uq_share (article_id, contact_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Der Verlauf des Monitors. Vorher wurde bei jedem Dashboardaufruf
+-- gemessen und das Ergebnis weggeworfen: keine Quote, kein Verlauf, und
+-- vor allem keine Moeglichkeit, einen Ausfall zu MELDEN - dafuer braucht
+-- es den Vergleich mit der vorigen Messung.
+--
+-- ON DELETE CASCADE: wird eine Adresse aus der Ueberwachung genommen,
+-- hat ihr Verlauf keinen Adressaten mehr.
+CREATE TABLE IF NOT EXISTS url_checks (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  url_id      INT NOT NULL,
+  -- 'online', 'slow' oder 'offline'. Drei Stufen, weil zwei zu wenig
+  -- sind: eine Seite, die nach vier Sekunden antwortet, ist nicht
+  -- "online" im Sinne von "in Ordnung".
+  status      VARCHAR(10) NOT NULL DEFAULT 'online',
+  http_code   INT NOT NULL DEFAULT 0,
+  response_ms INT NOT NULL DEFAULT 0,
+  error       VARCHAR(255) DEFAULT NULL,
+  checked_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Auf (url_id, id): die letzte Messung je Adresse wird ueber die
+  -- hoechste Kennung gesucht, nicht ueber den Zeitstempel - ein
+  -- Cron-Lauf misst mehrere Adressen in derselben Sekunde.
+  KEY idx_checks_url (url_id, id),
+  KEY idx_checks_time (checked_at),
+  CONSTRAINT fk_checks_url FOREIGN KEY (url_id)
+    REFERENCES monitored_urls(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- -- Calendar --------------------------------------------------------------
 
 -- Taken verbatim from d:\Downloads\admin-dashboard\calendar.php:26
@@ -501,7 +528,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '14')
+INSERT INTO settings (k, v) VALUES ('schema_version', '15')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

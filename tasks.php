@@ -6,6 +6,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once __DIR__ . '/includes/uptime.php';
 require_once __DIR__ . '/includes/mail_log.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
@@ -13,20 +14,45 @@ require_once 'includes/filter_state.php';
 require_once 'includes/task_members.php';
 require_once 'includes/upload_helper.php';
 
-// HILFSFUNKTION: UPTIME CHECK
-function checkUptime($url) {
-    if (!$url) return false;
-    $url = (preg_match("~^(?:f|ht)tps?://~i", $url)) ? $url : "https://" . $url;
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_NOBODY, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AdminMonitor/1.0');
-    curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    return ($code >= 200 && $code < 400);
+/**
+ * Erreichbarkeit der Kundenwebsites - fuer den Punkt neben dem
+ * Projekttitel.
+ *
+ * Hier stand checkUptime(), die je Projekt EINZELN und NACHEINANDER
+ * abfragte, mit fuenf Sekunden Zeitgrenze. Bei zwanzig Projekten mit
+ * hinterlegter Adresse waren das im schlechtesten Fall hundert Sekunden
+ * Ladezeit - fuer einen farbigen Punkt. Ausserdem fehlte der
+ * Demo-Riegel: dort haette der Server ohne Anmeldung beliebige Adressen
+ * abgerufen.
+ *
+ * uptime_messen() gibt dieselbe Auskunft in einem Durchgang: alle
+ * Adressen gleichzeitig, hoechstens sechs Sekunden fuer alle zusammen,
+ * und mit dem Riegel.
+ *
+ * @param array<int, ?string> $websites task_id => Adresse
+ * @return array<int, ?bool>  task_id => online, null ohne Adresse
+ */
+function projekt_websites_pruefen(array $websites): array {
+    $abzufragen = [];
+    foreach ($websites as $task_id => $adresse) {
+        $adresse = trim((string) $adresse);
+        if ($adresse === '') continue;
+        // Ohne Schema nimmt curl die Adresse nicht an.
+        if (!preg_match("~^(?:f|ht)tps?://~i", $adresse)) {
+            $adresse = 'https://' . $adresse;
+        }
+        $abzufragen[$task_id] = ['url_link' => $adresse];
+    }
+
+    $ergebnis = uptime_messen($abzufragen);
+
+    $aus = [];
+    foreach ($websites as $task_id => $adresse) {
+        $aus[$task_id] = isset($ergebnis[$task_id])
+            ? (bool) $ergebnis[$task_id]['online']
+            : null;
+    }
+    return $aus;
 }
 
 // ==========================================
@@ -466,6 +492,13 @@ if (!empty($task_ids)) {
 $now = new DateTime();
 $now->setTime(0, 0, 0);
 
+// Die Erreichbarkeit aller Kundenwebsites in EINEM Durchgang, vor der
+// Schleife. Vorher fragte jede Runde einzeln ab und wartete bis zu
+// fuenf Sekunden - bei zwanzig Projekten also bis zu hundert.
+$website_status = projekt_websites_pruefen(
+    array_column($tasks, 'contact_website', 'id')
+);
+
 foreach ($tasks as &$task) {
     $raw_milestones = $milestones_map[$task['id']] ?? [];
     foreach ($raw_milestones as &$ms_item) {
@@ -477,7 +510,7 @@ foreach ($tasks as &$task) {
     $task['tracked_minutes'] = $time_map[$task['id']] ?? 0;
     $total = count($task['milestones']); $done = 0; foreach($task['milestones'] as $m) if($m['is_completed']) $done++;
     $task['progress'] = $total > 0 ? round(($done / $total) * 100) : 0;
-    $task['is_online'] = ($task['contact_website']) ? checkUptime($task['contact_website']) : null;
+    $task['is_online'] = $website_status[$task['id']] ?? null;
 
     if (!empty($task['start_date']) && strpos($task['start_date'], '0000') === false) {
         $start_d = new DateTime($task['start_date']);

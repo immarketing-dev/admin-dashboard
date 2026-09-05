@@ -23,6 +23,7 @@ require_once __DIR__ . '/reminders.php';
 require_once __DIR__ . '/recurring.php';
 require_once __DIR__ . '/auth_reset.php';
 require_once __DIR__ . '/mail_log.php';
+require_once __DIR__ . '/uptime.php';
 
 /**
  * Markiert offene Rechnungen nach Fristablauf als überfällig.
@@ -177,6 +178,37 @@ function cron_reset_token(PDO $pdo): array
 }
 
 /**
+ * Misst die überwachten Adressen und meldet Zustandswechsel.
+ *
+ * Der Grund, warum das hierher gehört und nicht auf die Startseite: dort
+ * lief es nur, während jemand hinsah. Ein Ausfall am Wochenende fiel
+ * damit erst am Montag auf - und auch dann nur, wenn er noch andauerte.
+ *
+ * @return array{titel: string, ok: bool, meldung: string}
+ */
+function cron_uptime(PDO $pdo, string $empfaenger, string $firma): array
+{
+    $urls = (int) $pdo->query('SELECT COUNT(*) FROM monitored_urls')->fetchColumn();
+    if ($urls === 0) {
+        return ['titel' => 'Erreichbarkeit', 'ok' => true, 'meldung' => 'Keine Adressen überwacht.'];
+    }
+
+    $ergebnis = uptime_durchlauf($pdo, $empfaenger, $firma);
+    $weg      = uptime_aufraeumen($pdo);
+
+    $meldung = $ergebnis['gemessen'] . ' Adresse(n) geprüft, '
+             . $ergebnis['offline'] . ' nicht erreichbar.';
+    if ($ergebnis['meldungen'] > 0) {
+        $meldung .= ' ' . $ergebnis['meldungen'] . ' Meldung(en) verschickt.';
+    }
+    if ($weg > 0) {
+        $meldung .= ' ' . $weg . ' alte Messung(en) entfernt.';
+    }
+
+    return ['titel' => 'Erreichbarkeit', 'ok' => true, 'meldung' => $meldung];
+}
+
+/**
  * Führt alle Aufgaben aus und sammelt die Ergebnisse.
  *
  * Jede Aufgabe einzeln abgesichert: fällt eine aus - eine fehlende
@@ -199,6 +231,7 @@ function cron_ausfuehren(PDO $pdo, array $umgebung): array
         fn() => cron_mahnungen($pdo, $stufen, $firma, $wurzel, $jetzt),
         fn() => cron_protokoll_kuerzen($pdo),
         fn() => cron_reset_token($pdo),
+        fn() => cron_uptime($pdo, (string) ($umgebung['admin_email'] ?? ''), $firma),
     ];
 
     $ergebnisse = [];

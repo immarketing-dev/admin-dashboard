@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once __DIR__ . '/includes/logging.php';
+require_once 'includes/uptime.php';
 require_once 'includes/auth.php';
 require_once 'includes/dashboard_layout.php';
 
@@ -108,70 +109,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 // ==========================================
 // PARALLELER UPTIME CHECK (curl_multi)
 // ==========================================
-function getParallelSiteStatuses(array $urls): array {
-    if (empty($urls)) return [];
+/**
+ * Der Zustand der ueberwachten Adressen fuer die Anzeige.
+ *
+ * Vorher stand hier getParallelSiteStatuses(), die bei JEDEM
+ * Dashboardaufruf alle Adressen abfragte - bis zu sechs Sekunden im
+ * Seitenaufbau, und das Ergebnis wurde danach weggeworfen.
+ *
+ * Jetzt misst der Cron-Lauf (includes/uptime.php), und die Seite liest
+ * nur noch. Sind die gespeicherten Werte zu alt - oder gibt es fuer eine
+ * neu eingetragene Adresse noch keine -, misst sie selbst wie bisher.
+ * Ohne diesen Rueckfall zeigte eine Installation ohne eingerichteten
+ * Cron gar nichts mehr an, und das waere schlechter als die Wartezeit.
+ *
+ * @return array{status: array, verlauf: array, gemessen: bool}
+ */
+function dashboard_uptime(PDO $pdo, array $urls): array {
+    $verlauf = [];
+    try {
+        $letzte  = uptime_letzte($pdo);
+        $verlauf = uptime_verlauf($pdo);
+    } catch (PDOException $e) {
+        // url_checks gibt es erst ab Schemaversion 15. Eine noch nicht
+        // migrierte Datenbank soll die Startseite nicht kippen.
+        $letzte = [];
+    }
 
-    // Die einzige Stelle im Ansehen-Pfad, die nach außen greift. Ohne
-    // Anmeldung ließe sich der Server damit auf beliebige Adressen
-    // ansetzen - auch auf interne. In der Demo wird deshalb nichts
-    // abgerufen, sondern ein aus der Adresse abgeleiteter Zustand
-    // gezeigt: gleichbleibend über Seitenaufrufe hinweg, und ohne die
-    // bis zu sechs Sekunden Wartezeit im ersten Eindruck.
-    if (demo_mode()) {
-        $demo = [];
-        foreach ($urls as $key => $url_row) {
-            $h = crc32((string)($url_row['url_link'] ?? $key));
-            $demo[$key] = ['online' => true, 'code' => 200,
-                            'time' => 90 + ($h % 380), 'error' => ''];
+    if (uptime_frisch($letzte, $urls, date('Y-m-d H:i:s'))) {
+        $status = [];
+        foreach ($urls as $key => $url) {
+            $z = $letzte[(int) $url['id']];
+            $status[$key] = [
+                'online' => $z['status'] !== 'offline',
+                'code'   => (int) $z['http_code'],
+                'time'   => (int) $z['response_ms'],
+                'error'  => (string) ($z['error'] ?? ''),
+            ];
         }
-        return $demo;
+        return ['status' => $status, 'verlauf' => $verlauf, 'gemessen' => false];
     }
 
-    $mh         = curl_multi_init();
-    $handles    = [];
-    $start_times = [];
-
-    foreach ($urls as $key => $url_row) {
-        $ch = curl_init($url_row['url_link']);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_NOBODY         => true,
-            CURLOPT_TIMEOUT        => 6,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 AdminMonitor/1.0',
-        ]);
-        $start_times[$key] = microtime(true);
-        $handles[$key]     = $ch;
-        curl_multi_add_handle($mh, $ch);
-    }
-
-    $running = null;
-    do {
-        curl_multi_exec($mh, $running);
-        curl_multi_select($mh, 0.1);
-    } while ($running > 0);
-
-    $results = [];
-    foreach ($handles as $key => $ch) {
-        $code      = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $err       = curl_error($ch);
-        $time_ms   = round((microtime(true) - $start_times[$key]) * 1000);
-        $is_online = ($code >= 200 && $code < 400);
-
-        $results[$key] = [
-            'online' => $is_online,
-            'code'   => $code,
-            'time'   => $time_ms,
-            'error'  => $err,
-        ];
-        curl_multi_remove_handle($mh, $ch);
-        curl_close($ch);
-    }
-    curl_multi_close($mh);
-
-    return $results;
+    return ['status' => uptime_messen($urls), 'verlauf' => $verlauf, 'gemessen' => true];
 }
 
 // ── AJAX WIDGET PARTIALS ─────────────────────────────────────────────────────
@@ -255,7 +233,9 @@ if (isset($_GET['ajax_widget'])) {
     if ($aw === 'monitor') {
         header('Content-Type: text/html; charset=utf-8');
         $monitored_urls  = $pdo->query("SELECT * FROM monitored_urls ORDER BY url_name ASC")->fetchAll(PDO::FETCH_ASSOC);
-        $uptime_statuses = getParallelSiteStatuses($monitored_urls);
+        $_up             = dashboard_uptime($pdo, $monitored_urls);
+        $uptime_statuses = $_up['status'];
+        $uptime_verlauf  = $_up['verlauf'];
         if (count($monitored_urls) > 0):
             foreach ($monitored_urls as $key => $url):
                 $status = $uptime_statuses[$key];
@@ -273,10 +253,31 @@ if (isset($_GET['ajax_widget'])) {
                     </div>
                     <button type="button" class="trash-btn" onclick="triggerDeleteMonitor(<?=$url['id']?>)"><i class="bi bi-trash"></i></button>
                 </div>
+                <?php
+                  // Die Quote der letzten 24 Stunden, sofern der Cron-Lauf
+                  // schon gemessen hat. Ohne Verlauf bleibt die Stelle
+                  // leer, statt "100 %" zu behaupten.
+                  $_v = $uptime_verlauf[(int)$url['id']] ?? null;
+                ?>
                 <div class="uptime-stats">
                     <span class="<?=!$status['online'] ? 'text-danger fw-bold' : ''?>"><i class="bi bi-activity"></i> <?=$status_text?></span>
                     <?php if($status['code'] > 0): ?><span><i class="bi bi-stopwatch"></i> <?=$status['time']?> ms</span><?php endif; ?>
+                    <?php if($_v !== null && $_v['quote'] !== null): ?>
+                      <span title="<?= te('Verfügbarkeit der letzten 24 Stunden, %d Messungen', $_v['messungen']) ?>">
+                        <i class="bi bi-graph-up"></i> <?= number_format($_v['quote'], 1, ',', '.') ?> %
+                      </span>
+                    <?php endif; ?>
                 </div>
+                <?php if($_v !== null && count($_v['punkte']) > 1): ?>
+                  <?php /* Der Verlauf als Balkenreihe. aria-hidden: die Zahl
+                           daneben sagt dasselbe, und einzelne Striche
+                           vorzulesen hilft niemandem. */ ?>
+                  <div class="uptime-spark" aria-hidden="true">
+                    <?php foreach($_v['punkte'] as $_p): ?>
+                      <span class="uptime-tick uptime-tick-<?= htmlspecialchars($_p) ?>"></span>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
             </div>
         <?php endforeach; else: ?>
             <div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c mt-2">

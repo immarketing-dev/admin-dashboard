@@ -87,6 +87,8 @@ $ergebnis = cron_ausfuehren($pdo, [
     'firma'      => setting('company_name', COMPANY_NAME),
     'wurzel'     => __DIR__,
     'mahnstufen' => setting('reminder_days', ''),
+    // Wohin die Ausfallmeldungen des Monitors gehen.
+    'admin_email' => setting('admin_email', ADMIN_EMAIL),
 ]);
 
 $zeilen = ['Cron-Lauf ' . date('d.m.Y H:i:s')];

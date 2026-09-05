@@ -362,6 +362,34 @@ subdomain with its own database and a `SELECT`-only database user — never
 on a real installation. See [docs/DEMO.md](docs/DEMO.md) for the full
 setup.
 
+### Uptime with a history
+
+The monitor asked every URL on each dashboard view and **threw the answer
+away**. No history, no availability figure, no notice when something went
+down. A client's server could be gone for three days, and if you did not
+look in during that time you never found out.
+
+Measuring now happens in the cron run, which makes two things possible
+that a single snapshot cannot: an availability figure, and a comparison
+with the previous measurement — the comparison is what makes an outage
+reportable at all. A mail goes out **on a state change only**: down, and
+up again. "Slow" stays silent; a page that takes four seconds once is not
+an incident, and a notice that arrives too often stops being read. The
+first measurement never sends: there is no previous state to change from.
+
+The widget shows the availability of the last 24 hours and a bar per
+measurement. Without a cron run it falls back to measuring on the page as
+before — a panel that showed nothing at all would be worse than six
+seconds of waiting.
+
+**A second, larger find came with it.** `tasks.php` checked *each*
+client's website individually and sequentially, with a five-second
+timeout, for a coloured dot beside the project title. With twenty
+projects that is up to a hundred seconds of load time — and in demo mode
+an unauthenticated fetch of arbitrary addresses, because that path had no
+demo guard. It now goes through the same parallel measurement: one pass,
+six seconds at most for all of them, guard included.
+
 ### From quote to project
 
 There was "quote to invoice" but not "quote to project": whoever won the
@@ -529,6 +557,7 @@ php tools/test_env.php         # unit tests for the .env parser
 | `test_auth_reset.php` | single use, expiry, hashed storage, per-IP rate limit |
 | `test_mail_log.php` | truncation of over-long values, and the longer retention |
 | `test_quote_to_project.php` | line-item conversion, and the guard against a second project |
+| `test_uptime.php` | state transitions, availability figure, history trimming |
 
 Run separately when you need them:
 

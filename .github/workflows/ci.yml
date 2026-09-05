@@ -74,3 +74,6 @@ jobs:
 
       - name: Quote-to-project tests
         run: php tools/test_quote_to_project.php
+
+      - name: Uptime tests
+        run: php tools/test_uptime.php
