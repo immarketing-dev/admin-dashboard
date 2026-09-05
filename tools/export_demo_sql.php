@@ -116,7 +116,20 @@ function platzhalter_aufraeumen(): array
 
             if (EXPORT_UPLOADS !== null) {
                 $ablage = rtrim(EXPORT_UPLOADS, '/\\') . '/' . basename($dir);
-                if (!is_dir($ablage)) mkdir($ablage, 0755, true);
+                if (!is_dir($ablage)) {
+                    mkdir($ablage, 0755, true);
+                    // Ein hier neu angelegtes Verzeichnis hat noch keine
+                    // Sperre. Ohne sie lägen die Dateien nach dem
+                    // Hochladen offen im Netz - abrufbar an file.php
+                    // vorbei, das sonst prüft, wer fragt. Die .gitkeep
+                    // kommt mit, damit das Verzeichnis dem Zielordner
+                    // gleicht, den tools/deploy.php erzeugt.
+                    foreach (['.htaccess', '.gitkeep'] as $schutz) {
+                        if (is_file($dir . '/' . $schutz)) {
+                            copy($dir . '/' . $schutz, $ablage . '/' . $schutz);
+                        }
+                    }
+                }
                 copy($quelle, $ablage . '/' . $datei);
                 $kopiert++;
             }
