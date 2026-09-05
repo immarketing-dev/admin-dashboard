@@ -38,7 +38,7 @@ $current_page = $current_page ?? basename($_SERVER['PHP_SELF']);
 <?php endif; ?>
     <h2>
       <i class="bi bi-list mobile-toggle" id="mobile-toggle-btn"></i>
-      <?= htmlspecialchars($page_heading ?? '') ?>
+      <?= htmlspecialchars(datenwert($page_heading ?? '')) ?>
     </h2>
     <div class="header-actions">
       <?= $header_actions ?? '' ?>

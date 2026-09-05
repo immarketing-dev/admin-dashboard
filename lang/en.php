@@ -94,6 +94,19 @@ return [
     'Storniert'                => 'Cancelled',
     'Bezahlt'                  => 'Paid',
     'Überfällig'               => 'Overdue',
+    'Morgen'                   => 'Tomorrow',
+    // Kurzform auf den Terminchips der Startseite. Das Muster
+    // wandert auch nach JavaScript, deshalb %d statt einer
+    // zusammengesetzten Zeichenkette.
+    'in %d T.'                 => 'in %dd',
+    'Projekt Board'            => 'Project board',
+    'Wiki & Snippets'          => 'Wiki & snippets',
+    'CRM & Kontakte'           => 'CRM & contacts',
+    'Finanz-Zentrale'          => 'Finances',
+    'Auswertungen'             => 'Reports',
+    'Support Zentrale'         => 'Support',
+    'Kein Zugriff'             => 'No access',
+    'Zu den Projekten'         => 'Go to projects',
     'Entwurf'                  => 'Draft',
     'Gesendet'                 => 'Sent',
     'Angenommen'               => 'Accepted',

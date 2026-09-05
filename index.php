@@ -440,7 +440,7 @@ $header_actions = '
             </button>
           </div>
         </div>
-        <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">Zu den Projekten</span></a>
+        <a href="tasks" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-list"></i> <span class="btn-label">' . te('Zu den Projekten') . '</span></a>
       </div>';
 // Verkettung statt Nowdoc: die Einbindungen brauchen den Zeitstempel aus
 // asset(), und ein Nowdoc setzt nichts ein.
@@ -604,7 +604,7 @@ require 'includes/layout_start.php';
                        <p class="mb-0 text-muted small text-truncate" style="font-size:11px; max-width: 200px;"><?php echo htmlspecialchars($tick['subject']); ?></p>
                      </div>
                      <div>
-                         <span class="badge <?= $tick['status'] == 'Offen' ? 'bg-warning text-dark' : 'bg-primary' ?>" style="font-size:10px;"><?= $tick['status'] ?></span>
+                         <span class="badge <?= $tick['status'] == 'Offen' ? 'bg-warning text-dark' : 'bg-primary' ?>" style="font-size:10px;"><?= htmlspecialchars(datenwert($tick['status'])) ?></span>
                      </div>
                    </a>
                  <?php endforeach; ?>
@@ -788,7 +788,7 @@ require 'includes/layout_start.php';
             $d2 = (int)$dl['days_left'];
             // Farbe = Dringlichkeit. Ohne Dringlichkeit bleibt der Chip neutral.
             $k2 = $d2 < 0 ? 'due-overdue' : ($d2 === 0 ? 'due-today' : ($d2 <= 3 ? 'due-soon' : ''));
-            $l2 = $d2 < 0 ? 'Überfällig' : ($d2 === 0 ? 'Heute' : "in $d2 T.");
+            $l2 = $d2 < 0 ? t('Überfällig') : ($d2 === 0 ? t('Heute') : t('in %d T.', $d2));
           ?>
           <div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
             <span class="due-chip <?=$k2?>"><?=$l2?></span>
@@ -820,7 +820,7 @@ require 'includes/layout_start.php';
           <?php foreach(array_slice($all_apts, 0, 2) as $apt):
             $ac   = htmlspecialchars($apt['color'] ?: '#6c757d');
             $adys = isset($apt['event_date']) ? (int)round((strtotime($apt['event_date']) - strtotime('today')) / 86400) : 0;
-            $albl = $adys === 0 ? 'Heute' : ($adys === 1 ? 'Morgen' : "in $adys T.");
+            $albl = $adys === 0 ? t('Heute') : ($adys === 1 ? t('Morgen') : t('in %d T.', $adys));
           ?>
           <div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
             <span class="due-chip"><span class="status-dot m-0" style="background:<?=$ac?>;width:8px;height:8px;"></span><?=$albl?></span>
@@ -1289,10 +1289,20 @@ require 'includes/layout_start.php';
                 el.innerHTML = '<div class="text-muted small p-3 bg-subtle rounded-3 text-center border border-subtle-c"><i class="bi bi-check2-all d-block mb-1" style="font-size:1.5rem;color:var(--text-faint);"></i><?= te('Keine offenen Support-Anfragen.') ?></div>';
                 return;
             }
+            // Die Zustaende stehen deutsch in der Datenbank; datenwert()
+            // uebersetzt sie nur fuer die Anzeige. Serverseitig passiert
+            // das im PHP-Teil oben, hier braucht der Browser dieselbe
+            // Zuordnung.
+            const ticketStatusLabels = <?= json_encode([
+                'Offen'          => datenwert('Offen'),
+                'In Bearbeitung' => datenwert('In Bearbeitung'),
+                'Erledigt'       => datenwert('Erledigt'),
+            ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
             const rows = list.map(t => {
                 const name    = (t.contact_name || '').replace(/</g,'&lt;');
                 const subject = (t.subject      || '').replace(/</g,'&lt;');
                 const badgeCls = t.status === 'Offen' ? 'bg-warning text-dark' : 'bg-primary';
+                const statusLbl = ticketStatusLabels[t.status] || t.status;
                 const pc = prioColors[t.priority] || 'var(--text-faint)';
                 return `<a href="tickets" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 border-0 border-bottom">
                     <div class="flex-grow-1 pe-3 d-flex align-items-center gap-2">
@@ -1300,7 +1310,7 @@ require 'includes/layout_start.php';
                         <div><h6 class="mb-1 fw-bold fs-6 text-strong-c">${name}</h6>
                         <p class="mb-0 text-muted small text-truncate" style="font-size:11px;max-width:200px;">${subject}</p></div>
                     </div>
-                    <span class="badge ${badgeCls}" style="font-size:10px;">${t.status}</span>
+                    <span class="badge ${badgeCls}" style="font-size:10px;">${statusLbl}</span>
                 </a>`;
             }).join('');
             el.innerHTML = `<div class="list-group scroll-container">${rows}</div>`;
@@ -1343,7 +1353,9 @@ require 'includes/layout_start.php';
             listEl.innerHTML = list.slice(0, 2).map(dl => {
                 const d = parseInt(dl.days_left);
                 const k = d < 0 ? 'due-overdue' : (d === 0 ? 'due-today' : (d <= 3 ? 'due-soon' : ''));
-                const l = d < 0 ? <?= tjs('Überfällig') ?> : (d === 0 ? 'Heute' : `in ${d} T.`);
+                const l = d < 0 ? <?= tjs('Überfällig') ?>
+                          : (d === 0 ? <?= tjs('Heute') ?>
+                                     : <?= tjs('in %d T.') ?>.replace('%d', d));
                 const t = (dl.title || '').replace(/</g,'&lt;');
                 const s = t.length > 20 ? t.substring(0,20)+'…' : t;
                 return `<div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">
@@ -1365,7 +1377,9 @@ require 'includes/layout_start.php';
             listEl.innerHTML = list.slice(0, 2).map(apt => {
                 const ac  = (apt.color || '#6c757d').replace(/[<>"'&]/g,'');
                 const d   = parseInt(apt.days_left);
-                const lbl = d === 0 ? 'Heute' : (d === 1 ? 'Morgen' : `in ${d} T.`);
+                const lbl = d === 0 ? <?= tjs('Heute') ?>
+                          : (d === 1 ? <?= tjs('Morgen') ?>
+                                     : <?= tjs('in %d T.') ?>.replace('%d', d));
                 const t   = (apt.title || '').replace(/</g,'&lt;');
                 const s   = t.length > 20 ? t.substring(0,20)+'…' : t;
                 return `<div class="d-flex align-items-center gap-2 pt-2 border-top border-subtle-c">

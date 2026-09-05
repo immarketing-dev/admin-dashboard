@@ -224,6 +224,23 @@ function datenwert(string $wert): string
             'Monatlich'        => t('Monatlich'),
             'Vierteljährlich'  => t('Vierteljährlich'),
             'Jährlich'         => t('Jährlich'),
+            // Seitenüberschriften. Sie stehen auf jeder Seite als
+            // Zuweisung an $page_heading und werden in
+            // includes/layout_start.php ausgegeben - an der Ausgabestelle
+            // ist es eine Variable, hier steht das Literal.
+            'Übersicht'          => t('Übersicht'),
+            'Kalender'           => t('Kalender'),
+            'Projekte & Aufgaben'=> t('Projekte & Aufgaben'),
+            'Projekt Board'      => t('Projekt Board'),
+            'Wiki & Snippets'    => t('Wiki & Snippets'),
+            'CRM & Kontakte'     => t('CRM & Kontakte'),
+            'Finanz-Zentrale'    => t('Finanz-Zentrale'),
+            'Auswertungen'       => t('Auswertungen'),
+            'Support Zentrale'   => t('Support Zentrale'),
+            'System-Logs'        => t('System-Logs'),
+            'Papierkorb'         => t('Papierkorb'),
+            'Einstellungen'      => t('Einstellungen'),
+            'Kein Zugriff'       => t('Kein Zugriff'),
             // Terminzustaende
             'Geplant'          => t('Geplant'),
             'Bestätigt'        => t('Bestätigt'),
