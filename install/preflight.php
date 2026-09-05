@@ -412,16 +412,32 @@ if (!$envExists) {
     // Migrationen 5 und 6 dazu, und diese Liste wurde nicht mitgezogen.
     // Einer frischen Installation, der eine der beiden fehlte, meldete
     // die Vorabpruefung trotzdem "vollstaendig".
-    $expectedTables = [
-        'settings', 'users', 'logs', 'sso_tokens', 'password_resets', 'mail_log',
-        'totp_backup_codes',
-        'contacts', 'leads_inbox',
-        'tasks', 'task_milestones', 'task_contacts', 'milestone_comments',
-        'project_comments', 'client_assets',
-        'time_entries', 'finances', 'quotes', 'support_tickets', 'ticket_notes',
-        'wiki_articles', 'wiki_attachments', 'wiki_client_shares',
-        'calendar_events', 'event_contacts', 'monitored_urls', 'url_checks',
-    ];
+    // Die Liste kommt aus install/schema.sql, nicht aus einer Kopie hier.
+    //
+    // Zweimal ist genau das schiefgegangen: erst kannte sie 21 von 23
+    // Tabellen, weil zwei ueber Migrationen dazukamen und niemand die
+    // Liste nachzog - einer frischen Installation, der eine davon fehlte,
+    // meldete die Vorabpruefung trotzdem "vollstaendig". Danach stand
+    // dreimal die Zahl 21 im Text, waehrend die Liste laengst 27 Eintraege
+    // hatte. Eine Kopie einer Wahrheit, die eine Datei weiter steht,
+    // laeuft ihr frueher oder spaeter davon.
+    $expectedTables = [];
+    $schemaPath = __DIR__ . '/schema.sql';
+    if (is_readable($schemaPath)) {
+        if (preg_match_all(
+            '/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([a-z_][a-z0-9_]*)`?/i',
+            (string) file_get_contents($schemaPath),
+            $treffer
+        )) {
+            $expectedTables = array_values(array_unique(array_map('strtolower', $treffer[1])));
+        }
+    }
+    if ($expectedTables === []) {
+        pf_add('Datenbank', 'Tabellen', 'FAIL',
+               'install/schema.sql fehlt oder enthaelt keine CREATE TABLE - '
+             . 'ohne sie laesst sich nicht sagen, was fehlt.');
+    }
+
     try {
         foreach ($pdo->query('SHOW TABLES') as $row) {
             $existingTables[] = strtolower((string) $row[0]);

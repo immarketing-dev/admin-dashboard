@@ -13,14 +13,32 @@
 $start = $start ?? microtime(true);
 
 // ── Tabellen leeren ─────────────────────────────────────────────────
-$leeren = [
-    'event_contacts', 'calendar_events', 'wiki_client_shares', 'wiki_attachments',
-    'wiki_articles', 'ticket_notes', 'support_tickets', 'quotes', 'finances',
-    'time_entries', 'client_assets', 'project_comments', 'milestone_comments',
-    'task_contacts', 'task_milestones', 'tasks', 'leads_inbox', 'contacts',
-    'url_checks', 'monitored_urls', 'mail_log', 'sso_tokens',
-    'password_resets', 'totp_backup_codes', 'logs', 'users',
-];
+// Alle Tabellen ausser settings - und die Liste kommt aus
+// install/schema.sql, nicht aus einer Abschrift hier. Eine Abschrift
+// haette bei jeder neuen Tabelle nachgezogen werden muessen, und beim
+// Vergessen waere der alte Bestand einfach stehengeblieben: die Demo
+// zeigte dann neue Daten neben alten, ohne dass etwas gemeldet wird.
+//
+// settings bleibt, weil dort schema_version steht. Ohne die Zeile liefe
+// run_migrations() beim naechsten Seitenaufruf noch einmal von vorne los.
+$schema_datei = dirname(__DIR__) . '/install/schema.sql';
+$leeren = [];
+if (is_readable($schema_datei)) {
+    preg_match_all(
+        '/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([a-z_][a-z0-9_]*)`?/i',
+        (string) file_get_contents($schema_datei),
+        $_treffer
+    );
+    $leeren = array_values(array_diff(
+        array_unique(array_map('strtolower', $_treffer[1])),
+        ['settings']
+    ));
+}
+if ($leeren === []) {
+    fwrite(STDERR, "install/schema.sql nicht lesbar - ohne Tabellenliste wuerde der\n"
+                 . "Seed auf vorhandene Daten aufsetzen statt sie zu ersetzen.\n");
+    exit(1);
+}
 $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 foreach ($leeren as $t) {
     $pdo->exec('TRUNCATE TABLE ' . $t);

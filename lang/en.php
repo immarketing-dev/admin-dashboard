@@ -1011,6 +1011,10 @@ return [
         => 'Log display limit',
     'Maximale Anzahl Logs auf der Log-Seite (Standard: 200, max. 2000).'
         => 'Maximum number of entries on the log page (default 200, max 2000).',
+    'Protokoll aufbewahren'
+        => 'Keep the log for',
+    'Tage, nach denen der nächtliche Lauf ältere Einträge entfernt (Standard: 365, mindestens 7). Das Mailprotokoll behält unabhängig davon ein Jahr.'
+        => 'Days after which the nightly run removes older entries (default 365, minimum 7). The mail log keeps a year regardless.',
     'Systeminfo'
         => 'System information',
     'PHP Version'

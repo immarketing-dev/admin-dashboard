@@ -318,6 +318,13 @@ if command -v php >/dev/null 2>&1; then
     echo "AUSGABE: $out"
     fail=1
   fi
+  # Einstellungsschluessel, die ins Leere gehen. Der Demo-Seed setzte
+  # fuenf, die niemand liest, und liess vier ungesetzt, die gelesen
+  # werden - sichtbar nur an leeren Feldern in der Demo.
+  if ! out=$(php tools/check_settings_keys.php 2>&1); then
+    echo "EINSTELLUNGEN: $out"
+    fail=1
+  fi
   if ! out=$(php tools/test_errors.php 2>&1); then
     echo "FEHLERSEITE: $out"
     fail=1

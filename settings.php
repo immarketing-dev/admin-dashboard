@@ -354,6 +354,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $ll = max(50, min(2000, (int)($_POST['log_limit'] ?? 200)));
         $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_limit',?) ON DUPLICATE KEY UPDATE v=?");
         $s->execute([$ll, $ll]);
+
+        // Aufbewahrung des Protokolls. Der Wert steuerte den
+        // naechtlichen Lauf schon immer - nur gab es kein Feld dafuer,
+        // er liess sich also nur direkt in der Datenbank aendern.
+        // Untergrenze wie in includes/logging.php: eine Woche bleibt
+        // immer nachvollziehbar.
+        $lr = max(7, min(3650, (int)($_POST['log_retention_days'] ?? 365)));
+        $pdo->prepare("INSERT INTO settings (k,v) VALUES ('log_retention_days',?) ON DUPLICATE KEY UPDATE v=?")
+            ->execute([$lr, $lr]);
         log_event($pdo, 'SETTINGS_SYSTEM', 'Systemeinstellungen gespeichert.');
         header("Location: settings?tab=system&saved=1"); exit();
     }
@@ -379,6 +388,7 @@ $s_support_email  = setting('support_email', SUPPORT_EMAIL);
 $s_notify_ms      = setting('notify_milestone_email', '1');
 $s_notify_quote   = setting('notify_quote_email', '1');
 $s_log_limit      = setting('log_limit', '200');
+$s_log_retention  = setting('log_retention_days', '365');
 // Tage nach Faelligkeit, an denen automatisch erinnert wird. Leer =
 // keine Automatik; der Knopf in der Rechnungsliste geht trotzdem.
 $s_reminder_days  = setting('reminder_days', '');
@@ -1065,6 +1075,12 @@ require 'includes/layout_start.php';
             <label class="form-label fw-semibold"><?= te('Log-Anzeigelimit') ?></label>
             <input type="number" name="log_limit" class="form-control" min="50" max="2000" step="50" value="<?= htmlspecialchars($s_log_limit) ?>">
             <div class="form-text"><?= te('Maximale Anzahl Logs auf der Log-Seite (Standard: 200, max. 2000).') ?></div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold"><?= te('Protokoll aufbewahren') ?></label>
+            <input type="number" name="log_retention_days" class="form-control" min="7" max="3650" step="1"
+                   value="<?= htmlspecialchars($s_log_retention) ?>">
+            <div class="form-text"><?= te('Tage, nach denen der nächtliche Lauf ältere Einträge entfernt (Standard: 365, mindestens 7). Das Mailprotokoll behält unabhängig davon ein Jahr.') ?></div>
           </div>
           <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>

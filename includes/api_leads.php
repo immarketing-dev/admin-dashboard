@@ -53,6 +53,18 @@ function api_leads_pruefen(array $eingabe): array
 {
     $fehler = [];
 
+    // Steuerzeichen gehoeren in kein Feld. Sie kommen aus keiner Tastatur,
+    // richten in Protokollen und CSV-Ausgaben Schaden an und sind das
+    // erste, was ein Fuzzer probiert. In der Nachricht bleiben Zeilen-
+    // umbruch und Tabulator stehen - das ist Fliesstext.
+    foreach (['name', 'email', 'phone', 'subject', 'source'] as $feld) {
+        if (isset($eingabe[$feld]) && is_string($eingabe[$feld])) {
+            $eingabe[$feld] = preg_replace('/[\x00-\x1F\x7F]/u', '', $eingabe[$feld]) ?? '';
+        }
+    }
+    if (isset($eingabe['message']) && is_string($eingabe['message'])) {
+        $eingabe['message'] = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $eingabe['message']) ?? '';
+    }
     // Der Honigtopf. Ein Feld, das kein Mensch ausfüllt, weil es im
     // Formular unsichtbar ist - ein ausgefülltes stammt von einem
     // Skript. Die Antwort ist trotzdem freundlich: wer erfährt, dass er
@@ -67,6 +79,21 @@ function api_leads_pruefen(array $eingabe): array
         $fehler[] = 'Das Feld "name" fehlt.';
     }
 
+    // Eine spitze Klammer in Name, Betreff, Telefon oder Quelle ist nie
+    // echt. Die Ausgabe filtert zwar - aber ein Name, der wie ein Tag
+    // aussieht, hat im Bestand nichts zu suchen, und er wandert von hier
+    // aus weiter: index.php uebernimmt eine angenommene Anfrage
+    // unveraendert in contacts.
+    //
+    // Die Nachricht ist ausgenommen: dort ist "5 < 10" ein Satz.
+    foreach (['name' => 'name', 'subject' => 'subject',
+              'phone' => 'phone', 'source' => 'source'] as $feld => $anzeige) {
+        $wert = trim((string) ($eingabe[$feld] ?? ''));
+        if ($wert !== '' && preg_match('/[<>]/', $wert)) {
+            $fehler[] = 'Das Feld "' . $anzeige . '" enthält unerlaubte Zeichen.';
+        }
+    }
+
     $email = trim((string) ($eingabe['email'] ?? ''));
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $fehler[] = 'Die Adresse in "email" ist nicht gültig.';
@@ -77,6 +104,12 @@ function api_leads_pruefen(array $eingabe): array
     $phone = trim((string) ($eingabe['phone'] ?? ''));
     if ($email === '' && $phone === '') {
         $fehler[] = 'Es fehlt eine Rückrufmöglichkeit: "email" oder "phone".';
+    }
+    // Bewusst keine Formatpruefung darueber hinaus: Durchwahlen,
+    // Laendervorwahlen und Zusaetze wie "(mobil)" sind alle echt. Eine
+    // Nummer ganz ohne Ziffer ist es nicht.
+    if ($phone !== '' && !preg_match('/\d/', $phone)) {
+        $fehler[] = 'Das Feld "phone" enthält keine Ziffer.';
     }
 
     if ($fehler) {

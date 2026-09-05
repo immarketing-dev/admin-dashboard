@@ -189,6 +189,61 @@ $pdo->exec("UPDATE logs SET created_at = '2020-01-01 00:00:00' WHERE action_type
 $checks['alte Anfragen zaehlen nicht'] = api_zu_haeufig($pdo, $ip, 'API_LEAD', API_LEADS_MAX_PRO_STUNDE) === false;
 
 // =====================================================================
+// Eingangspruefung: was gar nicht erst in den Bestand darf
+// =====================================================================
+// Die Ausgabe filtert - aber ein Name, der wie ein Tag aussieht, hat in
+// der Datenbank nichts zu suchen. Er bliebe dort auch dann stehen, wenn
+// eine spaetere Seite das Filtern vergisst, und index.php uebernimmt
+// eine angenommene Anfrage unveraendert in contacts.
+$tag = api_leads_pruefen([
+    'name'  => '<img src=x onerror=alert(1)>',
+    'email' => 'a@b.example',
+]);
+$checks['Tag im Namen abgelehnt']   = $tag['ok'] === false;
+$checks['Grund nennt das Feld']     = (bool) preg_grep('/name/', $tag['fehler']);
+
+$checks['Tag im Betreff abgelehnt'] = api_leads_pruefen(
+    ['name' => 'Anna', 'email' => 'a@b.example', 'subject' => 'a <b> c'])['ok'] === false;
+$checks['Tag in der Quelle abgelehnt'] = api_leads_pruefen(
+    ['name' => 'Anna', 'email' => 'a@b.example', 'source' => '<x>'])['ok'] === false;
+$checks['Tag in der Nummer abgelehnt'] = api_leads_pruefen(
+    ['name' => 'Anna', 'phone' => '030 <b>'])['ok'] === false;
+
+// Die Nachricht ist Fliesstext - dort ist eine spitze Klammer ein Satz.
+$satz = api_leads_pruefen([
+    'name' => 'Anna', 'email' => 'a@b.example',
+    'message' => 'Wir brauchen < 10 Seiten und > 3 Formulare.',
+]);
+$checks['Klammer in der Nachricht erlaubt'] = $satz['ok'] === true;
+$checks['Nachricht bleibt unveraendert']    = strpos($satz['werte']['message'], '< 10') !== false;
+
+// Steuerzeichen kommen aus keiner Tastatur.
+$roh = api_leads_pruefen([
+    'name'    => "An\x00na\x07",
+    'email'   => 'a@b.example',
+    'message' => "Zeile eins\nZeile zwei\tmit Tabulator\x00",
+]);
+$checks['Steuerzeichen entfernt']        = $roh['ok'] === true && $roh['werte']['name'] === 'Anna';
+$checks['Umbruch bleibt in der Nachricht'] = strpos($roh['werte']['message'], "\n") !== false;
+$checks['Tabulator bleibt ebenso']         = strpos($roh['werte']['message'], "\t") !== false;
+$checks['Nullbyte auch dort weg']          = strpos($roh['werte']['message'], "\x00") === false;
+
+// Eine Nummer ganz ohne Ziffer ist keine. Alles andere bleibt erlaubt:
+// Durchwahlen, Vorwahlen, Zusaetze.
+$checks['Nummer ohne Ziffer abgelehnt'] = api_leads_pruefen(
+    ['name' => 'Anna', 'phone' => 'ruft zurueck'])['ok'] === false;
+$checks['Nummer mit Zusatz erlaubt']    = api_leads_pruefen(
+    ['name' => 'Anna', 'phone' => '+49 (0)30 12 34-56 (mobil)'])['ok'] === true;
+$checks['gewoehnliche Nummer erlaubt']  = api_leads_pruefen(
+    ['name' => 'Anna', 'phone' => '030 123456'])['ok'] === true;
+
+// Und die harmlose Anfrage geht weiterhin durch.
+$checks['normale Anfrage unberuehrt'] = api_leads_pruefen([
+    'name' => 'Björn Öztürk-Meyer', 'email' => 'b.oe@example.com',
+    'subject' => 'Angebot für Relaunch', 'message' => 'Guten Tag,\n\nwir suchen...',
+])['ok'] === true;
+
+// =====================================================================
 // Ergebnis
 // =====================================================================
 $fehler = 0;
