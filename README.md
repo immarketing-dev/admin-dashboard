@@ -409,6 +409,31 @@ receipt, named `date_id_title.pdf` so the archive reads in the same order
 as the list. Needs the `zip` extension; without it the button is hidden and
 the CSV alone remains.
 
+### Data export for one contact
+
+Every contact card carries a **Data export** button. It collects
+everything stored about that person into one JSON file: the record
+itself, projects they are the client of and projects they merely take
+part in, their posts in the project thread, files they uploaded through
+the portal, invoices, quotes, support tickets, appointments they were
+invited to, wiki articles shared with them, and enquiries that arrived
+through the contact form before they were a contact at all.
+
+Two paths are needed for that, because a person appears in two ways: by
+id — including the three columns that are not called `contact_id`
+(`author_contact_id`, `uploaded_by_contact_id`, `feedback_by_contact_id`)
+— and by e-mail address, which is how the inbox knows them.
+
+The system log is deliberately **not** included, and the file says so.
+Names appear there as free text ("enquiry from Anna Beispiel accepted
+into the CRM"), not as a reference; a full-text search over it would
+invent matches and miss real ones. Searching it by hand is the honest
+answer.
+
+The queries live in one table in `includes/gdpr.php`, so a new relation
+is added in one place — and so it stays visible what is actually stored
+about a person.
+
 ### Cross-domain single sign-on
 
 `SSO_ENABLED` is `false` by default. `sso.php` only **consumes** tokens — it

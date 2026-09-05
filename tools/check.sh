@@ -350,6 +350,13 @@ if command -v php >/dev/null 2>&1; then
   # Mahnstufen und wiederkehrende Eintraege. Die gefaehrlichen Faelle
   # sind hier das doppelte Verschicken und die Reihe, die sich bei jedem
   # Lauf verdoppelt.
+  # Die Datenauskunft. Eine, in der ein Bereich fehlt, sieht
+  # vollstaendig aus - und eine mit fremden Daten ist selbst eine
+  # Panne.
+  if ! out=$(php tools/test_gdpr.php 2>&1); then
+    echo "AUSKUNFT: $out"
+    fail=1
+  fi
   # Die Datensicherung. Sie wird an genau einem Tag gebraucht, und an
   # dem muss sie stimmen - der Test spielt den Abzug zurueck.
   if ! out=$(php tools/test_backup.php 2>&1); then

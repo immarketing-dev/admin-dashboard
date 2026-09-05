@@ -20,11 +20,42 @@ require_once 'includes/filter_state.php';
 // ==========================================
 // AKTIONEN VERARBEITEN & LOGGEN
 // ==========================================
+require_once __DIR__ . '/includes/gdpr.php';
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     csrf_check();
     $action = $_POST['action'];
 
     // 1. Portal Token generieren
+    // Datenauskunft nach Art. 15 DSGVO. Als POST, damit sie in der
+    // Demo gar nicht erst laeuft - und weil ein Ausleiten des
+    // gesamten Datenbestands zu einer Person kein Seitenaufruf ist,
+    // den man versehentlich verlinkt.
+    if ($action === 'gdpr_export') {
+        $kid   = (int) ($_POST['contact_id'] ?? 0);
+        $daten = auskunft_daten($pdo, $kid);
+
+        if ($daten === null) {
+            // filter_redirect statt header(): sonst faellt die Liste
+            // nach der Weiterleitung auf ihren Ausgangszustand zurueck.
+            filter_redirect('contacts', ['msg' => 'notfound']);
+        }
+
+        log_event($pdo, 'GDPR_EXPORT', 'Datenauskunft zu "'
+            . ($daten['kontakt']['name'] ?? $kid) . '" erstellt ('
+            . auskunft_umfang($daten) . ' Datensaetze).');
+
+        $inhalt = auskunft_json($daten);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . auskunft_dateiname($daten) . '"');
+        header('Content-Length: ' . strlen($inhalt));
+        // Kein Zwischenspeicher: die Datei enthaelt personenbezogene
+        // Daten und hat in keinem Proxy etwas verloren.
+        header('Cache-Control: no-store, private');
+        echo $inhalt;
+        exit();
+    }
+
     if ($action === 'generate_token') {
         $token      = bin2hex(random_bytes(16));
         $contact_id = (int)$_POST['contact_id'];
@@ -291,6 +322,21 @@ require 'includes/layout_start.php';
               <?php endif; ?>
 
               <div class="mt-auto d-grid gap-2">
+                <?php
+                  // Auskunft nach Art. 15 DSGVO. Steht bei jedem Kontakt,
+                  // nicht nur bei denen mit Portalzugang: das Recht haengt
+                  // nicht daran, ob jemand sich anmelden kann.
+                ?>
+                <form method="POST">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="action" value="gdpr_export">
+                  <input type="hidden" name="contact_id" value="<?= (int) $c['id'] ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary w-100"
+                          title="<?= te('Alle gespeicherten Daten dieser Person als JSON-Datei') ?>">
+                    <i class="bi bi-file-earmark-arrow-down me-1"></i><?= te('Datenauskunft') ?>
+                  </button>
+                </form>
+
                 <?php if(empty($c['portal_token'])): ?>
                     <form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="generate_token"><input type="hidden" name="contact_id" value="<?=$c['id']?>"><button type="submit" class="btn btn-sm btn-outline-primary w-100 fw-bold"><?= te('Portal erstellen') ?></button></form>
                 <?php else: 

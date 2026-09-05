@@ -1016,6 +1016,10 @@ return [
     // ── Datensicherung (settings.php, Reiter System) ─────────────────
     'Datensicherung'
         => 'Backups',
+    'Datenauskunft'
+        => 'Data export',
+    'Alle gespeicherten Daten dieser Person als JSON-Datei'
+        => 'Everything stored about this person, as a JSON file',
     'Der nächtliche Lauf schreibt einen vollständigen Abzug der Datenbank und hebt die letzten Stände auf. Ohne eingerichteten Cron passiert nichts — siehe Cron-Einrichtung in der README.'
         => 'The nightly run writes a full dump of the database and keeps the most recent ones. Nothing happens without a configured cron entry - see the cron section in the README.',
     'Nicht enthalten sind die Dateien unter uploads/'
