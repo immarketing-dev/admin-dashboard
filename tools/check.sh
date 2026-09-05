@@ -311,6 +311,40 @@ if command -v php >/dev/null 2>&1; then
     echo "PLATZHALTER: $out"
     fail=1
   fi
+  # Diese sieben liefen lange nur in der CI-Datei und nicht hier.
+  # Das ist genau einmal teuer geworden: eine Aenderung, die lokal
+  # gruen war, kippte die CI - check_soft_delete.php stand in
+  # .github/workflows/ci.yml, aber nicht in dieser Datei. Seitdem
+  # ist diese Datei die vollstaendige Suite, und die CI ruft nur
+  # noch sie auf.
+  if ! out=$(php tools/check_schema.php 2>&1); then
+    echo "SCHEMA: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/check_soft_delete.php 2>&1); then
+    echo "SOFT-DELETE: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/check_forms.php 2>&1); then
+    echo "FORMULARE: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_env.php 2>&1); then
+    echo "ENV: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_csrf.php 2>&1); then
+    echo "CSRF: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_upload.php 2>&1); then
+    echo "UPLOAD: $out"
+    fail=1
+  fi
+  if ! out=$(php tools/test_mail_templates.php 2>&1); then
+    echo "MAILVORLAGEN: $out"
+    fail=1
+  fi
   # Ausgabe ohne Filter. Weder php -l noch die uebrigen Pruefungen
   # sehen ein htmlspecialchars(), das fehlt - contacts.php gab
   # E-Mail, Telefon und Website roh aus, und zwar in einem href.

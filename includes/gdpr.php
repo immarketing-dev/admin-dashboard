@@ -43,7 +43,7 @@ function auskunft_abfragen(): array
         'projekte' => [
             'titel' => 'Projekte als Kunde',
             'sql'   => 'SELECT id, title, category, description, status, start_date, deadline,
-                               client_feedback, feedback_at, created_at
+                               client_feedback, feedback_at, created_at, deleted_at
                           FROM tasks WHERE contact_id = :id ORDER BY created_at',
             'feld'  => 'id',
         ],
@@ -70,14 +70,14 @@ function auskunft_abfragen(): array
         'rechnungen' => [
             'titel' => 'Rechnungen und Ausgaben',
             'sql'   => 'SELECT id, type, title, invoice_number, amount, status,
-                               record_date, due_date, notes, created_at
+                               record_date, due_date, notes, created_at, deleted_at
                           FROM finances WHERE contact_id = :id ORDER BY record_date',
             'feld'  => 'id',
         ],
         'angebote' => [
             'titel' => 'Angebote',
             'sql'   => 'SELECT id, quote_number, subject, status, total_amount,
-                               valid_until, created_at
+                               valid_until, created_at, deleted_at
                           FROM quotes WHERE contact_id = :id ORDER BY created_at',
             'feld'  => 'id',
         ],
@@ -129,10 +129,13 @@ function auskunft_daten(PDO $pdo, int $kontakt_id): ?array
 
     $aus = [
         'erstellt_am' => date('c'),
-        'hinweis'     => 'Auskunft nach Art. 15 DSGVO. Nicht enthalten ist das '
-                       . 'Systemprotokoll: dort stehen Namen als Freitext und nicht '
-                       . 'als Verweis, eine automatische Zuordnung wäre unzuverlässig. '
-                       . 'Es ist gegebenenfalls von Hand zu durchsuchen.',
+        'hinweis'     => 'Auskunft nach Art. 15 DSGVO. Enthalten sind auch Datensätze, '
+                       . 'die im Papierkorb liegen - sie sind bis zum endgültigen '
+                       . 'Entfernen weiterhin gespeichert und an deleted_at zu '
+                       . 'erkennen. Nicht enthalten ist das Systemprotokoll: dort '
+                       . 'stehen Namen als Freitext und nicht als Verweis, eine '
+                       . 'automatische Zuordnung wäre unzuverlässig. Es ist '
+                       . 'gegebenenfalls von Hand zu durchsuchen.',
         'kontakt'     => ['id' => $kontakt_id, 'name' => $kontakt['name'] ?? ''],
         'bereiche'    => [],
     ];

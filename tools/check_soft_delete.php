@@ -29,6 +29,13 @@ const WEICHE_TABELLEN = ['contacts', 'tasks', 'finances', 'quotes'];
 const AUSNAHMEN = [
     // Der Papierkorb zeigt das Gelöschte ja gerade.
     'trash.php' => ['*'],
+    // Die Datenauskunft nach Art. 15 DSGVO muss vollständig sein, und
+    // vollständig heißt: einschließlich der Datensätze im Papierkorb.
+    // Sie sind bis zum endgültigen Entfernen gespeichert, und wer
+    // fragt, was über ihn vorliegt, hat auch darauf Anspruch. Die
+    // Abfragen geben deleted_at mit aus, damit der Zustand in der
+    // Auskunft sichtbar ist, und der Kopf der Datei sagt es dazu.
+    'includes/gdpr.php' => ['*'],
     // Migrationen arbeiten am Schema, nicht an Nutzdaten.
     'includes/migrations.php' => ['*'],
 

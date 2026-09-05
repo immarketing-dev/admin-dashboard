@@ -17,78 +17,16 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-      - name: Syntax and leak check
+
+      # Eine Suite, nicht zwei.
+      #
+      # Hier standen die Pruefungen frueher einzeln, und tools/check.sh
+      # hatte seine eigene Auswahl. Die beiden Listen liefen
+      # auseinander: sieben Pruefungen gab es nur hier, fuenfzehn nur
+      # dort. Ein gruenes check.sh sagte damit nichts ueber die CI aus -
+      # und genau so ist ein Lauf gekippt, der lokal bestanden hatte.
+      #
+      # tools/check.sh nennt bei einem Fehlschlag selbst, welche Pruefung
+      # gefallen ist; die einzelnen Schritte hier waren nur Kosmetik.
+      - name: Full check suite
         run: bash tools/check.sh
-      - name: Schema check
-        run: php tools/check_schema.php
-
-      - name: Soft-delete coverage
-        run: php tools/check_soft_delete.php
-
-      - name: Form integrity
-        run: php tools/check_forms.php
-      - name: .env parser tests
-        run: php tools/test_env.php
-
-      - name: CSRF tests
-        run: php tools/test_csrf.php
-
-      - name: Upload validation tests
-        run: php tools/test_upload.php
-
-      - name: Mail template tests
-        run: php tools/test_mail_templates.php
-
-      - name: Placeholder/parameter count
-        run: php tools/check_placeholders.php
-
-      - name: Invoice item tests
-        run: php tools/test_invoice_items.php
-
-      - name: Time billing tests
-        run: php tools/test_time_billing.php
-
-      - name: File access tests
-        run: php tools/test_file_access.php
-
-      - name: Error page tests
-        run: php tools/test_errors.php
-
-      - name: Reminder and recurrence tests
-        run: php tools/test_cron_billing.php
-
-      - name: Report tests
-        run: php tools/test_reports.php
-
-      - name: Report page renders
-        run: php tools/test_reports_render.php
-
-      - name: Receipt tests
-        run: php tools/test_receipts.php
-
-      - name: Password reset tests
-        run: php tools/test_auth_reset.php
-
-      - name: Mail log tests
-        run: php tools/test_mail_log.php
-
-      - name: Quote-to-project tests
-        run: php tools/test_quote_to_project.php
-
-      - name: Uptime tests
-        run: php tools/test_uptime.php
-
-      - name: Enquiry API tests
-        run: php tools/test_api_leads.php
-
-      - name: TOTP tests (RFC 6238 vectors)
-        run: php tools/test_totp.php
-
-      - name: XRechnung tests
-        run: php tools/test_xrechnung.php
-
-      - name: Incoming mail tests
-        run: php tools/test_api_tickets.php
-
-      - name: User and role tests
-        run: php tools/test_users.php
