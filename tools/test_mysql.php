@@ -289,6 +289,13 @@ $pdo->exec("INSERT INTO finances (type, title, contact_id, amount, status, recor
 $pdo->exec("INSERT INTO finances (type, title, contact_id, amount, status, record_date)
             VALUES ('INCOME', 'Bezahlt', $kontakt, 500.00, 'Bezahlt', '2026-02-01')");
 
+// Seit Migration 20 haengt "bezahlt" am Zahlungsjournal und nicht mehr am
+// Status. Auf einer bestehenden Datenbank hat die Migration die Zeilen
+// dafuer nachgefuellt - hier tut es dieselbe Anweisung, und damit laeuft
+// sie einmal gegen die echte Datenbank statt nur gegen den Spiegel.
+require_once $wurzel . '/includes/migrations.php';
+$pdo->exec(migrations()[20][1]);
+
 // setting() braucht sonst config.php.
 if (!function_exists('setting')) {
     function setting(string $key, string $default = ''): string { return $default; }
