@@ -339,6 +339,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             log_event($pdo, 'INVOICE_CREATED', "Rechnung $invoice_number für $db_client_name generiert.");
 
+            // Der Kunde erfaehrt, dass seine Rechnung im Portal liegt.
+            // Nur bei einer neuen Rechnung, nicht beim Neuerzeugen einer
+            // bestehenden - sonst bekaeme er dieselbe zweimal.
+            if ($db_contact_id) {
+                require_once __DIR__ . '/includes/portal_notify.php';
+                portal_benachrichtigen_kontakt($pdo, 'invoice_created', (int) $db_contact_id, [
+                    'nummer'  => $invoice_number,
+                    'betrag'  => number_format((float) $db_amount, 2, ',', '.'),
+                    'faellig' => $raw_due_date ? date('d.m.Y', strtotime($raw_due_date)) : '',
+                ]);
+            }
+
             // Wurden erfasste Zeiten uebernommen, sind sie ab jetzt
             // abgerechnet. Ohne diesen Vermerk taucht dieselbe Stunde
             // beim naechsten Mal wieder auf, und der Kunde zahlt sie
