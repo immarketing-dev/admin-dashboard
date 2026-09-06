@@ -9,6 +9,52 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **The portal calls back.** Until now the panel showed every move the
+  customer made as a badge in the sidebar, while the customer heard
+  nothing in return: a reply in the project discussion, an answer on a
+  milestone comment and an uploaded file all stayed silent. Whoever was
+  waiting for an answer had to happen to look.
+
+  Six switches, one per event type, decide what goes out at all;
+  `contacts.portal_notify` (schema 24) decides whether an individual
+  recipient gets it. Both have to agree — the sender sets the first, the
+  recipient the second. Recipients are **everyone involved** in a
+  project, not just the main contact: since a project can have several
+  participants, a mail to `tasks.contact_id` alone never reached the
+  business partner working on it. Each recipient gets their own mail, in
+  their own language and with their own access link; a shared distribution
+  list would be neither, and would expose the other addresses.
+
+  The milestone mail, which already existed, now follows the same route
+  and reaches everyone involved rather than the main contact alone. The
+  support reply, which went out unconditionally while every other
+  notification could be switched off, gets its switch.
+
+  `notify_quote_email` was stored, displayed and read by no line of code.
+  A switch that does nothing is worse than none: it promises something.
+  It is gone.
+
+- **A dates section in the portal.** The calendar has known customers as
+  participants since it was built and sends them invitations; the portal
+  had no view for them. Upcoming dates first, past ones collapsed below,
+  each with location, meeting link and a calendar download over the
+  existing invite token — no second way in. An invitation without a token
+  gets no download button, because the file would point nowhere.
+
+- **Three small gaps in the portal:** signing out (the PIN session ends
+  and the address loses the token, while the access link stays valid — it
+  is the invitation, not the secret), declining a quote with a reason (the
+  status existed but was unreachable, so declining meant writing it into a
+  question field), and choosing a language that lasts (it was a session
+  setting; the contact's language, which steers their mail, could only be
+  set from the panel).
+
+  `tools/test_portal_render.php` runs the real source of the portal
+  against the sqlite mirror. Each case gets its own child process, because
+  `portal.php` exits at many points and an include in the same process
+  would take the test down with it. It immediately found a defect in this
+  round's own work: the dates tab sat inside the wiki block, so it
+  appeared only for customers who also had shared articles.
 - **Several assignees per project, participants grouped by type, and
   links between projects.** `tasks.assigned_user_id` existed since schema
   version 18 but no page ever read or wrote it: a project had no internal
