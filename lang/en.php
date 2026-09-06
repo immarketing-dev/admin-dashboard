@@ -2175,4 +2175,13 @@ return [
         => "Go to the invoice made from this quote",
     "Aus Angebot %s eine Rechnung erstellen?"
         => "Create an invoice from quote %s?",
+    // ── Zuständige am Projekt (includes/task_members.php) ──
+    "inaktiv"
+        => "inactive",
+    "Hauptzuständig"
+        => "Lead",
+    "Keine Benutzer vorhanden."
+        => "No users yet.",
+    "Benutzer suchen …"
+        => "Search users …",
 ];

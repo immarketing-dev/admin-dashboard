@@ -177,6 +177,92 @@ $nur_kunden = task_members_auswahl([
 ], 'h');
 $checks['leere Gruppen fehlen'] = substr_count($nur_kunden, 'data-member-group') === 1;
 
+// --- Zustaendige: Benutzer am Projekt ---------------------------------
+// Dasselbe Verfahren wie bei den Kontakten - mit einem Unterschied: der
+// Lead wird zusaetzlich nach tasks.assigned_user_id gespiegelt.
+$uins = $pdo->prepare("INSERT INTO users (email, password_hash, name, role, is_active) VALUES (?, 'x', ?, 'staff', ?)");
+$benutzer = [];
+foreach ([['anna', 'Anna Admin', 1], ['ben', 'Ben', 1], ['cleo', 'Cleo', 0]] as [$key, $name, $aktiv]) {
+    $uins->execute([$key . '@example.test', $name, $aktiv]);
+    $benutzer[$key] = (int) $pdo->lastInsertId();
+}
+
+/** Wer ist zustaendig, mit Rolle? */
+function stand_benutzer(PDO $pdo, int $task): array
+{
+    $st = $pdo->prepare("SELECT u.name, tu.role FROM task_users tu
+                         JOIN users u ON u.id = tu.user_id
+                         WHERE tu.task_id = ? ORDER BY u.name");
+    $st->execute([$task]);
+    $r = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $z) $r[$z['name']] = $z['role'];
+    return $r;
+}
+/** Der Spiegel in tasks.assigned_user_id. */
+function spiegel(PDO $pdo, int $task): ?int
+{
+    $v = $pdo->query("SELECT assigned_user_id FROM tasks WHERE id = $task")->fetchColumn();
+    return ($v === null || $v === false) ? null : (int) $v;
+}
+
+task_users_abgleichen($pdo, $task, $benutzer['anna'], [$benutzer['ben']]);
+$checks['Lead und Mitglied angelegt']
+    = stand_benutzer($pdo, $task) === ['Anna Admin' => 'lead', 'Ben' => 'member'];
+$checks['assigned_user_id spiegelt den Lead'] = spiegel($pdo, $task) === $benutzer['anna'];
+
+task_users_abgleichen($pdo, $task, $benutzer['ben'], [$benutzer['anna'], $benutzer['cleo']]);
+$s = stand_benutzer($pdo, $task);
+$checks['Lead-Wechsel: neuer Lead']               = ($s['Ben'] ?? '') === 'lead';
+$checks['Lead-Wechsel: alter Lead wird member']   = ($s['Anna Admin'] ?? '') === 'member';
+$checks['genau ein lead']                          = count(array_filter($s, fn($r) => $r === 'lead')) === 1;
+$checks['inaktiver Benutzer darf zugeordnet sein'] = ($s['Cleo'] ?? '') === 'member';
+$checks['Spiegel folgt dem Lead']                  = spiegel($pdo, $task) === $benutzer['ben'];
+
+task_users_abgleichen($pdo, $task, $benutzer['ben'], []);
+$checks['Lead bleibt, auch wenn nicht gesendet'] = stand_benutzer($pdo, $task) === ['Ben' => 'lead'];
+
+task_users_abgleichen($pdo, $task, 0, [$benutzer['anna']]);
+$checks['ohne Lead gibt es keinen lead'] = stand_benutzer($pdo, $task) === ['Anna Admin' => 'member'];
+$checks['ohne Lead ist der Spiegel NULL'] = spiegel($pdo, $task) === null;
+
+task_users_abgleichen($pdo, $task, 0, []);
+$checks['leere Zustaendige lassen sich speichern'] = stand_benutzer($pdo, $task) === [];
+
+task_users_abgleichen($pdo, $task, $benutzer['anna'],
+    [(string) $benutzer['anna'], '0', -1, 'x', null, $benutzer['ben'], $benutzer['ben']]);
+$checks['rohe Eingaben werden bereinigt']
+    = stand_benutzer($pdo, $task) === ['Anna Admin' => 'lead', 'Ben' => 'member'];
+
+// Unbekannter Benutzer: nicht jede Datenbank laesst INSERT IGNORE einen
+// fehlenden Fremdschluessel uebergehen - er muss vorher aussortiert sein.
+task_users_abgleichen($pdo, $task, $benutzer['anna'], [999999, $benutzer['ben']]);
+$checks['unbekannter Benutzer wird uebersprungen']
+    = stand_benutzer($pdo, $task) === ['Anna Admin' => 'lead', 'Ben' => 'member'];
+task_users_abgleichen($pdo, $task, 999999, [$benutzer['ben']]);
+$checks['unbekannter Lead zaehlt als kein Lead']
+    = stand_benutzer($pdo, $task) === ['Ben' => 'member'] && spiegel($pdo, $task) === null;
+
+$vor = (int) $pdo->query("SELECT COUNT(*) FROM task_users")->fetchColumn();
+task_users_abgleichen($pdo, 0, $benutzer['anna'], [$benutzer['ben']]);
+$checks['Projekt 0 aendert bei Zustaendigen nichts']
+    = (int) $pdo->query("SELECT COUNT(*) FROM task_users")->fetchColumn() === $vor;
+
+// --- Das Markup der Benutzerauswahl -----------------------------------
+if (!function_exists('datenwert')) { function datenwert(string $s): string { return $s; } }
+$html = task_users_auswahl([
+    ['id' => 3, 'name' => 'Ben <b>', 'email' => 'ben@example.test',  'role' => 'staff', 'is_active' => 1],
+    ['id' => 4, 'name' => '',        'email' => 'cleo@example.test', 'role' => 'admin', 'is_active' => 0],
+], 'u');
+$checks['je Benutzer ein Kaestchen']       = substr_count($html, 'name="user_ids[]"') === 2;
+$checks['Benutzername wird maskiert']      = strpos($html, '<b>') === false && strpos($html, '&lt;b&gt;') !== false;
+$checks['ohne Namen steht der Adressteil'] = strpos($html, '>cleo<') !== false;
+$checks['inaktiv wird ausgewiesen']        = substr_count($html, 'inaktiv') === 1;
+$checks['Rolle steht dran']                = strpos($html, 'Mitarbeit') !== false && strpos($html, 'Verwaltung') !== false;
+$checks['Benutzer-ids tragen den Praefix'] = strpos($html, 'id="u_u3"') !== false;
+$checks['Lead-Kennzeichen ist dabei']      = strpos($html, 'Hauptzuständig') !== false;
+$checks['leere Benutzerliste sagt es']
+    = strpos(task_users_auswahl([], 'x'), 'Keine Benutzer vorhanden.') !== false;
+
 // ----------------------------------------------------------------------
 $fail = 0;
 foreach ($checks as $name => $ok) {
