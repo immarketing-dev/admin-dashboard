@@ -235,7 +235,7 @@ $known = [
     // Ueber die Migrationen 5 und 6 dazugekommen und bis hierher in
     // dieser Liste vergessen - Pruefung 1 hat sie deshalb nicht
     // ueberwacht.
-    'task_contacts', 'project_comments',
+    'task_contacts', 'project_comments', 'task_users', 'task_links',
     'password_resets', 'mail_log', 'url_checks', 'totp_backup_codes',
 ];
 
