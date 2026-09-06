@@ -949,14 +949,6 @@ return [
         => 'ICO or PNG · max. 512 KB · recommended: 32×32 px or 64×64 px',
     'E-Mail-Benachrichtigungen'
         => 'E-mail notifications',
-    'Meilenstein-E-Mail-Bestätigung'
-        => 'Milestone confirmation e-mail',
-    'Beim Abschließen eines Meilensteins im Portal wird der Kunde per E-Mail gefragt, ob er den Meilenstein offiziell bestätigen möchte.'
-        => 'When a milestone is completed in the portal, the client is asked by e-mail whether to approve it formally.',
-    'Angebots-E-Mail beim Versand'
-        => 'Quote e-mail on sending',
-    'Beim Versand eines Angebots wird automatisch eine E-Mail an den Kunden generiert.'
-        => 'Sending a quote generates an e-mail to the client automatically.',
     'Rahmen aller E-Mails'
         => 'Frame around every e-mail',
     'Kopfbereich, Farben und Logo kommen aus'
@@ -2258,4 +2250,31 @@ return [
     // ── Portal: verknüpfte Projekte ──
     "Verknüpfte Projekte"
         => "Linked projects",
+    // ── Einstellungen: Benachrichtigungen ──
+    "Der Kunde kann jede dieser Mitteilungen für sich abbestellen — im Portal unter „Mein Profil“."
+        => "Customers can opt out of any of these themselves, in the portal under \"My profile\".",
+    "Antwort in der Projekt-Diskussion"
+        => "Reply in the project discussion",
+    "Alle Beteiligten des Projekts bekommen eine E-Mail, wenn Sie im Austausch antworten."
+        => "Everyone involved in the project gets an email when you reply in the discussion.",
+    "Antwort zu einem Meilenstein"
+        => "Reply on a milestone",
+    "Alle Beteiligten bekommen eine E-Mail, wenn Sie einen Kommentar an einem Schritt beantworten."
+        => "Everyone involved gets an email when you answer a comment on a step.",
+    "Neue Datei im Projekt"
+        => "New file in the project",
+    "Alle Beteiligten bekommen eine E-Mail, wenn Sie Dateien hochladen. Ein Upload mehrerer Dateien ergibt eine E-Mail."
+        => "Everyone involved gets an email when you upload files. Uploading several files at once sends one email.",
+    "Meilenstein abgeschlossen"
+        => "Milestone completed",
+    "Beim Abschließen eines Meilensteins werden Sie gefragt, ob alle Beteiligten benachrichtigt werden sollen."
+        => "When you complete a milestone you are asked whether everyone involved should be notified.",
+    "Antwort auf eine Support-Anfrage"
+        => "Reply to a support request",
+    "Der Kunde bekommt eine E-Mail, wenn Sie eine Anfrage öffentlich beantworten."
+        => "The customer gets an email when you answer a request publicly.",
+    "Neue Rechnung im Portal"
+        => "New invoice in the portal",
+    "Der Kunde bekommt eine E-Mail, sobald eine Rechnung für ihn im Portal bereitliegt."
+        => "The customer gets an email as soon as an invoice is available for them in the portal.",
 ];
