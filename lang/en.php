@@ -2277,4 +2277,14 @@ return [
         => "New invoice in the portal",
     "Der Kunde bekommt eine E-Mail, sobald eine Rechnung für ihn im Portal bereitliegt."
         => "The customer gets an email as soon as an invoice is available for them in the portal.",
+    // ── Portal: Profil ──
+    "Sprache und Mitteilungen"
+        => "Language and notifications",
+    "Gilt für dieses Portal und für E-Mails an Sie."
+        => "Applies to this portal and to emails sent to you.",
+    "E-Mail bei Neuigkeiten"
+        => "Email me about updates",
+    "Antworten, neue Dateien und Rechnungen. Abgeschaltet erreichen Sie diese Mitteilungen nur noch hier im Portal."
+        => "Replies, new files and invoices. Switched off, these updates reach you only here in the portal.",
+
 ];

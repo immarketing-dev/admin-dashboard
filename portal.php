@@ -292,9 +292,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Profildaten aktualisieren
     if (isset($_POST['update_profile'])) {
-        $pdo->prepare("UPDATE contacts SET name=?,company=?,email=?,phone=?,website=?,street=?,zip=?,city=?,country=? WHERE id=?")
-            ->execute([trim($_POST['name']),trim($_POST['company']),trim($_POST['email']),trim($_POST['phone']),trim($_POST['website']),trim($_POST['street']),trim($_POST['zip']),trim($_POST['city']),trim($_POST['country']),$client['id']]);
+        // Sprache und Mitteilungen gehoeren in DIESELBE Anweisung wie
+        // die uebrigen Felder. Ein Feld, das angezeigt und nicht
+        // gespeichert wird, tut so, als wuerde es wirken.
+        $_spr = in_array($_POST['language'] ?? '', SPRACHEN, true)
+              ? $_POST['language'] : ($client['language'] ?? null);
+        $_notify = isset($_POST['portal_notify']) ? 1 : 0;
+
+        $pdo->prepare("UPDATE contacts SET name=?,company=?,email=?,phone=?,website=?,street=?,zip=?,city=?,country=?,language=?,portal_notify=? WHERE id=?")
+            ->execute([trim($_POST['name']),trim($_POST['company']),trim($_POST['email']),trim($_POST['phone']),trim($_POST['website']),trim($_POST['street']),trim($_POST['zip']),trim($_POST['city']),trim($_POST['country']),$_spr,$_notify,$client['id']]);
         log_event($pdo, 'PORTAL_PROFILE', "Kunde {$client['name']} aktualisierte Kontaktdaten.");
+
+        // Die laufende Sitzung folgt sofort - sonst steht die Seite nach
+        // dem Speichern noch in der alten Sprache.
+        if ($_spr) $_SESSION['portal_lang_' . $client['id']] = $_spr;
+
         header("Location: portal?token=$token&msg=profile_updated"); exit();
     }
 
@@ -1999,6 +2011,28 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <div class="col-md-3"><label class="form-label small fw-bold"><?= te('PLZ') ?></label><input type="text" name="zip" class="form-control" value="<?= htmlspecialchars($client['zip'] ?? '') ?>" style="border-radius:10px;"></div>
             <div class="col-md-5"><label class="form-label small fw-bold"><?= te('Ort') ?></label><input type="text" name="city" class="form-control" value="<?= htmlspecialchars($client['city'] ?? '') ?>" style="border-radius:10px;"></div>
             <div class="col-md-4"><label class="form-label small fw-bold"><?= te('Land') ?></label><input type="text" name="country" class="form-control" value="<?= htmlspecialchars($client['country'] ?? te('Deutschland')) ?>" style="border-radius:10px;"></div>
+          </div>
+          <h6 class="fw-bold text-dark mb-3 pb-2 border-bottom small text-uppercase" style="letter-spacing:.5px;"><?= te('Sprache und Mitteilungen') ?></h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold" for="pf_lang"><?= te('Sprache') ?></label>
+              <select name="language" id="pf_lang" class="form-select" style="border-radius:10px;">
+                <?php foreach(SPRACHEN as $_s): ?>
+                  <option value="<?= htmlspecialchars($_s) ?>" <?= ($client['language'] ?? '') === $_s ? 'selected' : '' ?>>
+                    <?= htmlspecialchars(sprachname($_s)) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <div class="form-text"><?= te('Gilt für dieses Portal und für E-Mails an Sie.') ?></div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch mt-4 pt-2">
+                <input class="form-check-input" type="checkbox" name="portal_notify" id="pf_notify"
+                       role="switch" <?= (int)($client['portal_notify'] ?? 1) === 1 ? 'checked' : '' ?>>
+                <label class="form-check-label fw-bold" for="pf_notify"><?= te('E-Mail bei Neuigkeiten') ?></label>
+              </div>
+              <div class="form-text"><?= te('Antworten, neue Dateien und Rechnungen. Abgeschaltet erreichen Sie diese Mitteilungen nur noch hier im Portal.') ?></div>
+            </div>
           </div>
           <button type="submit" class="btn btn-lg fw-bold w-100 text-white" style="background:var(--color-primary);border-radius:12px;">
             <i class="bi bi-check-circle me-2"></i><?= te('Daten speichern') ?>
