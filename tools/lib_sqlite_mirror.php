@@ -150,6 +150,14 @@ class SqliteSpiegelPDO extends PDO
         // Gegenstueck; dass es UTC liefert statt der Serverzeitzone,
         // spielt fuer eine Spiegelung zu Pruefzwecken keine Rolle.
         $sql = preg_replace('/\bCURDATE\s*\(\s*\)/i', "DATE('now')", $sql);
+        // DATE_FORMAT(x, '%Y-%m') schreibt SQLite als strftime('%Y-%m', x).
+        // Die Platzhalter %Y, %m, %d bedeuten in beiden dasselbe; mehr
+        // benutzt das Projekt nicht (tasks.php: Startmonat-Filter).
+        $sql = preg_replace(
+            "/\\bDATE_FORMAT\\s*\\(\\s*([A-Za-z_][A-Za-z0-9_.]*)\\s*,\\s*('[^']*')\\s*\\)/i",
+            'strftime($2, $1)',
+            $sql
+        );
 
         // YEAR(x) -> CAST(strftime('%Y', x) AS INTEGER). Der Cast ist
         // noetig, weil strftime eine Zeichenkette liefert und der

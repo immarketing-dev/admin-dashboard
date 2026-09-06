@@ -311,6 +311,12 @@ if command -v php >/dev/null 2>&1; then
     echo "VERKNUEPFUNGEN: $out"
     fail=1
   fi
+  # Die Projektseite rendert wirklich - Karten, Fenster, Filter - gegen
+  # den Spiegel. Faengt Array-Schluessel, die php -l nie sieht.
+  if ! out=$(php tools/test_tasks_render.php 2>&1); then
+    echo "PROJEKTSEITE: $out"
+    fail=1
+  fi
   # Wer welche hochgeladene Datei bekommt. Ein Fehler darin gibt Kunden
   # die Unterlagen anderer Kunden - und faellt im Betrieb nie auf, weil
   # niemand die Rechnung sieht, die er faelschlich sehen duerfte.

@@ -804,7 +804,7 @@ require 'includes/layout_start.php';
               
               <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap task-header-row">
                 <div style="flex: 1; min-width: 0;"> 
-                    <span class="badge bg-subtle text-primary mb-1"><?=htmlspecialchars($task['category'])?></span>
+                    <span class="badge bg-subtle text-primary mb-1"><?=htmlspecialchars((string) $task['category'])?></span>
                     
                     <h4 class="fw-bold mb-0">
                         <?php if($task['is_online'] !== null): ?>
