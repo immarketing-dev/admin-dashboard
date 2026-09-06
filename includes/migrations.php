@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 22;
+const SCHEMA_VERSION = 23;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -766,6 +766,55 @@ function migrations(): array
             'ALTER TABLE quotes ADD COLUMN converted_invoice_id INT DEFAULT NULL',
             'ALTER TABLE quotes ADD CONSTRAINT fk_quotes_invoice'
                 . ' FOREIGN KEY (converted_invoice_id) REFERENCES finances(id) ON DELETE SET NULL',
+        ],
+
+        // Version 23: mehrere Zustaendige und Verknuepfungen zwischen
+        // Projekten.
+        //
+        // tasks.assigned_user_id (Version 18) las und schrieb bis hierher
+        // keine Seite. Ein Projekt hatte damit keinen Zustaendigen, und
+        // mehr als einen schon gar nicht. task_users ist fuer Benutzer,
+        // was task_contacts (Version 5) fuer Kontakte ist: eine Zeile je
+        // Person, mit Rolle. 'lead' ist der Hauptzustaendige, hoechstens
+        // einer je Projekt - durchgesetzt in includes/task_members.php,
+        // nicht in der Tabelle.
+        //
+        // assigned_user_id bleibt und spiegelt den Lead: der Seed fuellt
+        // die Spalte, und wer sie liest, soll den richtigen Wert sehen.
+        // Bestehende Werte werden hier als Lead uebernommen.
+        //
+        // task_links ist gerichtet: task_id knuepft an linked_task_id an
+        // (das Folgeprojekt zeigt auf das alte). Ein Paar steht genau
+        // einmal; den Gegenverweis ersetzt includes/task_links.php beim
+        // Speichern.
+        23 => [
+            'CREATE TABLE IF NOT EXISTS task_users ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' task_id INT NOT NULL,'
+            . ' user_id INT NOT NULL,'
+            . " role VARCHAR(20) NOT NULL DEFAULT 'member',"
+            . ' added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' UNIQUE KEY uq_task_user (task_id, user_id),'
+            . ' KEY idx_tu_user (user_id),'
+            . ' CONSTRAINT fk_tu_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,'
+            . ' CONSTRAINT fk_tu_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+
+            'INSERT IGNORE INTO task_users (task_id, user_id, role)'
+            . " SELECT id, assigned_user_id, 'lead' FROM tasks WHERE assigned_user_id IS NOT NULL",
+
+            'CREATE TABLE IF NOT EXISTS task_links ('
+            . ' id INT AUTO_INCREMENT PRIMARY KEY,'
+            . ' task_id INT NOT NULL,'
+            . ' linked_task_id INT NOT NULL,'
+            . " kind VARCHAR(20) NOT NULL DEFAULT 'related',"
+            . " note VARCHAR(255) NOT NULL DEFAULT '',"
+            . ' created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,'
+            . ' UNIQUE KEY uq_task_link (task_id, linked_task_id),'
+            . ' KEY idx_tl_linked (linked_task_id),'
+            . ' CONSTRAINT fk_tl_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,'
+            . ' CONSTRAINT fk_tl_linked FOREIGN KEY (linked_task_id) REFERENCES tasks(id) ON DELETE CASCADE'
+            . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
         ],
     ];
 }

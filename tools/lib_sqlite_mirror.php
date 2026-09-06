@@ -92,6 +92,11 @@ function nach_sqlite(string $sql): array
             // UNIQUE KEY behalten (fängt doppelte Rechnungsnummern),
             // gewöhnliche Indizes entfallen.
             $teil = preg_replace('/\bUNIQUE\s+KEY\s+\w+\s*\(/i', 'UNIQUE (', $teil);
+            // Erst der einzeilige Fall: die Migrationen in
+            // includes/migrations.php stehen als eine Zeile, dort folgt
+            // KEY direkt auf ein Komma. UNIQUE KEY und PRIMARY KEY sind
+            // nicht betroffen - vor ihrem KEY steht kein Komma.
+            $teil = preg_replace('/,\s*(KEY|INDEX)\s+\w+\s*\([^)]*\)/i', '', $teil);
             $teil = preg_replace('/^\s*(KEY|INDEX)\s+\w+\s*\([^)]*\)\s*,?\s*$/mi', '', $teil);
 
             // Leerzeilen aus entfallenen Indizes zusammenziehen, danach

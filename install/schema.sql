@@ -293,6 +293,39 @@ CREATE TABLE IF NOT EXISTS task_contacts (
   CONSTRAINT fk_tc_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Interne Zustaendige eines Projekts. Fuer Benutzer, was task_contacts
+-- fuer Kontakte ist. 'lead' ist der Hauptzustaendige, hoechstens einer
+-- je Projekt - durchgesetzt in includes/task_members.php, nicht hier.
+-- tasks.assigned_user_id bleibt als Spiegel des Leads bestehen.
+CREATE TABLE IF NOT EXISTS task_users (
+  id       INT AUTO_INCREMENT PRIMARY KEY,
+  task_id  INT NOT NULL,
+  user_id  INT NOT NULL,
+  role     VARCHAR(20) NOT NULL DEFAULT 'member',
+  added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_task_user (task_id, user_id),
+  KEY idx_tu_user (user_id),
+  CONSTRAINT fk_tu_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tu_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Gerichtete Verknuepfung: task_id knuepft an linked_task_id an (das
+-- Folgeprojekt zeigt auf das alte). kind: follow_up | part_of | related.
+-- Ein Paar steht genau einmal; den Gegenverweis ersetzt
+-- includes/task_links.php beim Speichern.
+CREATE TABLE IF NOT EXISTS task_links (
+  id             INT AUTO_INCREMENT PRIMARY KEY,
+  task_id        INT NOT NULL,
+  linked_task_id INT NOT NULL,
+  kind           VARCHAR(20)  NOT NULL DEFAULT 'related',
+  note           VARCHAR(255) NOT NULL DEFAULT '',
+  created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_task_link (task_id, linked_task_id),
+  KEY idx_tl_linked (linked_task_id),
+  CONSTRAINT fk_tl_task   FOREIGN KEY (task_id)        REFERENCES tasks(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tl_linked FOREIGN KEY (linked_task_id) REFERENCES tasks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS milestone_comments (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   milestone_id INT NOT NULL,
@@ -642,7 +675,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '22')
+INSERT INTO settings (k, v) VALUES ('schema_version', '23')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;

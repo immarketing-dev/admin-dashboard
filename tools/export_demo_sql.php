@@ -191,7 +191,7 @@ function spalten(PDO $pdo, string $tabelle): array
 // die Datei lesbar und erlaubt einen Import auch ohne das SET.
 $reihenfolge = [
     'settings', 'users', 'totp_backup_codes', 'contacts', 'leads_inbox',
-    'tasks', 'task_milestones', 'task_contacts', 'milestone_comments',
+    'tasks', 'task_milestones', 'task_contacts', 'task_users', 'task_links', 'milestone_comments',
     'project_comments', 'client_assets', 'time_entries', 'finances', 'payments', 'quotes',
     'support_tickets', 'ticket_notes', 'wiki_articles', 'wiki_attachments',
     'wiki_client_shares', 'calendar_events', 'event_contacts',

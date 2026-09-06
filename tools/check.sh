@@ -299,6 +299,12 @@ if command -v php >/dev/null 2>&1; then
     echo "BETEILIGTE: $out"
     fail=1
   fi
+  # Migration 23: die neuen Tabellen entstehen, und ein bestehender
+  # Zustaendiger aus tasks.assigned_user_id wird uebernommen.
+  if ! out=$(php tools/test_migration_23.php 2>&1); then
+    echo "MIGRATION23: $out"
+    fail=1
+  fi
   # Wer welche hochgeladene Datei bekommt. Ein Fehler darin gibt Kunden
   # die Unterlagen anderer Kunden - und faellt im Betrieb nie auf, weil
   # niemand die Rechnung sieht, die er faelschlich sehen duerfte.
