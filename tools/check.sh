@@ -305,6 +305,12 @@ if command -v php >/dev/null 2>&1; then
     echo "MIGRATION23: $out"
     fail=1
   fi
+  # Verknuepfungen zwischen Projekten: Selbstverweis, Gegenverweis,
+  # geloeschte Ziele - alles gegen die echten Tabellen.
+  if ! out=$(php tools/test_task_links.php 2>&1); then
+    echo "VERKNUEPFUNGEN: $out"
+    fail=1
+  fi
   # Wer welche hochgeladene Datei bekommt. Ein Fehler darin gibt Kunden
   # die Unterlagen anderer Kunden - und faellt im Betrieb nie auf, weil
   # niemand die Rechnung sieht, die er faelschlich sehen duerfte.
