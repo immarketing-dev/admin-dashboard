@@ -310,6 +310,12 @@ if command -v php >/dev/null 2>&1; then
     echo "MIGRATION24: $out"
     fail=1
   fi
+  # Wer bekommt Post aus dem Portal - und wer nicht. Ein Fehler darin
+  # schickt entweder gar nichts oder an jemanden, der abbestellt hat.
+  if ! out=$(php tools/test_portal_notify.php 2>&1); then
+    echo "PORTALMAIL: $out"
+    fail=1
+  fi
   # Verknuepfungen zwischen Projekten: Selbstverweis, Gegenverweis,
   # geloeschte Ziele - alles gegen die echten Tabellen.
   if ! out=$(php tools/test_task_links.php 2>&1); then

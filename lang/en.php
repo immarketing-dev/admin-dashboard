@@ -2171,6 +2171,25 @@ return [
         => "Go to the invoice made from this quote",
     "Aus Angebot %s eine Rechnung erstellen?"
         => "Create an invoice from quote %s?",
+    // ── Benachrichtigungen aus dem Projekt (includes/mail_templates.php) ──
+    "{{firma}}: Neue Antwort zum Projekt „{{projekt}}“"
+        => "{{firma}}: New reply on project \"{{projekt}}\"",
+    "Hallo {{kunde}},\n\nzum Projekt „{{projekt}}“ gibt es einen neuen Beitrag:\n\n{{nachricht}}"
+        => "Hello {{kunde}},\n\nthere is a new post on the project \"{{projekt}}\":\n\n{{nachricht}}",
+    "Projekt im Portal ansehen"
+        => "View the project in the portal",
+    "{{firma}}: Neue Antwort zum Schritt „{{meilenstein}}“"
+        => "{{firma}}: New reply on step \"{{meilenstein}}\"",
+    "Hallo {{kunde}},\n\nzum Schritt „{{meilenstein}}“ im Projekt „{{projekt}}“ gibt es eine Antwort:\n\n{{nachricht}}"
+        => "Hello {{kunde}},\n\nthere is a reply on the step \"{{meilenstein}}\" in the project \"{{projekt}}\":\n\n{{nachricht}}",
+    "Meilenstein im Portal ansehen"
+        => "View the milestone in the portal",
+    "{{firma}}: Neue Dateien im Projekt „{{projekt}}“"
+        => "{{firma}}: New files in the project \"{{projekt}}\"",
+    "Hallo {{kunde}},\n\nzum Projekt „{{projekt}}“ liegen neue Dateien bereit:\n\n{{dateien}}"
+        => "Hello {{kunde}},\n\nnew files are available for the project \"{{projekt}}\":\n\n{{dateien}}",
+    "Dateien im Portal ansehen"
+        => "View the files in the portal",
     // ── Zuständige am Projekt (includes/task_members.php) ──
     "inaktiv"
         => "inactive",

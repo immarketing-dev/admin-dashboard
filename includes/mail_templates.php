@@ -61,6 +61,35 @@ function mail_templates(): array
             'button'  => t('Anfrage im Portal ansehen'),
         ],
 
+        // ── Aus dem Projekt heraus ──────────────────────────────────
+        // Drei Anlaesse, bei denen das Panel dem Kunden von sich aus
+        // schreibt. Feste Hex-Farben wie ueberall hier: Mailclients
+        // loesen CSS-Variablen nicht auf, die Farbe fiele ganz aus.
+        'project_reply' => [
+            'label'   => 'Antwort in der Projekt-Diskussion',
+            'hint'    => 'Geht an alle Beteiligten, wenn Sie im Austausch zu einem Projekt antworten.',
+            'vars'    => ['kunde', 'projekt', 'nachricht', 'firma'],
+            'subject' => t('{{firma}}: Neue Antwort zum Projekt „{{projekt}}“'),
+            'body'    => t("Hallo {{kunde}},\n\nzum Projekt „{{projekt}}“ gibt es einen neuen Beitrag:\n\n{{nachricht}}"),
+            'button'  => t('Projekt im Portal ansehen'),
+        ],
+        'milestone_comment' => [
+            'label'   => 'Antwort zu einem Meilenstein',
+            'hint'    => 'Geht an alle Beteiligten, wenn Sie einen Meilenstein-Kommentar beantworten.',
+            'vars'    => ['kunde', 'projekt', 'meilenstein', 'nachricht', 'firma'],
+            'subject' => t('{{firma}}: Neue Antwort zum Schritt „{{meilenstein}}“'),
+            'body'    => t("Hallo {{kunde}},\n\nzum Schritt „{{meilenstein}}“ im Projekt „{{projekt}}“ gibt es eine Antwort:\n\n{{nachricht}}"),
+            'button'  => t('Meilenstein im Portal ansehen'),
+        ],
+        'asset_upload' => [
+            'label'   => 'Neue Datei im Projekt',
+            'hint'    => 'Geht an alle Beteiligten, wenn Sie Dateien zu einem Projekt hochladen.',
+            'vars'    => ['kunde', 'projekt', 'dateien', 'firma'],
+            'subject' => t('{{firma}}: Neue Dateien im Projekt „{{projekt}}“'),
+            'body'    => t("Hallo {{kunde}},\n\nzum Projekt „{{projekt}}“ liegen neue Dateien bereit:\n\n{{dateien}}"),
+            'button'  => t('Dateien im Portal ansehen'),
+        ],
+
         'event_invite' => [
             'label'   => 'Termineinladung',
             'hint'    => 'Die Einladung aus dem Kalender, mit Kalenderdatei im Anhang.',
@@ -358,6 +387,9 @@ function mail_preview_vars(): array
         'betrag'       => '1.240,00',
         'faellig'      => '20.09.2026',
         'anmerkungen'  => datenwert('Die Positionen sind wie besprochen aufgeteilt.'),
+        // Fuer die Vorlage 'asset_upload': mehrere Namen, je Zeile einer.
+        'dateien'      => datenwert("Entwurf-Startseite.pdf
+Farbschema.png"),
     ];
 }
 
