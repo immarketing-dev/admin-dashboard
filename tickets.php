@@ -8,6 +8,7 @@ require_once __DIR__ . '/includes/api_tickets.php';
 require_once 'includes/mail_templates.php';
 require_once 'includes/auth.php';
 require_once 'includes/filter_state.php';
+require_once __DIR__ . '/includes/portal_notify.php';
 
 // AJAX: Notizen laden
 if (isset($_GET['ajax_notes'])) {
@@ -87,7 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($do_email && !$to) { echo json_encode(['ok' => false, 'err' => 'Keine E-Mail-Adresse angegeben']); exit(); }
 
         // Kontakt + Ticket-Betreff für die E-Mail
-        $row_contact = $pdo->prepare("SELECT c.name, c.portal_token, c.language, st.subject AS ticket_subject
+        // portal_notify kommt mit: wer die Mitteilungen abbestellt hat,
+        // bekommt auch hier keine Mail. deleted_at ebenso - ein
+        // geloeschter Kontakt soll keine Post mehr bekommen.
+        $row_contact = $pdo->prepare("SELECT c.name, c.portal_token, c.language, c.portal_notify,
+                   c.deleted_at, st.subject AS ticket_subject
             FROM support_tickets st LEFT JOIN contacts c ON st.contact_id = c.id WHERE st.id = ?");
         $row_contact->execute([$id]);
         $contact_row    = $row_contact->fetch(PDO::FETCH_ASSOC);
@@ -111,7 +116,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $site        = setting('main_website',  MAIN_WEBSITE);
 
         try {
-            if ($do_email) {
+            // Der Schalter fehlte hier: die Mail ging immer hinaus,
+            // waehrend jede andere Benachrichtigung abschaltbar war.
+            // Dazu das Haekchen am Kontakt - dieselben zwei Bremsen wie
+            // in includes/portal_notify.php.
+            $_darf_mail = portal_notify_aktiv('ticket_reply')
+                       && (int) ($contact_row['portal_notify'] ?? 1) === 1
+                       && empty($contact_row['deleted_at']);
+            if ($do_email && $_darf_mail) {
                 require_once __DIR__ . '/vendor/autoload.php';
 
                 // ── HTML-Mailvorlage ──────────────────────────────
