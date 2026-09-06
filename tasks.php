@@ -14,6 +14,7 @@ require_once 'includes/task_budget.php';
 require_once 'includes/filter_state.php';
 require_once 'includes/task_members.php';
 require_once 'includes/task_links.php';
+require_once 'includes/portal_notify.php';
 require_once 'includes/users.php';
 require_once 'includes/upload_helper.php';
 
@@ -91,6 +92,11 @@ if (isset($_POST['ajax_action'])) {
             $upload_dir = 'uploads/client_assets/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
+            // Die Namen sammeln: eine Mail fuer den Vorgang, nicht eine
+            // je Datei. Wer zehn Dateien in einem Zug hochlaedt, meint
+            // eine Lieferung.
+            $hochgeladen = [];
+
             foreach ($_FILES['admin_assets']['tmp_name'] as $key => $tmp_name) {
                 $file_name = $_FILES['admin_assets']['name'][$key];
                 $file_size = $_FILES['admin_assets']['size'][$key];
@@ -109,12 +115,22 @@ if (isset($_POST['ajax_action'])) {
                     $pdo->prepare("INSERT INTO client_assets (task_id, file_name, file_path, dashboard_seen, uploaded_by) VALUES (?, ?, ?, 1, 'admin')")
                         ->execute([$task_id, $file_name, $path]);
                     $asset_id = $pdo->lastInsertId();
+                    $hochgeladen[] = $file_name;
 
                     $badge          = '<span class="badge bg-primary me-2" style="font-size:9px; padding:3px 5px;">Admin</span>';
                     $html_response .= '<div class="d-flex justify-content-between align-items-center mb-1 bg-surface p-2 rounded border small shadow-sm"><span class="text-truncate d-flex align-items-center" style="max-width: 70%;">' . $badge . ' ' . htmlspecialchars($file_name) . '</span><div class="d-flex gap-2"><a href="' . $path . '" download><i class="bi bi-download"></i></a><button type="button" class="btn btn-link text-danger p-0 shadow-none" onclick="openDeleteAssetModal(' . $asset_id . ')"><i class="bi bi-trash"></i></button></div></div>';
                 }
             }
             log_event($pdo, 'ASSET_ADDED', "Admin hat neue Dateien zu Projekt #$task_id hochgeladen.");
+
+            if ($hochgeladen) {
+                $_t = $pdo->prepare("SELECT title FROM tasks WHERE deleted_at IS NULL AND id = ?");
+                $_t->execute([$task_id]);
+                portal_benachrichtigen($pdo, 'asset_upload', $task_id, [
+                    'projekt' => (string) $_t->fetchColumn(),
+                    'dateien' => implode("\n", $hochgeladen),
+                ]);
+            }
         }
         echo $html_response; exit();
     }
@@ -128,6 +144,22 @@ if (isset($_POST['ajax_action'])) {
         $pdo->prepare("INSERT INTO milestone_comments (milestone_id, author, author_name, message, admin_seen) VALUES (?, 'admin', ?, ?, 1)")
             ->execute([$ms_id, $_cs, $msg]);
         $new_id = (int)$pdo->lastInsertId();
+
+        // Vor der Antwort an den Browser: portal_benachrichtigen() wirft
+        // nicht, ein Mailfehler verschluckt die Rueckmeldung also nicht.
+        $_ms = $pdo->prepare("SELECT m.title AS ms_titel, t.id AS task_id, t.title AS projekt
+                                FROM task_milestones m
+                                JOIN tasks t ON t.id = m.task_id
+                               WHERE m.id = ? AND t.deleted_at IS NULL");
+        $_ms->execute([$ms_id]);
+        if ($_z = $_ms->fetch(PDO::FETCH_ASSOC)) {
+            portal_benachrichtigen($pdo, 'milestone_comment', (int) $_z['task_id'], [
+                'projekt'     => (string) $_z['projekt'],
+                'meilenstein' => (string) $_z['ms_titel'],
+                'nachricht'   => $msg,
+            ]);
+        }
+
         echo json_encode(['ok'=>true, 'id'=>$new_id, 'author_name'=>$_cs, 'message'=>$msg, 'created_at'=>date('d.m.Y H:i')]);
         exit();
     }
@@ -157,6 +189,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                            VALUES (?, NULL, ?, ?, 1)")
                 ->execute([$t_id, setting('company_short', COMPANY_SHORT), $msg]);
             log_event($pdo, 'PROJECT_REPLY', "Antwort im Austausch zu Projekt $t_id.");
+
+            // Alle Beteiligten erfahren davon. Vorher stand die Antwort
+            // im Portal und niemand wusste es - wer wartete, musste
+            // zufaellig hineinschauen.
+            $_t = $pdo->prepare("SELECT title FROM tasks WHERE deleted_at IS NULL AND id = ?");
+            $_t->execute([$t_id]);
+            portal_benachrichtigen($pdo, 'project_reply', $t_id, [
+                'projekt'   => (string) $_t->fetchColumn(),
+                'nachricht' => $msg,
+            ]);
         }
         filter_redirect('tasks');
     }
@@ -238,6 +280,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         if (!empty($_FILES['admin_assets']['name'][0])) {
             $upload_dir = 'uploads/client_assets/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+            $hochgeladen = [];
 
             foreach ($_FILES['admin_assets']['tmp_name'] as $key => $tmp_name) {
                 $file_name = basename($_FILES['admin_assets']['name'][$key]);
@@ -256,8 +299,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                     if (move_uploaded_file($tmp_name, $path)) {
                         $pdo->prepare("INSERT INTO client_assets (task_id, file_name, file_path, dashboard_seen, uploaded_by) VALUES (?, ?, ?, 1, 'admin')")
                             ->execute([$task_id, $file_name, $path]);
+                        $hochgeladen[] = $file_name;
                     }
                 }
+            }
+
+            // Derselbe Hinweis wie beim Upload ueber JavaScript: eine
+            // Mail fuer den Vorgang, nicht eine je Datei.
+            if ($hochgeladen) {
+                portal_benachrichtigen($pdo, 'asset_upload', (int) $task_id, [
+                    'projekt' => $title,
+                    'dateien' => implode("
+", $hochgeladen),
+                ]);
             }
         }
         
@@ -322,45 +376,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             log_event($pdo, $action_type, "Meilenstein '{$ms['title']}' in Projekt '{$ms['task_title']}' ".((int)$ms['is_completed']===0?'abgeschlossen':'wieder geöffnet').".");
         }
 
-        // Nur bei Abschluss (0→1), wenn Nutzer Ja gewählt hat und Kontakt eine E-Mail hat
-        if ($ms && (int)$ms['is_completed'] === 0 && ($_POST['notify_client'] ?? '0') === '1' && !empty($ms['c_email']) && class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-            try {
-                $mail = new PHPMailer(true);
-                $mail->isSMTP();
-                $mail->Host       = SMTP_HOST;
-                $mail->SMTPAuth   = true;
-                $mail->Username   = SMTP_USER;
-                $mail->Password   = SMTP_PASS;
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port       = SMTP_PORT;
-                $mail->CharSet    = 'UTF-8';
-                $mail->setFrom(setting('admin_email', ADMIN_EMAIL), setting('company_name', COMPANY_NAME));
-                $mail->addAddress($ms['c_email'], $ms['c_name']);
-                $mail->addReplyTo(setting('support_email', SUPPORT_EMAIL), setting('company_short', COMPANY_SHORT));
-                $mail->isHTML(true);
-                // Wortlaut aus der Vorlage (Einstellungen > E-Mail-Vorlagen).
-                $_portal_url = $ms['portal_token']
-                    ? rtrim(setting('main_website', MAIN_WEBSITE), '/') . '/portal?token=' . urlencode($ms['portal_token'])
-                    : '';
-                // In der Sprache des Kunden - er liest die Mail, nicht wir.
-                $_sprache = mail_sprache($ms['c_language'] ?? null);
-                $_m = mail_in_sprache($_sprache, fn() => mail_render('milestone', [
-                    'kunde'       => $ms['c_name'],
-                    'projekt'     => $ms['task_title'],
-                    'meilenstein' => $ms['title'],
-                    'firma'       => setting('company_short', COMPANY_SHORT),
-                ], $_portal_url));
-                $mail->Subject = $_m['subject'];
-                $mail->Body    = $_m['html'];
-                $mail->AltBody = $_m['text'];
-                $mail->send();
-                log_event($pdo, 'MILESTONE_MAIL', "Meilenstein-E-Mail an {$ms['c_name']} gesendet: {$ms['title']}");
-                mail_protokollieren($pdo, 'milestone', $ms['c_email'], $_m['subject'], true,
-                    null, 'Meilenstein: ' . $ms['title']);
-            } catch (Exception $e) {
-                log_event($pdo, 'MAIL_ERROR', "SMTP-Fehler bei Meilenstein-Mail an {$ms['c_name']}: " . $mail->ErrorInfo);
-                mail_protokollieren($pdo, 'milestone', $ms['c_email'], $_m['subject'], false,
-                    $mail->ErrorInfo ?: $e->getMessage(), 'Meilenstein: ' . $ms['title']);
+        // Nur bei Abschluss (0-1) und wenn im Dialog "Ja" gewaehlt wurde.
+        // Frueher ging die Mail an tasks.contact_id - seit ein Projekt
+        // mehrere Beteiligte haben kann, erfuhr der Rest nichts.
+        if ($ms && (int)$ms['is_completed'] === 0 && ($_POST['notify_client'] ?? '0') === '1') {
+            $anzahl = portal_benachrichtigen($pdo, 'milestone', (int) $ms['task_id'], [
+                'projekt'     => (string) $ms['task_title'],
+                'meilenstein' => (string) $ms['title'],
+            ]);
+            if ($anzahl > 0) {
+                log_event($pdo, 'MILESTONE_MAIL',
+                    "Meilenstein-E-Mail an $anzahl Beteiligte gesendet: {$ms['title']}");
             }
         }
     }
