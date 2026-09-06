@@ -6,6 +6,7 @@ require_once 'includes/upload_helper.php';
 require_once 'includes/session.php';
 require_once 'includes/csrf.php';
 require_once 'includes/invoice_payments.php';
+require_once __DIR__ . '/includes/task_links.php';
 
 // PHPMailer: das Portal meldet dem Absender, wenn ein Angebot
 // angenommen wird oder eine Rueckfrage kommt.
@@ -596,6 +597,7 @@ $projects = $projects->fetchAll(PDO::FETCH_ASSOC);
 // Diskussion und Beteiligte gebatcht - nicht je Projektkarte einzeln.
 $project_comments = [];
 $project_members  = [];
+$project_links    = [];
 if (!empty($projects)) {
     $pids = array_column($projects, 'id');
     $in   = implode(',', array_fill(0, count($pids), '?'));
@@ -614,6 +616,15 @@ if (!empty($projects)) {
     $m->execute($pids);
     foreach ($m->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $project_members[$row['task_id']][] = $row;
+    }
+
+    // Verknuepfte Projekte - nur die, an denen der Betrachter selbst
+    // beteiligt ist. Ein Kunde erfaehrt hier nichts ueber Projekte, an
+    // denen er nicht mitwirkt.
+    $eigene_ids = array_map('intval', $pids);
+    foreach (task_links_laden($pdo, $pids) as $tid => $liste) {
+        $project_links[$tid] = array_values(array_filter(
+            $liste, fn($l) => in_array((int) $l['ziel_id'], $eigene_ids, true)));
     }
 }
 
@@ -1451,6 +1462,21 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                     </span>
                   <?php endforeach; ?>
                 </div>
+                <?php endif; ?>
+
+                <!-- Verknuepfte Projekte -->
+                <?php $verkn = $project_links[$p['id']] ?? []; ?>
+                <?php if($verkn): ?>
+                <div class="section-label mt-4"><i class="bi bi-link-45deg me-1"></i><?= te('Verknüpfte Projekte') ?></div>
+                <ul class="list-unstyled mb-2 small">
+                  <?php foreach($verkn as $l): ?>
+                    <li class="mb-1">
+                      <?= task_link_text($l['kind'], $l['richtung'],
+                            '<a href="#proj-body-' . (int)$l['ziel_id'] . '" data-bs-toggle="collapse" class="fw-bold">' . htmlspecialchars($l['titel']) . '</a>') ?>
+                      <?php if($l['note'] !== ''): ?><span class="text-muted">· <?= htmlspecialchars($l['note']) ?></span><?php endif; ?>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
                 <?php endif; ?>
 
                 <!-- Projekt-Diskussion -->

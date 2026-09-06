@@ -2236,4 +2236,7 @@ return [
         => "Links to other projects are shown there as well. Links pointing here are edited on the other project.",
     "Wer intern an diesem Projekt arbeitet. Den Hauptzuständigen ändern Sie unter „Bearbeiten“."
         => "Who works on this project internally. Change the lead under \"Edit\".",
+    // ── Portal: verknüpfte Projekte ──
+    "Verknüpfte Projekte"
+        => "Linked projects",
 ];
