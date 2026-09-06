@@ -786,23 +786,43 @@ require 'includes/layout_start.php';
                     
                     <div class="small mt-1 text-muted d-flex flex-wrap gap-3">
                         <?php
-                          $mitglieder = $task_members[$task['id']] ?? [];
-                          $weitere    = max(0, count($mitglieder) - 1);
+                          $mitglieder  = $task_members[$task['id']] ?? [];
+                          $weitere     = max(0, count($mitglieder) - 1);
+                          $hat_partner = count(array_filter($mitglieder, fn($m) => ($m['contact_type'] ?? '') === 'Geschäftspartner')) > 0;
+                          // Der Tooltip nennt alle Beteiligten mit Typ - die Karte
+                          // selbst zeigt nur den Hauptkontakt und einen Zaehler.
+                          $mitglieder_tip = implode(', ', array_map(
+                              fn($m) => $m['name'] . ' (' . datenwert($m['contact_type'] ?: 'Kunde') . ')', $mitglieder));
                         ?>
                         <?php if($task['contact_name']): ?>
                             <span role="button" data-bs-toggle="modal" data-bs-target="#membersModal"
-                                  onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'
-                                  title="<?= te('Beteiligte verwalten') ?>">
+                                  onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>, "contacts")'
+                                  title="<?= htmlspecialchars($mitglieder_tip) ?>">
                               <i class="bi bi-person"></i> <?=htmlspecialchars((string) $task['contact_name'])?><?php
-                                if ($weitere > 0) echo ' <span class="badge rounded-pill bg-subtle text-strong-c" style="font-size:var(--text-2xs);">+' . $weitere . '</span>';
+                                if ($weitere > 0) echo ' <span class="badge rounded-pill bg-subtle text-strong-c" style="font-size:var(--text-2xs);">+' . $weitere
+                                    . ($hat_partner ? ' <abbr class="text-decoration-none" title="' . te('Geschäftspartner beteiligt') . '">P</abbr>' : '') . '</span>';
                               ?>
                             </span>
                         <?php else: ?>
                             <span role="button" class="text-muted" data-bs-toggle="modal" data-bs-target="#membersModal"
-                                  onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>)'>
+                                  onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>, "contacts")'>
                               <i class="bi bi-person-plus"></i> <?= te('Beteiligte') ?>
                             </span>
                         <?php endif; ?>
+
+                        <?php $zust = $task_users[$task['id']] ?? []; ?>
+                        <span role="button" class="assignees" data-bs-toggle="modal" data-bs-target="#membersModal"
+                              onclick='openMembers(<?= (int)$task["id"] ?>, <?= json_encode($task["title"], JSON_HEX_TAG|JSON_HEX_APOS) ?>, "users")'
+                              title="<?= htmlspecialchars($zust ? t('Zuständig: %s', implode(', ', array_column($zust, 'name'))) : t('Niemand zuständig')) ?>">
+                          <?php if(!$zust): ?>
+                            <i class="bi bi-person-badge"></i> <span class="text-muted"><?= te('Zuständig') ?></span>
+                          <?php else: ?>
+                            <?php foreach(array_slice($zust, 0, 3) as $z): ?>
+                              <span class="assignee-dot<?= $z['role'] === 'lead' ? ' is-lead' : '' ?><?= (int)$z['is_active'] !== 1 ? ' is-inactive' : '' ?>"><?= htmlspecialchars(mb_strtoupper(mb_substr($z['name'], 0, 1))) ?></span>
+                            <?php endforeach; ?>
+                            <?php if(count($zust) > 3): ?><span class="assignee-more">+<?= count($zust) - 3 ?></span><?php endif; ?>
+                          <?php endif; ?>
+                        </span>
                         
                         <span><i class="bi bi-calendar-event"></i> <?=$task['start_text']?></span>
                         
@@ -820,6 +840,16 @@ require 'includes/layout_start.php';
                             </span>
                         <?php endif; ?>
                     </div>
+                    <?php foreach($task_links[$task['id']] ?? [] as $l):
+                        // Der Titel ist maskiert, das Muster stammt aus task_link_arten().
+                        $ziel_link = '<a href="tasks?highlight=' . (int)$l['ziel_id'] . '" class="text-decoration-none'
+                                   . ($l['status'] === 'Storniert' ? ' text-decoration-line-through text-muted' : '') . '">'
+                                   . htmlspecialchars($l['titel']) . '</a>';
+                    ?>
+                        <div class="small text-muted task-link-line" title="<?= htmlspecialchars($l['note']) ?>">
+                            <i class="bi bi-link-45deg"></i> <?= task_link_text($l['kind'], $l['richtung'], $ziel_link) ?>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
                 
                 <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">

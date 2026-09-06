@@ -42,7 +42,8 @@ $sicher = [
 
 // Helfer, die absichtlich fertiges HTML liefern. Sie filtern ihre Werte
 // selbst; eine zweite Filterung hier wuerde ihre Tags zerlegen.
-$html_absicht = ['status_badge', 'csrf_field', 'asset', 'balken', 'deadline_badge'];
+// task_link_text() setzt ein eigenes Muster um einen bereits maskierten Link.
+$html_absicht = ['status_badge', 'csrf_field', 'asset', 'balken', 'deadline_badge', 'task_link_text'];
 
 // Feldnamen, hinter denen Freitext steht. Bewusst unvollstaendig: die
 // Liste soll melden, was erfahrungsgemaess Text enthaelt, nicht jede
