@@ -74,7 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if ($_POST['action'] === 'save_notifications') {
-        $keys = ['notify_milestone_email','notify_quote_email'];
+        // Je Ereignisart ein Schalter. notify_quote_email stand hier,
+        // wurde gespeichert und angezeigt - und von keiner Zeile
+        // gelesen. Ein Schalter, der nichts tut, ist schlimmer als
+        // keiner: er verspricht etwas.
+        $keys = ['notify_milestone_email', 'notify_ticket_reply', 'notify_project_reply',
+                 'notify_milestone_comment', 'notify_asset_upload', 'notify_invoice_created'];
         foreach ($keys as $k) {
             $v = isset($_POST[$k]) ? '1' : '0';
             $s = $pdo->prepare("INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=?");
@@ -445,7 +450,11 @@ $s_main_website   = setting('main_website', MAIN_WEBSITE);
 $s_admin_email    = setting('admin_email', ADMIN_EMAIL);
 $s_support_email  = setting('support_email', SUPPORT_EMAIL);
 $s_notify_ms      = setting('notify_milestone_email', '1');
-$s_notify_quote   = setting('notify_quote_email', '1');
+$s_notify_ticket  = setting('notify_ticket_reply', '1');
+$s_notify_reply   = setting('notify_project_reply', '1');
+$s_notify_mscom   = setting('notify_milestone_comment', '1');
+$s_notify_asset   = setting('notify_asset_upload', '1');
+$s_notify_inv     = setting('notify_invoice_created', '1');
 $s_log_limit      = setting('log_limit', '200');
 $s_log_retention  = setting('log_retention_days', '365');
 $s_backup_dir     = setting('backup_dir', '');
@@ -839,28 +848,41 @@ require 'includes/layout_start.php';
         <input type="hidden" name="action" value="save_notifications">
 
         <div class="settings-section-title"><i class="bi bi-bell me-2"></i><?= te('E-Mail-Benachrichtigungen') ?></div>
+        <p class="text-muted small mb-3">
+          <?= te('Der Kunde kann jede dieser Mitteilungen für sich abbestellen — im Portal unter „Mein Profil“.') ?>
+        </p>
         <div class="d-flex flex-column gap-3 mb-4">
-
+<?php
+          // Ein Schalter je Ereignisart. Reihenfolge: erst, was am
+          // Projekt haengt, dann das Uebrige.
+          $_schalter = [
+              ['notify_project_reply',     'notRe', $s_notify_reply,  te('Antwort in der Projekt-Diskussion'),
+               te('Alle Beteiligten des Projekts bekommen eine E-Mail, wenn Sie im Austausch antworten.')],
+              ['notify_milestone_comment', 'notMc', $s_notify_mscom,  te('Antwort zu einem Meilenstein'),
+               te('Alle Beteiligten bekommen eine E-Mail, wenn Sie einen Kommentar an einem Schritt beantworten.')],
+              ['notify_asset_upload',      'notAs', $s_notify_asset,  te('Neue Datei im Projekt'),
+               te('Alle Beteiligten bekommen eine E-Mail, wenn Sie Dateien hochladen. Ein Upload mehrerer Dateien ergibt eine E-Mail.')],
+              ['notify_milestone_email',   'notMs', $s_notify_ms,     te('Meilenstein abgeschlossen'),
+               te('Beim Abschließen eines Meilensteins werden Sie gefragt, ob alle Beteiligten benachrichtigt werden sollen.')],
+              ['notify_ticket_reply',      'notTk', $s_notify_ticket, te('Antwort auf eine Support-Anfrage'),
+               te('Der Kunde bekommt eine E-Mail, wenn Sie eine Anfrage öffentlich beantworten.')],
+              ['notify_invoice_created',   'notIn', $s_notify_inv,    te('Neue Rechnung im Portal'),
+               te('Der Kunde bekommt eine E-Mail, sobald eine Rechnung für ihn im Portal bereitliegt.')],
+          ];
+          foreach ($_schalter as [$_k, $_id, $_wert, $_titel, $_hinweis]):
+?>
           <div class="d-flex align-items-start gap-3 p-3 border rounded-3">
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" name="notify_milestone_email" id="notMs" role="switch" style="width:3em;height:1.5em;" <?= $s_notify_ms === '1' ? 'checked' : '' ?>>
+              <input class="form-check-input" type="checkbox" name="<?= htmlspecialchars($_k) ?>"
+                     id="<?= htmlspecialchars($_id) ?>" role="switch" style="width:3em;height:1.5em;"
+                     <?= $_wert === '1' ? 'checked' : '' ?>>
             </div>
             <div>
-              <label class="fw-semibold form-check-label" for="notMs"><?= te('Meilenstein-E-Mail-Bestätigung') ?></label>
-              <p class="text-muted mb-0" style="font-size:13px;"><?= te('Beim Abschließen eines Meilensteins im Portal wird der Kunde per E-Mail gefragt, ob er den Meilenstein offiziell bestätigen möchte.') ?></p>
+              <label class="fw-semibold form-check-label" for="<?= htmlspecialchars($_id) ?>"><?= $_titel ?></label>
+              <p class="text-muted mb-0" style="font-size:13px;"><?= $_hinweis ?></p>
             </div>
           </div>
-
-          <div class="d-flex align-items-start gap-3 p-3 border rounded-3">
-            <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" name="notify_quote_email" id="notQt" role="switch" style="width:3em;height:1.5em;" <?= $s_notify_quote === '1' ? 'checked' : '' ?>>
-            </div>
-            <div>
-              <label class="fw-semibold form-check-label" for="notQt"><?= te('Angebots-E-Mail beim Versand') ?></label>
-              <p class="text-muted mb-0" style="font-size:13px;"><?= te('Beim Versand eines Angebots wird automatisch eine E-Mail an den Kunden generiert.') ?></p>
-            </div>
-          </div>
-
+<?php endforeach; ?>
         </div>
         <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check2 me-1"></i> <?= te('Speichern') ?></button>
       </form>
