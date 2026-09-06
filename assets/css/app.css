@@ -947,6 +947,19 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
    die eigene Auswahl in einer langen Liste auffindbar. */
 .member-row.is-checked .member-name { color: var(--color-primary); }
 
+/* Ueberschrift einer Gruppe in der Beteiligten-Auswahl (Kunden,
+   Geschaeftspartner, Interessenten). Klebt beim Scrollen oben, damit
+   man in einer langen Liste weiss, in welcher Gruppe man ist. */
+.member-group {
+    position: sticky; top: 0; z-index: 1;
+    padding: 4px var(--space-3);
+    font-size: var(--text-2xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+    color: var(--text-muted);
+    background: var(--surface-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
 /* =========================================
    RESPONSIVE DESIGN (Smartphones & Tablets)
    ========================================= */

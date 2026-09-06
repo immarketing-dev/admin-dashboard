@@ -70,22 +70,35 @@ function task_members_abgleichen(PDO $pdo, int $task_id, int $haupt, array $soll
  *
  * $praefix trennt die beiden Fenster: ihre Kästchen stehen gleichzeitig
  * im Dokument und brauchen eigene id-Werte.
+ *
+ * Gruppiert nach Kontakttyp (Kunden, Geschäftspartner, Interessenten):
+ * vorher stand ein Geschäftspartner zwischen zwei Kunden, und nur ein
+ * Kürzel in der Zeile unterschied ihn. Leere Gruppen fehlen.
  */
 function task_members_auswahl(array $kontakte, string $praefix): string
 {
     $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 
-    $zeilen = '';
+    // Gruppen in fester Reihenfolge. Ein unbekannter Typ zaehlt zu den
+    // Kunden - das ist auch der Standardwert der Spalte.
+    $gruppen = [
+        'Kunde'            => ['titel' => te('Kunden'),           'zeilen' => ''],
+        'Geschäftspartner' => ['titel' => te('Geschäftspartner'), 'zeilen' => ''],
+        'Interessent'      => ['titel' => te('Interessenten'),    'zeilen' => ''],
+    ];
+
     foreach ($kontakte as $k) {
-        $id   = (int) $k['id'];
+        $id  = (int) $k['id'];
+        $typ = (string) ($k['contact_type'] ?? '');
+        if (!isset($gruppen[$typ])) $typ = 'Kunde';
         $teile = [];
         if (!empty($k['company']))                          $teile[] = $h($k['company']);
-        if (($k['contact_type'] ?? '') === 'Geschäftspartner') $teile[] = te('Partner');
+        if ($typ === 'Geschäftspartner')                    $teile[] = te('Partner');
         // Ohne Portal-Zugang sieht die Person nichts - das gehoert an die
         // Stelle, an der man sie auswaehlt, nicht in eine Fussnote.
         if (empty($k['portal_token']))                      $teile[] = te('kein Portal-Zugang');
 
-        $zeilen .= '<label class="member-row" data-member-row>'
+        $gruppen[$typ]['zeilen'] .= '<label class="member-row" data-member-row>'
                  . '<input class="form-check-input" type="checkbox" name="member_ids[]"'
                  . ' value="' . $id . '" id="' . $h($praefix) . '_m' . $id . '">'
                  . '<span class="member-text">'
@@ -94,6 +107,12 @@ function task_members_auswahl(array $kontakte, string $praefix): string
                  . '</span>'
                  . '<span class="member-owner-tag" hidden>' . te('Hauptansprechpartner') . '</span>'
                  . '</label>';
+    }
+
+    $zeilen = '';
+    foreach ($gruppen as $g) {
+        if ($g['zeilen'] === '') continue;
+        $zeilen .= '<div class="member-group" data-member-group>' . $g['titel'] . '</div>' . $g['zeilen'];
     }
 
     if ($zeilen === '') {
