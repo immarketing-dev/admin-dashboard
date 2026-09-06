@@ -379,6 +379,38 @@ foreach ($mitglieder as $pk => $liste) {
 }
 echo "  $anz_mitglieder Beteiligungen verknüpft\n";
 
+// ── Zuständige ──────────────────────────────────────────────────────
+// Der Lead kommt aus $p_zustaendig (er steht auch in assigned_user_id).
+// Zwei Projekte haben eine zweite Person, damit die Karte mehr als einen
+// Kreis zeigt und der Filter "Zuständig" etwas zu unterscheiden hat.
+$zweite = ['relaunch' => 'verwaltung', 'shop' => 'verwaltung'];
+$anz_zust = 0;
+foreach ($p as $schluessel => $task_id) {
+    $lead = $p_zustaendig[$schluessel] ?? 'verwaltung';
+    ins('task_users', ['task_id' => $task_id, 'user_id' => $u[$lead], 'role' => 'lead',
+                       'added_at' => zeit($p_daten[$schluessel]['start'], '09:10')]);
+    $anz_zust++;
+    if (isset($zweite[$schluessel]) && $zweite[$schluessel] !== $lead) {
+        ins('task_users', ['task_id' => $task_id, 'user_id' => $u[$zweite[$schluessel]], 'role' => 'member',
+                           'added_at' => zeit($p_daten[$schluessel]['start'] + 2, '11:00')]);
+        $anz_zust++;
+    }
+}
+echo "  $anz_zust Zuständigkeiten gesetzt\n";
+
+// ── Verknüpfungen ──────────────────────────────────────────────────
+// Gerichtet: das neue Projekt knüpft an das alte an.
+$verknuepfungen = [
+    ['print',     'brandtweb', 'follow_up', 'Broschüre im Anschluss an den Auftritt'],
+    ['wartung',   'relaunch',  'follow_up', 'Pflege nach dem Relaunch'],
+    ['imagefilm', 'kampagne',  'related',   ''],
+];
+foreach ($verknuepfungen as [$von, $nach, $art, $notiz]) {
+    ins('task_links', ['task_id' => $p[$von], 'linked_task_id' => $p[$nach], 'kind' => $art,
+                       'note' => $notiz, 'created_at' => zeit($p_daten[$von]['start'], '09:15')]);
+}
+echo '  ' . count($verknuepfungen) . " Verknüpfungen gesetzt\n";
+
 // ── Meilensteine ────────────────────────────────────────────────────
 // waiting_on kennt drei Werte: '' (niemand), 'us' (wir), 'them' (Kunde).
 $meilensteine = [
