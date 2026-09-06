@@ -316,6 +316,13 @@ if command -v php >/dev/null 2>&1; then
     echo "PORTALMAIL: $out"
     fail=1
   fi
+  # Das Portal rendert wirklich - Termine, Abmelden, Ablehnen, Profil.
+  # Faengt Array-Schluessel und Knoepfe im falschen Zustand, die php -l
+  # nie sieht.
+  if ! out=$(php tools/test_portal_render.php 2>&1); then
+    echo "PORTALSEITE: $out"
+    fail=1
+  fi
   # Verknuepfungen zwischen Projekten: Selbstverweis, Gegenverweis,
   # geloeschte Ziele - alles gegen die echten Tabellen.
   if ! out=$(php tools/test_task_links.php 2>&1); then
