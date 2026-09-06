@@ -13,6 +13,8 @@ require_once 'includes/auth.php';
 require_once 'includes/task_budget.php';
 require_once 'includes/filter_state.php';
 require_once 'includes/task_members.php';
+require_once 'includes/task_links.php';
+require_once 'includes/users.php';
 require_once 'includes/upload_helper.php';
 
 /**
@@ -357,6 +359,7 @@ $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'deadline_asc';
 $filter_month = isset($_GET['start_month']) ? $_GET['start_month'] : 'all'; 
 $filter_created = isset($_GET['created']) ? $_GET['created'] : 'all'; 
 $filter_deadline = isset($_GET['deadline_filter']) ? $_GET['deadline_filter'] : 'all';
+$filter_user = isset($_GET['user']) ? $_GET['user'] : 'all';
 
 $available_months = $pdo->query("SELECT DISTINCT DATE_FORMAT(start_date, '%Y-%m') as ym FROM tasks WHERE deleted_at IS NULL AND start_date IS NOT NULL AND start_date != '0000-00-00' ORDER BY ym DESC")->fetchAll(PDO::FETCH_COLUMN);
 
@@ -367,7 +370,17 @@ $params = [];
 if ($search_query !== '') { $sql .= " AND (t.title LIKE ? OR t.description LIKE ?)"; $params[] = "%$search_query%"; $params[] = "%$search_query%"; }
 if ($filter_status !== 'all') { $sql .= " AND t.status = ?"; $params[] = $filter_status; }
 if ($filter_category !== 'all') { $sql .= " AND t.category = ?"; $params[] = $filter_category; }
-if ($filter_contact !== 'all') { $sql .= " AND t.contact_id = ?"; $params[] = $filter_contact; }
+// Beteiligt heisst beteiligt: der Filter greift ueber task_contacts,
+// nicht nur ueber den Hauptansprechpartner. Wer als Partner an einem
+// Projekt mitwirkt, fand es hier sonst nie.
+if ($filter_contact !== 'all') {
+    $sql .= " AND EXISTS (SELECT 1 FROM task_contacts tc WHERE tc.task_id = t.id AND tc.contact_id = ?)";
+    $params[] = (int) $filter_contact;
+}
+if ($filter_user !== 'all') {
+    $sql .= " AND EXISTS (SELECT 1 FROM task_users tu WHERE tu.task_id = t.id AND tu.user_id = ?)";
+    $params[] = (int) $filter_user;
+}
 
 if ($filter_month !== 'all') {
     $sql .= " AND DATE_FORMAT(t.start_date, '%Y-%m') = ?";
@@ -426,6 +439,36 @@ if (!empty($tasks)) {
         $task_members[$m['task_id']][] = $m;
     }
 }
+
+// Zustaendige je Projekt - eine Abfrage fuer die Seite.
+$task_users = [];
+if (!empty($tasks)) {
+    $ids = array_column($tasks, 'id');
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    $ust = $pdo->prepare("SELECT tu.task_id, tu.user_id, tu.role, u.name, u.email, u.is_active
+                          FROM task_users tu
+                          JOIN users u ON u.id = tu.user_id
+                          WHERE tu.task_id IN ($in)
+                          ORDER BY tu.role = 'lead' DESC, u.name ASC");
+    $ust->execute($ids);
+    foreach ($ust->fetchAll(PDO::FETCH_ASSOC) as $u) {
+        $u['name'] = benutzer_anzeige($u);
+        unset($u['email']);
+        $task_users[$u['task_id']][] = $u;
+    }
+}
+
+// Verknuepfungen je Projekt, beide Richtungen.
+$task_links = !empty($tasks) ? task_links_laden($pdo, array_column($tasks, 'id')) : [];
+
+// Fuer die Fenster: alle Benutzer (auch abgeschaltete, damit eine
+// bestehende Zuordnung sichtbar bleibt) und alle Projekte fuer die
+// Verknuepfungsauswahl.
+$alle_benutzer = benutzer_liste($pdo);
+$alle_projekte = $pdo->query("SELECT id, title, start_date, contact_id, deleted_at FROM tasks
+                              WHERE deleted_at IS NULL
+                              ORDER BY start_date DESC, title ASC")->fetchAll(PDO::FETCH_ASSOC);
+$kontakte_nach_id = array_column($all_contacts, null, 'id');
 
 // Batch-Abfragen statt N+1 Queries pro Task
 $task_ids = array_column($tasks, 'id');
@@ -602,6 +645,7 @@ require 'includes/layout_start.php';
         $filter_month    !== 'all',
         $filter_created  !== 'all',
         $filter_deadline !== 'all',
+        $filter_user     !== 'all',
     ]);
     $active_filter_count = count($active_filters);
     $any_filter_active   = $active_filter_count > 0 || $search_query !== '';
@@ -634,9 +678,18 @@ require 'includes/layout_start.php';
 
                         <div class="filter-field">
                             <select name="contact" class="form-select">
-                                <option value="all"><?= te('Alle Kunden') ?></option>
+                                <option value="all"><?= te('Alle Beteiligten') ?></option>
                                 <?php foreach($all_contacts as $c): ?>
                                     <option value="<?=$c['id']?>" <?= $filter_contact == $c['id'] ? 'selected' : '' ?>><?=htmlspecialchars($c['name'])?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="filter-field">
+                            <select name="user" class="form-select">
+                                <option value="all"><?= te('Alle Zuständigen') ?></option>
+                                <?php foreach($alle_benutzer as $u): ?>
+                                    <option value="<?=(int)$u['id']?>" <?= $filter_user == $u['id'] ? 'selected' : '' ?>><?=htmlspecialchars(benutzer_anzeige($u))?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

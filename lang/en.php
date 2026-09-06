@@ -571,8 +571,6 @@ return [
         => 'Or: free-text name',
     'Manueller Name'
         => 'Manual name',
-    'Alle Kunden'
-        => 'All clients',
     'Alle Status'
         => 'All statuses',
     'Alle Kategorien'
@@ -2211,4 +2209,9 @@ return [
         => "Remove",
     "Art"
         => "Type",
+    // ── Projektfilter ──
+    "Alle Beteiligten"
+        => "All participants",
+    "Alle Zuständigen"
+        => "All assignees",
 ];

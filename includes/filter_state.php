@@ -45,7 +45,7 @@
 function filter_params(string $seite): array
 {
     static $karte = [
-        'tasks'    => ['q', 'status', 'category', 'contact', 'sort', 'start_month', 'created', 'deadline_filter'],
+        'tasks'    => ['q', 'status', 'category', 'contact', 'sort', 'start_month', 'created', 'deadline_filter', 'user'],
         'contacts' => ['search', 'type'],
         'finances' => ['tab', 'period', 'month', 'status', 'qstatus', 'type', 'search', 'only_recurring'],
         'tickets'  => ['search', 'status', 'priority'],

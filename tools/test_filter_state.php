@@ -31,9 +31,9 @@ $checks['Filter bleiben erhalten']
     = url('tasks', 'status=Offen&q=relaunch') === 'tasks?q=relaunch&status=Offen';
 $checks['ohne Filter bleibt die nackte Adresse']
     = url('tasks', '') === 'tasks';
-$checks['alle acht Filter von tasks gehen mit']
-    = count(filter_params('tasks')) === 8
-   && substr_count(url('tasks', 'q=a&status=b&category=c&contact=1&sort=d&start_month=e&created=f&deadline_filter=g'), '=') === 8;
+$checks['alle neun Filter von tasks gehen mit']
+    = count(filter_params('tasks')) === 9
+   && substr_count(url('tasks', 'q=a&status=b&category=c&contact=1&sort=d&start_month=e&created=f&deadline_filter=g&user=2'), '=') === 9;
 
 // --- Nur, was auf der Liste steht --------------------------------------
 $checks['unbekannter Parameter faellt weg']
