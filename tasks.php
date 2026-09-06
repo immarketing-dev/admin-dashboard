@@ -63,7 +63,7 @@ function projekt_websites_pruefen(array $websites): array {
 // ==========================================
 if (isset($_POST['ajax_action'])) {
     csrf_check();
-    $task_id = $_POST['task_id'];
+    $task_id = (int) ($_POST['task_id'] ?? 0);
     
     if ($_POST['ajax_action'] === 'start_timer') {
         $pdo->prepare("UPDATE tasks SET is_timer_running = 1, timer_start = NOW() WHERE id = ?")->execute([$task_id]);
@@ -184,6 +184,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
             task_members_abgleichen($pdo, $t_id, $haupt, (array)($_POST['member_ids'] ?? []));
 
+            // Zustaendige im selben Fenster, zweiter Reiter. Der Lead
+            // steht am Projekt (assigned_user_id) und laesst sich hier
+            // nicht abwaehlen - wie der Hauptansprechpartner.
+            $l = $pdo->prepare("SELECT assigned_user_id FROM tasks WHERE deleted_at IS NULL AND id = ?");
+            $l->execute([$t_id]);
+            task_users_abgleichen($pdo, $t_id, (int) $l->fetchColumn(), (array) ($_POST['user_ids'] ?? []));
+
             $nachher = $pdo->prepare("SELECT COUNT(*) FROM task_contacts WHERE task_id = ?");
             $nachher->execute([$t_id]);
             log_event($pdo, 'TASK_CONTACTS_SET',
@@ -194,8 +201,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
     if ($action === 'add_manual_time') {
         $mins = (int)$_POST['minutes'];
-        $t_id = $_POST['task_id'];
-        if($mins > 0 && !empty($t_id)) {
+        $t_id = (int) ($_POST['task_id'] ?? 0);
+        if($mins > 0 && $t_id > 0) {
             log_event($pdo, 'TIME_MANUAL', "Zeit manuell erfasst: $mins Minuten für Projekt $t_id.");
             $pdo->prepare("INSERT INTO time_entries (task_id, duration_minutes, note, user_id) VALUES (?, ?, 'Manuell nachgetragen', ?)")
                 ->execute([$t_id, $mins, log_user_id()]);
@@ -203,7 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     }
     elseif ($action === 'edit_task') {
         $title = trim($_POST['title']);
-        $task_id = $_POST['task_id'];
+        $task_id = (int) ($_POST['task_id'] ?? 0);
         
         $pdo->prepare("UPDATE tasks SET title=?, category=?, description=?, contact_id=?, start_date=?, deadline=?, budget_amount=? WHERE id=?")
             ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, budget_eingabe($_POST['budget_amount'] ?? null), $task_id]);
@@ -212,6 +219,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         // "Beteiligte am Projekt", damit beide Wege dasselbe tun.
         task_members_abgleichen($pdo, (int)$task_id, (int)($_POST['contact_id'] ?? 0),
                                 (array)($_POST['member_ids'] ?? []));
+
+        $zust_vorher = (int) $pdo->query("SELECT COUNT(*) FROM task_users WHERE task_id = " . (int) $task_id)->fetchColumn();
+        task_users_abgleichen($pdo, (int) $task_id, (int) ($_POST['lead_user_id'] ?? 0), (array) ($_POST['user_ids'] ?? []));
+        $zust_nachher = (int) $pdo->query("SELECT COUNT(*) FROM task_users WHERE task_id = " . (int) $task_id)->fetchColumn();
+        if ($zust_vorher !== $zust_nachher) {
+            log_event($pdo, 'TASK_USERS_SET', "Zuständige an Projekt $task_id gesetzt: $zust_vorher → $zust_nachher Person(en).");
+        }
+
+        $links_vorher = (int) $pdo->query("SELECT COUNT(*) FROM task_links WHERE task_id = " . (int) $task_id)->fetchColumn();
+        task_links_abgleichen($pdo, (int) $task_id, task_links_aus_formular($_POST));
+        $links_nachher = (int) $pdo->query("SELECT COUNT(*) FROM task_links WHERE task_id = " . (int) $task_id)->fetchColumn();
+        if ($links_vorher !== $links_nachher) {
+            log_event($pdo, 'TASK_LINKS_SET', "Verknüpfungen von Projekt $task_id gesetzt: $links_vorher → $links_nachher.");
+        }
 
         // Fallback Upload (Falls jemand ohne JS hochlädt)
         if (!empty($_FILES['admin_assets']['name'][0])) {
@@ -246,11 +267,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $title = trim($_POST['title']);
         $pdo->prepare("INSERT INTO tasks (title, category, description, status, contact_id, start_date, deadline, budget_amount) VALUES (?, ?, ?, 'In Bearbeitung', ?, ?, ?, ?)")
             ->execute([$title, trim($_POST['category']), trim($_POST['description']), $_POST['contact_id'] ?: null, $_POST['start_date'] ?: null, $_POST['deadline'] ?: null, budget_eingabe($_POST['budget_amount'] ?? null)]);
+        $neu_id = (int) $pdo->lastInsertId();
+
+        // Beteiligte, Zustaendige und Verknuepfungen gleich beim Anlegen.
+        // Bis hierher fehlte der erste Aufruf: ein neues Projekt stand
+        // nicht in task_contacts und war im Portal unsichtbar, bis jemand
+        // es einmal bearbeitete.
+        task_members_abgleichen($pdo, $neu_id, (int) ($_POST['contact_id'] ?? 0), (array) ($_POST['member_ids'] ?? []));
+        task_users_abgleichen($pdo, $neu_id, (int) ($_POST['lead_user_id'] ?? 0), (array) ($_POST['user_ids'] ?? []));
+        task_links_abgleichen($pdo, $neu_id, task_links_aus_formular($_POST));
+
         log_event($pdo, 'TASK_ADDED', "Neues Projekt '". $title ."' wurde angelegt.");
     }
     elseif ($action === 'delete_task') { 
         $stmt = $pdo->prepare("SELECT title FROM tasks WHERE deleted_at IS NULL AND id = ?");
-        $stmt->execute([$_POST['task_id']]);
+        $stmt->execute([(int) $_POST['task_id']]);
         $del_title = $stmt->fetchColumn();
 
         // Papierkorb statt Sofortloeschung: der Datensatz verschwindet aus
@@ -261,16 +292,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         }
     }
     elseif ($action === 'delete_asset') {
-        $stmt = $pdo->prepare("SELECT file_name, file_path FROM client_assets WHERE id = ?"); $stmt->execute([$_POST['asset_id']]);
+        $stmt = $pdo->prepare("SELECT file_name, file_path FROM client_assets WHERE id = ?"); $stmt->execute([(int) $_POST['asset_id']]);
         $file = $stmt->fetch(); 
         if($file) { 
             @unlink($file['file_path']); 
-            $pdo->prepare("DELETE FROM client_assets WHERE id = ?")->execute([$_POST['asset_id']]); 
+            $pdo->prepare("DELETE FROM client_assets WHERE id = ?")->execute([(int) $_POST['asset_id']]); 
             log_event($pdo, 'ASSET_DELETED', "Datei " . $file['file_name'] . " wurde gelöscht.");
         }
     }
     elseif ($action === 'add_milestone') {
-        $pdo->prepare("INSERT INTO task_milestones (task_id, title) VALUES (?, ?)")->execute([$_POST['task_id'], trim($_POST['milestone_title'])]);
+        $pdo->prepare("INSERT INTO task_milestones (task_id, title) VALUES (?, ?)")->execute([(int) $_POST['task_id'], trim($_POST['milestone_title'])]);
         log_event($pdo, 'MILESTONE_ADDED', "Meilenstein '".trim($_POST['milestone_title'])."' zu Projekt #".(int)$_POST['task_id']." hinzugefügt.");
     }
     elseif ($action === 'toggle_milestone') {
@@ -337,11 +368,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         $ms_del = $pdo->prepare("SELECT title FROM task_milestones WHERE id=?");
         $ms_del->execute([(int)$_POST['milestone_id']]);
         $ms_del_title = $ms_del->fetchColumn();
-        $pdo->prepare("DELETE FROM task_milestones WHERE id = ?")->execute([$_POST['milestone_id']]);
+        $pdo->prepare("DELETE FROM task_milestones WHERE id = ?")->execute([(int) $_POST['milestone_id']]);
         log_event($pdo, 'MILESTONE_DELETED', "Meilenstein '".($ms_del_title?:'#'.$_POST['milestone_id'])."' gelöscht.");
     }
     elseif ($action === 'update_task_status') { 
-        $pdo->prepare("UPDATE tasks SET status = ? WHERE id = ?")->execute([$_POST['status'], $_POST['task_id']]); 
+        $pdo->prepare("UPDATE tasks SET status = ? WHERE id = ?")->execute([$_POST['status'], (int) $_POST['task_id']]); 
         log_event($pdo, 'TASK_STATUS', "Task ID #".$_POST['task_id']." Status geändert auf: ".$_POST['status']);
     }
     
@@ -1120,7 +1151,50 @@ require 'includes/layout_start.php';
       <?php endforeach; ?>
     </div>
 
-  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content"><form method="POST"><?= csrf_field() ?><input type="hidden" name="action" value="add_task"><div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row g-3"><div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div><div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div><div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div><div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div><div class="col-md-6"><label class="form-label" for="a_budget"><?= te('Budget') ?></label><div class="input-group"><input type="text" inputmode="decimal" name="budget_amount" id="a_budget" class="form-control" placeholder="<?= te('leer = keins') ?>"><span class="input-group-text">€</span></div></div><div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div></div></div><div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div></form></div></div></div>
+  <div class="modal fade" id="addTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form method="POST">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="add_task">
+          <div class="modal-header bg-dark text-white"><h5><?= te('Neues Projekt') ?></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-8"><label class="form-label"><?= te('Titel *') ?></label><input type="text" name="title" class="form-control" required></div>
+              <div class="col-md-4"><label class="form-label"><?= te('Kategorie') ?></label><input type="text" name="category" class="form-control"></div>
+
+              <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label>
+                <select name="contact_id" id="a_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select>
+              </div>
+              <div class="col-12">
+                <span class="form-label d-block"><?= te('Weitere Beteiligte') ?></span>
+                <div id="a_members"><?= task_members_auswahl($all_contacts, 'a') ?></div>
+              </div>
+
+              <div class="col-12"><label class="form-label"><?= te('Hauptzuständig') ?></label>
+                <select name="lead_user_id" id="a_lead" class="form-select"><option value=""><?= te('-- Niemand --') ?></option><?php foreach($alle_benutzer as $u): ?><option value="<?=(int)$u['id']?>" <?= (int)$u['id'] === (int)($_SESSION['admin_id'] ?? 0) ? 'selected' : '' ?>><?=htmlspecialchars(benutzer_anzeige($u))?></option><?php endforeach; ?></select>
+              </div>
+              <div class="col-12">
+                <span class="form-label d-block"><?= te('Weitere Zuständige') ?></span>
+                <div id="a_users"><?= task_users_auswahl($alle_benutzer, 'a') ?></div>
+              </div>
+
+              <div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" class="form-control"></div>
+              <div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" class="form-control"></div>
+              <div class="col-md-6"><label class="form-label" for="a_budget"><?= te('Budget') ?></label><div class="input-group"><input type="text" inputmode="decimal" name="budget_amount" id="a_budget" class="form-control" placeholder="<?= te('leer = keins') ?>"><span class="input-group-text">€</span></div></div>
+              <div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" class="form-control" rows="4"></textarea></div>
+
+              <div class="col-12">
+                <a class="small text-decoration-none" data-bs-toggle="collapse" href="#a_links_box" role="button" aria-expanded="false"><i class="bi bi-link-45deg"></i> <?= te('Anknüpfen an ein anderes Projekt') ?></a>
+                <div class="collapse mt-2" id="a_links_box"><div id="a_links"><?= task_links_auswahl($alle_projekte, $kontakte_nach_id, 'a') ?></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer"><button type="submit" class="btn btn-primary px-4 fw-bold"><?= te('Projekt anlegen') ?></button></div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <div class="modal fade" id="editTaskModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -1147,6 +1221,7 @@ require 'includes/layout_start.php';
                         </div>
                     </div>
 
+                    <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div>
                     <div class="col-12">
                       <span class="form-label d-block"><?= te('Weitere Beteiligte') ?></span>
                       <div id="e_members"><?= task_members_auswahl($all_contacts, 'e') ?></div>
@@ -1161,7 +1236,15 @@ require 'includes/layout_start.php';
                         <?= t('Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — dafür braucht er unter %s einen Portal-Zugang. Der Kunde oben ist immer dabei.', $_kontakte_link) ?>
                       </div>
                     </div>
-                    <div class="col-12"><label class="form-label"><?= te('Kunde') ?></label><select name="contact_id" id="e_contact" class="form-select"><option value=""><?= te('-- Ohne Kunde --') ?></option><?php foreach($all_contacts as $c): ?><option value="<?=$c['id']?>"><?=htmlspecialchars($c['name'])?></option><?php endforeach; ?></select></div>
+
+                    <div class="col-12"><label class="form-label"><?= te('Hauptzuständig') ?></label>
+                      <select name="lead_user_id" id="e_lead" class="form-select"><option value=""><?= te('-- Niemand --') ?></option><?php foreach($alle_benutzer as $u): ?><option value="<?=(int)$u['id']?>"><?=htmlspecialchars(benutzer_anzeige($u))?></option><?php endforeach; ?></select>
+                    </div>
+                    <div class="col-12">
+                      <span class="form-label d-block"><?= te('Weitere Zuständige') ?></span>
+                      <div id="e_users"><?= task_users_auswahl($alle_benutzer, 'e') ?></div>
+                      <div class="form-text"><?= te('Zuständigkeit ist Information und Filter, keine Zugangsbeschränkung.') ?></div>
+                    </div>
                     <div class="col-md-6"><label class="form-label"><?= te('Start') ?></label><input type="date" name="start_date" id="e_start" class="form-control"></div>
                     <div class="col-md-6"><label class="form-label"><?= te('Deadline') ?></label><input type="date" name="deadline" id="e_deadline" class="form-control"></div>
                     <div class="col-md-6">
@@ -1173,6 +1256,11 @@ require 'includes/layout_start.php';
                       <div class="form-text"><?= te('Der vereinbarte Preis. Verglichen wird er mit dem Wert der erfassten Zeit.') ?></div>
                     </div>
                     <div class="col-12"><label class="form-label"><?= te('Beschreibung') ?></label><textarea name="description" id="e_desc" class="form-control" rows="4"></textarea></div>
+                    <div class="col-12">
+                      <a class="small text-decoration-none" data-bs-toggle="collapse" href="#e_links_box" role="button" aria-expanded="false" id="e_links_toggle"><i class="bi bi-link-45deg"></i> <?= te('Anknüpfen an ein anderes Projekt') ?></a>
+                      <div class="collapse mt-2" id="e_links_box"><div id="e_links"><?= task_links_auswahl($alle_projekte, $kontakte_nach_id, 'e') ?></div></div>
+                      <div class="form-text"><?= te('Was auf andere Projekte zeigt, wird dort ebenfalls angezeigt. Rückverweise von anderen Projekten ändern Sie dort.') ?></div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -1457,6 +1545,21 @@ require 'includes/layout_start.php';
         membersSetzen(eMembers, mitglieder, task.contact_id);
         membersFilterZuruecksetzen(eMembers);
 
+        // Zustaendige: Lead ins Auswahlfeld, alle anderen anhaken.
+        const zust  = TASK_USERS[task.id] || [];
+        const lead  = (zust.find(function (z) { return z.role === 'lead'; }) || {}).user_id || '';
+        document.getElementById('e_lead').value = lead ? String(lead) : '';
+        const eUsers = document.getElementById('e_users');
+        membersSetzen(eUsers, zust.map(function (z) { return String(z.user_id); }), lead, 'user_ids[]');
+        membersFilterZuruecksetzen(eUsers);
+
+        // Verknuepfungen: nur die eigenen (Richtung 'vor') sind hier
+        // editierbar. Der Block klappt auf, wenn es welche gibt.
+        const eigene = (TASK_LINKS[task.id] || []).filter(function (l) { return l.richtung === 'vor'; });
+        linksSetzen(document.getElementById('e_links'), eigene, task.id);
+        const box = document.getElementById('e_links_box');
+        if (box) bootstrap.Collapse.getOrCreateInstance(box, { toggle: false })[eigene.length ? 'show' : 'hide']();
+
         editModal.show();
     }
 
@@ -1701,7 +1804,7 @@ require 'includes/layout_start.php';
     }
   </script>
 
-  <!-- ══════════ BETEILIGTE ══════════ -->
+  <!-- ══════════ BETEILIGTE & ZUSTÄNDIGE ══════════ -->
   <div class="modal fade" id="membersModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -1710,19 +1813,32 @@ require 'includes/layout_start.php';
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="fw-bold text-strong-c mb-1" id="mm_title"></div>
-          <p class="text-muted small">
-            <?= te('Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — mit eigenem Zugangslink und eigener PIN. So lässt sich einzeln entziehen, und jede Handlung im Portal trägt einen Namen.') ?>
-          </p>
+          <div class="fw-bold text-strong-c mb-2" id="mm_title"></div>
+
+          <ul class="nav nav-tabs nav-fill mb-3" role="tablist">
+            <li class="nav-item" role="presentation"><button class="nav-link active" id="mm_tab_contacts" data-bs-toggle="tab" data-bs-target="#mm_pane_contacts" type="button" role="tab"><?= te('Beteiligte') ?></button></li>
+            <li class="nav-item" role="presentation"><button class="nav-link" id="mm_tab_users" data-bs-toggle="tab" data-bs-target="#mm_pane_users" type="button" role="tab"><?= te('Zuständige') ?></button></li>
+          </ul>
 
           <form method="POST" id="mm_form">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="set_task_contacts">
             <input type="hidden" name="task_id" id="mm_task_id">
-            <div id="mm_members"><?= task_members_auswahl($all_contacts, 'mm') ?></div>
-            <div class="form-text mt-2">
-              <?php $_kontakte_link2 = '<a href="contacts">' . te('Kontakte') . '</a>'; ?>
-              <?= t('Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie unter %s.', $_kontakte_link2) ?>
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="mm_pane_contacts" role="tabpanel">
+                <p class="text-muted small">
+                  <?= te('Jeder Beteiligte sieht das Projekt in seinem eigenen Portal — mit eigenem Zugangslink und eigener PIN. So lässt sich einzeln entziehen, und jede Handlung im Portal trägt einen Namen.') ?>
+                </p>
+                <div id="mm_members"><?= task_members_auswahl($all_contacts, 'mm') ?></div>
+                <div class="form-text mt-2">
+                  <?php $_kontakte_link2 = '<a href="contacts">' . te('Kontakte') . '</a>'; ?>
+                  <?= t('Ohne Portal-Zugang sieht die Person nichts — den Zugang vergeben Sie unter %s.', $_kontakte_link2) ?>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="mm_pane_users" role="tabpanel">
+                <p class="text-muted small"><?= te('Wer intern an diesem Projekt arbeitet. Den Hauptzuständigen ändern Sie unter „Bearbeiten“.') ?></p>
+                <div id="mm_users"><?= task_users_auswahl($alle_benutzer, 'mm') ?></div>
+              </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-3">
               <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><?= te('Abbrechen') ?></button>
@@ -1735,22 +1851,25 @@ require 'includes/layout_start.php';
   </div>
 
   <script>
-  /* Die Beteiligten stehen bereits im Seitenquelltext - das Fenster baut
-     seine Liste daraus, ohne weitere Anfrage. */
-  /* Die Beteiligten stehen bereits im Seitenquelltext - das Fenster hakt
-     daraus an, ohne weitere Anfrage. */
+  /* Beteiligte, Zustaendige und Verknuepfungen stehen bereits im
+     Seitenquelltext - die Fenster bauen ihre Listen daraus, ohne
+     weitere Anfrage. */
   const TASK_MEMBERS = <?= json_encode($task_members, JSON_HEX_TAG|JSON_HEX_APOS) ?>;
+  const TASK_USERS   = <?= json_encode($task_users,   JSON_HEX_TAG|JSON_HEX_APOS) ?>;
+  const TASK_LINKS   = <?= json_encode($task_links,   JSON_HEX_TAG|JSON_HEX_APOS) ?>;
 
   /**
-   * Setzt in einer Auswahlliste die Haken und sperrt den
-   * Hauptansprechpartner.
+   * Setzt in einer Auswahlliste die Haken und sperrt den Hauptkontakt
+   * bzw. den Lead. Gesperrt und nicht bloss angehakt: er haengt am
+   * Projekt selbst, nicht an der Liste. Ein deaktiviertes Kaestchen
+   * sendet nichts, er wird deshalb serverseitig ohnehin ergaenzt.
    *
-   * Gesperrt und nicht bloss angehakt: er haengt am Projekt selbst, nicht
-   * an der Beteiligtenliste. Ein deaktiviertes Kaestchen sendet nichts, er
-   * wird deshalb serverseitig ohnehin ergaenzt.
+   * feldname unterscheidet Kontakte (member_ids[]) und Benutzer
+   * (user_ids[]) - dieselbe Liste, zwei Bedeutungen.
    */
-  function membersSetzen(wurzel, ids, ownerId) {
-      wurzel.querySelectorAll('input[name="member_ids[]"]').forEach(function (box) {
+  function membersSetzen(wurzel, ids, ownerId, feldname) {
+      feldname = feldname || 'member_ids[]';
+      wurzel.querySelectorAll('input[name="' + feldname + '"]').forEach(function (box) {
           const ist_owner = ownerId && box.value === String(ownerId);
           box.checked  = ist_owner || ids.includes(box.value);
           box.disabled = !!ist_owner;
@@ -1763,18 +1882,70 @@ require 'includes/layout_start.php';
       });
   }
 
-  function openMembers(taskId, titel) {
+  /**
+   * Baut die Zeilen der Verknuepfungsauswahl aus der Vorlage. Das eigene
+   * Projekt wird in jeder Zeile ausgeblendet - man kann nicht an sich
+   * selbst anknuepfen.
+   */
+  function linksSetzen(wurzel, links, eigeneId) {
+      if (!wurzel) return;
+      const picker = wurzel.querySelector('[data-link-picker]');
+      const rows   = picker.querySelector('[data-link-rows]');
+      rows.innerHTML = '';
+      links.forEach(function (l) { linkZeile(picker, l, eigeneId); });
+  }
+
+  function linkZeile(picker, l, eigeneId) {
+      const tpl  = picker.querySelector('[data-link-template]');
+      const rows = picker.querySelector('[data-link-rows]');
+      const frag = tpl.content.cloneNode(true);
+      const row  = frag.querySelector('[data-link-row]');
+      if (eigeneId) {
+          const eigen = row.querySelector('select[name="link_task[]"] option[value="' + eigeneId + '"]');
+          if (eigen) eigen.remove();
+      }
+      if (l) {
+          row.querySelector('select[name="link_task[]"]').value = String(l.ziel_id);
+          row.querySelector('select[name="link_kind[]"]').value = l.kind;
+          row.querySelector('input[name="link_note[]"]').value  = l.note || '';
+      }
+      rows.appendChild(frag);
+  }
+
+  // "+ Verknuepfung" und "Entfernen" fuer jede Auswahl auf der Seite.
+  document.addEventListener('click', function (e) {
+      const add = e.target.closest('[data-link-add]');
+      if (add) {
+          const picker = add.closest('[data-link-picker]');
+          const eigen  = picker.closest('form').querySelector('input[name="task_id"]');
+          linkZeile(picker, null, eigen ? eigen.value : '');
+          return;
+      }
+      const rem = e.target.closest('[data-link-remove]');
+      if (rem) {
+          const row = rem.closest('[data-link-row]');
+          if (row) row.remove();
+      }
+  });
+
+  function openMembers(taskId, titel, reiter) {
       document.getElementById('mm_title').textContent = titel;
       document.getElementById('mm_task_id').value = taskId;
 
       const leute = TASK_MEMBERS[taskId] || [];
       const owner = (leute.find(function (m) { return m.role === 'owner'; }) || {}).contact_id;
-      membersSetzen(
-          document.getElementById('mm_members'),
-          leute.map(function (m) { return String(m.contact_id); }),
-          owner
-      );
+      membersSetzen(document.getElementById('mm_members'),
+          leute.map(function (m) { return String(m.contact_id); }), owner, 'member_ids[]');
       membersFilterZuruecksetzen(document.getElementById('mm_members'));
+
+      const zust = TASK_USERS[taskId] || [];
+      const lead = (zust.find(function (z) { return z.role === 'lead'; }) || {}).user_id;
+      membersSetzen(document.getElementById('mm_users'),
+          zust.map(function (z) { return String(z.user_id); }), lead, 'user_ids[]');
+      membersFilterZuruecksetzen(document.getElementById('mm_users'));
+
+      const tab = document.getElementById(reiter === 'users' ? 'mm_tab_users' : 'mm_tab_contacts');
+      if (tab) bootstrap.Tab.getOrCreateInstance(tab).show();
   }
   </script>
 
@@ -1875,9 +2046,27 @@ function toggleTalk(id) {
             const ids = Array.from(wurzel.querySelectorAll('input[name="member_ids[]"]'))
                 .filter(function (b) { return b.checked; })
                 .map(function (b) { return b.value; });
-            membersSetzen(wurzel, ids, this.value);
+            membersSetzen(wurzel, ids, this.value, 'member_ids[]');
         });
     }
+
+    /* Dasselbe fuer den Lead - und fuer das Anlege-Fenster, das seine
+       Felder mit a_ statt e_ benennt. */
+    [['e_lead', 'e_users'], ['a_lead', 'a_users'], ['a_contact', 'a_members']].forEach(function (paar) {
+        const feld = document.getElementById(paar[0]);
+        if (!feld) return;
+        const name = paar[1].endsWith('_users') ? 'user_ids[]' : 'member_ids[]';
+        feld.addEventListener('change', function () {
+            const wurzel = document.getElementById(paar[1]);
+            if (!wurzel) return;
+            const ids = Array.from(wurzel.querySelectorAll('input[name="' + name + '"]'))
+                .filter(function (b) { return b.checked; })
+                .map(function (b) { return b.value; });
+            membersSetzen(wurzel, ids, this.value, name);
+        });
+        // Vorbelegung beim Laden (Anlege-Fenster: der Angemeldete ist Lead).
+        if (feld.value) feld.dispatchEvent(new Event('change'));
+    });
 })();
 </script>
 <?php if ($_highlight > 0): ?>
