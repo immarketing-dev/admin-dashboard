@@ -2287,4 +2287,18 @@ return [
     "Antworten, neue Dateien und Rechnungen. Abgeschaltet erreichen Sie diese Mitteilungen nur noch hier im Portal."
         => "Replies, new files and invoices. Switched off, these updates reach you only here in the portal.",
 
+    // ── Portal: Termine ──
+    "Kommende Termine"
+        => "Upcoming dates",
+    "Vergangene Termine (%d)"
+        => "Past dates (%d)",
+    "Zurzeit ist kein Termin geplant."
+        => "No date is scheduled at the moment.",
+    "Teilnehmen"
+        => "Join",
+    "In meinen Kalender"
+        => "Add to my calendar",
+    "Uhr"
+        => "hrs",
+
 ];

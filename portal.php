@@ -735,6 +735,25 @@ if (!empty($wiki_articles)) {
     unset($wa);
 }
 
+// ── Termine ─────────────────────────────────────────────────────────
+// Der Kalender kennt Kunden als Teilnehmer (event_contacts) und schickt
+// ihnen Einladungen; im Portal gab es dafuer bisher keine Ansicht.
+// invite_token ist der Schluessel fuer event_ics.php - ohne ihn gibt es
+// keinen Download, die Datei zeigte sonst ins Leere.
+$termine = $pdo->prepare("SELECT ce.id, ce.title, ce.description, ce.location, ce.meeting_url,
+                                 ce.event_date, ce.start_time, ce.end_time, ce.category,
+                                 ce.color, ce.status, ec.invite_token
+                            FROM event_contacts ec
+                            JOIN calendar_events ce ON ce.id = ec.event_id
+                           WHERE ec.contact_id = ?
+                           ORDER BY ce.event_date ASC, ce.start_time ASC");
+$termine->execute([$client['id']]);
+$termine = $termine->fetchAll(PDO::FETCH_ASSOC);
+
+$_heute = date('Y-m-d');
+$termine_kommend   = array_values(array_filter($termine, fn($t) => $t['event_date'] >= $_heute));
+$termine_vergangen = array_reverse(array_values(array_filter($termine, fn($t) => $t['event_date'] < $_heute)));
+
 // Quick-Stats für den Header
 $open_inv_count   = count(array_filter($invoices, fn($i) => in_array($i['status'], ['Offen','Überfällig'])));
 $open_ticket_count = count(array_filter($tickets, fn($t) => $t['status'] !== 'Erledigt'));
@@ -1197,6 +1216,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <i class="bi bi-<?= $is_partner ? 'folder2-open' : 'book-fill' ?>"></i> <?= $is_partner ? te('Ressourcen') : te('Wissen') ?>
         <span class="pill-badge"><?= count($wiki_articles) ?></span>
       </button>
+      <?php if($termine): /* Ein leerer Reiter erklaert nichts. */ ?>
+      <button class="portal-pill" data-tab="dates">
+        <i class="bi bi-calendar-event"></i> <?= te('Termine') ?>
+        <span class="pill-badge"><?= count($termine_kommend) ?></span>
+      </button>
+      <?php endif; ?>
       <?php endif; ?>
       <button class="portal-pill" data-tab="profile">
         <i class="bi bi-person-fill"></i> <?= te('Mein Profil') ?>
@@ -1988,6 +2013,71 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
       <?php endforeach; ?>
     </div>
     <?php endif; ?><!-- /wiki -->
+
+    <!-- ═══════════════════════════════════════ TERMINE ═══ -->
+    <?php if($termine): ?>
+    <div class="tab-pane" id="tab-dates">
+      <?php
+        /** Eine Terminkarte. */
+        $_termin_karte = function (array $t) {
+            $zeit = '';
+            if (!empty($t['start_time'])) {
+                $zeit = substr((string) $t['start_time'], 0, 5);
+                if (!empty($t['end_time'])) $zeit .= ' – ' . substr((string) $t['end_time'], 0, 5);
+                $zeit = trim($zeit . ' ' . te('Uhr'));
+            }
+            ?>
+            <div class="d-flex gap-3 p-3 mb-2" style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:12px;">
+              <div class="text-center flex-shrink-0" style="min-width:56px;">
+                <div class="fw-bold" style="font-size:20px;line-height:1;"><?= date('d', strtotime($t['event_date'])) ?></div>
+                <div class="text-muted" style="font-size:11px;text-transform:uppercase;"><?= date('M', strtotime($t['event_date'])) ?></div>
+              </div>
+              <div class="flex-grow-1" style="min-width:0;">
+                <div class="fw-bold"><?= htmlspecialchars($t['title']) ?></div>
+                <div class="text-muted small">
+                  <?= htmlspecialchars(datenwert((string) $t['category'])) ?><?php
+                    if ($zeit !== '') echo ' · ' . htmlspecialchars($zeit);
+                    if (!empty($t['location'])) echo ' · ' . htmlspecialchars($t['location']);
+                  ?>
+                </div>
+                <?php if(!empty($t['description'])): ?>
+                  <div class="text-muted small mt-1"><?= nl2br(htmlspecialchars($t['description'])) ?></div>
+                <?php endif; ?>
+                <div class="d-flex gap-2 mt-2 flex-wrap">
+                  <?php if(!empty($t['meeting_url'])): ?>
+                    <a href="<?= htmlspecialchars($t['meeting_url']) ?>" target="_blank" rel="noopener"
+                       class="btn btn-sm btn-primary"><i class="bi bi-camera-video me-1"></i><?= te('Teilnehmen') ?></a>
+                  <?php endif; ?>
+                  <?php if(!empty($t['invite_token'])): ?>
+                    <a href="event_ics?token=<?= urlencode((string) $t['invite_token']) ?>"
+                       class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-plus me-1"></i><?= te('In meinen Kalender') ?></a>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+            <?php
+        };
+      ?>
+
+      <div class="section-label"><i class="bi bi-calendar-event me-1"></i><?= te('Kommende Termine') ?></div>
+      <?php if($termine_kommend): ?>
+        <?php foreach($termine_kommend as $t) $_termin_karte($t); ?>
+      <?php else: ?>
+        <p class="text-center py-4 text-muted"><?= te('Zurzeit ist kein Termin geplant.') ?></p>
+      <?php endif; ?>
+
+      <?php if($termine_vergangen): ?>
+        <div class="section-label mt-4">
+          <a class="text-decoration-none" data-bs-toggle="collapse" href="#past-dates" role="button">
+            <i class="bi bi-clock-history me-1"></i><?= te('Vergangene Termine (%d)', count($termine_vergangen)) ?>
+          </a>
+        </div>
+        <div class="collapse" id="past-dates">
+          <?php foreach($termine_vergangen as $t) $_termin_karte($t); ?>
+        </div>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?><!-- /termine -->
 
     <!-- ═══════════════════════════════════════ PROFIL ═══ -->
     <div class="tab-pane" id="tab-profile">
