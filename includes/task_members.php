@@ -12,6 +12,9 @@
  * Vergleichslogik zweimal im Code.
  */
 
+// rollen() und benutzer_anzeige() fuer die Auswahl der Zustaendigen.
+require_once __DIR__ . '/users.php';
+
 /**
  * Bringt die Beteiligten eines Projekts auf den übergebenen Stand.
  *
@@ -123,6 +126,107 @@ function task_members_auswahl(array $kontakte, string $praefix): string
          . '<input type="search" class="form-control form-control-sm member-filter"'
          . ' data-member-filter placeholder="' . te('Person suchen …') . '"'
          . ' aria-label="' . te('Person suchen …') . '" autocomplete="off">'
+         . '<div class="member-list" data-member-list>' . $zeilen . '</div>'
+         . '<p class="member-empty text-muted small m-0 p-2" hidden>' . te('Niemand gefunden.') . '</p>'
+         . '</div>';
+}
+
+/**
+ * Bringt die Zuständigen eines Projekts auf den übergebenen Stand.
+ *
+ * Dasselbe Verfahren wie task_members_abgleichen(): Abgleich statt
+ * Neuschreiben, der Lead ist immer dabei, die Rolle wird jedes Mal neu
+ * gesetzt. Dazu kommt der Spiegel: tasks.assigned_user_id (Migration 18)
+ * bleibt bestehen und trägt den Lead, damit der Seed gültig bleibt und
+ * jeder Leser der alten Spalte den richtigen Wert sieht.
+ *
+ * Unbekannte Benutzer werden vorher aussortiert. INSERT IGNORE übergeht
+ * doppelte Schlüssel, aber nicht auf jeder Datenbank auch einen
+ * fehlenden Fremdschlüssel - und ein Fehler mitten im Abgleich
+ * hinterließe einen halben Stand.
+ *
+ * @param int   $lead Benutzer-ID des Hauptzuständigen, 0 wenn keiner.
+ * @param array $soll Benutzer-IDs der weiteren Zuständigen, beliebig roh.
+ */
+function task_users_abgleichen(PDO $pdo, int $task_id, int $lead, array $soll): void
+{
+    if ($task_id <= 0) return;
+
+    $soll = array_values(array_unique(array_filter(array_map('intval', $soll), fn($id) => $id > 0)));
+    if ($lead > 0) array_unshift($soll, $lead);
+    $soll = array_values(array_unique($soll));
+
+    if ($soll) {
+        $ph = implode(',', array_fill(0, count($soll), '?'));
+        $st = $pdo->prepare("SELECT id FROM users WHERE id IN ($ph)");
+        $st->execute($soll);
+        $bekannt = array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+        $soll = array_values(array_intersect($soll, $bekannt));
+    }
+    if ($lead > 0 && !in_array($lead, $soll, true)) $lead = 0;
+
+    $ist_st = $pdo->prepare("SELECT user_id FROM task_users WHERE task_id = ?");
+    $ist_st->execute([$task_id]);
+    $ist = array_map('intval', $ist_st->fetchAll(PDO::FETCH_COLUMN));
+
+    foreach (array_diff($ist, $soll) as $weg) {
+        $pdo->prepare("DELETE FROM task_users WHERE task_id = ? AND user_id = ?")
+            ->execute([$task_id, $weg]);
+    }
+    foreach (array_diff($soll, $ist) as $neu) {
+        $pdo->prepare("INSERT IGNORE INTO task_users (task_id, user_id, role) VALUES (?, ?, 'member')")
+            ->execute([$task_id, $neu]);
+    }
+
+    $pdo->prepare("UPDATE task_users SET role = 'member' WHERE task_id = ?")->execute([$task_id]);
+    if ($lead > 0) {
+        $pdo->prepare("UPDATE task_users SET role = 'lead' WHERE task_id = ? AND user_id = ?")
+            ->execute([$task_id, $lead]);
+    }
+    // Der Spiegel in tasks: wer die alte Spalte liest, sieht den Lead.
+    $pdo->prepare("UPDATE tasks SET assigned_user_id = ? WHERE id = ?")
+        ->execute([$lead > 0 ? $lead : null, $task_id]);
+}
+
+/**
+ * Die Auswahlliste der Zuständigen: je Benutzer ein Kästchen.
+ *
+ * Gleiches Markup wie die Kontaktauswahl, damit Suche und Sperre im
+ * Browser für beide gelten. Abgeschaltete Benutzer stehen mit
+ * Kennzeichen in der Liste: eine bestehende Zuordnung soll sichtbar
+ * bleiben und sich entfernen lassen.
+ */
+function task_users_auswahl(array $benutzer, string $praefix): string
+{
+    $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
+
+    $zeilen = '';
+    foreach ($benutzer as $u) {
+        $id    = (int) $u['id'];
+        $teile = [];
+        $rolle = rollen()[(string) ($u['role'] ?? '')]['label'] ?? '';
+        if ($rolle !== '')                       $teile[] = $h(datenwert($rolle));
+        if ((int) ($u['is_active'] ?? 1) !== 1)  $teile[] = te('inaktiv');
+
+        $zeilen .= '<label class="member-row" data-member-row>'
+                 . '<input class="form-check-input" type="checkbox" name="user_ids[]"'
+                 . ' value="' . $id . '" id="' . $h($praefix) . '_u' . $id . '">'
+                 . '<span class="member-text">'
+                 . '<span class="member-name" data-member-name>' . $h(benutzer_anzeige($u)) . '</span>'
+                 . ($teile ? '<span class="member-meta">' . implode(' · ', $teile) . '</span>' : '')
+                 . '</span>'
+                 . '<span class="member-owner-tag" hidden>' . te('Hauptzuständig') . '</span>'
+                 . '</label>';
+    }
+
+    if ($zeilen === '') {
+        $zeilen = '<p class="text-muted small m-0 p-2">' . te('Keine Benutzer vorhanden.') . '</p>';
+    }
+
+    return '<div class="member-picker" data-member-picker>'
+         . '<input type="search" class="form-control form-control-sm member-filter"'
+         . ' data-member-filter placeholder="' . te('Benutzer suchen …') . '"'
+         . ' aria-label="' . te('Benutzer suchen …') . '" autocomplete="off">'
          . '<div class="member-list" data-member-list>' . $zeilen . '</div>'
          . '<p class="member-empty text-muted small m-0 p-2" hidden>' . te('Niemand gefunden.') . '</p>'
          . '</div>';
