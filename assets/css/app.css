@@ -960,6 +960,31 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
     border-bottom: 1px solid var(--border-subtle);
 }
 
+/* Zustaendige auf der Projektkarte: Initialen in Kreisen, der Lead mit
+   Ring. Bis zu drei, danach "+N". Abgeschaltete Benutzer blass - die
+   Zuordnung soll auffallen, nicht verschwinden. */
+.assignees { display: inline-flex; align-items: center; gap: 2px; }
+.assignee-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: var(--text-2xs); font-weight: 700;
+    background: var(--accent-soft); color: var(--color-primary);
+    border: 2px solid var(--surface-card);
+}
+.assignee-dot + .assignee-dot { margin-left: -6px; }
+.assignee-dot.is-lead { box-shadow: 0 0 0 2px var(--color-primary); }
+.assignee-dot.is-inactive { opacity: .5; }
+.assignee-more { font-size: var(--text-2xs); color: var(--text-muted); margin-left: 4px; }
+
+/* Verknuepfte Projekte unter der Meta-Zeile der Karte und die Zeile im
+   Bearbeiten-Fenster. */
+.task-link-line { margin-top: 2px; }
+.task-link-line a { color: var(--text-strong); }
+.task-link-row { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+.task-link-row select[name="link_task[]"] { flex: 3 1 0; min-width: 0; }
+.task-link-row select[name="link_kind[]"] { flex: 0 0 auto; width: auto; }
+.task-link-row input { flex: 2 1 0; min-width: 0; }
+
 /* =========================================
    RESPONSIVE DESIGN (Smartphones & Tablets)
    ========================================= */

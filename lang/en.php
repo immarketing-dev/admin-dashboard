@@ -427,8 +427,6 @@ return [
         => 'Participants',
     'Beteiligte am Projekt'
         => 'Project participants',
-    'Beteiligte verwalten'
-        => 'Manage participants',
     'Weitere Beteiligte'
         => 'Additional participants',
     'Projekt-Dateien'
@@ -2214,4 +2212,13 @@ return [
         => "All participants",
     "Alle Zuständigen"
         => "All assignees",
+    // ── Projektkarte: Beteiligte und Zuständige ──
+    "Geschäftspartner beteiligt"
+        => "Business partner involved",
+    "Zuständig: %s"
+        => "Assigned: %s",
+    "Niemand zuständig"
+        => "Nobody assigned",
+    "Zuständig"
+        => "Assignee",
 ];
