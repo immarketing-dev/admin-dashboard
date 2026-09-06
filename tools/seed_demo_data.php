@@ -1069,6 +1069,13 @@ foreach ($termine as [$titel, $besch, $ort, $url, $tage, $von, $bis, $kat, $farb
 }
 echo '  ' . count($termine) . " Termine mit $anz_einl Einladungen\n";
 
+// Ein Kontakt hat die Mitteilungen abbestellt - damit der Schalter im
+// Portal-Profil in der Demo auch einmal auf "aus" steht und sichtbar
+// ist, dass es ihn gibt.
+$pdo->prepare('UPDATE contacts SET portal_notify = 0 WHERE id = ?')->execute([$k['brandt']]);
+echo "  1 Kontakt ohne Benachrichtigungen
+";
+
 // ── Überwachte Adressen ─────────────────────────────────────────────
 // Im Demo-Modus werden diese Adressen nie abgerufen - der nächtliche
 // Lauf, der sonst misst, ist dort gesperrt. Der Verlauf darunter wird
