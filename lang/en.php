@@ -2301,4 +2301,26 @@ return [
     "Uhr"
         => "hrs",
 
+    // ── Portal: Abmelden und Angebot ablehnen ──
+    "Abgemeldet"
+        => "Signed out",
+    "Sie sind abgemeldet."
+        => "You are signed out.",
+    "Ihr Zugangslink bleibt gültig. Beim nächsten Besuch fragen wir wieder nach Ihrer PIN."
+        => "Your access link stays valid. Next time we will ask for your PIN again.",
+    "Abmelden"
+        => "Sign out",
+    "Beendet diese Sitzung. Ihr Zugangslink bleibt gültig."
+        => "Ends this session. Your access link stays valid.",
+    "Ablehnen"
+        => "Decline",
+    "Grund (optional)"
+        => "Reason (optional)",
+    "Woran ist es gescheitert?"
+        => "What stood in the way?",
+    "Angebot ablehnen"
+        => "Decline quote",
+    "Ihre Absage ist angekommen. Vielen Dank für die Rückmeldung."
+        => "Your decline has arrived. Thank you for letting us know.",
+
 ];

@@ -15,6 +15,27 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 }
 app_session_start();
 
+// ── Abgemeldet ──────────────────────────────────────────────────────
+// Muss vor dem Laden des Kontakts stehen: nach dem Abmelden steht kein
+// Token mehr in der Adresse, es gibt also keinen $client. Und genau das
+// ist der Zweck - die Adresse im Verlauf des Browsers traegt danach
+// keinen Zugangsschluessel mehr.
+if (isset($_GET['logout'])) {
+    ?><!DOCTYPE html>
+    <html lang="<?= lang() ?>"><head>
+      <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+      <title><?= te('Abgemeldet') ?></title>
+      <link href="assets/css/tokens.css" rel="stylesheet"><link href="assets/css/app.css" rel="stylesheet">
+    </head><body style="display:flex;align-items:center;justify-content:center;min-height:100vh;">
+      <div class="text-center p-5" style="max-width:420px;">
+        <i class="bi bi-check-circle" style="font-size:48px;color:var(--accent-success);"></i>
+        <h1 class="h5 fw-bold mt-3"><?= te('Sie sind abgemeldet.') ?></h1>
+        <p class="text-muted"><?= te('Ihr Zugangslink bleibt gültig. Beim nächsten Besuch fragen wir wieder nach Ihrer PIN.') ?></p>
+      </div>
+    </body></html><?php
+    exit();
+}
+
 // ── Der Zugangslink darf nicht weiterwandern ───────────────────────
 // Der Token steht in der Adresszeile und ist damit der Schluessel zum
 // Portal. Zwei Wege, auf denen er das Haus verlaesst, werden hier
@@ -286,6 +307,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                            . mb_strimwidth($frage, 0, 160, '…'));
             portal_notify_admin($pdo, $client, 'Rückfrage', $q['quote_number'], $q['total_amount'], $frage);
             header("Location: portal?token=$token&msg=quote_question#quotes"); exit();
+        }
+        header("Location: portal?token=$token#quotes"); exit();
+    }
+
+    // Abmelden: die PIN-Sitzung endet, der Zugangslink bleibt gueltig.
+    // Er ist die Einladung, nicht das Geheimnis - das Geheimnis ist die
+    // PIN, und die wird beim naechsten Besuch wieder verlangt.
+    if (isset($_POST['action']) && $_POST['action'] === 'portal_logout') {
+        unset($_SESSION[$_sess_key]);
+        log_event($pdo, 'PORTAL_LOGOUT', "Kunde {$client['name']} hat sich im Portal abgemeldet.");
+        header("Location: portal?logout=1"); exit();
+    }
+
+    // ── Angebot ablehnen ────────────────────────────────────────────
+    // Der Status existierte, war aus dem Portal aber nicht erreichbar:
+    // wer ablehnen wollte, musste es in ein Rueckfragefeld schreiben.
+    if (isset($_POST['reject_quote'])) {
+        $qid   = (int)($_POST['quote_id'] ?? 0);
+        $grund = trim($_POST['quote_message'] ?? '');
+        $chk = $pdo->prepare("SELECT quote_number, total_amount FROM quotes
+                              WHERE id = ? AND contact_id = ? AND status = 'Gesendet' AND deleted_at IS NULL");
+        $chk->execute([$qid, $client['id']]);
+        if ($q = $chk->fetch(PDO::FETCH_ASSOC)) {
+            $pdo->prepare("UPDATE quotes SET status = 'Abgelehnt' WHERE id = ?")->execute([$qid]);
+            log_event($pdo, 'QUOTE_REJECTED', "Angebot {$q['quote_number']} von {$client['name']} im Portal abgelehnt."
+                           . ($grund !== '' ? ' Grund: ' . mb_strimwidth($grund, 0, 160, '…') : ''));
+            portal_notify_admin($pdo, $client, 'abgelehnt', $q['quote_number'], $q['total_amount'], $grund);
+            header("Location: portal?token=$token&msg=quote_rejected#quotes"); exit();
         }
         header("Location: portal?token=$token#quotes"); exit();
     }
@@ -1134,6 +1183,7 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             'ticket_deleted'  => t('Ticket wurde gelöscht.'),
             'profile_updated' => t('Ihre Daten wurden aktualisiert!'),
             'quote_accepted'  => t('Vielen Dank! Wir haben Ihre Zusage erhalten.'),
+            'quote_rejected'  => t('Ihre Absage ist angekommen. Vielen Dank für die Rückmeldung.'),
             'quote_question'  => t('Ihre Rückfrage ist bei uns eingegangen.'),
             'comment'         => t('Ihr Beitrag ist gespeichert.'),
           ];
@@ -1676,6 +1726,10 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
                           onclick="document.getElementById('qq_<?= (int)$q['id'] ?>').classList.toggle('d-none')">
                     <i class="bi bi-chat-left-text me-1"></i><?= te('Rückfrage stellen') ?>
                   </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          onclick="document.getElementById('qr_<?= (int)$q['id'] ?>').classList.toggle('d-none')">
+                    <i class="bi bi-x-lg me-1"></i><?= te('Ablehnen') ?>
+                  </button>
                 <?php elseif($offen && $abgelaufen): ?>
                   <span class="text-muted small align-self-center">
                     <i class="bi bi-info-circle me-1"></i><?= te('Die Frist ist abgelaufen — melden Sie sich gern, wir machen Ihnen ein neues Angebot.') ?>
@@ -1688,6 +1742,19 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
               </div>
 
               <?php if($offen && !$abgelaufen): ?>
+              <div id="qr_<?= (int)$q['id'] ?>" class="d-none mt-3">
+                <form method="POST">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
+                  <label class="section-label" for="rj_<?= (int)$q['id'] ?>"><?= te('Grund (optional)') ?></label>
+                  <textarea name="quote_message" id="rj_<?= (int)$q['id'] ?>" class="form-control mb-2" rows="2"
+                            placeholder="<?= te('Woran ist es gescheitert?') ?>"></textarea>
+                  <button type="submit" name="reject_quote" class="btn btn-sm btn-outline-danger fw-bold">
+                    <?= te('Angebot ablehnen') ?>
+                  </button>
+                </form>
+              </div>
+
                 <form method="POST" class="d-none mt-3" id="qq_<?= (int)$q['id'] ?>">
                   <?= csrf_field() ?>
                   <input type="hidden" name="quote_id" value="<?= (int)$q['id'] ?>">
@@ -2128,6 +2195,17 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
             <i class="bi bi-check-circle me-2"></i><?= te('Daten speichern') ?>
           </button>
         </form>
+
+        <?php if(!empty($client['portal_pin'])): /* Ohne PIN gaebe es nichts abzumelden. */ ?>
+        <form method="POST" class="mt-4 pt-3 border-top">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="portal_logout">
+          <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-arrow-right me-1"></i><?= te('Abmelden') ?>
+          </button>
+          <div class="form-text"><?= te('Beendet diese Sitzung. Ihr Zugangslink bleibt gültig.') ?></div>
+        </form>
+        <?php endif; ?>
       </div>
     </div><!-- /profile -->
 
