@@ -2221,4 +2221,19 @@ return [
         => "Nobody assigned",
     "Zuständig"
         => "Assignee",
+    // ── Projektfenster: Zuständige und Verknüpfungen ──
+    "-- Niemand --"
+        => "-- Nobody --",
+    "Weitere Zuständige"
+        => "Other assignees",
+    "Zuständige"
+        => "Assignees",
+    "Zuständigkeit ist Information und Filter, keine Zugangsbeschränkung."
+        => "Assignment is information and a filter, not an access restriction.",
+    "Anknüpfen an ein anderes Projekt"
+        => "Link to another project",
+    "Was auf andere Projekte zeigt, wird dort ebenfalls angezeigt. Rückverweise von anderen Projekten ändern Sie dort."
+        => "Links to other projects are shown there as well. Links pointing here are edited on the other project.",
+    "Wer intern an diesem Projekt arbeitet. Den Hauptzuständigen ändern Sie unter „Bearbeiten“."
+        => "Who works on this project internally. Change the lead under \"Edit\".",
 ];
