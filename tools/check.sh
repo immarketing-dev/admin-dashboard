@@ -305,6 +305,11 @@ if command -v php >/dev/null 2>&1; then
     echo "MIGRATION23: $out"
     fail=1
   fi
+  # Migration 24: die Abbestell-Spalte, mit Vorgabe 1.
+  if ! out=$(php tools/test_migration_24.php 2>&1); then
+    echo "MIGRATION24: $out"
+    fail=1
+  fi
   # Verknuepfungen zwischen Projekten: Selbstverweis, Gegenverweis,
   # geloeschte Ziele - alles gegen die echten Tabellen.
   if ! out=$(php tools/test_task_links.php 2>&1); then

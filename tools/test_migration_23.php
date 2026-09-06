@@ -41,7 +41,9 @@ function migration_ausfuehren(PDO $pdo, int $version): void
 }
 
 $checks = [];
-$checks['Version ist 23'] = SCHEMA_VERSION === 23;
+// Mindestens diese Version - eine spaetere Migration darf diese
+// Pruefung nicht brechen.
+$checks['Version ist mindestens 23'] = SCHEMA_VERSION >= 23;
 $checks['Migration 23 ist eingetragen'] = isset(migrations()[23]);
 
 migration_ausfuehren($pdo, 23);

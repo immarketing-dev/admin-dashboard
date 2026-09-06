@@ -7,7 +7,7 @@
  * SCHEMA_VERSION erhöhen. Migrationen laufen genau einmal, in Reihenfolge.
  */
 
-const SCHEMA_VERSION = 23;
+const SCHEMA_VERSION = 24;
 
 /**
  * MySQL-Fehlercodes, die "war schon da" bedeuten. Sie sind kein
@@ -815,6 +815,21 @@ function migrations(): array
             . ' CONSTRAINT fk_tl_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,'
             . ' CONSTRAINT fk_tl_linked FOREIGN KEY (linked_task_id) REFERENCES tasks(id) ON DELETE CASCADE'
             . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        ],
+
+        // Version 24: der Kunde darf abbestellen.
+        //
+        // Das Panel schickt kuenftig bei mehr als einem Anlass eine Mail
+        // ins Portal - Projektantwort, Meilenstein-Kommentar, neue Datei,
+        // neue Rechnung. Ohne einen Schalter am Empfaenger waere die
+        // einzige Wahl "alle oder niemand", und die traefe der Absender,
+        // nicht der Empfaenger.
+        //
+        // Vorgabe 1: bis hierher ging bei Meilenstein und Ticket eine
+        // Mail hinaus. Ein Bestand, der nach dem Update stumm waere,
+        // waere die schlechtere Ueberraschung.
+        24 => [
+            'ALTER TABLE contacts ADD COLUMN portal_notify TINYINT(1) NOT NULL DEFAULT 1',
         ],
     ];
 }
