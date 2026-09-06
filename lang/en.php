@@ -2209,4 +2209,6 @@ return [
         => "Note (optional)",
     "Entfernen"
         => "Remove",
+    "Art"
+        => "Type",
 ];
