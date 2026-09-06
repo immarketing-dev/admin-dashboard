@@ -9,6 +9,33 @@ private history.
 ## [Unreleased]
 
 ### Added
+- **Several assignees per project, participants grouped by type, and
+  links between projects.** `tasks.assigned_user_id` existed since schema
+  version 18 but no page ever read or wrote it: a project had no internal
+  assignee, let alone several. Schema version 23 adds `task_users` — for
+  users what `task_contacts` (version 5) is for contacts — with one
+  `lead` per project at most; the old column stays and mirrors the lead.
+  The participant picker now groups customers, business partners and
+  prospects instead of one flat list, the card shows initials of the
+  assignees and marks when a partner is involved, and the list filters by
+  participant (any member, not just the main contact) and by assignee.
+
+  `task_links` records that a project follows on from, is part of, or is
+  related to another one — directed, so both cards read it their own way
+  ("Follow-up to X" on the new one, "Continued in Y" on the old one). A
+  pair is stored once; saving A→B replaces an existing B→A. A self-link,
+  a deleted target and an unknown one are refused with a log entry. The
+  portal shows a link only to viewers who are participants of both
+  projects.
+
+  Three new checks: `tools/test_migration_23.php` runs the migration
+  against a database at version 22 and confirms an existing
+  `assigned_user_id` becomes a lead, `tools/test_task_links.php` covers
+  the reconciliation, and `tools/test_tasks_render.php` executes the real
+  source of the project page against the sqlite mirror — the technique
+  `test_reports_render.php` introduced. The mirror learned `DATE_FORMAT`
+  and now also strips a `KEY` clause that follows a comma on the same
+  line, which single-line migration statements use.
 - **Multiple users, with roles.** `users` had four columns: id, email,
   password_hash, created_at. No name, no role, no state — and no
   interface for creating a second one. `logs` recorded *that* something
@@ -173,6 +200,19 @@ private history.
   check 1.
 
 ### Fixed
+- **A newly created project was invisible in the portal.** Creating a
+  project wrote `tasks.contact_id` but never a row in `task_contacts`;
+  only editing did. The customer saw the project only after someone
+  opened "Edit" and saved once — nothing reported it, and the demo seed
+  writes the table directly, so it never showed there either. Creating
+  now runs the same reconciliation as editing, and the create dialog
+  offers participants, assignees and links right away.
+- **A project without a category passed null to `htmlspecialchars()`.**
+  Deprecated since PHP 8.1, and the category is optional in the create
+  dialog. Found by the new render test, not by `php -l`.
+- The AJAX handlers on the project page now cast their ids to integers,
+  as the rest of the page already did.
+
 - **The credential scanner read a header name as a secret.**
   `'HTTP_X_API_KEY' => 'abc123'` matched, because the header *name* ends in
   `api_key` and the array pattern — unlike the variable pattern above it —
