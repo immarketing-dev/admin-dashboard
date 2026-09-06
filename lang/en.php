@@ -2184,4 +2184,29 @@ return [
         => "No users yet.",
     "Benutzer suchen …"
         => "Search users …",
+    // ── Verknüpfungen zwischen Projekten (includes/task_links.php) ──
+    "Folgeprojekt"
+        => "Follow-up project",
+    "Folgeprojekt von %s"
+        => "Follow-up to %s",
+    "Fortgesetzt in %s"
+        => "Continued in %s",
+    "Teilprojekt"
+        => "Sub-project",
+    "Teilprojekt von %s"
+        => "Sub-project of %s",
+    "Teilprojekt: %s"
+        => "Sub-project: %s",
+    "Verwandt"
+        => "Related",
+    "Verwandt mit %s"
+        => "Related to %s",
+    "-- Projekt wählen --"
+        => "-- Choose a project --",
+    "Verknüpfung"
+        => "Link",
+    "Notiz (optional)"
+        => "Note (optional)",
+    "Entfernen"
+        => "Remove",
 ];
