@@ -114,6 +114,7 @@ echo "=== Pruefung 1: keine Tabelle bleibt leer ===\n";
 // Konfiguration, sso_tokens fuellt sich nur im Betrieb.
 $erwartet_gefuellt = [
     'contacts', 'leads_inbox', 'tasks', 'task_milestones', 'task_contacts',
+    'task_users', 'task_links',
     'milestone_comments', 'project_comments', 'client_assets', 'time_entries',
     'finances', 'quotes', 'support_tickets', 'ticket_notes', 'wiki_articles',
     'wiki_attachments', 'wiki_client_shares', 'calendar_events', 'event_contacts',
@@ -150,6 +151,10 @@ $verweise = [
     ['task_milestones', 'task_id', 'tasks'],
     ['task_contacts', 'task_id', 'tasks'],
     ['task_contacts', 'contact_id', 'contacts'],
+    ['task_users', 'task_id', 'tasks'],
+    ['task_users', 'user_id', 'users'],
+    ['task_links', 'task_id', 'tasks'],
+    ['task_links', 'linked_task_id', 'tasks'],
     ['milestone_comments', 'milestone_id', 'task_milestones'],
     ['project_comments', 'task_id', 'tasks'],
     ['project_comments', 'author_contact_id', 'contacts'],

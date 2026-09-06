@@ -282,6 +282,15 @@ $pdo->exec("INSERT INTO contacts (name, company) VALUES ('Lena Hofmann', 'Hofman
 $kontakt = (int) $pdo->lastInsertId();
 $pdo->exec("INSERT INTO tasks (title, contact_id, status) VALUES ('Relaunch', $kontakt, 'In Bearbeitung')");
 $projekt = (int) $pdo->lastInsertId();
+
+// Zustaendige und Verknuepfungen (Migration 23): je eine Zeile, damit
+// die Abfragen aus tasks.php und portal.php hier wirklich laufen.
+$pdo->exec("INSERT INTO users (email, password_hash, name, role) VALUES ('t@example.test', 'x', 'Tester', 'admin')");
+$tester = (int) $pdo->lastInsertId();
+$pdo->exec("INSERT INTO task_users (task_id, user_id, role) VALUES ($projekt, $tester, 'lead')");
+$pdo->exec("INSERT INTO tasks (title, contact_id, status) VALUES ('Wartung', $kontakt, 'Offen')");
+$wartung_id = (int) $pdo->lastInsertId();
+$pdo->exec("INSERT INTO task_links (task_id, linked_task_id, kind, note) VALUES ($wartung_id, $projekt, 'follow_up', 'Pflege')");
 $pdo->exec("INSERT INTO time_entries (task_id, duration_minutes, note) VALUES ($projekt, 120, 'Konzept')");
 $pdo->exec("INSERT INTO time_entries (task_id, duration_minutes, billed_at) VALUES ($projekt, 60, NOW())");
 $pdo->exec("INSERT INTO finances (type, title, contact_id, amount, status, record_date, due_date, invoice_number)
