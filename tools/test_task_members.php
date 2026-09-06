@@ -152,6 +152,31 @@ $checks['leere Kontaktliste sagt es']
     = strpos($leer, 'Keine Kontakte vorhanden.') !== false
    && strpos($leer, 'name="member_ids[]"') === false;
 
+// --- Gruppierung nach Kontakttyp --------------------------------------
+// Ohne Gruppen stand ein Geschaeftspartner zwischen zwei Kunden, und der
+// einzige Hinweis war ein Kuerzel in der Zeile.
+$html = task_members_auswahl([
+    ['id' => 1, 'name' => 'Kai',  'company' => '', 'contact_type' => 'Interessent',      'portal_token' => 'a'],
+    ['id' => 2, 'name' => 'Lea',  'company' => '', 'contact_type' => 'Geschäftspartner', 'portal_token' => 'b'],
+    ['id' => 3, 'name' => 'Mona', 'company' => '', 'contact_type' => 'Kunde',            'portal_token' => 'c'],
+    ['id' => 4, 'name' => 'Nils', 'company' => '', 'contact_type' => '',                 'portal_token' => 'd'],
+], 'g');
+$checks['drei Gruppenueberschriften'] = substr_count($html, 'data-member-group') === 3;
+$pos_k = strpos($html, '>Kunden<');
+$pos_p = strpos($html, '>Geschäftspartner<');
+$pos_i = strpos($html, '>Interessenten<');
+$checks['Reihenfolge Kunden, Partner, Interessenten']
+    = $pos_k !== false && $pos_p !== false && $pos_i !== false && $pos_k < $pos_p && $pos_p < $pos_i;
+$checks['Mona steht unter Kunden'] = strpos($html, 'Mona') > $pos_k && strpos($html, 'Mona') < $pos_p;
+$checks['unbekannter Typ zaehlt zu Kunden'] = strpos($html, 'Nils') > $pos_k && strpos($html, 'Nils') < $pos_p;
+$checks['Lea steht unter Partnern'] = strpos($html, 'Lea') > $pos_p && strpos($html, 'Lea') < $pos_i;
+$checks['Kai steht unter Interessenten'] = strpos($html, 'Kai') > $pos_i;
+
+$nur_kunden = task_members_auswahl([
+    ['id' => 5, 'name' => 'Otto', 'company' => '', 'contact_type' => 'Kunde', 'portal_token' => 'e'],
+], 'h');
+$checks['leere Gruppen fehlen'] = substr_count($nur_kunden, 'data-member-group') === 1;
+
 // ----------------------------------------------------------------------
 $fail = 0;
 foreach ($checks as $name => $ok) {

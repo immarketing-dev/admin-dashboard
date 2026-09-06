@@ -1731,6 +1731,17 @@ function toggleTalk(id) {
             zeile.hidden = !(passt || (box && box.checked));
         });
 
+        // Eine Ueberschrift ohne sichtbare Zeile darunter verschwindet
+        // mit - sonst stuende "Interessenten" ueber nichts.
+        picker.querySelectorAll('[data-member-group]').forEach(function (kopf) {
+            let el = kopf.nextElementSibling, sichtbar = false;
+            while (el && !el.hasAttribute('data-member-group')) {
+                if (el.hasAttribute('data-member-row') && !el.hidden) { sichtbar = true; break; }
+                el = el.nextElementSibling;
+            }
+            kopf.hidden = !sichtbar;
+        });
+
         const leer = picker.querySelector('.member-empty');
         if (leer) leer.hidden = !(wort !== '' && treffer === 0);
     }
