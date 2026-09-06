@@ -203,6 +203,10 @@ CREATE TABLE IF NOT EXISTS contacts (
   portal_pin_locked_until DATETIME     DEFAULT NULL,
   -- Stundensatz dieses Kunden. Ein Projekt darf ihn ueberschreiben.
   hourly_rate             DECIMAL(10,2) DEFAULT NULL,
+  -- Bekommt dieser Kontakt Benachrichtigungen aus dem Portal? Er setzt
+  -- es selbst im Portal-Profil; die globalen Schalter in den
+  -- Einstellungen entscheiden zuerst, dieser Wert danach.
+  portal_notify           TINYINT(1) NOT NULL DEFAULT 1,
   -- Umsatzsteuer-Identifikationsnummer. Ein PDF braucht sie nicht, eine
   -- elektronische Rechnung zwischen Unternehmen schon.
   vat_id                  VARCHAR(30)  DEFAULT NULL,
@@ -675,7 +679,7 @@ CREATE TABLE IF NOT EXISTS monitored_urls (
 -- TABLE statements against columns/indexes that already exist - each
 -- one an error-log line. This value must match SCHEMA_VERSION in
 -- includes/migrations.php.
-INSERT INTO settings (k, v) VALUES ('schema_version', '23')
+INSERT INTO settings (k, v) VALUES ('schema_version', '24')
   ON DUPLICATE KEY UPDATE v = VALUES(v);
 
 SET foreign_key_checks = 1;
