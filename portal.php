@@ -1266,12 +1266,12 @@ $is_partner = ($client['contact_type'] === 'Geschäftspartner');
         <i class="bi bi-<?= $is_partner ? 'folder2-open' : 'book-fill' ?>"></i> <?= $is_partner ? te('Ressourcen') : te('Wissen') ?>
         <span class="pill-badge"><?= count($wiki_articles) ?></span>
       </button>
+      <?php endif; ?>
       <?php if($termine): /* Ein leerer Reiter erklaert nichts. */ ?>
       <button class="portal-pill" data-tab="dates">
         <i class="bi bi-calendar-event"></i> <?= te('Termine') ?>
         <span class="pill-badge"><?= count($termine_kommend) ?></span>
       </button>
-      <?php endif; ?>
       <?php endif; ?>
       <button class="portal-pill" data-tab="profile">
         <i class="bi bi-person-fill"></i> <?= te('Mein Profil') ?>
